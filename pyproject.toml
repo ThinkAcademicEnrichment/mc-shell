@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mc-shell"
-version = "0.1.0"
+version = "0.1.1"
 description = "An interactive shell and editor for controlling Minecraft servers and creating powers."
 authors = ["jeff@thinkae.org"]
 readme = "README.md"
@@ -35,8 +35,6 @@ click = "*" # For the mcshell CLI entry point
 # Minecraft-specific Libraries
 rcon = "*"
 aio-mc-rcon = "*"
-pyncraft = {git = "https://github.com/d4g33z/pyncraft.git"}
-
 
 [tool.poetry.scripts]
 # This defines the console script entry point, replacing 'entry_points'.
