@@ -10,7 +10,7 @@ This guide will get you running in just a few minutes. Each step is linked to a 
 
 1.  **[Install the Software](#installation)**:
     ```bash
-    [coming soon via pip!]
+    pip install --user mc-shell
     ```
 2.  **[Enter the Shell](#entering-the-shell)**:
     ```bash
@@ -36,18 +36,25 @@ This guide will get you running in just a few minutes. Each step is linked to a 
 Before you begin, you will need a few things installed on your system (Linux, macOS, or Windows Subsystem for Linux):
 * **Python** (version 3.9 or higher)
 
-Once the prerequisites are met, run the following commands in your terminal to download and install the project and all its dependencies.
+Once the prerequisites are met, run the following commands in your terminal to download and install the project and all its dependencies. Note the 
+`--user` option: this will install in `~/.local/bin` so make sure your `PATH` includes this directory! And notice the package is called `mc-shell` but the
+executable program is called `mcshell`. 
 
 ```bash
-[coming soon via pip!]
+pip install --user mc-shell
 ````
 
 ### Running and Updating
 
-To run the application, use the following command from the `mc-shell` directory:
+To run the application, use the following command 
 
 ```bash
 mcshell start
+```
+
+If the command is not found, your must add `~/.local/bin` to your `PATH` environment variable or use the following invocation
+```bash
+~/.local/bin/mcshell start
 ```
 
 ### Entering the Shell
