@@ -6,7 +6,7 @@ from .event import BlockEvent, ChatEvent, ArrowHitEvent
 from .util import flatten
 from warnings import warn
 from .logger import *
-import sys, ipdb
+import sys
 
 """ Minecraft PI low level api v0.1_1
 
