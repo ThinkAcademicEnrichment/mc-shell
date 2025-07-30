@@ -1,4 +1,4 @@
-from pyncraft.minecraft import Minecraft
+from mcshell.vendored.pyncraft.minecraft import Minecraft
 from mcshell.constants import *
 
 from functools import lru_cache
