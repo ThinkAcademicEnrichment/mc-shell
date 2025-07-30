@@ -1,0 +1,35 @@
+{
+  "name": "mc-ed",
+  "version": "1.0.0",
+  "description": "Minecraft Blockly Editor",
+  "source": "src/index.html",
+  "scripts": {
+    "start": "parcel src/index.html",
+    "start:control": "parcel src/control.html",
+    "process:all": "poetry run python ../process.py",
+    "build:all": "node ../mcshell/data/materials/generate_material_blocks.mjs && node ../mcshell/data/entities/generate_entity_blocks.mjs",
+    "build:toolbox": "poetry run python ../build.py",
+    "build": "npm run process:all && npm run build:all && npm run build:toolbox && parcel build --dist-dir ../mcshell/data/app src/index.html src/control.html "
+  },
+  "dependencies": {
+    "alpinejs": "^3.14.9",
+    "blockly": "^12.2.0",
+    "htmx-ext-json-enc": "^2.0.2",
+    "htmx.org": "^2.0.6",
+    "prismjs": "^1.30.0",
+    "socket.io-client": "^4.8.1",
+    "sortablejs": "^1.15.6"
+  },
+  "devDependencies": {
+    "@parcel/packager-xml": "^2.15.2",
+    "@parcel/transformer-xml": "^2.15.2",
+    "parcel": "^2.12.0",
+    "path-browserify": "^1.0.1",
+    "process": "^0.11.10"
+  },
+  "targets": {
+    "default": {
+      "context": "browser"
+    }
+  }
+}
