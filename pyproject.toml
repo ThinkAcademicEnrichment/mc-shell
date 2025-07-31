@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mc-shell"
-version = "0.1.4"
+version = "0.1.5"
 description = "An interactive shell and editor for controlling Minecraft servers and creating powers."
 authors = ["jeff@thinkae.org"]
 readme = "README.md"
