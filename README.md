@@ -36,9 +36,9 @@ This guide will get you running in just a few minutes. Each step is linked to a 
 Before you begin, you will need a few things installed on your system (Linux, macOS, or Windows Subsystem for Linux):
 * **Python** (version 3.9 or higher)
 
-Once the prerequisites are met, run the following commands in your terminal to download and install the project and all its dependencies. Note the 
+Once the prerequisites are met, run the following commands in your terminal to download and install the project and all its dependencies. Note the recommended  
 `--user` option: this will install in `~/.local/bin` so make sure your `PATH` includes this directory! And notice the package is called `mc-shell` but the
-executable program is called `mcshell`. 
+executable program is called `mcshell`. If you choose not to install with `--user` then the executable should be in your `PATH` automatically.
 
 ```bash
 pip install --user mc-shell
