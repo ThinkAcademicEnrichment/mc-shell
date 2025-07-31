@@ -17,9 +17,7 @@ kano
 python-minecraft-data
 old-powers
 old_index.*
-mcshell/data/powers/*
 poetry.lock
-powers
 
 # generated files
 mced/src/blocks/materials.mjs
