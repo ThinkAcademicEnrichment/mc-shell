@@ -3,10 +3,9 @@ import Sortable from 'sortablejs';
 
 import htmx from 'htmx.org'
 
-import { io } from "socket.io-client"; // <-- Import the io function
+import { io } from "socket.io-client";
 
-// --- 1. Establish the connection to your Flask-SocketIO server ---
-// const socket = io("http://localhost:5001"); // Use the address of your Python server
+// --- Establish the connection to your Flask-SocketIO server ---
 const socket = io(); // Use the address of your Python server
 
 socket.on('connect', () => {
@@ -19,7 +18,7 @@ socket.on('disconnect', () => {
 
 const WIDGET_REGISTRY = {};
 
-// --- 1. Define an Alpine Store for Shared Data ---
+// --- Define an Alpine Store for Shared Data ---
 document.addEventListener('alpine:init', () => {
     Alpine.store('materials', {
         groups: {}, // This will hold the categorized block data
@@ -35,8 +34,7 @@ document.addEventListener('alpine:init', () => {
     });
 });
 
-
-// --- 2. Define the Component for the Custom Picker ---
+// --- Define the Component for the Custom Picker ---
 function materialPicker(defaultSelection, paramName) {
     return {
         isOpen: false,
@@ -46,9 +44,6 @@ function materialPicker(defaultSelection, paramName) {
     };
 }
 window.materialPicker = materialPicker;
-
-
-
 
 function powerWidget(initialPowerData) {
     return {
@@ -147,7 +142,6 @@ function powerWidget(initialPowerData) {
 }
 window.powerWidget = powerWidget;
 
-
 // The data and methods for our main control panel component
 function controlPanel() {
   return {
@@ -167,7 +161,7 @@ function controlPanel() {
       console.log('Initializing control panel...');
 
       // The socket listener now lives inside the init method and updates our state.
-          // // --- Set up a global listener for power status updates ---
+          // --- Set up a global listener for power status updates ---
           if (window.socket) {
               socket.on('power_status', (data) => {
                   console.log('Received power status update:', data);
@@ -193,35 +187,30 @@ function controlPanel() {
               });
           }
 
-
-      // --- CONSOLIDATED $watch --
       // This single watcher handles ALL logic related to the isEditing state change.
       this.$watch('isEditing', (isNowEditing) => {
         console.log(`Edit mode changed to: ${isNowEditing}`);
 
-        // 1. Enable or disable SortableJS based on the new state.
+        // Enable or disable SortableJS based on the new state.
         if (this.sortableInstance) {
           console.log(`Setting drag-and-drop to ${isNowEditing ? 'ENABLED' : 'DISABLED'}.`);
           this.sortableInstance.option('disabled', !isNowEditing);
         }
 
-        // 2. Broadcast the global event for child components to hear.
+        // Broadcast the global event for child components to hear.
         console.log(`Broadcasting event: control-mode-changed, editing: ${isNowEditing}`);
         window.dispatchEvent(new CustomEvent('control-mode-changed', {
             detail: { editing: isNowEditing }
         }));
       });
-      // --- END OF CONSOLIDATION ---
 
       // Fetch both layout and power data when the component loads
       Promise.all([
         fetch('/api/control/layout').then(res => res.json()),
         fetch('/api/powers?view=control').then(res => res.json()),
-        // fetch('/api/block_materials').then(res => res.json()) // <-- NEW FETCH
       ]).then(([layoutData, powersData, materialData]) => {
         this.layout = layoutData;
         this.powers = powersData;
-        // this.materialGroups = materialData; // <-- STORE THE DATA
         console.log('Layout, powers, and material data loaded.');
 
         // Initialize drag-and-drop after the next DOM update
@@ -231,9 +220,9 @@ function controlPanel() {
 
           if (grid) {
             console.log("Alpine has rendered the widgets. Now processing them with htmx...");
-             // 1. Tell Alpine.js to initialize any x-data components inside the new widget
-             window.Alpine.initTree(grid);
-            // 1. Tell htmx to scan the grid and activate all hx-* attributes inside it.
+            // Tell Alpine.js to initialize any x-data components inside the new widget
+            window.Alpine.initTree(grid);
+            // Tell htmx to scan the grid and activate all hx-* attributes inside it.
             htmx.process(grid);
 
             this.sortableInstance = new Sortable(grid, {
@@ -253,11 +242,6 @@ function controlPanel() {
                 // Remove x-ignore so Alpine can manage the elements again.
                 grid.removeAttribute('x-ignore');
                 console.log('Drag ended: Removing x-ignore from grid.');
-
-                // Your logic to update the layout array order will go here.
-                // For example:
-                // const widgetIds = Array.from(grid.children).map(child => child.__x.getUnobservedData().widget.power_id);
-                // this.layout.widgets = widgetIds.map(id => ({ power_id: id, position: [] }));
               }
             });
             this.sortableInstance.option('disabled', true);
@@ -266,16 +250,14 @@ function controlPanel() {
           }
         });
       });
-
-
     },
 
-    // NEW: Helper for widgets to get their current status
+    // Helper for widgets to get their current status
     getStatusForWidget(powerId) {
         return this.powerStatuses[powerId] || { status: 'Idle', message: '' , execution_id: null};
     },
 
-   // NEW METHOD to fetch the latest power data
+   // fetch the latest power data
     refreshPowersData() {
       console.log("Refreshing full powers data from server...");
       fetch('/api/powers?view=control')
@@ -294,7 +276,6 @@ function controlPanel() {
     /**
      * Adds a new widget to the client-side layout data, then uses $nextTick
      * to initialize htmx on the new DOM element after Alpine has rendered it.
-     * @param {string} powerId The ID of the power widget to add.
      */
     addWidget(powerId) {
         if (!powerId || this.layout.widgets.some(w => w.power_id === powerId)) {
@@ -304,19 +285,19 @@ function controlPanel() {
             return;
         }
 
-        // 1. Change the state: Add the new widget's data to the array.
-        //    Alpine will see this and schedule a DOM update.
+        // Change the state: Add the new widget's data to the array.
+        // Alpine will see this and schedule a DOM update.
         console.log(`Adding widget for power ID: ${powerId} to layout data.`);
         this.layout.widgets.push({ power_id: powerId, position: [] });
 
-        // 2. Use $nextTick to run code AFTER the DOM has been updated.
+        // Use $nextTick to run code AFTER the DOM has been updated.
         this.$nextTick(() => {
             console.log('Alpine has updated the DOM. Now processing the new widget with htmx.');
 
             // Find the grid and then find the very last widget element, which is the one we just added.
             const grid = document.getElementById('power-grid');
             if (grid && grid.lastElementChild) {
-                // 3. Call htmx.process() on ONLY the new element.
+                // Call htmx.process() on ONLY the new element.
                 htmx.process(grid.lastElementChild);
                 console.log('New widget processed by htmx.');
             }
@@ -328,7 +309,6 @@ function controlPanel() {
         this.layout.widgets = this.layout.widgets.filter(w => w.power_id !== powerId);
         console.log(`Removed widget for power: ${powerId}`);
     }
-
   }
 }
 
