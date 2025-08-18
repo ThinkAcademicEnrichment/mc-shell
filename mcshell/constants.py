@@ -1,3 +1,4 @@
+import eventlet
 from rcon import Client
 from aiomcrcon import Client as AioClient
 

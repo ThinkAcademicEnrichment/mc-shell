@@ -163,8 +163,9 @@ def execute_power_in_thread(power_id,execution_id, python_code, player_name, ser
     """
     This is the new, shared worker function. It runs in a background thread.
     """
-    print(f"THREAD {execution_id}: Started for player '{player_name}' with params: {runtime_params}")
+    # print(f"THREAD {execution_id}: Started for player '{player_name}' with params: {runtime_params}")
     # --- Send the initial 'running' status with ALL required fields ---
+    print(f"THREAD {execution_id}: Emitting 'running' status...")
     socketio.emit('power_status', {
         'id': power_id,
         'execution_id': execution_id,
@@ -191,13 +192,16 @@ def execute_power_in_thread(power_id,execution_id, python_code, player_name, ser
 
             # --- Cancellation Check (if your MCActions methods support it) ---
             try:
+                # the code will return cleanly when runner.cancel_event.is_set() is True
                 runner.run_program()
             except PowerCancelledException:
-                #we raise an exception only when polling for a sword strike
+                #we raise an exception for cancellation only when polling for a sword strike
                 pass
+
             if cancel_event.is_set():
-                print(f"Thread {execution_id}: Execution was cancelled.")
+                # print(f"Thread {execution_id}: Execution was cancelled.")
                 # --- Send the 'cancelled' status with ALL required fields ---
+                print(f"THREAD {execution_id}: Emitting 'cancelled' status...")
                 socketio.emit('power_status', {
                     'id': power_id,
                     'execution_id': execution_id,
@@ -206,8 +210,9 @@ def execute_power_in_thread(power_id,execution_id, python_code, player_name, ser
                 })
                 return
 
-        print(f"Thread {execution_id}: Execution completed successfully.")
+        # print(f"Thread {execution_id}: Execution completed successfully.")
         # --- Send the 'finished' status with ALL required fields ---
+        print(f"THREAD {execution_id}: Emitting 'finished' status...")
         socketio.emit('power_status', {
             'id': power_id,
             'execution_id': execution_id,
@@ -281,50 +286,96 @@ class BlocklyProgramRunner:
 {textwrap.indent(run_program_body, '        ')}
 """
 
+    print(python_code)
+
     # --- Create a unique ID for this execution instance ---
     execution_id = str(uuid.uuid4())
     cancel_event = Event()
 
-    thread = Thread(target=execute_power_in_thread, args=(
-        power_id, execution_id, python_code, player_name, server_data, runtime_params, cancel_event
-    ))
-    thread.daemon = True
-    thread.start()
+    # thread = Thread(target=execute_power_in_thread, args=(
+    #     power_id, execution_id, python_code, player_name, server_data, runtime_params, cancel_event
+    # ))
+    # thread.daemon = True
+    # thread.start()
+
+    # Instead of creating a native thread, we ask Socket.IO to start
+    # our function as a background task. This ensures it runs in a
+    # compatible "green thread".
+    socketio.start_background_task(
+        target=execute_power_in_thread,
+        power_id=power_id,
+        execution_id=execution_id,
+        python_code=python_code,
+        player_name=player_name,
+        server_data=server_data,
+        runtime_params=runtime_params,
+        cancel_event=cancel_event
+    )
+
     RUNNING_POWERS[execution_id] = {
-        'thread': thread,
+        # 'thread': thread,
         'cancel_event': cancel_event,
         'power_id': power_id  # <-- STORE THE POWER ID
     }
 
     # We acknowledge the request was dispatched and include the unique execution_id.
+    print(f"THREAD {execution_id}: Emitting 'dispatched' status...")
     socketio.emit('power_status', {
             'id': power_id,
             'execution_id': execution_id,
             'status': 'dispatched',
             'message': 'Dispatched successfully.'
         })
-
     return jsonify({"status": "dispatched", "execution_id": execution_id})
 
+@socketio.on('connect')
+def handle_connect():
+    """Logs when a new client connects."""
+    print(f"CLIENT CONNECTED: A new client has connected. SID: {request.sid}")
 
-@app.route('/api/cancel_power', methods=['POST'])
-def cancel_power():
+@socketio.on('disconnect')
+def handle_disconnect():
+    """Logs when a client disconnects."""
+    print(f"CLIENT DISCONNECTED: A client has disconnected. SID: {request.sid}")
+
+# @app.route('/api/cancel_power', methods=['POST'])
+# def cancel_power():
+#     """
+#     Cancels a running power and returns an HTML fragment representing the 'Idle'
+#     state, which includes the original 'Execute' button.
+#     """
+#     data = request.get_json() if request.is_json else request.form.to_dict()
+#     execution_id = data.get('execution_id')
+#
+#     power_id = None
+#     if execution_id and execution_id in RUNNING_POWERS:
+#         power_to_cancel = RUNNING_POWERS[execution_id]
+#         power_id = power_to_cancel.get('power_id')
+#         power_to_cancel['cancel_event'].set()
+#         print(f"Cancellation signal sent for execution ID: {execution_id}")
+#         return jsonify({"status": "cancellation_requested"})
+#     if not power_id:
+#         return jsonify({"error": "Invalid or unknown execution_id"}), 404
+
+@socketio.on('cancel_power')
+def handle_cancel_power_event(data):
     """
-    Cancels a running power and returns an HTML fragment representing the 'Idle'
-    state, which includes the original 'Execute' button.
+    Handles a cancellation request received over the WebSocket.
+    This is the new, correct way to handle cancellation.
     """
-    data = request.get_json() if request.is_json else request.form.to_dict()
     execution_id = data.get('execution_id')
-
-    power_id = None
-    if execution_id and execution_id in RUNNING_POWERS:
-        power_to_cancel = RUNNING_POWERS[execution_id]
-        power_id = power_to_cancel.get('power_id')
+    print(f"Received cancel request for execution ID: {execution_id}")
+    power_to_cancel = RUNNING_POWERS[execution_id]
+    if power_to_cancel and execution_id in RUNNING_POWERS:
+        # This emit is now in the correct context and will work.
+        print(f"Cancellation request received for execution ID: {execution_id}")
         power_to_cancel['cancel_event'].set()
-        print(f"Cancellation signal sent for execution ID: {execution_id}")
-        return jsonify({"status": "cancellation_requested"})
-    if not power_id:
-        return jsonify({"error": "Invalid or unknown execution_id"}), 404
+        # The return value from the handler is sent back to the client
+        # as the acknowledgment callback's argument.
+        return {'status': 'cancellation_requested', 'execution_id': execution_id}
+    else:
+        print(f"Received cancel request for unknown execution ID: {execution_id}")
+        return {'status': 'error', 'message': 'Unknown execution ID'}
 
 @app.route('/api/block_materials')
 def get_block_materials():

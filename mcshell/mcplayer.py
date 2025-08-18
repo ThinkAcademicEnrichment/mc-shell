@@ -86,8 +86,6 @@ class MCPlayer(MCClient):
             WOODEN_SWORD
         '''
         print('Waiting for a sword strike...')
-
-        # TODO: this should be cancellable too
         while True:
 
             if self.cancel_event and self.cancel_event.isSet():

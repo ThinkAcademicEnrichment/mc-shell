@@ -8,12 +8,31 @@ import { io } from "socket.io-client";
 // --- Establish the connection to your Flask-SocketIO server ---
 const socket = io(); // Use the address of your Python server
 
+// socket.on('connect', () => {
+//     console.log('Control UI connected to backend server with Socket.IO:', socket.id);
+// });
 socket.on('connect', () => {
     console.log('Control UI connected to backend server with Socket.IO:', socket.id);
+
+    // We now attach the 'power_status' listener INSIDE the 'connect' callback.
+    // This guarantees the listener is active on a live connection.
+    socket.on('power_status', (data) => {
+        // console.log('Received power status update:', data);
+        console.log('Received power status update:', JSON.stringify(data));
+
+        const widgetInstance = WIDGET_REGISTRY[data.id];
+        if (widgetInstance) {
+            // Call the widget's updateStatus method directly.
+            widgetInstance.updateStatus(data.status, data.execution_id, data.message || '');
+        } else {
+            console.warn(`Could not find a registered widget for power ID: ${data.id}`);
+        }
+    });
 });
 
-socket.on('disconnect', () => {
-    console.log('Control UI disconnected from Socket.IO server.');
+socket.on('disconnect', (reason) => {
+    // console.log('Control UI disconnected from Socket.IO server.');
+    console.log('Control UI disconnected from Socket.IO server. Reason:', reason);
 });
 
 const WIDGET_REGISTRY = {};
@@ -125,18 +144,37 @@ function powerWidget(initialPowerData) {
             });
         },
 
+        // cancelPower() {
+        //     if (!this.currentExecutionId) return;
+        //
+        //     console.log(`Sending cancellation for execution ID: ${this.currentExecutionId}`);
+        //     fetch('/api/cancel_power', {
+        //         method: 'POST',
+        //         headers: { 'Content-Type': 'application/json' },
+        //         body: JSON.stringify({ execution_id: this.currentExecutionId })
+        //     });
+        //     // The UI will update automatically when the 'cancelled' status
+        //     // is received via the WebSocket.
+        // },
+
         cancelPower() {
             if (!this.currentExecutionId) return;
-
-            console.log(`Sending cancellation for execution ID: ${this.currentExecutionId}`);
-            fetch('/api/cancel_power', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ execution_id: this.currentExecutionId })
+            console.log(`Preparing to send 'cancel_power' event.`);
+            console.log(`Is socket connected? --> ${socket.connected}`);
+            console.log(`Sending 'cancel_power' event for execution ID: ${this.currentExecutionId}`);
+            // Add a callback function as the last argument to emit().
+            // This function will be executed by the server.
+            socket.emit('cancel_power', {
+                'execution_id': this.currentExecutionId
+            }, (response) => {
+                // This callback runs when the server acknowledges the event.
+                console.log('Server acknowledged cancel request:', response);
             });
-            // The UI will update automatically when the 'cancelled' status
-            // is received via the WebSocket.
-        }
+
+            //     socket.emit('cancel_power', {
+            //         'execution_id': this.currentExecutionId
+            // });
+        },
 
     };
 }
