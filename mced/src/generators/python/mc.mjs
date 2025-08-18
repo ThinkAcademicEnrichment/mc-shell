@@ -67,7 +67,7 @@ ${indentedBlockCode}
 
     // --- Generators with Cancellation Checks ---
 
-    const CANCELLATION_CHECK_LOOP = 'if self.cancel_event and self.cancel_event.is_set(): break\n';
+    const CANCELLATION_CHECK_LOOP = 'if self.cancel_event and self.cancel_event.is_set(): break\neventlet.sleep(0)\n';
     const CANCELLATION_CHECK_FUNCTION = 'if self.cancel_event and self.cancel_event.is_set(): return\n';
 
     // -- Loops --
