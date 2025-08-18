@@ -1,4 +1,4 @@
-import pyncraft.settings as settings
+import mcshell.vendored.pyncraft.settings as settings
 
 class BColors:
     
