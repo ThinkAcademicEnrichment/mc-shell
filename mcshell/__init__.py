@@ -777,7 +777,7 @@ class MCShell(Magics):
             return
 
         power_to_cancel = RUNNING_POWERS.get(execution_id)
-        if power_to_cancel:
+        if power_to_cancel and execution_id in RUNNING_POWERS:
             print(f"Sending cancellation signal to power: {execution_id}")
             power_to_cancel['cancel_event'].set()
         else:
@@ -974,6 +974,7 @@ def load_ipython_extension(ip):
         if mcshell_instance.active_paper_server and mcshell_instance.active_paper_server.is_alive():
             mcshell_instance.pp_stop_world('') # Pass an empty line argument
         print("Cleanup complete.")
+
 
     # Register the shutdown_hook to run when the Python interpreter exits.
     atexit.register(shutdown_hook)
