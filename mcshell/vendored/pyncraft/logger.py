@@ -1,4 +1,4 @@
-import pyncraft.settings as settings
+import settings
 
 class BColors:
     
