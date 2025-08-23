@@ -208,17 +208,17 @@ class Minecraft:
 
         self.events = CmdEvents(connection)
         self.playerId = playerId
-        self.settings = settings
+        # self.settings = settings
 
     def getBlock(self, x:int, y:int, z:int) -> str:
         """Get block (x,y,z) => id:int"""
         return self.conn.sendReceive(b"world.getBlock", x, y, z)
 
     # Not supported by FruitJuice. Why not?
-    def getBlockWithData(self, x:int, y:int, z:int):
-        """Get block with data (x,y,z) => Block"""
-        ans = self.conn.sendReceive(b"world.getBlockWithData", x, y, z)
-        return Block(*list(map(int, ans.split(","))))
+    # def getBlockWithData(self, x:int, y:int, z:int):
+    #     """Get block with data (x,y,z) => Block"""
+    #     ans = self.conn.sendReceive(b"world.getBlockWithData", x, y, z)
+    #     return Block(*list(map(int, ans.split(","))))
 
     def getBlocks(self, x1:int, y1:int, z1:int, x2:int, y2:int, z2:int) -> list:
         """Get a cuboid of blocks (x0,y0,z0,x1,y1,z1) => [id:int]"""

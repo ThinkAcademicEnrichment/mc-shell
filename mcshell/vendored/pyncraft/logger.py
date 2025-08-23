@@ -33,11 +33,11 @@ class BColors:
         self.ENDC = ''
 
 def debug(*msg):
-    if(settings.SHOW_DEBUG):
+    if(SHOW_DEBUG):
         print(BColors.TGREY,msg,BColors.ENDC)
 
 def log(*msg):
-    if(settings.SHOW_Log):
+    if(SHOW_Log):
         print(BColors.LOG,msg,BColors.ENDC)
 
 def warn(*msg):
