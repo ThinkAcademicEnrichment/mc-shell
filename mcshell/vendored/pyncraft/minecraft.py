@@ -50,7 +50,7 @@ class CmdPositioner:
         
     def getDirection(self, ID) -> Vec3:
         """Get direction of the entity"""
-        s = self.conn.sendReceive(self.pkg + b".getDirection", id)
+        s = self.conn.sendReceive(self.pkg + b".getDirection", ID)
         return Vec3(*list(s.split(",")))
         
     def setDirection(self, ID, x:float, y:float, z:float) -> None:
