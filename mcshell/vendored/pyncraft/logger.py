@@ -1,4 +1,14 @@
-import mcshell.vendored.pyncraft.settings as settings
+class Speed:
+
+    FASTEST=0.0005
+    FAST=0.001
+    MIDDLE=0.005
+    SLOW=0.01
+    SLOWEST=0.05
+
+SYS_SPEED=Speed.MIDDLE
+SHOW_DEBUG=True
+SHOW_Log=True
 
 class BColors:
     
@@ -23,11 +33,12 @@ class BColors:
         self.ENDC = ''
 
 def debug(*msg):
-    if(settings.SHOW_DEBUG):
+    if(SHOW_DEBUG):
         print(BColors.TGREY,msg,BColors.ENDC)
 
 def log(*msg):
-    if(settings.SHOW_Log):
+    if(SHOW_Log):
         print(BColors.LOG,msg,BColors.ENDC)
+
 def warn(*msg):
     print(BColors.WARNING,msg,BColors.ENDC)

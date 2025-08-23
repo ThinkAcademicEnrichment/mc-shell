@@ -53,8 +53,6 @@ RUNNING_POWERS = {}
 # --- Server Control ---
 def start_app_server(server_data,mc_name,ipy_shell):
     """Starts the main Flask-SocketIO application server in a separate thread."""
-    # Attach the server_data dict to the Flask app's config object.
-    # This makes the data available anywhere we have access to the app context.
     # --- Inject the AUTHORITATIVE data into the Flask app config ---
     # The Flask server will now start with the correct, non-spoofable identity.
     app.config['MCSHELL_SERVER_DATA'] = server_data
@@ -112,7 +110,37 @@ def stop_app_server():
     app_server_thread = None
 
 
-# --- Socket.io Shutdown Handler ---
+# --- Socket.io Handlers ---
+@socketio.on('connect')
+def handle_connect():
+    """Logs when a new client connects."""
+    print(f"CLIENT CONNECTED: A new client has connected. SID: {request.sid}")
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    """Logs when a client disconnects."""
+    print(f"CLIENT DISCONNECTED: A client has disconnected. SID: {request.sid}")
+
+@socketio.on('cancel_power')
+def handle_cancel_power_event(data):
+    """
+    Handles a cancellation request received over the WebSocket.
+    This is the new, correct way to handle cancellation.
+    """
+    execution_id = data.get('execution_id')
+    print(f"Received cancel request for execution ID: {execution_id}")
+    power_to_cancel = RUNNING_POWERS[execution_id]
+    if power_to_cancel and execution_id in RUNNING_POWERS:
+        # This emit is now in the correct context and will work.
+        print(f"Cancellation request received for execution ID: {execution_id}")
+        power_to_cancel['cancel_event'].set()
+        # The return value from the handler is sent back to the client
+        # as the acknowledgment callback's argument.
+        return {'status': 'cancellation_requested', 'execution_id': execution_id}
+    else:
+        print(f"Received cancel request for unknown execution ID: {execution_id}")
+        return {'status': 'error', 'message': 'Unknown execution ID'}
+
 @socketio.on('shutdown_request')
 def handle_shutdown_request():
     """
@@ -122,8 +150,6 @@ def handle_shutdown_request():
     print("Shutdown request received via Socket.IO. Stopping server.")
     with app.app_context():
         socketio.stop() # This gracefully exits the socketio.run() loop.
-
-
 
 # --- Helpers ---
 def get_code_with_dependencies(power_repo, power_id_or_name, processed_names=None) -> dict:
@@ -163,7 +189,6 @@ def execute_power_in_thread(power_id,execution_id, python_code, player_name, ser
     """
     This is the new, shared worker function. It runs in a background thread.
     """
-    # print(f"THREAD {execution_id}: Started for player '{player_name}' with params: {runtime_params}")
     # --- Send the initial 'running' status with ALL required fields ---
     print(f"THREAD {execution_id}: Emitting 'running' status...")
     socketio.emit('power_status', {
@@ -199,7 +224,6 @@ def execute_power_in_thread(power_id,execution_id, python_code, player_name, ser
                 pass
 
             if cancel_event.is_set():
-                # print(f"Thread {execution_id}: Execution was cancelled.")
                 # --- Send the 'cancelled' status with ALL required fields ---
                 print(f"THREAD {execution_id}: Emitting 'cancelled' status...")
                 socketio.emit('power_status', {
@@ -210,7 +234,6 @@ def execute_power_in_thread(power_id,execution_id, python_code, player_name, ser
                 })
                 return
 
-        # print(f"Thread {execution_id}: Execution completed successfully.")
         # --- Send the 'finished' status with ALL required fields ---
         print(f"THREAD {execution_id}: Emitting 'finished' status...")
         socketio.emit('power_status', {
@@ -286,17 +309,9 @@ class BlocklyProgramRunner:
 {textwrap.indent(run_program_body, '        ')}
 """
 
-    print(python_code)
-
     # --- Create a unique ID for this execution instance ---
     execution_id = str(uuid.uuid4())
     cancel_event = Event()
-
-    # thread = Thread(target=execute_power_in_thread, args=(
-    #     power_id, execution_id, python_code, player_name, server_data, runtime_params, cancel_event
-    # ))
-    # thread.daemon = True
-    # thread.start()
 
     # Instead of creating a native thread, we ask Socket.IO to start
     # our function as a background task. This ensures it runs in a
@@ -313,7 +328,6 @@ class BlocklyProgramRunner:
     )
 
     RUNNING_POWERS[execution_id] = {
-        # 'thread': thread,
         'cancel_event': cancel_event,
         'power_id': power_id  # <-- STORE THE POWER ID
     }
@@ -327,55 +341,6 @@ class BlocklyProgramRunner:
             'message': 'Dispatched successfully.'
         })
     return jsonify({"status": "dispatched", "execution_id": execution_id})
-
-@socketio.on('connect')
-def handle_connect():
-    """Logs when a new client connects."""
-    print(f"CLIENT CONNECTED: A new client has connected. SID: {request.sid}")
-
-@socketio.on('disconnect')
-def handle_disconnect():
-    """Logs when a client disconnects."""
-    print(f"CLIENT DISCONNECTED: A client has disconnected. SID: {request.sid}")
-
-# @app.route('/api/cancel_power', methods=['POST'])
-# def cancel_power():
-#     """
-#     Cancels a running power and returns an HTML fragment representing the 'Idle'
-#     state, which includes the original 'Execute' button.
-#     """
-#     data = request.get_json() if request.is_json else request.form.to_dict()
-#     execution_id = data.get('execution_id')
-#
-#     power_id = None
-#     if execution_id and execution_id in RUNNING_POWERS:
-#         power_to_cancel = RUNNING_POWERS[execution_id]
-#         power_id = power_to_cancel.get('power_id')
-#         power_to_cancel['cancel_event'].set()
-#         print(f"Cancellation signal sent for execution ID: {execution_id}")
-#         return jsonify({"status": "cancellation_requested"})
-#     if not power_id:
-#         return jsonify({"error": "Invalid or unknown execution_id"}), 404
-
-@socketio.on('cancel_power')
-def handle_cancel_power_event(data):
-    """
-    Handles a cancellation request received over the WebSocket.
-    This is the new, correct way to handle cancellation.
-    """
-    execution_id = data.get('execution_id')
-    print(f"Received cancel request for execution ID: {execution_id}")
-    power_to_cancel = RUNNING_POWERS[execution_id]
-    if power_to_cancel and execution_id in RUNNING_POWERS:
-        # This emit is now in the correct context and will work.
-        print(f"Cancellation request received for execution ID: {execution_id}")
-        power_to_cancel['cancel_event'].set()
-        # The return value from the handler is sent back to the client
-        # as the acknowledgment callback's argument.
-        return {'status': 'cancellation_requested', 'execution_id': execution_id}
-    else:
-        print(f"Received cancel request for unknown execution ID: {execution_id}")
-        return {'status': 'error', 'message': 'Unknown execution ID'}
 
 @app.route('/api/block_materials')
 def get_block_materials():

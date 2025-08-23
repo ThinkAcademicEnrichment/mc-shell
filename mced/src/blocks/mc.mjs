@@ -158,6 +158,25 @@ export function defineMineCraftBlocks(Blockly) {
 
     // --- Vector Math Category ---:/
 
+    Blockly.Blocks['minecraft_vector_get_attribute'] = {
+      init: function() {
+        this.appendDummyInput()
+            .appendField("get component")
+            .appendField(new Blockly.FieldDropdown([
+                ["x", "X"],
+                ["y", "Y"],
+                ["z", "Z"]
+            ]), "COMPONENT")
+            .appendField("of");
+        this.appendValueInput("VECTOR")
+            .setCheck("3DVector");
+        this.setOutput(true, "Number");
+        this.setColour(180);
+        this.setTooltip("Gets the x, y, or z component of a vector.");
+        this.setInputsInline(true);
+      }
+    };
+
     // Block 1: For operations that take two VECTORS and return a VECTOR (Add, Subtract, Cross Product)
     Blockly.Blocks['minecraft_vector_binary_op'] = {
       init: function() {

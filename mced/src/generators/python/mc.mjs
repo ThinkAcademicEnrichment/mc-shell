@@ -256,6 +256,15 @@ ${indentedBlockCode}
         return [code, generator.ORDER_FUNCTION_CALL];
     };
 
+    pythonGenerator.forBlock['minecraft_vector_get_attribute'] = function(block, generator) {
+        const vector = generator.valueToCode(block, 'VECTOR', generator.ORDER_ATOMIC) || 'Vec3(0, 0, 0)';
+        const component = block.getFieldValue('COMPONENT').toLowerCase();
+
+        const code = `${vector}.${component}`;
+
+        return [code, generator.ORDER_MEMBER];
+    };
+
     pythonGenerator.forBlock['minecraft_vector_delta'] = function (block,generator) {
         const xValue = block.getFieldValue('X');
         const yValue = block.getFieldValue('Y');
