@@ -54,6 +54,10 @@ jobs:
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
 
+      # Re-run the build to ensure the /dist directory exists before uploading to the release.
+      - name: Rebuild package for release asset
+        run: poetry build
+        
       - name: Upload wheel as a release asset
         uses: actions/upload-release-asset@v1
         with:
