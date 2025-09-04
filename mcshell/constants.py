@@ -17,7 +17,7 @@ import asyncio
 import requests
 import shutil
 import pathlib
-import urlpath
+import yarl
 import zipfile
 import io
 import pickle
@@ -66,18 +66,18 @@ MC_DATA_DIR = pathlib.Path(__file__).parent.joinpath('data')
 
 FJ_JAR_PATH = MC_DATA_DIR.joinpath('FruitJuice-0.4.0.jar')
 
-MC_DOC_URL = urlpath.URL("https://minecraft.fandom.com/wiki/Commands")
+MC_DOC_URL = yarl.URL("https://minecraft.fandom.com/wiki/Commands")
 MC_DOC_DIR = MC_DATA_DIR.joinpath('doc')
 MC_DOC_PATH = MC_DOC_DIR.joinpath('command_docs.pkl')
 
-MC_MATERIAL_URL = urlpath.URL('https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Material.html')
+MC_MATERIAL_URL = yarl.URL('https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Material.html')
 MC_MATERIALS_PATH = MC_DATA_DIR.joinpath('materials/materials.pkl')
 MC_COLOURABLE_MATERIALS_DATA_PATH = MC_DATA_DIR.joinpath('materials/colourables.json')
 MC_PICKER_MATERIALS_DATA_PATH = MC_DATA_DIR.joinpath('materials/pickers.json')
 MC_SINGLE_MATERIALS_DATA_PATH = MC_DATA_DIR.joinpath('materials/singles.json')
 
 # here is the source of truth for Entity IDs like in pyncraft.entity
-MC_ENTITY_TYPE_URL = urlpath.URL("https://raw.githubusercontent.com/PaperMC/Paper/refs/heads/main/paper-api/src/main/java/org/bukkit/entity/EntityType.java")
+MC_ENTITY_TYPE_URL = yarl.URL("https://raw.githubusercontent.com/PaperMC/Paper/refs/heads/main/paper-api/src/main/java/org/bukkit/entity/EntityType.java")
 MC_ENTITY_ID_MAP_PATH = MC_DATA_DIR.joinpath('entities/entity_id_map.pkl')
 MC_ENTITY_PICKERS_PATH = MC_DATA_DIR.joinpath('entities/pickers.json')
 
