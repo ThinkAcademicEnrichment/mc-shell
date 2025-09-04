@@ -67,10 +67,3 @@ jobs:
         env:
           # The GITHUB_TOKEN is automatically provided by GitHub
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Publish to PyPI and GitHub
-        # This composite action should handle the actual publishing
-        uses: ./.github/actions/publish-package
-        with:
-          pypa_token: ${{ secrets.PYPI_API_TOKEN }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
