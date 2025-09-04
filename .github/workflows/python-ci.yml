@@ -42,8 +42,7 @@ jobs:
       - name: Vendor pyncraft library
         run: |
           git clone https://github.com/d4g33z/pyncraft.git ../pyncraft
-          # Ensure the target directory exists
-          mkdir -p ./mcshell/vendored/
+          mkdir -p ./mcshell/vendored
           cp -R ../pyncraft/pyncraft ./mcshell/vendored/pyncraft
 
       - name: Build frontend application
@@ -52,3 +51,6 @@ jobs:
 
       - name: Run tests
         run: poetry run python -m unittest discover
+
+      - name: Verify package build
+        run: poetry build

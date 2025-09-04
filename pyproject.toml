@@ -8,7 +8,14 @@ packages = [{include = "mcshell"}]
 
 # This section explicitly includes all necessary data files,
 # replacing the need for the custom package_files function in setup.py.
-include = ["mcshell/data/**/*","mcshell/data/app/**/*"]
+include = [
+    "mcshell/data/app/**/*",
+    "mcshell/vendored/**/*"
+]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.dependencies]
 python = "^3.9"
