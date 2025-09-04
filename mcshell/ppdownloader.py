@@ -27,7 +27,7 @@ class PaperDownloader:
         # The download name is constructed from the API response.
         jar_name = build['downloads']['server:default']['name']
         jar_path = self.download_dir / jar_name
-        jar_url = urlpath.URL(build['downloads']['server:default']['url'])
+        jar_url = yarl.URL(build['downloads']['server:default']['url'])
 
         if jar_path.exists():
             print(f"Paper JAR for version {mc_version} already exists at: {jar_path}")
@@ -62,7 +62,7 @@ class PaperDownloader:
             print(f"An unexpected error occurred while fetching build info: {e}")
             return None
 
-    def _download_jar(self, download_url:urlpath.URL, jar_path:pathlib.Path) -> Optional[Path]:
+    def _download_jar(self, download_url:yarl.URL, jar_path:pathlib.Path) -> Optional[Path]:
         """
         Downloads the specified JAR file.
         Corresponds to the GET /v3/projects/paper/versions/{version}/builds/{build}/download endpoint.

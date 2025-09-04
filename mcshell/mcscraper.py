@@ -32,7 +32,7 @@ def make_docs():
         _parent = _code_element.find_parent()
         _doc_line = _parent.find_next_siblings()[0].text.strip()
         try:
-            _doc_url_stub = urlpath.URL(_code_element.find_all('a')[0].attrs['href'])
+            _doc_url_stub = yarl.URL(_code_element.find_all('a')[0].attrs['href'])
             _doc_url = MC_DOC_URL.joinpath(_doc_url_stub)
         except IndexError:
             continue
