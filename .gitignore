@@ -34,4 +34,11 @@ mcshell/data/entities/blocks/entities.mjs
 mcshell/data/entities/python/entities.mjs
 mcshell/data/entities/toolbox.xml
 
+# Ignore the bundled web application artifacts
+/mcshell/data/app/
 
+# Ignore the vendored pyncraft code
+/mcshell/vendored/pyncraft/
+
+# Ignore Python build artifacts
+/dist/
