@@ -1,30 +1,22 @@
 # .github/workflows/publish-to-pypi.yml
+name: Publish Package to PyPI and GitHub
 
-name: Publish Python Package to PyPI
-
-# --- Triggers ---
-# This workflow runs ONLY when you create a new release on GitHub.
 on:
   release:
     types: [published]
 
-# --- Jobs ---
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-      # Step 1: Check out the repository code at the specific tag of the release.
       - name: Check out repository
         uses: actions/checkout@v4
 
-      # Step 2: Set up Python.
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.9' # Use your project's base Python version
+          python-version: '3.9'
 
-      # Step 3: Set up Node.js for the frontend build.
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -32,30 +24,38 @@ jobs:
           cache: 'npm'
           cache-dependency-path: mced/package-lock.json
 
-      # Step 4: Install Poetry.
       - name: Install Poetry
         uses: snok/install-poetry@v1
 
-      # Step 5: Install Python and Node.js dependencies.
-      - name: Install Python dependencies
-        run: poetry install --no-interaction
-      - name: Install npm dependencies
-        working-directory: ./mced
-        run: npm ci
+      - name: Install all dependencies
+        run: |
+          poetry install --no-interaction
+          npm --prefix mced ci
 
-      # Step 6: Build the complete application (frontend and Python package).
-      # This runs your package.json 'build' script, which creates the mcshell/data/app folder.
-      - name: Build frontend application
+      - name: Vendor pyncraft library
+        run: |
+          git clone https://github.com/d4g33z/pyncraft.git ../pyncraft
+          rm -rf ./mcshell/vendored/pyncraft
+          cp -R ../pyncraft/pyncraft ./mcshell/vendored/pyncraft
+
+      - name: Build the complete application
         working-directory: ./mced
         run: npm run build
-      # This runs poetry's build command to create the .whl and .tar.gz files in a new /dist folder.
-      - name: Build Python package
+
+      - name: Build the Python package
         run: poetry build
 
-      # Step 7: Publish the package to PyPI.
-      - name: Publish package to PyPI
-        # This uses a pre-made action for publishing to PyPI.
+      - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          # This is the secret API token you created.
           password: ${{ secrets.PYPI_API_TOKEN }}
+
+      - name: Upload wheel as a release asset
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: dist/*.whl
+          asset_name: mc_shell-${{ github.ref_name }}.whl
+          asset_content_type: application/zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
