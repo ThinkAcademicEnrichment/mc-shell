@@ -1,5 +1,3 @@
-import xml.etree.ElementTree as ET
-
 from mcshell.constants import *
 
 def make_picker_group(materials,reg_exp):
@@ -262,3 +260,157 @@ def build_final_toolbox():
 
     except Exception as e:
         print(f"Error writing final toolbox file: {e}")
+
+# --- Block API Generation
+
+# Maps Python type annotations to Blockly's .setCheck() types
+TYPE_MAP = {
+    float: "Number",
+    int: "Number",
+    str: "String",
+    bool: "Boolean",
+    'Vec3': "3DVector",
+    'Matrix3': "3DMatrix",
+    'Block': "Block"
+}
+
+def generate_block_definition(block_name, sig, meta):
+    """Generates the Blockly.Blocks[...] JavaScript, including shadow calls."""
+
+    inputs_js = []
+    # --- NEW: A list to hold the shadow configuration calls ---
+    shadow_calls_js = []
+
+    params = list(sig.parameters.values())[1:] # Skip 'self'
+
+    for param in params:
+        param_meta = meta['params'].get(param.name, {})
+        label = param_meta.get('label', param.name.replace('_', ' ').title())
+        check_type = TYPE_MAP.get(param.annotation)
+        js_check_str = f'"{check_type}"' if check_type else "null"
+
+        # --- Generate the appendValueInput(...) part ---
+        js_line = f"""this.appendValueInput("{param.name.upper()}")
+                .setCheck({js_check_str})
+                .setAlign('RIGHT')
+                .appendField("{label}");"""
+        inputs_js.append(js_line)
+
+        # --- NEW: Generate the configureShadow(...) call for this parameter ---
+        shadow_calls_js.append(f'MCED.BlocklyUtils.configureShadow(this, "{param.name.upper()}");')
+
+    inputs_str = "\n        ".join(inputs_js)
+    # --- NEW: Join all the shadow calls into a single string with proper indentation ---
+    shadow_calls_str = "\n        ".join(shadow_calls_js)
+    block_label = meta['label']
+
+    return f"""
+Blockly.Blocks['{block_name}'] = {{
+    init: function() {{
+        this.appendDummyInput().appendField("{block_label}");
+        {inputs_str}
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(65);
+        this.setTooltip("Creates an oriented digital cube of voxels.");
+        this.setInputsInline(false);
+
+        {shadow_calls_str}
+    }}
+}};"""
+
+
+def generate_defaults_config(block_name, sig, meta):
+    """Generates the MCED.Defaults.values[...] JavaScript."""
+
+    defaults_js = []
+    params = list(sig.parameters.values())[1:] # Skip 'self'
+
+    for param in params:
+        param_meta = meta['params'].get(param.name, {})
+        shadow = param_meta.get('shadow', 'null')
+
+        # Check if the shadow content is a variable name or a literal string
+        if shadow.startswith('<'):
+             js_line = f'{param.name.upper()}: {{ shadow: \'{shadow}\' }}'
+        else:
+             js_line = f'{param.name.upper()}: {{ shadow: {shadow} }}'
+        defaults_js.append(js_line)
+
+    defaults_str = ",\n        ".join(defaults_js)
+
+    return f"""
+MCED.Defaults.values['{block_name}'] = {{
+        {defaults_str}
+    }};"""
+
+def generate_python_generator(block_name, sig, meta):
+    """Generates the pythonGenerator.forBlock[...] JavaScript."""
+
+    value_declarations = []
+    params = list(sig.parameters.values())[1:] # Skip 'self'
+
+    for param in params:
+        default_value = "null"
+        if param.annotation in ['Vec3', 'Matrix3']:
+            default_value = "Matrix3.identity()" if param.annotation == 'Matrix3' else "Vec3(0,0,0)"
+        elif isinstance(param.default, str):
+            default_value = f"'{param.default}'"
+        elif param.default is not inspect.Parameter.empty:
+            default_value = str(param.default)
+
+        js_line = f"const {param.name} = generator.valueToCode(block, '{param.name.upper()}', generator.ORDER_ATOMIC) || {default_value};"
+        value_declarations.append(js_line)
+
+    value_declarations_str = "\n        ".join(value_declarations)
+    action_method_name = block_name.replace("minecraft_action_", "")
+    arg_list = [f"{p.name}=${{{p.name}}}" for p in params]
+    python_call = f"`self.action_implementer.{action_method_name}({', '.join(arg_list)})\\n`"
+
+    return f"""
+pythonGenerator.forBlock['{block_name}'] = function(block, generator) {{
+        {value_declarations_str}
+        return {python_call};
+    }};"""
+
+def generate_all_block_code(actions_class):
+    """
+    Main function to generate all JS code for decorated methods
+    from a given class.
+    """
+    full_js_output = []
+    for name, method in inspect.getmembers(actions_class, inspect.isfunction):
+
+        # --- NEW: UNWRAP THE METHOD ---
+        # This peels back any wrappers to get to our original decorated function.
+        unwrapped_method = inspect.unwrap(method)
+
+        # --- MODIFIED: Check for the attribute on the UNWRAPPED method ---
+        if not hasattr(unwrapped_method, '_mced_block_meta'):
+            continue
+
+        print(f"⚙️  Generating code for method: {name}")
+
+        # --- MODIFIED: Use the UNWRAPPED method for inspection ---
+        sig = inspect.signature(unwrapped_method)
+        meta = unwrapped_method._mced_block_meta
+        block_name = f"minecraft_action_{name}"
+
+        # Pass the unwrapped signature and meta to the helper functions
+        full_js_output.append(generate_block_definition(block_name, sig, meta))
+        full_js_output.append(generate_defaults_config(block_name, sig, meta))
+        full_js_output.append(generate_python_generator(block_name, sig, meta))
+
+    return "\n\n".join(full_js_output)
+
+# --- Main execution ---
+# if __name__ == "__main__":
+#     # Now, we pass the class we want to process into the function
+#     generated_code = generate_all_block_code(MCActions)
+#
+#     print("\n--- 🚀 Generated JavaScript ---\n")
+#     print(generated_code)
+#
+#     # with open("generated_blocks.mjs", "w") as f:
+#     #     f.write(generated_code)
+#     # print("\n✅  Code successfully written to generated_blocks.js")
