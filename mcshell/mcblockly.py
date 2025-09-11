@@ -197,6 +197,267 @@ def process_entities(filepath="entity-list.txt"):
     except Exception as e:
         print(f"An error occurred: {e}")
 
+import json
+from pathlib import Path
+
+def _generate_blockly_name(id_string):
+    """Helper to format names like HOSTILE_MOBS -> 'Hostile Mobs'."""
+    if not id_string or not isinstance(id_string, str):
+        return ''
+    return id_string.replace('_', ' ').title()
+
+def generate_entity_blocks():
+    """
+    Generates Blockly definitions, Python generators, and a toolbox.xml file
+    for Minecraft entities, correctly processing the pickers.json format.
+    """
+    try:
+        # --- 1. Set up paths ---
+        entities_data_dir = MC_DATA_DIR / 'entities'
+        pickers_path = entities_data_dir / 'pickers.json'
+
+        output_blocks_dir = MC_APP_SRC_DIR / 'blocks'
+        output_python_dir = MC_APP_SRC_DIR / 'generators' / 'python'
+
+        # --- 2. Load data ---
+        with open(pickers_path, 'r', encoding='utf-8') as f:
+            pickers_data = json.load(f)
+
+        # --- 3. Initialize outputs ---
+        block_defs_list = []
+        python_gen_list = []
+        toolbox_xml_categories = []
+
+        # Default values, since they aren't in the new pickers.json
+        default_colour = "#5b5ba5"
+
+        # --- 4. Process each picker and generate code ---
+        # CORRECTED: Iterate over the dictionary items directly.
+        for name, entities in pickers_data.items():
+            blockly_name = _generate_blockly_name(name)
+            block_type = f"minecraft_entity_picker_{name.lower()}"
+            tooltip = f"Select a {blockly_name.lower()} entity."
+
+            # a. Generate Toolbox XML category.
+            # In the original JS, it seems it created individual blocks, not categories.
+            # Let's create a single category for entities with all picker blocks inside.
+            toolbox_xml_categories.append(f'  <block type="{block_type}"></block>')
+
+            # b. Generate the picker block with the dropdown.
+            dropdown_options = ',\n'.join([
+                f'          ["{_generate_blockly_name(entity)}", "{entity}"]'
+                for entity in entities
+            ])
+
+            block_defs_list.append(f"""
+Blockly.Blocks['{block_type}'] = {{
+  init: function() {{
+    this.appendDummyInput()
+        .appendField(new Blockly.FieldDropdown([
+{dropdown_options}
+        ]), "ENTITY");
+    this.setOutput(true, "Entity");
+    this.setColour({default_colour});
+    this.setTooltip("{tooltip}");
+    this.setHelpUrl("");
+  }}
+}};""")
+
+            python_gen_list.append(f"""
+pythonGenerator.forBlock['{block_type}'] = function(block, generator) {{
+  const dropdown_entity = block.getFieldValue('ENTITY');
+  const code = `'${{dropdown_entity}}'`;
+  return [code, generator.ORDER_ATOMIC];
+}};""")
+
+        # --- 5. Assemble final output strings ---
+        block_defs_output = "import * as Blockly from 'blockly/core';\n\n" + \
+                            "export function defineMinecraftEntityBlocks(Blockly) {\n" + \
+                            "\n".join(block_defs_list) + "\n}\n"
+
+        python_gen_output = "import { pythonGenerator } from 'blockly/python';\n\n" + \
+                            "export function defineMinecraftEntityGenerators(pythonGenerator) {\n" + \
+                            "\n".join(python_gen_list) + "\n}\n"
+
+        _newline = "\n"
+        # Create a single "Entities" category in the toolbox
+        toolbox_xml_output = f"""<category name="Entities" colour="{default_colour}">
+{
+_newline.join(toolbox_xml_categories)
+}
+</category>"""
+
+        # --- 6. Write to files ---
+        output_blocks_dir.mkdir(parents=True, exist_ok=True)
+        output_python_dir.mkdir(parents=True, exist_ok=True)
+
+        (output_blocks_dir / 'entities.mjs').write_text(block_defs_output, 'utf-8')
+        print("Successfully generated blocks/entities.mjs")
+
+        (output_python_dir / 'entities.mjs').write_text(python_gen_output, 'utf-8')
+        print("Successfully generated python/entities.mjs")
+
+        (entities_data_dir / 'toolbox.xml').write_text(toolbox_xml_output, 'utf-8')
+        print("Successfully generated data/entities/toolbox.xml")
+
+    except Exception as e:
+        print(f"Failed to generate entity Blockly files: {e}")
+        raise
+
+def generate_material_blocks():
+    """
+    A precise Python translation of the original generate_material_blocks.mjs.
+    This version correctly generates the toolbox.xml with a single category
+    and proper shadow blocks.
+    """
+    try:
+        # --- 1. Set up paths ---
+        materials_data_dir = MC_DATA_DIR / 'materials'
+
+        colourables_path = materials_data_dir / 'colourables.json'
+        pickers_path = materials_data_dir / 'pickers.json'
+        singles_path = materials_data_dir / 'singles.json'
+
+        output_blocks_dir = MC_APP_SRC_DIR / 'blocks'
+        output_python_dir = MC_APP_SRC_DIR / 'generators' / 'python'
+
+        # --- 2. Load all data files ---
+        with open(colourables_path, 'r', encoding='utf-8') as f:
+            colourables_data = json.load(f)
+        with open(pickers_path, 'r', encoding='utf-8') as f:
+            pickers_data = json.load(f)
+        with open(singles_path, 'r', encoding='utf-8') as f:
+            singles_data = json.load(f)
+
+        # --- 3. Initialize outputs ---
+        block_defs_list = []
+        python_gen_list = []
+        toolbox_xml_blocks = [] # List to hold all <block> and <sep> entries
+        default_colour = 160
+        picker_colour = 180
+        misc_colour = 200
+
+        # --- 4. Process data and generate code ---
+
+        # A. Process Colourable Blocks (e.g., "BANNER")
+        for name in colourables_data:
+            block_type = f"minecraft_material_{name.lower()}"
+            tooltip = f"A {_generate_blockly_name(name)} block that can be colored."
+
+            # CORRECTED TOOLBOX LOGIC: Add a block with a shadow definition
+            toolbox_xml_blocks.append(f"""    <block type="{block_type}">
+      <value name="COLOUR">
+        <shadow type="minecraft_coloured_block_picker">
+          <field name="MINECRAFT_COLOUR_ID">WHITE</field>
+        </shadow>
+      </value>
+    </block>""")
+
+            block_defs_list.append(f"""
+Blockly.Blocks['{block_type}'] = {{
+  init: function() {{
+    this.appendValueInput("COLOUR")
+        .setCheck("MinecraftColour")
+        .setAlign(Blockly.ALIGN_RIGHT)
+        .appendField("{name} with color");
+    this.setOutput(true, "Block");
+    this.setColour({default_colour});
+    this.setTooltip("{tooltip}");
+    MCED.Defaults.values['{block_type}'] = {{
+      COLOUR: {{ shadow: '<shadow type="minecraft_coloured_block_picker"><field name="MINECRAFT_COLOUR_ID">WHITE</field></shadow>' }}
+    }};
+    MCED.BlocklyUtils.configureShadow(this, "COLOUR");
+  }}
+}};""")
+            python_gen_list.append(f"""
+pythonGenerator.forBlock['{block_type}'] = function(block, generator) {{
+  const colour = generator.valueToCode(block, 'COLOUR', generator.ORDER_ATOMIC) || "'WHITE'";
+  const code = `_combine_colour_and_material(${'{colour}'}, '{name}')`;
+  return [code, generator.ORDER_ATOMIC];
+}};""")
+
+        # B. Process Picker Blocks (e.g., "walls")
+        for name, materials in pickers_data.items():
+            block_type = f"minecraft_picker_{name.lower()}"
+            toolbox_xml_blocks.append(f'    <block type="{block_type}"></block>')
+            dropdown_options = ',\n'.join([f'                ["{_generate_blockly_name(mat)}", "{mat}"]' for mat in materials])
+            block_defs_list.append(f"""
+Blockly.Blocks['{block_type}'] = {{
+    init: function() {{
+        this.appendDummyInput()
+            .appendField("{_generate_blockly_name(name)}")
+            .appendField(new Blockly.FieldDropdown([
+{dropdown_options}
+            ]), "MATERIAL_ID");
+        this.setOutput(true, "Block");
+        this.setColour({picker_colour});
+        this.setTooltip("Select a {_generate_blockly_name(name)} material.");
+    }}
+}};""")
+            python_gen_list.append(f"""
+pythonGenerator.forBlock['{block_type}'] = function(block, generator) {{
+  const material_id = block.getFieldValue('MATERIAL_ID');
+  return [`'${{material_id}}'`, generator.ORDER_ATOMIC];
+}};""")
+
+        # C. Process Single Blocks into one "Miscellaneous" Picker
+        if singles_data:
+            block_type = "minecraft_picker_miscellaneous"
+            toolbox_xml_blocks.append('    <sep></sep>')
+            toolbox_xml_blocks.append(f'    <block type="{block_type}"></block>')
+            dropdown_options = ',\n'.join([f'                ["{_generate_blockly_name(mat)}", "{mat}"]' for mat in singles_data])
+            block_defs_list.append(f"""
+Blockly.Blocks['{block_type}'] = {{
+    init: function() {{
+        this.appendDummyInput()
+            .appendField("Misc. Block/Item")
+            .appendField(new Blockly.FieldDropdown([
+{dropdown_options}
+            ]), "MATERIAL_ID");
+        this.setOutput(true, "Block");
+        this.setColour({misc_colour});
+        this.setTooltip("Select a miscellaneous Minecraft block or item.");
+    }}
+}};""")
+            python_gen_list.append(f"""
+pythonGenerator.forBlock['{block_type}'] = function(block, generator) {{
+  const material_id = block.getFieldValue('MATERIAL_ID');
+  return [`'${{material_id}}'`, generator.ORDER_ATOMIC];
+}};""")
+
+        # --- 5. Assemble and write final output files ---
+        block_defs_output = "import * as Blockly from 'blockly/core';\n\n" + \
+                            "export function defineMinecraftMaterialBlocks(Blockly) {\n" + \
+                            "\n".join(block_defs_list) + "\n}\n"
+        python_helper = """
+function _combine_colour_and_material(colour, material) {
+    const cleanColour = colour.replace(/['"]/g, '');
+    return `'${cleanColour}_${material}'`;
+}"""
+        python_gen_output = "import { pythonGenerator } from 'blockly/python';\n" + \
+                            python_helper + \
+                            "\n\nexport function defineMinecraftMaterialGenerators(pythonGenerator) {\n" + \
+                            "\n".join(python_gen_list) + "\n}\n"
+
+        # CORRECTED TOOLBOX ASSEMBLY: Create a single category containing all blocks
+        toolbox_xml_output = f"""<category name="Materials" colour="#777777">
+{''.join(toolbox_xml_blocks)}
+</category>"""
+
+        # --- 6. Write to files ---
+        output_blocks_dir.mkdir(parents=True, exist_ok=True)
+        output_python_dir.mkdir(parents=True, exist_ok=True)
+
+        (output_blocks_dir / 'materials.mjs').write_text(block_defs_output, 'utf-8')
+        print("Successfully generated blocks/materials.mjs")
+        (output_python_dir / 'materials.mjs').write_text(python_gen_output, 'utf-8')
+        print("Successfully generated python/materials.mjs")
+        (materials_data_dir / 'toolbox.xml').write_text(toolbox_xml_output, 'utf-8')
+        print("Successfully generated data/materials/toolbox.xml")
+
+    except Exception as e:
+        print(f"Failed to generate material Blockly files: {e}")
+        raise
 
 def build_final_toolbox():
     """
