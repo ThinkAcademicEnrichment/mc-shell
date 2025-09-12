@@ -550,9 +550,9 @@ def generate_digital_tetrahedron_coordinates(vertices: list[tuple[float,float,fl
                         else: tetra_coords.add((x, y, z))
     return sorted(list(tetra_coords))
 
-def generate_digital_sphere_coordinates(center: tuple[float,float,float],radius_int: int, is_solid=False):
+def generate_digital_sphere_coordinates(center: tuple[float,float,float], radius: int, is_solid=False):
     center_x,center_y,center_z = int(round(center[0])), int(round(center[1])), int(round(center[2]))
-    radius = int(round(radius_int)) # Ensure radius is integer for range iteration
+    radius = int(round(radius)) # Ensure radius is integer for range iteration
     sphere_coords = set()
     for z_offset in range(-radius, radius + 1):
         z_coord = center_z + z_offset
