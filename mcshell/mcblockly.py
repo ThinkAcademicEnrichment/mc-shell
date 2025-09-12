@@ -622,6 +622,7 @@ def generate_api_block_code(actions_class):
     Main function to generate all JS code for decorated methods.
     Now generates only the block definition and the python generator.
     """
+    _block_defs = []
     for name, method in inspect.getmembers(actions_class, inspect.isfunction):
         unwrapped_method = inspect.unwrap(method)
         if not hasattr(unwrapped_method, '_mced_block_meta'):
@@ -633,8 +634,9 @@ def generate_api_block_code(actions_class):
         block_name = f"minecraft_action_{name}"
 
         # --- MODIFIED: No longer calls generate_defaults_config ---
-        return generate_block_definition(block_name, sig, meta),generate_python_generator(block_name, sig, meta)
+        _block_defs.append((generate_block_definition(block_name, sig, meta),generate_python_generator(block_name, sig, meta)))
 
+    return _block_defs
 
 def generate_mcactions_blocks():
     output_blocks_dir = MC_APP_SRC_DIR / 'blocks'
@@ -642,18 +644,20 @@ def generate_mcactions_blocks():
 
     from mcshell.mcactions import MCActions
     for _api_class in MCActions.__bases__:
-        _block_defs, _python_gens = generate_api_block_code(_api_class)
-
-        _block_output = 'import { MCED } from "../lib/constants.mjs";\n\n' + \
-            f"export function define{_api_class.__name__}Blocks(Blockly) " + "{\n"
         _block_output_path = output_blocks_dir / f'{_api_class.__name__}.mjs'
-        _block_output_path.write_text(_block_output + _block_defs + "\n}", 'utf-8')
-        print(f"Successfully generated {_block_output_path}")
-
-        _gens_output = 'import { MCED } from "../../lib/constants.mjs";\n\n' + \
-            f"\n\nexport function define{_api_class.__name__}Generators(pythonGenerator) " + "{\n"
         _gens_output_path = output_python_dir / f'{_api_class.__name__}.mjs'
-        _gens_output_path.write_text(_gens_output + _python_gens + "\n}", 'utf-8')
+        _block_output = 'import { MCED } from "../lib/constants.mjs";\n\n' + \
+                        f"export function define{_api_class.__name__}Blocks(Blockly) " + "{\n"
+        _gens_output = 'import { MCED } from "../../lib/constants.mjs";\n\n' + \
+                       f"\n\nexport function define{_api_class.__name__}Generators(pythonGenerator) " + "{\n"
+
+        for _block_defs,_python_gens in generate_api_block_code(_api_class):
+            _block_output += _block_defs + "\n"
+            _gens_output += _python_gens + "\n"
+
+        _block_output_path.write_text(_block_output + "\n}", 'utf-8')
+        print(f"Successfully generated {_block_output_path}")
+        _gens_output_path.write_text(_gens_output + "\n}", 'utf-8')
         print(f"Successfully generated {_gens_output_path}" )
 
 # --- Main execution ---
