@@ -269,6 +269,7 @@ class WorldActions(MCActionBase):
 
     @mced_block(
         label="Get Block",
+        output_type="Block",
         position={'label': 'At Position', 'shadow': 'VECTOR_3D_SHADOW'}
     )
     def get_block(self, position: 'Vec3') -> 'Block':
@@ -281,6 +282,7 @@ class WorldActions(MCActionBase):
 
     @mced_block(
         label="Get Height",
+        output_type="Number",
         position={'label': 'At Position (X,Z)', 'shadow': 'VECTOR_3D_SHADOW'}
     )
     def get_height(self, position: 'Vec3') -> int:
