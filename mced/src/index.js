@@ -7,15 +7,20 @@ import 'prismjs/themes/prism-okaidia.css';
 
 import * as Blockly from 'blockly';
 import { pythonGenerator } from 'blockly/python';
+import { defineMineCraftConstants, MCED} from "./lib/constants.mjs";
 import { defineMineCraftBlocks } from "./blocks/mc.mjs";
 import { defineMineCraftMaterialBlocks } from "./blocks/materials.mjs";
-import { defineMinecraftEntityBlocks } from "./blocks/entities.mjs";
-import {defineMineCraftConstants, MCED} from "./lib/constants.mjs";
+import { defineMineCraftEntityBlocks } from "./blocks/entities.mjs";
 import { defineMineCraftBlocklyUtils } from "./lib/utils.mjs";
-import { installMCGenerator } from "./generators/python/mc.mjs"
-import { installMCMaterialsGenerator } from "./generators/python/materials.mjs";
-import { installMCEntityGenerator } from "./generators/python/entities.mjs";
+import { defineMineCraftGenerators } from "./generators/python/mc.mjs"
+import { defineMineCraftMaterialGenerators } from "./generators/python/materials.mjs";
+import { defineMineCraftEntityGenerators } from "./generators/python/entities.mjs";
 import { initializeHtmxListeners } from './lib/htmx_listeners.js';
+
+import { defineDigitalGeometryGenerators } from "./generators/python/DigitalGeometry.mjs"
+import { defineDigitalGeometryBlocks } from "./blocks/DigitalGeometry.mjs"
+import { defineWorldActionsGenerators } from "./generators/python/WorldActions.mjs"
+import { defineWorldActionsBlocks } from "./blocks/WorldActions.mjs"
 
 // --- Global Setup ---
 
@@ -441,21 +446,31 @@ async function init() {
             alert('Network error. Could not save power.');
         }
     }
-    // --- 1. Define all custom elements in the correct order ---
+    // --- Define all custom elements in the correct order ---
     // Utilities and custom fields must be defined first.
     defineMineCraftBlocklyUtils(Blockly);
     // Constants populates Blockly.Msg and MCED.Defaults used by other blocks.
     defineMineCraftConstants(Blockly);
+
     // Now define all block types.
     defineMineCraftBlocks(Blockly);
     defineMineCraftMaterialBlocks(Blockly);
-    defineMinecraftEntityBlocks(Blockly);
+    defineMineCraftEntityBlocks(Blockly);
+    defineDigitalGeometryBlocks(Blockly);
+    defineWorldActionsBlocks(Blockly);
 
-    // --- 2. Install all Python generators ---
+    // --- Install all Python generators ---
+    defineMineCraftGenerators(pythonGenerator);
+    defineMineCraftMaterialGenerators(pythonGenerator);
+    defineMineCraftEntityGenerators(pythonGenerator);
+    defineDigitalGeometryGenerators(pythonGenerator);
+    defineWorldActionsGenerators(pythonGenerator);
 
-    installMCGenerator(pythonGenerator);
-    installMCMaterialsGenerator(pythonGenerator);
-    installMCEntityGenerator(pythonGenerator);
+
+
+    // installMCGenerator(pythonGenerator);
+    // installMCMaterialsGenerator(pythonGenerator);
+    // installMCEntityGenerator(pythonGenerator);
 
     // --- Determine the initial workspace to load ---
     // It will prioritize localStorage, then workspace.json, then a blank slate.

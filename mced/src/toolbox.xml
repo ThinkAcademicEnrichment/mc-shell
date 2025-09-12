@@ -421,6 +421,8 @@
     <block type="minecraft_action_create_digital_cube" />
     <block type="minecraft_action_create_digital_plane" />
     <block type="minecraft_action_create_digital_disc" />
+    <block type="minecraft_action_create_digital_sphere" />
+    <block type="minecraft_action_create_digital_tetrahedron" />
   </category>
   <sep />
   <category name="Materials" colour="#777777">
@@ -508,7 +510,6 @@
         </shadow>
       </value>
     </block>
-    <sep />
     <block type="minecraft_picker_doors" />
     <block type="minecraft_picker_fences" />
     <block type="minecraft_picker_gates" />
@@ -528,15 +529,16 @@
     <block type="minecraft_picker_miscellaneous" />
   </category>
   <category name="Entities" colour="#5b5ba5">
-    <block type="minecraft_picker_entity_hostile_mobs" />
-    <block type="minecraft_picker_entity_minecarts" />
-    <block type="minecraft_picker_entity_miscellaneous_entities" />
-    <block type="minecraft_picker_entity_passive_mobs" />
-    <block type="minecraft_picker_entity_projectiles" />
-    <block type="minecraft_picker_entity_utility_and_special" />
+    <block type="minecraft_entity_picker_hostile_mobs" />
+    <block type="minecraft_entity_picker_minecarts" />
+    <block type="minecraft_entity_picker_miscellaneous_entities" />
+    <block type="minecraft_entity_picker_passive_mobs" />
+    <block type="minecraft_entity_picker_projectiles" />
+    <block type="minecraft_entity_picker_utility_and_special" />
   </category>
   <category name="World Actions" colour="#4C97FF">
     <block type="minecraft_action_set_block" />
+    <block type="minecraft_action_set_blocks" />
     <block type="minecraft_action_spawn_entity" />
     <block type="minecraft_action_get_block" />
     <block type="minecraft_action_get_height" />
