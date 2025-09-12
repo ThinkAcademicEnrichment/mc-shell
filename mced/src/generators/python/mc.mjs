@@ -1,6 +1,6 @@
 import {MCED} from "../../lib/constants.mjs";
 
-export function installMCGenerator(pythonGenerator) {
+export function defineMineCraftGenerators(pythonGenerator) {
     // Set the standard Python indent to 4 spaces
     pythonGenerator.INDENT = '    ';
 
@@ -363,15 +363,15 @@ ${indentedBlockCode}
         return `self.action_implementer.create_digital_ball(center_vec3=${center}, radius=${radius}, block_type=${blockType}, inner_radius=${innerRadius})\n`;
     };
 
-    pythonGenerator.forBlock['minecraft_action_create_digital_cube'] = function(block, generator) {
-        const center = generator.valueToCode(block, 'CENTER', generator.ORDER_ATOMIC) || "Vec3(0,0,0)";
-        const sideLength = generator.valueToCode(block, 'SIDE_LENGTH', generator.ORDER_ATOMIC) || "5.0";
-        const rotationMatrix = generator.valueToCode(block, 'ROTATION_MATRIX', generator.ORDER_ATOMIC) || "Matrix3.identity()"; // Default to identity matrix
-        const blockType = generator.valueToCode(block, 'BLOCK_TYPE', generator.ORDER_ATOMIC) || "'STONE'";
-        const innerOffsetFactor = generator.valueToCode(block, 'INNER_OFFSET_FACTOR', generator.ORDER_ATOMIC) || "0.0";
-
-        return `self.action_implementer.create_digital_cube(center_vec3=${center}, side_length=${sideLength}, rotation_matrix3=${rotationMatrix}, block_type=${blockType}, inner_offset_factor=${innerOffsetFactor})\n`;
-    };
+//     pythonGenerator.forBlock['minecraft_action_create_digital_cube'] = function(block, generator) {
+//         const center = generator.valueToCode(block, 'CENTER', generator.ORDER_ATOMIC) || "Vec3(0,0,0)";
+//         const sideLength = generator.valueToCode(block, 'SIDE_LENGTH', generator.ORDER_ATOMIC) || "5.0";
+//         const rotationMatrix = generator.valueToCode(block, 'ROTATION_MATRIX', generator.ORDER_ATOMIC) || "Matrix3.identity()"; // Default to identity matrix
+//         const blockType = generator.valueToCode(block, 'BLOCK_TYPE', generator.ORDER_ATOMIC) || "'STONE'";
+//         const innerOffsetFactor = generator.valueToCode(block, 'INNER_OFFSET_FACTOR', generator.ORDER_ATOMIC) || "0.0";
+//
+//         return `self.action_implementer.create_digital_cube(center_vec3=${center}, side_length=${sideLength}, rotation_matrix3=${rotationMatrix}, block_type=${blockType}, inner_offset_factor=${innerOffsetFactor})\n`;
+//     };
 
     pythonGenerator.forBlock['minecraft_action_create_digital_plane'] = function(block, generator) {
         const normal = generator.valueToCode(block, 'NORMAL', generator.ORDER_ATOMIC) || "Vec3(0,1,0)";

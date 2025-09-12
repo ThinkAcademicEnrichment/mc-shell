@@ -508,7 +508,6 @@
         </shadow>
       </value>
     </block>
-    <sep />
     <block type="minecraft_picker_doors" />
     <block type="minecraft_picker_fences" />
     <block type="minecraft_picker_gates" />
@@ -528,12 +527,12 @@
     <block type="minecraft_picker_miscellaneous" />
   </category>
   <category name="Entities" colour="#5b5ba5">
-    <block type="minecraft_picker_entity_hostile_mobs" />
-    <block type="minecraft_picker_entity_minecarts" />
-    <block type="minecraft_picker_entity_miscellaneous_entities" />
-    <block type="minecraft_picker_entity_passive_mobs" />
-    <block type="minecraft_picker_entity_projectiles" />
-    <block type="minecraft_picker_entity_utility_and_special" />
+    <block type="minecraft_entity_picker_hostile_mobs" />
+    <block type="minecraft_entity_picker_minecarts" />
+    <block type="minecraft_entity_picker_miscellaneous_entities" />
+    <block type="minecraft_entity_picker_passive_mobs" />
+    <block type="minecraft_entity_picker_projectiles" />
+    <block type="minecraft_entity_picker_utility_and_special" />
   </category>
   <category name="World Actions" colour="#4C97FF">
     <block type="minecraft_action_set_block" />

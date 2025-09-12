@@ -277,43 +277,43 @@ export function defineMineCraftBlocks(Blockly) {
         }
     };
 
-    Blockly.Blocks['minecraft_action_create_digital_cube'] = {
-        init: function() {
-            this.appendDummyInput().appendField("Create Digital Cube");
-            this.appendValueInput("CENTER")
-                .setCheck("3DVector")
-                .setAlign('RIGHT')
-                .appendField("Center");
-            this.appendValueInput("SIDE_LENGTH")
-                .setCheck("Number")
-                .setAlign('RIGHT')
-                .appendField("Side Length");
-            this.appendValueInput("ROTATION_MATRIX")
-                .setCheck("3DMatrix") // New type for our matrix blocks
-                .setAlign('RIGHT')
-                .appendField("Rotation Matrix");
-            this.appendValueInput("BLOCK_TYPE")
-                .setCheck("Block")
-                .setAlign('RIGHT')
-                .appendField("Block Type");
-            this.appendValueInput("INNER_OFFSET_FACTOR")
-                .setCheck("Number")
-                .setAlign('RIGHT')
-                .appendField("Inner Offset (0=solid, <1 hollow)");
-            this.setPreviousStatement(true, null);
-            this.setNextStatement(true, null);
-            this.setColour(65);
-            this.setTooltip("Creates an oriented digital cube of voxels.");
-            this.setInputsInline(false);
-
-            MCED.BlocklyUtils.configureShadow(this, "CENTER");
-            MCED.BlocklyUtils.configureShadow(this, "SIDE_LENGTH");
-            MCED.BlocklyUtils.configureShadow(this, "ROTATION_MATRIX");
-            MCED.BlocklyUtils.configureShadow(this, "BLOCK_TYPE");
-            MCED.BlocklyUtils.configureShadow(this, "INNER_OFFSET_FACTOR");
-
-        }
-    };
+//     Blockly.Blocks['minecraft_action_create_digital_cube'] = {
+//         init: function() {
+//             this.appendDummyInput().appendField("Create Digital Cube");
+//             this.appendValueInput("CENTER")
+//                 .setCheck("3DVector")
+//                 .setAlign('RIGHT')
+//                 .appendField("Center");
+//             this.appendValueInput("SIDE_LENGTH")
+//                 .setCheck("Number")
+//                 .setAlign('RIGHT')
+//                 .appendField("Side Length");
+//             this.appendValueInput("ROTATION_MATRIX")
+//                 .setCheck("3DMatrix") // New type for our matrix blocks
+//                 .setAlign('RIGHT')
+//                 .appendField("Rotation Matrix");
+//             this.appendValueInput("BLOCK_TYPE")
+//                 .setCheck("Block")
+//                 .setAlign('RIGHT')
+//                 .appendField("Block Type");
+//             this.appendValueInput("INNER_OFFSET_FACTOR")
+//                 .setCheck("Number")
+//                 .setAlign('RIGHT')
+//                 .appendField("Inner Offset (0=solid, <1 hollow)");
+//             this.setPreviousStatement(true, null);
+//             this.setNextStatement(true, null);
+//             this.setColour(65);
+//             this.setTooltip("Creates an oriented digital cube of voxels.");
+//             this.setInputsInline(false);
+//
+//             MCED.BlocklyUtils.configureShadow(this, "CENTER");
+//             MCED.BlocklyUtils.configureShadow(this, "SIDE_LENGTH");
+//             MCED.BlocklyUtils.configureShadow(this, "ROTATION_MATRIX");
+//             MCED.BlocklyUtils.configureShadow(this, "BLOCK_TYPE");
+//             MCED.BlocklyUtils.configureShadow(this, "INNER_OFFSET_FACTOR");
+//
+//         }
+//     };
 
     Blockly.Blocks['minecraft_action_create_digital_plane'] = {
       init: function() {
