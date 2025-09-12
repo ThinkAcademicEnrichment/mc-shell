@@ -1,5 +1,4 @@
-import numpy as np
-from mcshell.constants import math
+from mcshell.constants import *
 
 # --- Helper for point-to-segment distance ---
 def distance_point_to_segment(p, a, b):
@@ -349,8 +348,86 @@ def _is_point_inside_oriented_cube_helper(
 
     # If the point was not outside any of the 6 planes, it must be inside the cube.
     return True
+import numpy as np
+from typing import List, Set, Tuple
 
-def generate_digital_cube_coordinates(center: tuple[float, float, float], side_length: float, rotation_matrix: np.ndarray,
+# Assuming get_oriented_cube_vertices and _is_point_inside_oriented_cube_helper exist
+# and function as they did in the original context.
+
+def generate_digital_cube_coordinates(
+    center: Tuple[float, float, float],
+    side_length: float,
+    rotation_matrix: np.ndarray,
+    wall_thickness: float = 0.0
+) -> List[Tuple[int, int, int]]:
+    """
+    Generates integer XYZ coordinates for a solid or hollow digital cube with
+    arbitrary orientation using wall thickness.
+
+    Args:
+        center: The (x, y, z) center of the cube.
+        side_length: The length of the cube's sides.
+        rotation_matrix: A 3x3 numpy array for orientation.
+        wall_thickness: The thickness of the cube's walls. If 0, the cube is solid.
+    """
+    cube_coords: Set[Tuple[int, int, int]] = set()
+    center_np = np.array(center)
+
+    if side_length <= 0:
+        return []
+
+    # A wall thickness that is half the side length or more would result in no
+    # inner volume, so the cube is effectively hollow or empty.
+    if wall_thickness * 2 >= side_length and wall_thickness != 0.0:
+        print(f"Warning: wall_thickness ({wall_thickness}) results in no inner volume for side_length ({side_length}).")
+        # Proceeding will still generate the outer shell correctly.
+
+    if wall_thickness < 0:
+        print(f"Warning: wall_thickness ({wall_thickness}) is negative. Treating as 0 (solid).")
+        wall_thickness = 0.0
+
+    # 1. --- Outer Cube Calculation ---
+    outer_cube_vertices = get_oriented_cube_vertices(center_np, side_length, rotation_matrix)
+    if not outer_cube_vertices:
+        return []
+
+    outer_vertices_np = np.array(outer_cube_vertices)
+    min_continuous_bounds = outer_vertices_np.min(axis=0)
+    max_continuous_bounds = outer_vertices_np.max(axis=0)
+
+    min_coords_bb = np.ceil(min_continuous_bounds).astype(int)
+    max_coords_bb = np.floor(max_continuous_bounds).astype(int)
+    min_x_bb, min_y_bb, min_z_bb = min_coords_bb
+    max_x_bb, max_y_bb, max_z_bb = max_coords_bb
+
+    # 2. --- Inner Cube Calculation (if hollow) ---
+    inner_cube_vertices = None
+    if wall_thickness > 0.0:
+        # The inner cube's side length is the outer side length minus the thickness of two walls.
+        inner_side_length = side_length - (2 * wall_thickness)
+        if inner_side_length > 0:
+            # The inner cube shares the same center and orientation.
+            inner_cube_vertices = get_oriented_cube_vertices(center_np, inner_side_length, rotation_matrix)
+
+    # 3. --- Voxel Iteration and Checking ---
+    for x in range(min_x_bb, max_x_bb + 1):
+        for y in range(min_y_bb, max_y_bb + 1):
+            for z in range(min_z_bb, max_z_bb + 1):
+                voxel_center = np.array([x + 0.5, y + 0.5, z + 0.5])
+
+                # Check if the voxel is within the outer boundary
+                if _is_point_inside_oriented_cube_helper(voxel_center, outer_vertices_np):
+                    is_inside_inner = False
+                    if inner_cube_vertices:
+                        # If it's a hollow cube, check if it's also inside the inner boundary
+                        is_inside_inner = _is_point_inside_oriented_cube_helper(voxel_center, np.array(inner_cube_vertices))
+
+                    if not is_inside_inner:
+                        cube_coords.add((x, y, z))
+
+    return sorted(list(cube_coords))
+
+def generate_digital_cube_coordinates_old(center: tuple[float, float, float], side_length: float, rotation_matrix: np.ndarray,
                                       inner_offset_factor: float = 0.0):
     """
     Generates integer XYZ coordinates for a solid or hollow digital cube with arbitrary orientation.
@@ -411,7 +488,6 @@ def generate_digital_cube_coordinates(center: tuple[float, float, float], side_l
                                 cube_coords.add((x, y, z))
                         else: # Should not happen, but treat as solid if inner def failed
                             cube_coords.add((x, y, z))
-
     return sorted(list(cube_coords))
 
 
