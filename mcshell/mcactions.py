@@ -185,24 +185,6 @@ class DigitalGeometry(MCActionBase): # Inherits from MCActionBase
         )
         self._place_blocks_from_coords(coords, block_type)
 
-    def create_digital_cube_old(self, center_vec3, side_length, rotation_matrix3, block_type, inner_offset_factor=0.0):
-        """
-        Blockly action to create a digital cube.
-        center_vec3: Vec3 instance.
-        side_length: float
-        rotation_matrix3: Matrix3 instance.
-        block_type: string (Blockly ID)
-        inner_offset_factor: float (0 for solid, >0 for hollow shell thickness relative to centroid distances)
-        """
-        # print(f"MCActions: create_digital_cube request at {center_vec3}, side {side_length}, factor {inner_offset_factor}")
-        coords = generate_digital_cube_coordinates(
-            center=center_vec3.to_tuple(), # Your func expects tuple
-            side_length=float(side_length),
-            rotation_matrix=rotation_matrix3.to_numpy(), # Your func expects np.ndarray
-            inner_offset_factor=float(inner_offset_factor)
-        )
-        self._place_blocks_from_coords(coords, block_type)
-
     def create_digital_tetrahedron(self, vertices_list_of_vec3, block_type, inner_offset_factor=0.0):
         """
         Blockly action to create a digital tetrahedron.
