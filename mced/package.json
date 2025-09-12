@@ -4,9 +4,6 @@
   "description": "Minecraft Blockly Editor",
   "source": "src/index.html",
   "scripts": {
-    "start": "parcel src/index.html",
-    "start:control": "parcel src/control.html",
-    "process:all": "poetry run python ../process.py",
     "clean": "rimraf ../mcshell/data/app",
     "build:all": "node ../mcshell/data/materials/generate_material_blocks.mjs && node ../mcshell/data/entities/generate_entity_blocks.mjs",
     "build:toolbox": "poetry run python ../build.py",
