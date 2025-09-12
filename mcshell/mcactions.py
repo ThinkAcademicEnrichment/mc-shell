@@ -468,7 +468,13 @@ class DigitalGeometryOrig(MCActionBase): # Inherits from MCActionBase
         )
         self._place_blocks_from_coords(coords, block_type)
 
-    def create_digital_line(self, point1_vec3, point2_vec3, block_type):
+    @mced_block(
+        label="Create Digital Line",
+        point1={'label': 'Start Point', 'shadow': 'VECTOR_3D_SHADOW'},
+        point2={'label': 'End Point', 'shadow': 'VECTOR_3D_SHADOW'},
+        block_type={'label': 'Block Type', 'shadow': 'BLOCK_TYPE_SHADOW'}
+    )
+    def create_digital_line(self, point1:'Vec3', point2:'Vec3', block_type:'Block'):
         """
         Blockly action to create a 1-voxel thick digital line.
         point1_vec3, point2_vec3: Vec3 instances.
@@ -477,8 +483,8 @@ class DigitalGeometryOrig(MCActionBase): # Inherits from MCActionBase
         # print(f"MCActions: create_digital_line request from {point1_vec3} to {point2_vec3}")
 
         # Convert Vec3 inputs to integer tuples for the geometry function
-        p1_tuple = (int(round(point1_vec3.x)), int(round(point1_vec3.y)), int(round(point1_vec3.z)))
-        p2_tuple = (int(round(point2_vec3.x)), int(round(point2_vec3.y)), int(round(point2_vec3.z)))
+        p1_tuple = (int(round(point1.x)), int(round(point1.y)), int(round(point1.z)))
+        p2_tuple = (int(round(point2.x)), int(round(point2.y)), int(round(point2.z)))
 
         # Call the low-level coordinate generation function
         coords = generate_digital_line_coordinates(
