@@ -197,9 +197,6 @@ def process_entities(filepath="entity-list.txt"):
     except Exception as e:
         print(f"An error occurred: {e}")
 
-import json
-from pathlib import Path
-
 def _generate_blockly_name(id_string):
     """Helper to format names like HOSTILE_MOBS -> 'Hostile Mobs'."""
     if not id_string or not isinstance(id_string, str):
@@ -458,69 +455,6 @@ function _combine_colour_and_material(colour, material) {
         print(f"Failed to generate material Blockly files: {e}")
         raise
 
-def build_final_toolbox():
-    """
-    Loads a toolbox template, injects generated XML category fragments,
-    and writes the final toolbox.xml file.
-    """
-    final_toolbox_path = MC_APP_SRC_DIR.joinpath('toolbox.xml')
-    # Define paths to the input and output files
-    template_path = MC_DATA_DIR.joinpath('toolbox_template.xml')
-    materials_toolbox_path = MC_DATA_DIR.joinpath('materials/toolbox.xml')
-    entities_toolbox_path = MC_DATA_DIR.joinpath('entities/toolbox.xml')
-
-    print("--- Starting Toolbox Build ---")
-
-    # --- Step 1: Parse the main template and fragment files ---
-    try:
-        # Registering the namespace prevents the parser from adding "ns0:" prefixes
-        ET.register_namespace('', "https://developers.google.com/blockly/xml")
-
-        # Parse the main template
-        tree = ET.parse(template_path)
-        root = tree.getroot()
-
-        # Parse the material and entity category fragments
-        materials_category = ET.parse(materials_toolbox_path).getroot()
-        entities_category = ET.parse(entities_toolbox_path).getroot()
-
-    except FileNotFoundError as e:
-        print(f"Error: Could not find a required XML file. Make sure it exists: {e.filename}")
-        return
-    except ET.ParseError as e:
-        print(f"Error: Could not parse an XML file. Check for syntax errors. Details: {e}")
-        return
-
-    # --- Step 2: Find the placeholder comments and replace them ---
-
-    # We need to iterate through a copy of the list because we are modifying it
-    for i, child in enumerate(list(root)):
-        # ElementTree parses comments as a function-like object.
-        # We check if the tag is a function and its text is our placeholder.
-        if child.attrib.get('name',None) == 'Materials':
-            print("Found materials placeholder. Injecting category...")
-            # Insert the new category at the placeholder's position
-            root.insert(i, materials_category)
-            # Remove the old placeholder comment
-            root.remove(child)
-
-        elif child.attrib.get('name',None) == 'Entities':
-            print("Found entities placeholder. Injecting category...")
-            root.insert(i, entities_category)
-            root.remove(child)
-
-    # --- Step 3: Write the new, complete toolbox.xml file ---
-    try:
-        # ET.indent() is available in Python 3.9+ and makes the output pretty
-        if hasattr(ET, 'indent'):
-            ET.indent(tree, space="  ")
-
-        tree.write(final_toolbox_path, encoding='utf-8', xml_declaration=True)
-        print(f"Successfully built final toolbox at: {final_toolbox_path}")
-
-    except Exception as e:
-        print(f"Error writing final toolbox file: {e}")
-
 # --- Block API Generation
 
 TYPE_MAP = {
@@ -677,14 +611,68 @@ def generate_mcactions_blocks():
         _gens_output_path.write_text(_gens_output + "\n}", 'utf-8')
         print(f"Successfully generated {_gens_output_path}" )
 
-# --- Main execution ---
-# if __name__ == "__main__":
-#     # Now, we pass the class we want to process into the function
-#     generated_code = generate_all_block_code(MCActions)
-#
-#     print("\n--- 🚀 Generated JavaScript ---\n")
-#     print(generated_code)
-#
-#     # with open("generated_blocks.mjs", "w") as f:
-#     #     f.write(generated_code)
-#     # print("\n✅  Code successfully written to generated_blocks.js")
+# --- Toolbox Generation
+
+def build_final_toolbox():
+    """
+    Loads a toolbox template, injects generated XML category fragments,
+    and writes the final toolbox.xml file.
+    """
+    final_toolbox_path = MC_APP_SRC_DIR.joinpath('toolbox.xml')
+    # Define paths to the input and output files
+    template_path = MC_DATA_DIR.joinpath('toolbox_template.xml')
+    materials_toolbox_path = MC_DATA_DIR.joinpath('materials/toolbox.xml')
+    entities_toolbox_path = MC_DATA_DIR.joinpath('entities/toolbox.xml')
+
+    print("--- Starting Toolbox Build ---")
+
+    # --- Step 1: Parse the main template and fragment files ---
+    try:
+        # Registering the namespace prevents the parser from adding "ns0:" prefixes
+        ET.register_namespace('', "https://developers.google.com/blockly/xml")
+
+        # Parse the main template
+        tree = ET.parse(template_path)
+        root = tree.getroot()
+
+        # Parse the material and entity category fragments
+        materials_category = ET.parse(materials_toolbox_path).getroot()
+        entities_category = ET.parse(entities_toolbox_path).getroot()
+
+    except FileNotFoundError as e:
+        print(f"Error: Could not find a required XML file. Make sure it exists: {e.filename}")
+        return
+    except ET.ParseError as e:
+        print(f"Error: Could not parse an XML file. Check for syntax errors. Details: {e}")
+        return
+
+    # --- Step 2: Find the placeholder comments and replace them ---
+
+    # We need to iterate through a copy of the list because we are modifying it
+    for i, child in enumerate(list(root)):
+        # ElementTree parses comments as a function-like object.
+        # We check if the tag is a function and its text is our placeholder.
+        if child.attrib.get('name',None) == 'Materials':
+            print("Found materials placeholder. Injecting category...")
+            # Insert the new category at the placeholder's position
+            root.insert(i, materials_category)
+            # Remove the old placeholder comment
+            root.remove(child)
+
+        elif child.attrib.get('name',None) == 'Entities':
+            print("Found entities placeholder. Injecting category...")
+            root.insert(i, entities_category)
+            root.remove(child)
+
+    # --- Step 3: Write the new, complete toolbox.xml file ---
+    try:
+        # ET.indent() is available in Python 3.9+ and makes the output pretty
+        if hasattr(ET, 'indent'):
+            ET.indent(tree, space="  ")
+
+        tree.write(final_toolbox_path, encoding='utf-8', xml_declaration=True)
+        print(f"Successfully built final toolbox at: {final_toolbox_path}")
+
+    except Exception as e:
+        print(f"Error writing final toolbox file: {e}")
+
