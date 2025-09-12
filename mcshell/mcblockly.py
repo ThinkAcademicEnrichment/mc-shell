@@ -253,9 +253,10 @@ def generate_entity_blocks():
     Blockly.Blocks['{block_type}'] = {{
       init: function() {{
         this.appendDummyInput()
+            .appendField("{blockly_name}")
             .appendField(new Blockly.FieldDropdown([
     {dropdown_options}
-            ]), "ENTITY");
+            ]), "ENTITY_ID");
         this.setOutput(true, "Entity");
         this.setColour("{default_colour}");
         this.setTooltip("{tooltip}");
@@ -265,7 +266,7 @@ def generate_entity_blocks():
 
             python_gen_list.append(f"""
     pythonGenerator.forBlock['{block_type}'] = function(block, generator) {{
-      const dropdown_entity = block.getFieldValue('ENTITY');
+      const dropdown_entity = block.getFieldValue('ENTITY_ID');
       const code = `'${{dropdown_entity}}'`;
       return [code, generator.ORDER_ATOMIC];
     }};""")
