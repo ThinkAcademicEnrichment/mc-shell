@@ -420,12 +420,13 @@
         <block type="minecraft_action_create_digital_cube"></block>
         <block type="minecraft_action_create_digital_plane"></block>
         <block type="minecraft_action_create_digital_disc"></block>
+        <block type="minecraft_action_create_digital_sphere"></block>
+        <block type="minecraft_action_create_digital_tetrahedron"></block>
     </category>
     <sep></sep>
     <!--    Generated with update_app() -->
     <category name="Materials"></category>
     <category name="Entities"></category>
-    <!--    Generated with update_app() -->
     <category name="World Actions" colour="#4C97FF">
         <block type="minecraft_action_set_block"></block>
         <block type="minecraft_action_spawn_entity"></block>
