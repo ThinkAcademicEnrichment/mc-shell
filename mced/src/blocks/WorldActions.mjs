@@ -27,7 +27,7 @@ export function defineWorldActionsBlocks(Blockly) {
             MCED.BlocklyUtils.configureShadow(this, "POSITION");
             MCED.BlocklyUtils.configureShadow(this, "POWER");
         }
-    };
+};
 
     Blockly.Blocks['minecraft_action_get_block'] = {
         init: function() {
@@ -36,8 +36,7 @@ export function defineWorldActionsBlocks(Blockly) {
                 .setCheck("3DVector")
                 .setAlign('RIGHT')
                 .appendField("At Position");
-            this.setPreviousStatement(true, null);
-            this.setNextStatement(true, null);
+            this.setOutput(true, "Block");
             this.setColour(65);
             this.setTooltip("An auto-generated block for the Get Block action.");
             this.setInputsInline(false);
@@ -48,7 +47,7 @@ export function defineWorldActionsBlocks(Blockly) {
 
             MCED.BlocklyUtils.configureShadow(this, "POSITION");
         }
-    };
+};
 
     Blockly.Blocks['minecraft_action_get_height'] = {
         init: function() {
@@ -57,8 +56,7 @@ export function defineWorldActionsBlocks(Blockly) {
                 .setCheck("3DVector")
                 .setAlign('RIGHT')
                 .appendField("At Position (X,Z)");
-            this.setPreviousStatement(true, null);
-            this.setNextStatement(true, null);
+            this.setOutput(true, "Number");
             this.setColour(65);
             this.setTooltip("An auto-generated block for the Get Height action.");
             this.setInputsInline(false);
@@ -69,7 +67,7 @@ export function defineWorldActionsBlocks(Blockly) {
 
             MCED.BlocklyUtils.configureShadow(this, "POSITION");
         }
-    };
+};
 
     Blockly.Blocks['minecraft_action_post_to_chat'] = {
         init: function() {
@@ -90,7 +88,7 @@ export function defineWorldActionsBlocks(Blockly) {
 
             MCED.BlocklyUtils.configureShadow(this, "MESSAGE");
         }
-    };
+};
 
     Blockly.Blocks['minecraft_action_set_block'] = {
         init: function() {
@@ -117,7 +115,7 @@ export function defineWorldActionsBlocks(Blockly) {
             MCED.BlocklyUtils.configureShadow(this, "POSITION");
             MCED.BlocklyUtils.configureShadow(this, "BLOCK_TYPE");
         }
-    };
+};
 
     Blockly.Blocks['minecraft_action_spawn_entity'] = {
         init: function() {
@@ -144,6 +142,6 @@ export function defineWorldActionsBlocks(Blockly) {
             MCED.BlocklyUtils.configureShadow(this, "POSITION");
             MCED.BlocklyUtils.configureShadow(this, "ENTITY");
         }
-    };
+};
 
 }

@@ -33,7 +33,7 @@ export function defineDigitalGeometryBlocks(Blockly) {
             MCED.BlocklyUtils.configureShadow(this, "RADIUS");
             MCED.BlocklyUtils.configureShadow(this, "BLOCK_TYPE");
         }
-    };
+};
 
     Blockly.Blocks['minecraft_action_create_digital_cube'] = {
         init: function() {
@@ -78,7 +78,7 @@ export function defineDigitalGeometryBlocks(Blockly) {
             MCED.BlocklyUtils.configureShadow(this, "BLOCK_TYPE");
             MCED.BlocklyUtils.configureShadow(this, "WALL_THICKNESS");
         }
-    };
+};
 
     Blockly.Blocks['minecraft_action_create_digital_disc'] = {
         init: function() {
@@ -117,7 +117,7 @@ export function defineDigitalGeometryBlocks(Blockly) {
             MCED.BlocklyUtils.configureShadow(this, "RADIUS");
             MCED.BlocklyUtils.configureShadow(this, "BLOCK_TYPE");
         }
-    };
+};
 
     Blockly.Blocks['minecraft_action_create_digital_line'] = {
         init: function() {
@@ -150,7 +150,7 @@ export function defineDigitalGeometryBlocks(Blockly) {
             MCED.BlocklyUtils.configureShadow(this, "POINT2");
             MCED.BlocklyUtils.configureShadow(this, "BLOCK_TYPE");
         }
-    };
+};
 
     Blockly.Blocks['minecraft_action_create_digital_plane'] = {
         init: function() {
@@ -189,7 +189,7 @@ export function defineDigitalGeometryBlocks(Blockly) {
             MCED.BlocklyUtils.configureShadow(this, "SIDE_LENGTH");
             MCED.BlocklyUtils.configureShadow(this, "BLOCK_TYPE");
         }
-    };
+};
 
     Blockly.Blocks['minecraft_action_create_digital_sphere'] = {
         init: function() {
@@ -228,7 +228,7 @@ export function defineDigitalGeometryBlocks(Blockly) {
             MCED.BlocklyUtils.configureShadow(this, "BLOCK_TYPE");
             MCED.BlocklyUtils.configureShadow(this, "IS_HOLLOW");
         }
-    };
+};
 
     Blockly.Blocks['minecraft_action_create_digital_tetrahedron'] = {
         init: function() {
@@ -279,7 +279,7 @@ export function defineDigitalGeometryBlocks(Blockly) {
             MCED.BlocklyUtils.configureShadow(this, "INNER_OFFSET_FACTOR");
             MCED.BlocklyUtils.configureShadow(this, "BLOCK_TYPE");
         }
-    };
+};
 
     Blockly.Blocks['minecraft_action_create_digital_tube'] = {
         init: function() {
@@ -324,6 +324,6 @@ export function defineDigitalGeometryBlocks(Blockly) {
             MCED.BlocklyUtils.configureShadow(this, "BLOCK_TYPE");
             MCED.BlocklyUtils.configureShadow(this, "IS_HOLLOW");
         }
-    };
+};
 
 }
