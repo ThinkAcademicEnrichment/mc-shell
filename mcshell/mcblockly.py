@@ -529,8 +529,8 @@ TYPE_MAP = {
 }
 def generate_block_definition(block_name, sig, meta):
     """
-    Generates the Blockly.Blocks[...] JavaScript, now correctly handling
-    references to shadow constants from the MCED object.
+    Generates the Blockly.Blocks[...] JavaScript, now with support for
+    creating blocks with output connections if `output_type` is specified.
     """
     inputs_js = []
     shadow_calls_js = []
@@ -539,42 +539,46 @@ def generate_block_definition(block_name, sig, meta):
     params = list(sig.parameters.values())[1:]
 
     for param in params:
+        # ... (parameter processing logic remains the same)
         param_meta = meta['params'].get(param.name, {})
         label = param_meta.get('label', param.name.replace('_', ' ').title())
+        input_name = param.name.upper()
         check_type = TYPE_MAP.get(param.annotation)
         js_check_str = f'"{check_type}"' if check_type else "null"
 
-        inputs_js.append(f"""this.appendValueInput("{param.name.upper()}")
+        inputs_js.append(f"""this.appendValueInput("{input_name}")
                 .setCheck({js_check_str})
                 .setAlign('RIGHT')
                 .appendField("{label}");""")
+        shadow_calls_js.append(f'MCED.BlocklyUtils.configureShadow(this, "{input_name}");')
 
-        shadow_calls_js.append(f'MCED.BlocklyUtils.configureShadow(this, "{param.name.upper()}");')
-
-        # --- CORRECTED LOGIC FOR SHADOW CONSTANTS ---
         shadow = param_meta.get('shadow', 'null')
-        # If shadow is a literal string (contains '<'), wrap it in quotes.
-        # Otherwise, assume it's a constant and access it via MCED.
         if shadow.startswith('<'):
             shadow_value = f"'{shadow}'"
         else:
-            # It's a constant name, so reference it on the MCED object
             shadow_value = f"MCED.{shadow}"
-
-        defaults_js.append(f'            {param.name.upper()}: {{ shadow: {shadow_value} }}')
+        defaults_js.append(f'            {input_name}: {{ shadow: {shadow_value} }}')
 
     inputs_str = "\n            ".join(inputs_js)
     shadow_calls_str = "\n            ".join(shadow_calls_js)
     defaults_str = ",\n".join(defaults_js)
     block_label = meta['label']
 
+    # --- NEW: Logic to handle output blocks ---
+    connection_js = ""
+    output_type = meta.get('params').get('output_type')
+    if output_type:
+        connection_js = f'this.setOutput(true, "{output_type}");'
+    else:
+        connection_js = """this.setPreviousStatement(true, null);
+            this.setNextStatement(true, null);"""
+
     return f"""
     Blockly.Blocks['{block_name}'] = {{
         init: function() {{
             this.appendDummyInput().appendField("{block_label}");
             {inputs_str}
-            this.setPreviousStatement(true, null);
-            this.setNextStatement(true, null);
+            {connection_js}
             this.setColour(65);
             this.setTooltip("An auto-generated block for the {block_label} action.");
             this.setInputsInline(false);
@@ -585,15 +589,18 @@ def generate_block_definition(block_name, sig, meta):
 
             {shadow_calls_str}
         }}
-    }};"""
+}};"""
 
 def generate_python_generator(block_name, sig, meta):
-    """Generates the pythonGenerator.forBlock[...] JavaScript."""
-    # (This function remains unchanged)
+    """
+    Generates the pythonGenerator.forBlock[...] JavaScript, now correctly
+    handling blocks that return values by returning a [code, order] tuple.
+    """
     value_declarations = []
     params = list(sig.parameters.values())[1:]
 
     for param in params:
+        # This part remains the same
         default_value = "null"
         if param.annotation in ['Vec3', 'Matrix3']:
             default_value = "Matrix3.identity()" if param.annotation == 'Matrix3' else "Vec3(0,0,0)"
@@ -607,15 +614,25 @@ def generate_python_generator(block_name, sig, meta):
 
     value_declarations_str = "\n        ".join(value_declarations)
     action_method_name = block_name.replace("minecraft_action_", "")
+
+    # Construct the Python method call
     arg_list = [f"{p.name}=${{{p.name}}}" for p in params]
-    python_call = f"`self.action_implementer.{action_method_name}({', '.join(arg_list)})\\n`"
+    python_call = f"self.action_implementer.{action_method_name}({', '.join(arg_list)})"
+
+    # --- NEW: Logic to determine the return type ---
+    output_type = meta.get('params').get('output_type')
+    if output_type:
+        # For blocks with an output, wrap the call in `` and return a tuple
+        return_statement = f"const code = `{python_call}`;\n        return [code, generator.ORDER_FUNCTION_CALL];"
+    else:
+        # For statement blocks, add the newline and return a simple string
+        return_statement = f"return `{python_call}\n`;"
 
     return f"""
     pythonGenerator.forBlock['{block_name}'] = function(block, generator) {{
-        {value_declarations_str}
-        return {python_call};
+            {value_declarations_str}
+            {return_statement}
     }};"""
-
 
 def generate_api_block_code(actions_class):
     """
