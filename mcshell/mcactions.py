@@ -268,6 +268,20 @@ class WorldActions(MCActionBase):
         self.mcplayer.pc.setBlock(x, y, z, block_type)
 
     @mced_block(
+        label="Set Blocks",
+        position_1={'label': 'Position 1', 'shadow': 'VECTOR_3D_SHADOW'},
+        position_2={'label': 'Position 2', 'shadow': 'VECTOR_3D_SHADOW'},
+        block_type={'label': 'Block Type', 'shadow': 'BLOCK_TYPE_SHADOW'}
+    )
+    def set_blocks(self,position_1: 'Vec3',position_2: 'Vec3',block_type):
+        """
+        Blockly action to set a cuboid of blocks in the Minecraft world.
+        """
+        x1, y1, z1 = int(position_1.x), int(position_1.y), int(position_1.z)
+        x2, y2, z2 = int(position_2.x), int(position_2.y), int(position_2.z)
+        self.mcplayer.pc.setBlocks(x1,y1,z1,x2,y2,z2,block_type)
+
+    @mced_block(
         label="Get Block",
         output_type="Block",
         position={'label': 'At Position', 'shadow': 'VECTOR_3D_SHADOW'}
