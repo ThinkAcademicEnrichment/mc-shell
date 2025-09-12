@@ -1,3 +1,4 @@
+// Deprecated: use mcshell.mcblockly functions
 import fs from 'fs';
 import path from 'path';
 
