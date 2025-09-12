@@ -92,10 +92,341 @@ class MCActionBase:
         # Use .get() for a safe lookup that returns None if the key doesn't exist
         return self.bukkit_to_entity_id_map.get(bukkit_enum_string)
 
-class DigitalGeometry(MCActionBase): # Inherits from MCActionBase
-    # the block category name for Blockly
-    name = "Digital Geometry"
+class DigitalGeometry(MCActionBase):
+    """
+    Actions that involve creating geometric shapes.
+    """
+    def __init__(self, mc_player_instance,delay_between_blocks=0.01):
+        super().__init__(mc_player_instance,delay_between_blocks) # Call parent constructor
+        self.default_material_id = 1 # Example: material ID for stone in voxelmap
+                                 # Or map block_type to material_id
 
+    @mced_block(
+        label="Create Digital Cube",
+        center={'label': 'Center', 'shadow': 'VECTOR_3D_SHADOW'},
+        side_length={'label': 'Side Length', 'shadow': '<shadow type="math_number"><field name="NUM">5</field></shadow>'},
+        rotation_matrix={'label': 'Rotation Matrix', 'shadow': '<shadow type="minecraft_matrix_3d_euler"></shadow>'},
+        block_type={'label': 'Block Type', 'shadow': 'BLOCK_TYPE_SHADOW'},
+        wall_thickness={'label': 'Wall Thickness (0=solid)', 'shadow': '<shadow type="math_number"><field name="NUM">0</field></shadow>'}
+    )
+    def create_digital_cube(self,
+                          center: 'Vec3',
+                          side_length: float,
+                          rotation_matrix: 'Matrix3',
+                          block_type: 'Block',
+                          wall_thickness: float = 0.0):
+        """
+        Blockly action to create a digital cube.
+        """
+        coords = generate_digital_cube_coordinates(
+            center=center.to_tuple(),
+            side_length=float(side_length),
+            rotation_matrix=rotation_matrix.to_numpy(),
+            wall_thickness=float(wall_thickness)
+        )
+        self._place_blocks_from_coords(coords, block_type)
+
+    @mced_block(
+        label="Create Digital Line",
+        point1={'label': 'Start Point', 'shadow': 'VECTOR_3D_SHADOW'},
+        point2={'label': 'End Point', 'shadow': 'VECTOR_3D_SHADOW'},
+        block_type={'label': 'Block Type', 'shadow': 'BLOCK_TYPE_SHADOW'}
+    )
+    def create_digital_line(self, point1: 'Vec3', point2: 'Vec3', block_type: 'Block'):
+        coords = generate_digital_line_coordinates(
+            p1=point1.to_tuple(),
+            p2=point2.to_tuple()
+        )
+        self._place_blocks_from_coords(coords, block_type)
+
+    @mced_block(
+        label="Create Digital Plane",
+        center={'label': 'Center', 'shadow': 'VECTOR_3D_SHADOW'},
+        normal={'label': 'Normal', 'shadow': 'VECTOR_3D_SHADOW_Y_UP'},
+        side_length={'label': 'Side Length', 'shadow': '<shadow type="math_number"><field name="NUM">10</field></shadow>'},
+        block_type={'label': 'Block Type', 'shadow': 'BLOCK_TYPE_SHADOW'}
+    )
+    def create_digital_plane(self, center: 'Vec3', normal: 'Vec3', side_length: float, block_type: 'Block'):
+        coords = generate_digital_plane_coordinates(
+            point_on_plane=center.to_tuple(),
+            normal=normal.to_tuple(),
+            outer_rect_dims=(side_length,side_length)
+        )
+        self._place_blocks_from_coords(coords, block_type)
+
+    @mced_block(
+        label="Create Digital Disc",
+        center={'label': 'Center', 'shadow': 'VECTOR_3D_SHADOW'},
+        normal={'label': 'Normal', 'shadow': 'VECTOR_3D_SHADOW_Y_UP'},
+        radius={'label': 'Radius', 'shadow': '<shadow type="math_number"><field name="NUM">5</field></shadow>'},
+        block_type={'label': 'Block Type', 'shadow': 'BLOCK_TYPE_SHADOW'}
+    )
+    def create_digital_disc(self, center: 'Vec3', normal: 'Vec3', radius: float, block_type: 'Block'):
+        coords = generate_digital_disc_coordinates(
+            center_point=center.to_tuple(),
+            normal=normal.to_tuple(),
+            outer_radius=radius
+        )
+        self._place_blocks_from_coords(coords, block_type)
+
+    @mced_block(
+        label="Create Digital Sphere",
+        center={'label': 'Center', 'shadow': 'VECTOR_3D_SHADOW'},
+        radius={'label': 'Radius', 'shadow': '<shadow type="math_number"><field name="NUM">5</field></shadow>'},
+        block_type={'label': 'Block Type', 'shadow': 'BLOCK_TYPE_SHADOW'},
+        is_hollow={'label': 'Hollow', 'shadow': '<shadow type="logic_boolean"><field name="BOOL">FALSE</field></shadow>'}
+    )
+    def create_digital_sphere(self, center: 'Vec3', radius: int, block_type: 'Block', is_hollow: bool):
+        coords = generate_digital_sphere_coordinates(
+            center=center.to_tuple(),
+            radius=int(radius),
+            is_solid=not is_hollow
+        )
+        self._place_blocks_from_coords(coords, block_type)
+
+    @mced_block(
+        label="Create Digital Ball",
+        center={'label': 'Center', 'shadow': 'VECTOR_3D_SHADOW'},
+        radius={'label': 'Radius', 'shadow': '<shadow type="math_number"><field name="NUM">5</field></shadow>'},
+        block_type={'label': 'Block Type', 'shadow': 'BLOCK_TYPE_SHADOW'}
+    )
+    def create_digital_ball(self, center: 'Vec3', radius: int, block_type: 'Block'):
+        coords = generate_digital_ball_coordinates(
+            center=center.to_tuple(),
+            radius=int(radius)
+        )
+        self._place_blocks_from_coords(coords, block_type)
+
+    @mced_block(
+        label="Create Digital Tube",
+        start={'label': 'Start', 'shadow': 'VECTOR_3D_SHADOW'},
+        end={'label': 'End', 'shadow': 'VECTOR_3D_SHADOW'},
+        radius={'label': 'Radius', 'shadow': '<shadow type="math_number"><field name="NUM">3</field></shadow>'},
+        block_type={'label': 'Block Type', 'shadow': 'BLOCK_TYPE_SHADOW'},
+        is_hollow={'label': 'Hollow', 'shadow': '<shadow type="logic_boolean"><field name="BOOL">TRUE</field></shadow>'}
+    )
+    def create_digital_tube(self, start: 'Vec3', end: 'Vec3', radius: float, block_type: 'Block', is_hollow: bool):
+        if is_hollow:
+            inner_thickness = 1.0
+        else:
+            inner_thickness = 0.0
+
+        coords = generate_digital_tube_coordinates(
+            p1=start.to_tuple(),
+            p2=end.to_tuple(),
+            outer_thickness=radius,
+            inner_thickness=inner_thickness,
+        )
+        self._place_blocks_from_coords(coords, block_type)
+
+    @mced_block(
+        label="Create Digital Tetrahedron",
+        p1={'label': 'Point 1', 'shadow': 'VECTOR_3D_SHADOW'},
+        p2={'label': 'Point 2', 'shadow': 'VECTOR_3D_SHADOW'},
+        p3={'label': 'Point 3', 'shadow': 'VECTOR_3D_SHADOW'},
+        p4={'label': 'Point 4', 'shadow': 'VECTOR_3D_SHADOW'},
+        inner_offset_factor={'label': 'Inner Offset Factor','shadow':'<shadow type="math_number"><field name="NUM">3</field></shadow>'},
+        block_type={'label': 'Block Type', 'shadow': 'BLOCK_TYPE_SHADOW'}
+    )
+    def create_digital_tetrahedron(self, p1:'Vec3',p2:'Vec3',p3:'Vec3',p4:'Vec3',inner_offset_factor:float,block_type: 'Block'):
+        coords = generate_digital_tetrahedron_coordinates(
+            vertices=[p1.to_tuple(),p2.to_tuple(),p3.to_tuple(),p4.to_tuple()],
+            inner_offset_factor=inner_offset_factor,
+        )
+        self._place_blocks_from_coords(coords, block_type)
+
+class WorldActions(MCActionBase):
+    def __init__(self, mc_player_instance, delay_between_blocks=0.01):
+        super().__init__(mc_player_instance, delay_between_blocks)
+        self.default_material_id = 1
+
+    @mced_block(
+        label="Spawn Entity",
+        entity={'label': 'Entity Type', 'shadow': 'ENTITY_TYPE_SHADOW'},
+        position={'label': 'At Position', 'shadow': 'VECTOR_3D_SHADOW'}
+    )
+    def spawn_entity(self, position: 'Vec3', entity: 'Entity'):
+        """
+        Blockly action to spawn a Minecraft entity.
+        """
+        entity_id_int = self._get_entity_id_from_bukkit_name(entity)
+        if entity_id_int is None:
+            print(f"Warning: Could not find a numerical ID for entity type '{entity}'. Cannot spawn.")
+            return
+        self.mcplayer.pc.spawnEntity(position.x, position.y + 1, position.z, entity_id_int)
+
+    @mced_block(
+        label="Set Block",
+        position={'label': 'At Position', 'shadow': 'VECTOR_3D_SHADOW'},
+        block_type={'label': 'Block Type', 'shadow': 'BLOCK_TYPE_SHADOW'}
+    )
+    def set_block(self, position: 'Vec3', block_type: 'Block'):
+        """
+        Blockly action to set a single block in the Minecraft world.
+        """
+        x, y, z = (int(position.x), int(position.y), int(position.z))
+        self.mcplayer.pc.setBlock(x, y, z, block_type)
+
+    @mced_block(
+        label="Get Block",
+        position={'label': 'At Position', 'shadow': 'VECTOR_3D_SHADOW'}
+    )
+    def get_block(self, position: 'Vec3') -> 'Block':
+        """
+        Gets the block type at a specific location.
+        """
+        x, y, z = (int(position.x), int(position.y), int(position.z))
+        block_type = self.mcplayer.pc.getBlock(x, y, z)
+        return block_type if block_type else 'AIR'
+
+    @mced_block(
+        label="Get Height",
+        position={'label': 'At Position (X,Z)', 'shadow': 'VECTOR_3D_SHADOW'}
+    )
+    def get_height(self, position: 'Vec3') -> int:
+        """
+        Gets the Y coordinate of the highest block at the X,Z of the given position.
+        """
+        x, z = (int(position.x), int(position.z))
+        height = self.mcplayer.pc.getHeight(x, z)
+        return height
+
+    @mced_block(
+        label="Post to Chat",
+        message={'label': 'Message', 'shadow': '<shadow type="text"><field name="TEXT">Hello, World!</field></shadow>'}
+    )
+    def post_to_chat(self, message: str):
+        """
+        Posts a message to the in-game chat.
+        """
+        self.mcplayer.pc.postToChat(str(message))
+
+    @mced_block(
+        label="Create Explosion",
+        position={'label': 'At Position', 'shadow': 'VECTOR_3D_SHADOW'},
+        power={'label': 'Power', 'shadow': '<shadow type="math_number"><field name="NUM">4</field></shadow>'}
+    )
+    def create_explosion(self, position: 'Vec3', power: float):
+        """
+        Creates an explosion at a specific location.
+        """
+        x, y, z = (float(position.x), float(position.y), float(position.z))
+        self.mcplayer.pc.createExplosion(x, y, z, float(power))
+
+class WorldActionsOld(MCActionBase):
+    def __init__(self, mc_player_instance, delay_between_blocks=0.01):
+        super().__init__(mc_player_instance, delay_between_blocks)  # Call parent constructor
+        self.default_material_id = 1  # Example: material ID for stone in voxelmap
+
+    def spawn_entity(self, position_vec3, entity_type):
+        """
+        Blockly action to spawn a Minecraft entity. It now uses the helper method
+        to convert the Blockly entity ID string to a numerical ID.
+
+        Args:
+            position_vec3 (Vec3): A Vec3 instance for the spawn location.
+            entity_type (str): The Blockly-generated Bukkit enum string (e.g., 'PIG', 'ZOMBIE').
+        """
+        # Convert the Bukkit enum string to its required integer ID
+        entity_id_int = self._get_entity_id_from_bukkit_name(entity_type)
+
+        if entity_id_int is None:
+            print(f"Warning: Could not find a numerical ID for entity type '{entity_type}'. Cannot spawn.")
+            return
+
+        # print(f"ACTION: Spawning entity '{entity_type}' (ID: {entity_id_int}) at position {position_vec3}")
+
+        # Now call pyncraft with the correct integer ID 1 unit above the requested position for safety
+        self.mcplayer.pc.spawnEntity(position_vec3.x, position_vec3.y + 1, position_vec3.z, entity_id_int)
+
+    def set_block(self, position_vec3, block_type):
+        """
+        Blockly action to set a single block in the Minecraft world.
+
+        Args:
+            position_vec3 (Vec3): A Vec3 instance for the block's location.
+            block_type (str): The Blockly-generated ID for the block (e.g., 'STONE', 'OAK_FENCE').
+        """
+        # The position is already a Vec3 object.
+        # The block_type is a string ID that needs to be parsed into a Minecraft ID.
+        # parsed_block_type_id = self._parse_block_type(block_type)
+        parsed_block_type_id = block_type
+
+        # Access coordinates directly from the Vec3 object
+        x, y, z = (int(position_vec3.x), int(position_vec3.y), int(position_vec3.z))
+
+        # print(f"ACTION: Setting block at ({x},{y},{z}) to {parsed_block_type_id} "
+        #       f"for player {getattr(self.mcplayer, 'name', 'N/A')}")
+
+        # This is where you would call the actual pyncraft or Minecraft API method
+        self.mcplayer.pc.setBlock(x, y, z, parsed_block_type_id)
+
+    def get_block(self, position_vec3):
+        """
+        Gets the block type at a specific location.
+        """
+        x, y, z = (int(position_vec3.x), int(position_vec3.y), int(position_vec3.z))
+
+        # print(f"ACTION: Getting block at ({x},{y},{z})")
+
+        # pyncraft's getBlock() returns the numerical ID of the block.
+        block_type = self.mcplayer.pc.getBlock(x, y, z)
+
+        if block_type:
+            return block_type
+        else:
+            return 'AIR' # A safe default if the ID is unknown
+
+    def get_height(self, position_vec3):
+        """
+        Gets the Y coordinate of the highest block at the X,Z of the given position.
+        """
+        # We only need the x and z components for this API call.
+        x = int(position_vec3.x)
+        z = int(position_vec3.z)
+
+        # print(f"ACTION: Getting height at (x={x}, z={z})")
+
+        # Call the pyncraft method using the corrected API path
+        height = self.mcplayer.pc.getHeight(x, z)
+
+        return height
+
+    def post_to_chat(self, message):
+        """
+        Posts a message to the in-game chat.
+        The message argument is already a string from the generator.
+        """
+        # The pyncraft API expects a string, which is what we have.
+        # No casting is needed unless you want to explicitly convert other types.
+        message_str = str(message)
+
+        # print(f"ACTION: Posting to chat: \"{message_str}\"")
+
+        # Call the pyncraft method using the corrected API path
+        self.mcplayer.pc.postToChat(message_str)
+
+
+    def create_explosion(self, position_vec3, power):
+        """
+        Creates an explosion at a specific location.
+
+        Args:
+            position_vec3 (Vec3): The location for the center of the explosion.
+            power (int or float): The strength of the explosion (TNT is 4).
+        """
+        # Extract coordinates and cast types
+        x = float(position_vec3.x)
+        y = float(position_vec3.y)
+        z = float(position_vec3.z)
+        power_float = float(power)
+
+        # print(f"ACTION: Creating explosion at ({x},{y},{z}) with power {power_float}")
+
+        # Call the pyncraft method using the corrected API path
+        self.mcplayer.pc.createExplosion(x, y, z, power_float)
+
+class DigitalGeometryOrig(MCActionBase): # Inherits from MCActionBase
     def __init__(self, mc_player_instance,delay_between_blocks=0.01):
         super().__init__(mc_player_instance,delay_between_blocks) # Call parent constructor
         self.default_material_id = 1 # Example: material ID for stone in voxelmap
@@ -248,114 +579,5 @@ class DigitalGeometry(MCActionBase): # Inherits from MCActionBase
         )
         self._place_blocks_from_coords(coords, block_type)
 
-    def spawn_entity(self, position_vec3, entity_type):
-        """
-        Blockly action to spawn a Minecraft entity. It now uses the helper method
-        to convert the Blockly entity ID string to a numerical ID.
-
-        Args:
-            position_vec3 (Vec3): A Vec3 instance for the spawn location.
-            entity_type (str): The Blockly-generated Bukkit enum string (e.g., 'PIG', 'ZOMBIE').
-        """
-        # Convert the Bukkit enum string to its required integer ID
-        entity_id_int = self._get_entity_id_from_bukkit_name(entity_type)
-
-        if entity_id_int is None:
-            print(f"Warning: Could not find a numerical ID for entity type '{entity_type}'. Cannot spawn.")
-            return
-
-        # print(f"ACTION: Spawning entity '{entity_type}' (ID: {entity_id_int}) at position {position_vec3}")
-
-        # Now call pyncraft with the correct integer ID 1 unit above the requested position for safety
-        self.mcplayer.pc.spawnEntity(position_vec3.x, position_vec3.y + 1, position_vec3.z, entity_id_int)
-
-    def set_block(self, position_vec3, block_type):
-        """
-        Blockly action to set a single block in the Minecraft world.
-
-        Args:
-            position_vec3 (Vec3): A Vec3 instance for the block's location.
-            block_type (str): The Blockly-generated ID for the block (e.g., 'STONE', 'OAK_FENCE').
-        """
-        # The position is already a Vec3 object.
-        # The block_type is a string ID that needs to be parsed into a Minecraft ID.
-        # parsed_block_type_id = self._parse_block_type(block_type)
-        parsed_block_type_id = block_type
-
-        # Access coordinates directly from the Vec3 object
-        x, y, z = (int(position_vec3.x), int(position_vec3.y), int(position_vec3.z))
-
-        # print(f"ACTION: Setting block at ({x},{y},{z}) to {parsed_block_type_id} "
-        #       f"for player {getattr(self.mcplayer, 'name', 'N/A')}")
-
-        # This is where you would call the actual pyncraft or Minecraft API method
-        self.mcplayer.pc.setBlock(x, y, z, parsed_block_type_id)
-
-    def get_block(self, position_vec3):
-        """
-        Gets the block type at a specific location.
-        """
-        x, y, z = (int(position_vec3.x), int(position_vec3.y), int(position_vec3.z))
-
-        # print(f"ACTION: Getting block at ({x},{y},{z})")
-
-        # pyncraft's getBlock() returns the numerical ID of the block.
-        block_type = self.mcplayer.pc.getBlock(x, y, z)
-
-        if block_type:
-            return block_type
-        else:
-            return 'AIR' # A safe default if the ID is unknown
-
-    def get_height(self, position_vec3):
-        """
-        Gets the Y coordinate of the highest block at the X,Z of the given position.
-        """
-        # We only need the x and z components for this API call.
-        x = int(position_vec3.x)
-        z = int(position_vec3.z)
-
-        # print(f"ACTION: Getting height at (x={x}, z={z})")
-
-        # Call the pyncraft method using the corrected API path
-        height = self.mcplayer.pc.getHeight(x, z)
-
-        return height
-
-    def post_to_chat(self, message):
-        """
-        Posts a message to the in-game chat.
-        The message argument is already a string from the generator.
-        """
-        # The pyncraft API expects a string, which is what we have.
-        # No casting is needed unless you want to explicitly convert other types.
-        message_str = str(message)
-
-        # print(f"ACTION: Posting to chat: \"{message_str}\"")
-
-        # Call the pyncraft method using the corrected API path
-        self.mcplayer.pc.postToChat(message_str)
-
-
-    def create_explosion(self, position_vec3, power):
-        """
-        Creates an explosion at a specific location.
-
-        Args:
-            position_vec3 (Vec3): The location for the center of the explosion.
-            power (int or float): The strength of the explosion (TNT is 4).
-        """
-        # Extract coordinates and cast types
-        x = float(position_vec3.x)
-        y = float(position_vec3.y)
-        z = float(position_vec3.z)
-        power_float = float(power)
-
-        # print(f"ACTION: Creating explosion at ({x},{y},{z}) with power {power_float}")
-
-        # Call the pyncraft method using the corrected API path
-        self.mcplayer.pc.createExplosion(x, y, z, power_float)
-
-
-class MCActions(DigitalGeometry):
+class MCActions(DigitalGeometry,WorldActions):
     '''Group All APIs for Blockly in a single class'''
