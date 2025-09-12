@@ -12,6 +12,17 @@ from mcshell.mcvoxel import (
     generate_digital_line_coordinates,
     generate_digital_sphere_coordinates)
 
+def mced_block(label, **kwargs):
+    """
+    A decorator to mark a method for Blockly block generation and attach metadata.
+    """
+    def decorator(func):
+        # Attach the metadata to a custom attribute on the function object itself.
+        # Note: The attribute is named _mced_block_meta, not _data.
+        func._mced_block_meta = {'label': label, 'params': kwargs}
+        return func
+    return decorator
+
 class MCActionBase:
     def __init__(self, mc_player_instance:MCPlayer,delay_between_blocks:float): # Added mc_version parameter
         """
@@ -81,7 +92,10 @@ class MCActionBase:
         # Use .get() for a safe lookup that returns None if the key doesn't exist
         return self.bukkit_to_entity_id_map.get(bukkit_enum_string)
 
-class MCActions(MCActionBase): # Inherits from MCActionBase
+class DigitalGeometry(MCActionBase): # Inherits from MCActionBase
+    # the block category name for Blockly
+    name = "Digital Geometry"
+
     def __init__(self, mc_player_instance,delay_between_blocks=0.01):
         super().__init__(mc_player_instance,delay_between_blocks) # Call parent constructor
         self.default_material_id = 1 # Example: material ID for stone in voxelmap
@@ -144,7 +158,34 @@ class MCActions(MCActionBase): # Inherits from MCActionBase
         # Use the existing helper to place the blocks
         self._place_blocks_from_coords(coords, block_type)
 
-    def create_digital_cube(self, center_vec3, side_length, rotation_matrix3, block_type, inner_offset_factor=0.0):
+    @mced_block(
+        label="Create Digital Cube",
+        # Provide metadata for each parameter that will become a block input
+        center={'label': 'Center', 'shadow': 'VECTOR_3D_SHADOW'},
+        side_length={'label': 'Side Length', 'shadow': '<shadow type="math_number"><field name="NUM">5</field></shadow>'},
+        rotation_matrix3={'label': 'Rotation Matrix', 'shadow': '<shadow type="minecraft_matrix_3d_euler"></shadow>'},
+        block_type={'label': 'Block Type', 'shadow': 'BLOCK_TYPE_SHADOW'},
+        wall_thickness={'label': 'Wall Thickness (0=solid)', 'shadow': '<shadow type="math_number"><field name="NUM">0</field></shadow>'}
+    )
+    def create_digital_cube(self, center: 'Vec3', side_length:float, rotation_matrix3: 'Matrix3', block_type: 'Block', wall_thickness:float=0.0):
+        """
+        Blockly action to create a digital cube.
+        center_vec3: Vec3 instance.
+        side_length: float
+        rotation_matrix3: Matrix3 instance.
+        block_type: string (Blockly ID)
+        wall_thickness: float (0 for solid)
+        """
+        # print(f"MCActions: create_digital_cube request at {center_vec3}, side {side_length}, factor {inner_offset_factor}")
+        coords = generate_digital_cube_coordinates(
+            center=center.to_tuple(), # Your func expects tuple
+            side_length=float(side_length),
+            rotation_matrix=rotation_matrix3.to_numpy(), # Your func expects np.ndarray
+            wall_thickness=float(wall_thickness)
+        )
+        self._place_blocks_from_coords(coords, block_type)
+
+    def create_digital_cube_old(self, center_vec3, side_length, rotation_matrix3, block_type, inner_offset_factor=0.0):
         """
         Blockly action to create a digital cube.
         center_vec3: Vec3 instance.
@@ -332,3 +373,7 @@ class MCActions(MCActionBase): # Inherits from MCActionBase
 
         # Call the pyncraft method using the corrected API path
         self.mcplayer.pc.createExplosion(x, y, z, power_float)
+
+
+class MCActions(DigitalGeometry):
+    '''Group All APIs for Blockly in a single class'''
