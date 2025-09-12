@@ -4,6 +4,26 @@ export function defineMineCraftConstants(Blockly) {
 
     MCED = {
 
+        // reusable shadows
+        VECTOR_3D_SHADOW : `
+            <shadow type="minecraft_vector_3d">
+                <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+                <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+                <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+            </shadow>`,
+
+        VECTOR_3D_SHADOW_Y_UP : `
+            <shadow type="minecraft_vector_3d">
+                <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+                <value name="Y"><shadow type="math_number"><field name="NUM">1</field></shadow></value>
+                <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+            </shadow>`,
+
+        BLOCK_TYPE_SHADOW : `
+            <shadow type="minecraft_picker_world">
+                <field name="MATERIAL_ID">STONE</field>
+            </shadow>`,
+
         BlocklyNameTypes : {
             PROCEDURE: Blockly.Names.NameType.PROCEDURE,
             VARIABLE: Blockly.Names.NameType.VARIABLE
@@ -46,6 +66,8 @@ export function defineMineCraftConstants(Blockly) {
         ]
     };
 
+
+    // deprecated; replaced by block API generation code
     // reusable shadows
     const VECTOR_3D_SHADOW = `
         <shadow type="minecraft_vector_3d">
@@ -66,7 +88,7 @@ export function defineMineCraftConstants(Blockly) {
             <field name="MATERIAL_ID">STONE</field>
         </shadow>`;
 
-
+    // all shadows will be moved to generated Block definitions
     MCED.Defaults.values.minecraft_matrix_3d_euler = { // For shadow on other blocks
         YAW:   { shadow: '<shadow type="math_number"><field name="NUM">0</field></shadow>' },
         PITCH: { shadow: '<shadow type="math_number"><field name="NUM">0</field></shadow>' },
@@ -134,13 +156,13 @@ export function defineMineCraftConstants(Blockly) {
         BLOCK_TYPE:      { shadow: BLOCK_TYPE_SHADOW }
     };
 
-    MCED.Defaults.values['minecraft_action_create_digital_cube'] = {
-        CENTER:              { shadow: VECTOR_3D_SHADOW },
-        SIDE_LENGTH:         { shadow: '<shadow type="math_number"><field name="NUM">5</field></shadow>' },
-        ROTATION_MATRIX:     { shadow: '<shadow type="minecraft_matrix_3d_euler"></shadow>' },
-        BLOCK_TYPE:          { shadow: BLOCK_TYPE_SHADOW },
-        INNER_OFFSET_FACTOR: { shadow: '<shadow type="math_number"><field name="NUM">0</field></shadow>' }
-    };
+//     MCED.Defaults.values['minecraft_action_create_digital_cube'] = {
+//         CENTER:              { shadow: VECTOR_3D_SHADOW },
+//         SIDE_LENGTH:         { shadow: '<shadow type="math_number"><field name="NUM">5</field></shadow>' },
+//         ROTATION_MATRIX:     { shadow: '<shadow type="minecraft_matrix_3d_euler"></shadow>' },
+//         BLOCK_TYPE:          { shadow: BLOCK_TYPE_SHADOW },
+//         INNER_OFFSET_FACTOR: { shadow: '<shadow type="math_number"><field name="NUM">0</field></shadow>' }
+//     };
 
     MCED.Defaults.values['minecraft_action_create_digital_disc'] = {
         NORMAL:         { shadow: VECTOR_3D_SHADOW_Y_UP },
