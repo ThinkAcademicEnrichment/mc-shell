@@ -421,6 +421,8 @@
     <block type="minecraft_action_create_digital_cube" />
     <block type="minecraft_action_create_digital_plane" />
     <block type="minecraft_action_create_digital_disc" />
+    <block type="minecraft_action_create_digital_sphere" />
+    <block type="minecraft_action_create_digital_tetrahedron" />
   </category>
   <sep />
   <category name="Materials" colour="#777777">

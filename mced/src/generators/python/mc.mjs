@@ -353,15 +353,15 @@ ${indentedBlockCode}
     };
 
     // --Digital Geometry
-
-    pythonGenerator.forBlock['minecraft_action_create_digital_ball'] = function(block, generator) {
-        const center = generator.valueToCode(block, 'CENTER', generator.ORDER_ATOMIC) || "Vec3(0,0,0)";
-        const radius = generator.valueToCode(block, 'RADIUS', generator.ORDER_ATOMIC) || "5.0";
-        const blockType = generator.valueToCode(block, 'BLOCK_TYPE', generator.ORDER_ATOMIC) || "'STONE'";
-        const innerRadius = generator.valueToCode(block, 'INNER_RADIUS', generator.ORDER_ATOMIC) || "0.0";
-
-        return `self.action_implementer.create_digital_ball(center_vec3=${center}, radius=${radius}, block_type=${blockType}, inner_radius=${innerRadius})\n`;
-    };
+    //
+    // pythonGenerator.forBlock['minecraft_action_create_digital_ball'] = function(block, generator) {
+    //     const center = generator.valueToCode(block, 'CENTER', generator.ORDER_ATOMIC) || "Vec3(0,0,0)";
+    //     const radius = generator.valueToCode(block, 'RADIUS', generator.ORDER_ATOMIC) || "5.0";
+    //     const blockType = generator.valueToCode(block, 'BLOCK_TYPE', generator.ORDER_ATOMIC) || "'STONE'";
+    //     const innerRadius = generator.valueToCode(block, 'INNER_RADIUS', generator.ORDER_ATOMIC) || "0.0";
+    //
+    //     return `self.action_implementer.create_digital_ball(center_vec3=${center}, radius=${radius}, block_type=${blockType}, inner_radius=${innerRadius})\n`;
+    // };
 
 //     pythonGenerator.forBlock['minecraft_action_create_digital_cube'] = function(block, generator) {
 //         const center = generator.valueToCode(block, 'CENTER', generator.ORDER_ATOMIC) || "Vec3(0,0,0)";
@@ -373,116 +373,116 @@ ${indentedBlockCode}
 //         return `self.action_implementer.create_digital_cube(center_vec3=${center}, side_length=${sideLength}, rotation_matrix3=${rotationMatrix}, block_type=${blockType}, inner_offset_factor=${innerOffsetFactor})\n`;
 //     };
 
-    pythonGenerator.forBlock['minecraft_action_create_digital_plane'] = function(block, generator) {
-        const normal = generator.valueToCode(block, 'NORMAL', generator.ORDER_ATOMIC) || "Vec3(0,1,0)";
-        const pointOnPlane = generator.valueToCode(block, 'POINT_ON_PLANE', generator.ORDER_ATOMIC) || "Vec3(0,0,0)";
-        const blockType = generator.valueToCode(block, 'BLOCK_TYPE', generator.ORDER_ATOMIC) || "'STONE'";
-        const planeThickness = generator.valueToCode(block, 'PLANE_THICKNESS', generator.ORDER_ATOMIC) || "1.0";
+    // pythonGenerator.forBlock['minecraft_action_create_digital_plane'] = function(block, generator) {
+    //     const normal = generator.valueToCode(block, 'NORMAL', generator.ORDER_ATOMIC) || "Vec3(0,1,0)";
+    //     const pointOnPlane = generator.valueToCode(block, 'POINT_ON_PLANE', generator.ORDER_ATOMIC) || "Vec3(0,0,0)";
+    //     const blockType = generator.valueToCode(block, 'BLOCK_TYPE', generator.ORDER_ATOMIC) || "'STONE'";
+    //     const planeThickness = generator.valueToCode(block, 'PLANE_THICKNESS', generator.ORDER_ATOMIC) || "1.0";
+    //
+    //     const outerWidth = generator.valueToCode(block, 'OUTER_WIDTH', generator.ORDER_ATOMIC) || "10";
+    //     const outerLength = generator.valueToCode(block, 'OUTER_LENGTH', generator.ORDER_ATOMIC) || "10";
+    //
+    //     // The method call now includes the new parameters
+    //     return `self.action_implementer.create_digital_plane(` +
+    //            `normal_vec3=${normal}, point_on_plane_vec3=${pointOnPlane}, block_type=${blockType}, ` +
+    //            `outer_width=${outerWidth}, outer_length=${outerLength}, plane_thickness=${planeThickness})\n`;
+    // };
+    //
+    // pythonGenerator.forBlock['minecraft_action_create_digital_disc'] = function(block, generator) {
+    //     const normal = generator.valueToCode(block, 'NORMAL', generator.ORDER_ATOMIC) || "Vec3(0,1,0)";
+    //     const centerPoint = generator.valueToCode(block, 'CENTER_POINT', generator.ORDER_ATOMIC) || "Vec3(0,0,0)";
+    //     const outerRadius = generator.valueToCode(block, 'OUTER_RADIUS', generator.ORDER_ATOMIC) || "10.0";
+    //     const blockType = generator.valueToCode(block, 'BLOCK_TYPE', generator.ORDER_ATOMIC) || "'STONE'";
+    //     const discThickness = generator.valueToCode(block, 'DISC_THICKNESS', generator.ORDER_ATOMIC) || "1.0";
+    //     const innerRadius = generator.valueToCode(block, 'INNER_RADIUS', generator.ORDER_ATOMIC) || "0.0";
+    //
+    //     return `self.action_implementer.create_digital_disc(` +
+    //            `normal_vec3=${normal}, center_point_vec3=${centerPoint}, outer_radius=${outerRadius}, ` +
+    //            `block_type=${blockType}, disc_thickness=${discThickness}, inner_radius=${innerRadius})\n`;
+    // };
+    //
+    // pythonGenerator.forBlock['minecraft_action_create_digital_tube'] = function(block, generator) {
+    //     const point1 = generator.valueToCode(block, 'POINT1', generator.ORDER_ATOMIC) || "Vec3(0,0,0)";
+    //     const point2 = generator.valueToCode(block, 'POINT2', generator.ORDER_ATOMIC) || "Vec3(0,10,0)";
+    //     const outerThickness = generator.valueToCode(block, 'OUTER_THICKNESS', generator.ORDER_ATOMIC) || "3.0";
+    //     const blockType = generator.valueToCode(block, 'BLOCK_TYPE', generator.ORDER_ATOMIC) || "'STONE'";
+    //     const innerThickness = generator.valueToCode(block, 'INNER_THICKNESS', generator.ORDER_ATOMIC) || "0.0";
+    //
+    //     // Construct the Python code string using keyword arguments for clarity
+    //     return `self.action_implementer.create_digital_tube(` +
+    //            `point1_vec3=${point1}, point2_vec3=${point2}, ` +
+    //            `outer_thickness=${outerThickness}, block_type=${blockType}, ` +
+    //            `inner_thickness=${innerThickness})\n`;
+    // };
 
-        const outerWidth = generator.valueToCode(block, 'OUTER_WIDTH', generator.ORDER_ATOMIC) || "10";
-        const outerLength = generator.valueToCode(block, 'OUTER_LENGTH', generator.ORDER_ATOMIC) || "10";
+    // pythonGenerator.forBlock['minecraft_action_create_digital_line'] = function(block, generator) {
+    //     const point1 = generator.valueToCode(block, 'POINT1', generator.ORDER_ATOMIC) || "Vec3(0,0,0)";
+    //     const point2 = generator.valueToCode(block, 'POINT2', generator.ORDER_ATOMIC) || "Vec3(10,10,10)";
+    //     const blockType = generator.valueToCode(block, 'BLOCK_TYPE', generator.ORDER_ATOMIC) || "'STONE'";
+    //
+    //     // Construct the Python code string using keyword arguments
+    //     return `self.action_implementer.create_digital_line(point1_vec3=${point1}, point2_vec3=${point2}, block_type=${blockType})\n`;
+    // };
 
-        // The method call now includes the new parameters
-        return `self.action_implementer.create_digital_plane(` +
-               `normal_vec3=${normal}, point_on_plane_vec3=${pointOnPlane}, block_type=${blockType}, ` +
-               `outer_width=${outerWidth}, outer_length=${outerLength}, plane_thickness=${planeThickness})\n`;
-    };
-
-    pythonGenerator.forBlock['minecraft_action_create_digital_disc'] = function(block, generator) {
-        const normal = generator.valueToCode(block, 'NORMAL', generator.ORDER_ATOMIC) || "Vec3(0,1,0)";
-        const centerPoint = generator.valueToCode(block, 'CENTER_POINT', generator.ORDER_ATOMIC) || "Vec3(0,0,0)";
-        const outerRadius = generator.valueToCode(block, 'OUTER_RADIUS', generator.ORDER_ATOMIC) || "10.0";
-        const blockType = generator.valueToCode(block, 'BLOCK_TYPE', generator.ORDER_ATOMIC) || "'STONE'";
-        const discThickness = generator.valueToCode(block, 'DISC_THICKNESS', generator.ORDER_ATOMIC) || "1.0";
-        const innerRadius = generator.valueToCode(block, 'INNER_RADIUS', generator.ORDER_ATOMIC) || "0.0";
-
-        return `self.action_implementer.create_digital_disc(` +
-               `normal_vec3=${normal}, center_point_vec3=${centerPoint}, outer_radius=${outerRadius}, ` +
-               `block_type=${blockType}, disc_thickness=${discThickness}, inner_radius=${innerRadius})\n`;
-    };
-
-    pythonGenerator.forBlock['minecraft_action_create_digital_tube'] = function(block, generator) {
-        const point1 = generator.valueToCode(block, 'POINT1', generator.ORDER_ATOMIC) || "Vec3(0,0,0)";
-        const point2 = generator.valueToCode(block, 'POINT2', generator.ORDER_ATOMIC) || "Vec3(0,10,0)";
-        const outerThickness = generator.valueToCode(block, 'OUTER_THICKNESS', generator.ORDER_ATOMIC) || "3.0";
-        const blockType = generator.valueToCode(block, 'BLOCK_TYPE', generator.ORDER_ATOMIC) || "'STONE'";
-        const innerThickness = generator.valueToCode(block, 'INNER_THICKNESS', generator.ORDER_ATOMIC) || "0.0";
-
-        // Construct the Python code string using keyword arguments for clarity
-        return `self.action_implementer.create_digital_tube(` +
-               `point1_vec3=${point1}, point2_vec3=${point2}, ` +
-               `outer_thickness=${outerThickness}, block_type=${blockType}, ` +
-               `inner_thickness=${innerThickness})\n`;
-    };
-
-    pythonGenerator.forBlock['minecraft_action_create_digital_line'] = function(block, generator) {
-        const point1 = generator.valueToCode(block, 'POINT1', generator.ORDER_ATOMIC) || "Vec3(0,0,0)";
-        const point2 = generator.valueToCode(block, 'POINT2', generator.ORDER_ATOMIC) || "Vec3(10,10,10)";
-        const blockType = generator.valueToCode(block, 'BLOCK_TYPE', generator.ORDER_ATOMIC) || "'STONE'";
-
-        // Construct the Python code string using keyword arguments
-        return `self.action_implementer.create_digital_line(point1_vec3=${point1}, point2_vec3=${point2}, block_type=${blockType})\n`;
-    };
-
-    pythonGenerator.forBlock['minecraft_action_spawn_entity'] = function(block, generator) {
-        // Get the code for the connected value inputs, with defaults
-        const entityType = generator.valueToCode(block, 'ENTITY_TYPE', generator.ORDER_ATOMIC) || "'PIG'";
-        const position = generator.valueToCode(block, 'POSITION', generator.ORDER_ATOMIC) || "Vec3(0, 0, 0)";
-
-        // Construct the Python code string using keyword arguments
-        const code = `self.action_implementer.spawn_entity(position_vec3=${position}, entity_type=${entityType})\n`;
-
-        return code;
-    };
-
-    pythonGenerator.forBlock['minecraft_action_set_block'] = function(block, generator) {
-        // Get the code for the connected value inputs, with defaults
-        const blockType = generator.valueToCode(block, 'BLOCK_TYPE', generator.ORDER_ATOMIC) || "'STONE'";
-        const position = generator.valueToCode(block, 'POSITION', generator.ORDER_ATOMIC) || "Vec3(0, 0, 0)";
-
-        // Construct the Python code string using keyword arguments
-        const code = `self.action_implementer.set_block(position_vec3=${position}, block_type=${blockType})\n`;
-
-        return code;
-    };
-
-    pythonGenerator.forBlock['minecraft_action_get_block'] = function(block, generator) {
-        const position = generator.valueToCode(block, 'POSITION', generator.ORDER_ATOMIC) || "Vec3(0, 0, 0)";
-
-        // This generates a call to a method that returns a value
-        const code = `self.action_implementer.get_block(position_vec3=${position})`;
-
-        // Return the code and the order of operations for a function call
-        return [code, generator.ORDER_FUNCTION_CALL];
-    };
-
-    pythonGenerator.forBlock['minecraft_action_get_height'] = function(block, generator) {
-        const position = generator.valueToCode(block, 'POSITION', generator.ORDER_ATOMIC) || "Vec3(0, 0, 0)";
-
-        // Generates a call to our new MCActions method
-        const code = `self.action_implementer.get_height(position_vec3=${position})`;
-
-        return [code, generator.ORDER_FUNCTION_CALL];
-    };
-
-    pythonGenerator.forBlock['minecraft_action_post_to_chat'] = function(block, generator) {
-        const message = generator.valueToCode(block, 'MESSAGE', generator.ORDER_ATOMIC) || "''";
-
-        // Generates a call to our new MCActions method
-        const code = `self.action_implementer.post_to_chat(message=${message})\n`;
-
-        return code;
-    };
-
-    pythonGenerator.forBlock['minecraft_action_create_explosion'] = function(block, generator) {
-        const position = generator.valueToCode(block, 'POSITION', generator.ORDER_ATOMIC) || "Vec3(0, 0, 0)";
-        const power = generator.valueToCode(block, 'POWER', generator.ORDER_ATOMIC) || "4"; // Default power of TNT
-
-        // Construct the Python code string using keyword arguments
-        const code = `self.action_implementer.create_explosion(position_vec3=${position}, power=${power})\n`;
-
-        return code;
-    };
+    // pythonGenerator.forBlock['minecraft_action_spawn_entity'] = function(block, generator) {
+    //     // Get the code for the connected value inputs, with defaults
+    //     const entityType = generator.valueToCode(block, 'ENTITY_TYPE', generator.ORDER_ATOMIC) || "'PIG'";
+    //     const position = generator.valueToCode(block, 'POSITION', generator.ORDER_ATOMIC) || "Vec3(0, 0, 0)";
+    //
+    //     // Construct the Python code string using keyword arguments
+    //     const code = `self.action_implementer.spawn_entity(position_vec3=${position}, entity_type=${entityType})\n`;
+    //
+    //     return code;
+    // };
+    //
+    // pythonGenerator.forBlock['minecraft_action_set_block'] = function(block, generator) {
+    //     // Get the code for the connected value inputs, with defaults
+    //     const blockType = generator.valueToCode(block, 'BLOCK_TYPE', generator.ORDER_ATOMIC) || "'STONE'";
+    //     const position = generator.valueToCode(block, 'POSITION', generator.ORDER_ATOMIC) || "Vec3(0, 0, 0)";
+    //
+    //     // Construct the Python code string using keyword arguments
+    //     const code = `self.action_implementer.set_block(position_vec3=${position}, block_type=${blockType})\n`;
+    //
+    //     return code;
+    // };
+    //
+    // pythonGenerator.forBlock['minecraft_action_get_block'] = function(block, generator) {
+    //     const position = generator.valueToCode(block, 'POSITION', generator.ORDER_ATOMIC) || "Vec3(0, 0, 0)";
+    //
+    //     // This generates a call to a method that returns a value
+    //     const code = `self.action_implementer.get_block(position_vec3=${position})`;
+    //
+    //     // Return the code and the order of operations for a function call
+    //     return [code, generator.ORDER_FUNCTION_CALL];
+    // };
+    //
+    // pythonGenerator.forBlock['minecraft_action_get_height'] = function(block, generator) {
+    //     const position = generator.valueToCode(block, 'POSITION', generator.ORDER_ATOMIC) || "Vec3(0, 0, 0)";
+    //
+    //     // Generates a call to our new MCActions method
+    //     const code = `self.action_implementer.get_height(position_vec3=${position})`;
+    //
+    //     return [code, generator.ORDER_FUNCTION_CALL];
+    // };
+    //
+    // pythonGenerator.forBlock['minecraft_action_post_to_chat'] = function(block, generator) {
+    //     const message = generator.valueToCode(block, 'MESSAGE', generator.ORDER_ATOMIC) || "''";
+    //
+    //     // Generates a call to our new MCActions method
+    //     const code = `self.action_implementer.post_to_chat(message=${message})\n`;
+    //
+    //     return code;
+    // };
+    //
+    // pythonGenerator.forBlock['minecraft_action_create_explosion'] = function(block, generator) {
+    //     const position = generator.valueToCode(block, 'POSITION', generator.ORDER_ATOMIC) || "Vec3(0, 0, 0)";
+    //     const power = generator.valueToCode(block, 'POWER', generator.ORDER_ATOMIC) || "4"; // Default power of TNT
+    //
+    //     // Construct the Python code string using keyword arguments
+    //     const code = `self.action_implementer.create_explosion(position_vec3=${position}, power=${power})\n`;
+    //
+    //     return code;
+    // };
 
     pythonGenerator.forBlock['time_sleep'] = function(block, generator) {
         const seconds = generator.valueToCode(block, 'SECONDS', generator.ORDER_ATOMIC) || '1';

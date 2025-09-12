@@ -19,6 +19,8 @@ import { initializeHtmxListeners } from './lib/htmx_listeners.js';
 
 import { defineDigitalGeometryGenerators } from "./generators/python/DigitalGeometry.mjs"
 import { defineDigitalGeometryBlocks } from "./blocks/DigitalGeometry.mjs"
+import { defineWorldActionsGenerators } from "./generators/python/WorldActions.mjs"
+import { defineWorldActionsBlocks } from "./blocks/WorldActions.mjs"
 
 // --- Global Setup ---
 
@@ -449,17 +451,20 @@ async function init() {
     defineMineCraftBlocklyUtils(Blockly);
     // Constants populates Blockly.Msg and MCED.Defaults used by other blocks.
     defineMineCraftConstants(Blockly);
+
     // Now define all block types.
     defineMineCraftBlocks(Blockly);
     defineMineCraftMaterialBlocks(Blockly);
     defineMineCraftEntityBlocks(Blockly);
     defineDigitalGeometryBlocks(Blockly);
+    defineWorldActionsBlocks(Blockly);
 
     // --- Install all Python generators ---
     defineMineCraftGenerators(pythonGenerator);
     defineMineCraftMaterialGenerators(pythonGenerator);
     defineMineCraftEntityGenerators(pythonGenerator);
     defineDigitalGeometryGenerators(pythonGenerator);
+    defineWorldActionsGenerators(pythonGenerator);
 
 
 
