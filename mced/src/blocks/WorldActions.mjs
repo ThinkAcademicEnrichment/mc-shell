@@ -117,6 +117,39 @@ export function defineWorldActionsBlocks(Blockly) {
         }
 };
 
+    Blockly.Blocks['minecraft_action_set_blocks'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Set Blocks");
+            this.appendValueInput("POSITION_1")
+                .setCheck("3DVector")
+                .setAlign('RIGHT')
+                .appendField("Position 1");
+            this.appendValueInput("POSITION_2")
+                .setCheck("3DVector")
+                .setAlign('RIGHT')
+                .appendField("Position 2");
+            this.appendValueInput("BLOCK_TYPE")
+                .setCheck(null)
+                .setAlign('RIGHT')
+                .appendField("Block Type");
+            this.setPreviousStatement(true, null);
+            this.setNextStatement(true, null);
+            this.setColour(65);
+            this.setTooltip("An auto-generated block for the Set Blocks action.");
+            this.setInputsInline(false);
+
+            MCED.Defaults.values['minecraft_action_set_blocks'] = {
+                POSITION_1: { shadow: MCED.VECTOR_3D_SHADOW },
+            POSITION_2: { shadow: MCED.VECTOR_3D_SHADOW },
+            BLOCK_TYPE: { shadow: MCED.BLOCK_TYPE_SHADOW }
+            };
+
+            MCED.BlocklyUtils.configureShadow(this, "POSITION_1");
+            MCED.BlocklyUtils.configureShadow(this, "POSITION_2");
+            MCED.BlocklyUtils.configureShadow(this, "BLOCK_TYPE");
+        }
+};
+
     Blockly.Blocks['minecraft_action_spawn_entity'] = {
         init: function() {
             this.appendDummyInput().appendField("Spawn Entity");

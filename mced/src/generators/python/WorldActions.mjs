@@ -36,6 +36,14 @@ export function defineWorldActionsGenerators(pythonGenerator) {
 `;
     };
 
+    pythonGenerator.forBlock['minecraft_action_set_blocks'] = function(block, generator) {
+            const position_1 = generator.valueToCode(block, 'POSITION_1', generator.ORDER_ATOMIC) || Vec3(0,0,0);
+        const position_2 = generator.valueToCode(block, 'POSITION_2', generator.ORDER_ATOMIC) || Vec3(0,0,0);
+        const block_type = generator.valueToCode(block, 'BLOCK_TYPE', generator.ORDER_ATOMIC) || null;
+            return `self.action_implementer.set_blocks(position_1=${position_1}, position_2=${position_2}, block_type=${block_type})
+`;
+    };
+
     pythonGenerator.forBlock['minecraft_action_spawn_entity'] = function(block, generator) {
             const position = generator.valueToCode(block, 'POSITION', generator.ORDER_ATOMIC) || Vec3(0,0,0);
         const entity = generator.valueToCode(block, 'ENTITY', generator.ORDER_ATOMIC) || null;

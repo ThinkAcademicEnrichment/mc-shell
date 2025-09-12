@@ -429,6 +429,7 @@
     <category name="Entities"></category>
     <category name="World Actions" colour="#4C97FF">
         <block type="minecraft_action_set_block"></block>
+        <block type="minecraft_action_set_blocks"></block>
         <block type="minecraft_action_spawn_entity"></block>
         <block type="minecraft_action_get_block"></block>
         <block type="minecraft_action_get_height"></block>
