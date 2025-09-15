@@ -36,6 +36,7 @@ from rich.pretty import pprint
 from mcshell.Matrix3 import Matrix3
 from mcshell.Vec3 import Vec3
 
+from blockapily import BlocklyGenerator
 
 class PowerCancelledException(Exception):
     pass

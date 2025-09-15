@@ -1,9 +1,5 @@
 from mcshell.constants import *
 
-# still in devel stage
-from blockapily import BlocklyGenerator
-
-
 def make_picker_group(materials,reg_exp):
     _matches = list(filter(lambda x: x is not None, map(lambda x:re.match(reg_exp,x),set(materials))))
     return [_m.group() for _m in _matches]
