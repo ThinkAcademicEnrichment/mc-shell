@@ -215,6 +215,7 @@ def generate_entity_blocks():
 
         output_blocks_dir = MC_APP_SRC_DIR / 'blocks'
         output_python_dir = MC_APP_SRC_DIR / 'generators' / 'python'
+        output_toolbox_path = MC_APP_SRC_DIR / 'toolbox.xml'
 
         # --- 2. Load data ---
         with open(pickers_path, 'r', encoding='utf-8') as f:
@@ -293,8 +294,9 @@ _newline.join(toolbox_xml_categories)
         (output_python_dir / 'entities.mjs').write_text(python_gen_output, 'utf-8')
         print("Successfully generated python/entities.mjs")
 
-        (entities_data_dir / 'toolbox.xml').write_text(toolbox_xml_output, 'utf-8')
-        print("Successfully generated data/entities/toolbox.xml")
+        from blockapily import BlocklyGenerator
+        BlocklyGenerator.update_toolbox(toolbox_xml_output, output_toolbox_path)
+        print(f"Successfully updated {output_toolbox_path}")
 
     except Exception as e:
         print(f"Failed to generate entity Blockly files: {e}")
@@ -316,6 +318,7 @@ def generate_material_blocks():
 
         output_blocks_dir = MC_APP_SRC_DIR / 'blocks'
         output_python_dir = MC_APP_SRC_DIR / 'generators' / 'python'
+        output_toolbox_path = MC_APP_SRC_DIR / 'toolbox.xml'
 
         # --- 2. Load all data files ---
         with open(colourables_path, 'r', encoding='utf-8') as f:
@@ -448,231 +451,68 @@ function _combine_colour_and_material(colour, material) {
         print("Successfully generated blocks/materials.mjs")
         (output_python_dir / 'materials.mjs').write_text(python_gen_output, 'utf-8')
         print("Successfully generated python/materials.mjs")
-        (materials_data_dir / 'toolbox.xml').write_text(toolbox_xml_output, 'utf-8')
-        print("Successfully generated data/materials/toolbox.xml")
+
+        BlocklyGenerator.update_toolbox(toolbox_xml_output, output_toolbox_path)
+        print(f"Successfully updated {output_toolbox_path}")
 
     except Exception as e:
         print(f"Failed to generate material Blockly files: {e}")
         raise
 
-# --- Block API Generation
-
-TYPE_MAP = {
-    float: "Number", int: "Number", str: "String", bool: "Boolean",
-    'Vec3': "3DVector", 'Matrix3': "3DMatrix", 'Block': "Block"
-}
-def generate_block_definition(block_name, sig, meta):
-    """
-    Generates the Blockly.Blocks[...] JavaScript, now with support for
-    creating blocks with output connections if `output_type` is specified.
-    """
-    inputs_js = []
-    shadow_calls_js = []
-    defaults_js = []
-
-    params = list(sig.parameters.values())[1:]
-
-    for param in params:
-        # ... (parameter processing logic remains the same)
-        param_meta = meta['params'].get(param.name, {})
-        label = param_meta.get('label', param.name.replace('_', ' ').title())
-        input_name = param.name.upper()
-        check_type = TYPE_MAP.get(param.annotation)
-        js_check_str = f'"{check_type}"' if check_type else "null"
-
-        inputs_js.append(f"""this.appendValueInput("{input_name}")
-                .setCheck({js_check_str})
-                .setAlign('RIGHT')
-                .appendField("{label}");""")
-        shadow_calls_js.append(f'MCED.BlocklyUtils.configureShadow(this, "{input_name}");')
-
-        shadow = param_meta.get('shadow', 'null')
-        if shadow.startswith('<'):
-            shadow_value = f"'{shadow}'"
-        else:
-            shadow_value = f"MCED.{shadow}"
-        defaults_js.append(f'            {input_name}: {{ shadow: {shadow_value} }}')
-
-    inputs_str = "\n            ".join(inputs_js)
-    shadow_calls_str = "\n            ".join(shadow_calls_js)
-    defaults_str = ",\n".join(defaults_js)
-    block_label = meta['label']
-
-    # --- NEW: Logic to handle output blocks ---
-    connection_js = ""
-    output_type = meta.get('params').get('output_type')
-    if output_type:
-        connection_js = f'this.setOutput(true, "{output_type}");'
-    else:
-        connection_js = """this.setPreviousStatement(true, null);
-            this.setNextStatement(true, null);"""
-
-    return f"""
-    Blockly.Blocks['{block_name}'] = {{
-        init: function() {{
-            this.appendDummyInput().appendField("{block_label}");
-            {inputs_str}
-            {connection_js}
-            this.setColour(65);
-            this.setTooltip("An auto-generated block for the {block_label} action.");
-            this.setInputsInline(false);
-
-            MCED.Defaults.values['{block_name}'] = {{
-    {defaults_str}
-            }};
-
-            {shadow_calls_str}
-        }}
-}};"""
-
-def generate_python_generator(block_name, sig, meta):
-    """
-    Generates the pythonGenerator.forBlock[...] JavaScript, now correctly
-    handling blocks that return values by returning a [code, order] tuple.
-    """
-    value_declarations = []
-    params = list(sig.parameters.values())[1:]
-
-    for param in params:
-        # This part remains the same
-        default_value = "null"
-        if param.annotation in ['Vec3', 'Matrix3']:
-            default_value = "Matrix3.identity()" if param.annotation == 'Matrix3' else "Vec3(0,0,0)"
-        elif isinstance(param.default, str):
-            default_value = f"'{param.default}'"
-        elif param.default is not inspect.Parameter.empty:
-            default_value = str(param.default)
-
-        js_line = f"const {param.name} = generator.valueToCode(block, '{param.name.upper()}', generator.ORDER_ATOMIC) || {default_value};"
-        value_declarations.append(js_line)
-
-    value_declarations_str = "\n        ".join(value_declarations)
-    action_method_name = block_name.replace("minecraft_action_", "")
-
-    # Construct the Python method call
-    arg_list = [f"{p.name}=${{{p.name}}}" for p in params]
-    python_call = f"self.action_implementer.{action_method_name}({', '.join(arg_list)})"
-
-    # --- NEW: Logic to determine the return type ---
-    output_type = meta.get('params').get('output_type')
-    if output_type:
-        # For blocks with an output, wrap the call in `` and return a tuple
-        return_statement = f"const code = `{python_call}`;\n        return [code, generator.ORDER_FUNCTION_CALL];"
-    else:
-        # For statement blocks, add the newline and return a simple string
-        return_statement = f"return `{python_call}\n`;"
-
-    return f"""
-    pythonGenerator.forBlock['{block_name}'] = function(block, generator) {{
-            {value_declarations_str}
-            {return_statement}
-    }};"""
-
-def generate_api_block_code(actions_class):
-    """
-    Main function to generate all JS code for decorated methods.
-    Now generates only the block definition and the python generator.
-    """
-    _block_defs = []
-    for name, method in inspect.getmembers(actions_class, inspect.isfunction):
-        unwrapped_method = inspect.unwrap(method)
-        if not hasattr(unwrapped_method, '_mced_block_meta'):
-            continue
-
-        print(f"⚙️  Generating code for method: {name}")
-        sig = inspect.signature(unwrapped_method)
-        meta = unwrapped_method._mced_block_meta
-        block_name = f"minecraft_action_{name}"
-
-        # --- MODIFIED: No longer calls generate_defaults_config ---
-        _block_defs.append((generate_block_definition(block_name, sig, meta),generate_python_generator(block_name, sig, meta)))
-
-    return _block_defs
-
 def generate_mcactions_blocks():
+
+    _type_map = {
+        'Vec3': "3DVector", 'Matrix3': "3DMatrix", 'Block': "Block"
+    }
+
+    _shadow_map = dict(
+        Vec3='''
+                 <shadow type="minecraft_vector_3d">
+                    <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+                    <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+                    <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+                </shadow>   
+        ''',
+        Block='''
+                <shadow type="minecraft_picker_world">
+                    <field name="MATERIAL_ID">STONE</field>
+                </shadow>
+        ''',
+        Entity='''
+                <shadow type="minecraft_entity_picker_passive_mobs">
+                    <field name="ENTITY_ID">PIG</field>
+                </shadow>
+        ''',
+        Matrx3='''
+                <shadow type="minecraft_matrix_3d_euler"></shadow>
+        '''
+
+    )
+
     output_blocks_dir = MC_APP_SRC_DIR / 'blocks'
     output_python_dir = MC_APP_SRC_DIR / 'generators' / 'python'
+    output_toolbox_path = MC_APP_SRC_DIR / 'toolbox.xml'
 
     from mcshell.mcactions import MCActions
     for _api_class in MCActions.__bases__:
         _block_output_path = output_blocks_dir / f'{_api_class.__name__}.mjs'
         _gens_output_path = output_python_dir / f'{_api_class.__name__}.mjs'
-        _block_output = 'import { MCED } from "../lib/constants.mjs";\n\n' + \
-                        f"export function define{_api_class.__name__}Blocks(Blockly) " + "{\n"
-        _gens_output = 'import { MCED } from "../../lib/constants.mjs";\n\n' + \
-                       f"\n\nexport function define{_api_class.__name__}Generators(pythonGenerator) " + "{\n"
 
-        for _block_defs,_python_gens in generate_api_block_code(_api_class):
-            _block_output += _block_defs + "\n"
-            _gens_output += _python_gens + "\n"
+
+        _block_output = '\nimport { MCED } from "../lib/constants.mjs";' + f"\nexport function define{_api_class.__name__}Blocks(Blockly) " + "{\n"
+        _gens_output = f"\n\nexport function define{_api_class.__name__}Generators(pythonGenerator) " + "{\n"
+
+        _blks, _gens, _cat = BlocklyGenerator(_api_class, _type_map, _shadow_map).generate()
+        _block_output += _blks + "\n"
+        _gens_output += _gens + "\n"
 
         _block_output_path.write_text(_block_output + "\n}", 'utf-8')
-        print(f"Successfully generated {_block_output_path}")
         _gens_output_path.write_text(_gens_output + "\n}", 'utf-8')
-        print(f"Successfully generated {_gens_output_path}" )
 
-# --- Toolbox Generation
+        print(f"Successfully generated {_block_output_path}")
+        print(f"Successfully generated {_gens_output_path}")
 
-def build_final_toolbox():
-    """
-    Loads a toolbox template, injects generated XML category fragments,
-    and writes the final toolbox.xml file.
-    """
-    final_toolbox_path = MC_APP_SRC_DIR.joinpath('toolbox.xml')
-    # Define paths to the input and output files
-    template_path = MC_DATA_DIR.joinpath('toolbox_template.xml')
-    materials_toolbox_path = MC_DATA_DIR.joinpath('materials/toolbox.xml')
-    entities_toolbox_path = MC_DATA_DIR.joinpath('entities/toolbox.xml')
+        BlocklyGenerator.update_toolbox(_cat, output_toolbox_path)
+        print(f"Successfully updated {output_toolbox_path}")
 
-    print("--- Starting Toolbox Build ---")
-
-    # --- Step 1: Parse the main template and fragment files ---
-    try:
-        # Registering the namespace prevents the parser from adding "ns0:" prefixes
-        ET.register_namespace('', "https://developers.google.com/blockly/xml")
-
-        # Parse the main template
-        tree = ET.parse(template_path)
-        root = tree.getroot()
-
-        # Parse the material and entity category fragments
-        materials_category = ET.parse(materials_toolbox_path).getroot()
-        entities_category = ET.parse(entities_toolbox_path).getroot()
-
-    except FileNotFoundError as e:
-        print(f"Error: Could not find a required XML file. Make sure it exists: {e.filename}")
-        return
-    except ET.ParseError as e:
-        print(f"Error: Could not parse an XML file. Check for syntax errors. Details: {e}")
-        return
-
-    # --- Step 2: Find the placeholder comments and replace them ---
-
-    # We need to iterate through a copy of the list because we are modifying it
-    for i, child in enumerate(list(root)):
-        # ElementTree parses comments as a function-like object.
-        # We check if the tag is a function and its text is our placeholder.
-        if child.attrib.get('name',None) == 'Materials':
-            print("Found materials placeholder. Injecting category...")
-            # Insert the new category at the placeholder's position
-            root.insert(i, materials_category)
-            # Remove the old placeholder comment
-            root.remove(child)
-
-        elif child.attrib.get('name',None) == 'Entities':
-            print("Found entities placeholder. Injecting category...")
-            root.insert(i, entities_category)
-            root.remove(child)
-
-    # --- Step 3: Write the new, complete toolbox.xml file ---
-    try:
-        # ET.indent() is available in Python 3.9+ and makes the output pretty
-        if hasattr(ET, 'indent'):
-            ET.indent(tree, space="  ")
-
-        tree.write(final_toolbox_path, encoding='utf-8', xml_declaration=True)
-        print(f"Successfully built final toolbox at: {final_toolbox_path}")
-
-    except Exception as e:
-        print(f"Error writing final toolbox file: {e}")
-
+#

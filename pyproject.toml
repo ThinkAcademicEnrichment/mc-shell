@@ -43,6 +43,9 @@ click = "*" # For the mcshell CLI entry point
 rcon = "*"
 aio-mc-rcon = "*"
 
+# We now use blockapily.BlockGenerator !
+blockapily = "*"
+
 [tool.poetry.scripts]
 # This defines the console script entry point, replacing 'entry_points'.
 mcshell = "mcshell.mcshell:cli"
