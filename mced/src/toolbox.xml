@@ -344,7 +344,6 @@
   <category name="Colour" colour="%{BKY_COLOUR_HUE}">
     <block type="minecraft_coloured_block_picker" />
   </category>
-  <sep />
   <category name="Vector Math" colour="180">
     <block type="minecraft_vector_3d">
       <value name="X">
@@ -414,17 +413,33 @@
     <block type="minecraft_position_here" />
     <block type="minecraft_position_get_compass_direction" />
   </category>
-  <category name="Digital Geometry" colour="#4a90e2">
-    <block type="minecraft_action_create_digital_line" />
-    <block type="minecraft_action_create_digital_tube" />
-    <block type="minecraft_action_create_digital_ball" />
-    <block type="minecraft_action_create_digital_cube" />
-    <block type="minecraft_action_create_digital_plane" />
-    <block type="minecraft_action_create_digital_disc" />
-    <block type="minecraft_action_create_digital_sphere" />
-    <block type="minecraft_action_create_digital_tetrahedron" />
+  <category name="Digital Geometry">
+    <block type="digital_geometry_create_digital_ball" />
+    <block type="digital_geometry_create_digital_cube" />
+    <block type="digital_geometry_create_digital_disc" />
+    <block type="digital_geometry_create_digital_line" />
+    <block type="digital_geometry_create_digital_plane" />
+    <block type="digital_geometry_create_digital_sphere" />
+    <block type="digital_geometry_create_digital_tetrahedron" />
+    <block type="digital_geometry_create_digital_tube" />
   </category>
-  <sep />
+  <category name="Entities" colour="#5b5ba5">
+    <block type="minecraft_entity_picker_hostile_mobs" />
+    <block type="minecraft_entity_picker_minecarts" />
+    <block type="minecraft_entity_picker_miscellaneous_entities" />
+    <block type="minecraft_entity_picker_passive_mobs" />
+    <block type="minecraft_entity_picker_projectiles" />
+    <block type="minecraft_entity_picker_utility_and_special" />
+  </category>
+  <category name="World Actions">
+    <block type="world_actions_create_explosion" />
+    <block type="world_actions_get_block" />
+    <block type="world_actions_get_height" />
+    <block type="world_actions_post_to_chat" />
+    <block type="world_actions_set_block" />
+    <block type="world_actions_set_blocks" />
+    <block type="world_actions_spawn_entity" />
+  </category>
   <category name="Materials" colour="#777777">
     <block type="minecraft_material_banner">
       <value name="COLOUR">
@@ -527,22 +542,5 @@
     <block type="minecraft_picker_world" />
     <sep />
     <block type="minecraft_picker_miscellaneous" />
-  </category>
-  <category name="Entities" colour="#5b5ba5">
-    <block type="minecraft_entity_picker_hostile_mobs" />
-    <block type="minecraft_entity_picker_minecarts" />
-    <block type="minecraft_entity_picker_miscellaneous_entities" />
-    <block type="minecraft_entity_picker_passive_mobs" />
-    <block type="minecraft_entity_picker_projectiles" />
-    <block type="minecraft_entity_picker_utility_and_special" />
-  </category>
-  <category name="World Actions" colour="#4C97FF">
-    <block type="minecraft_action_set_block" />
-    <block type="minecraft_action_set_blocks" />
-    <block type="minecraft_action_spawn_entity" />
-    <block type="minecraft_action_get_block" />
-    <block type="minecraft_action_get_height" />
-    <block type="minecraft_action_post_to_chat" />
-    <block type="minecraft_action_create_explosion" />
   </category>
 </xml>

@@ -275,8 +275,8 @@ export function defineMineCraftBlocks(Blockly) {
     // Block 4: For Matrix * Vector multiplication
     Blockly.Blocks['minecraft_matrix_vector_multiply'] = {
       init: function() {
-        this.appendValueInput("A").setCheck("3DMatrix").appendField("Rotate vector");
-        this.appendValueInput("B").setCheck("3DVector").appendField("by matrix");
+        this.appendValueInput("B").setCheck("3DVector").appendField("Rotate vector");
+        this.appendValueInput("A").setCheck("3DMatrix").appendField("by matrix");
         this.setInputsInline(true);
         this.setOutput(true, "3DVector");
         this.setColour(180);
