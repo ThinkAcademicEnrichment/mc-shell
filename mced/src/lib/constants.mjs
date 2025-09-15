@@ -13,38 +13,11 @@ export function defineMineCraftConstants(Blockly) {
             },
         },
 
-        // reusable shadows
-        VECTOR_3D_SHADOW: `
-            <shadow type="minecraft_vector_3d">
-                <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-            </shadow>`,
-
-        VECTOR_3D_SHADOW_Y_UP: `
-            <shadow type="minecraft_vector_3d">
-                <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                <value name="Y"><shadow type="math_number"><field name="NUM">1</field></shadow></value>
-                <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-            </shadow>`,
-
-        BLOCK_TYPE_SHADOW: `
-            <shadow type="minecraft_picker_world">
-                <field name="MATERIAL_ID">STONE</field>
-            </shadow>`,
-
-        ENTITY_TYPE_SHADOW: `
-            <shadow type="minecraft_entity_picker_passive_mobs">
-                <field name="ENTITY_ID">PIG</field>
-            </shadow>`,
-
         BlocklyNameTypes: {
             PROCEDURE: Blockly.Names.NameType.PROCEDURE,
             VARIABLE: Blockly.Names.NameType.VARIABLE
         },
 
-
-        // constructed inside block defnitions
         Defaults: {values: {}},
 
         Colours: [
