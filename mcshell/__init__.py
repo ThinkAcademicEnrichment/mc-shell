@@ -180,7 +180,8 @@ class MCShell(Magics):
                 "enable-rcon": "true",
                 "server-port": self.server_data.get('port', MC_SERVER_PORT),
                 "rcon.port": self.server_data.get('rcon_port', MC_RCON_PORT),
-                "rcon.password": self.server_data.get('password', 'minecraft')
+                "rcon.password": self.server_data.get('password', 'minecraft'),
+                "enable-command-block":'true',
             },
             "FruitJuice" : {
                 "hostname": "0.0.0.0",
