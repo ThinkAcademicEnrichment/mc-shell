@@ -188,6 +188,21 @@ class MCShell(Magics):
                 "port": self.server_data.get('fj_port',FJ_PLUGIN_PORT),
                 "location": "ABSOLUTE",
                 "hitclick": "LEFT",
+            },
+            "paper": {
+                "packet-limiter": {
+                    "all-packets": {
+                        "max-rate": 1000.0,
+                        "interval": 4.0
+                    },
+                    "overrides": {
+                        "ServerboundUseItemOnPacket": {
+                            "action": "DROP",
+                            "interval": 2.0,
+                            "max-packet-rate": 5000.0
+                        }
+                    }
+                },
             }
         }
 

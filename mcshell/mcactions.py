@@ -236,7 +236,7 @@ class DigitalGeometry(MCActionBase):
         self._place_blocks_from_coords(coords, block_type)
 
 class WorldActions(MCActionBase):
-    def __init__(self, mc_player_instance, delay_between_blocks=0.01):
+    def __init__(self, mc_player_instance, delay_between_blocks=0):
         super().__init__(mc_player_instance, delay_between_blocks)
         self.default_material_id = 1
 
