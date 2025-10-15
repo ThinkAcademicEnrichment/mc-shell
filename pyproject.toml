@@ -6,6 +6,9 @@ authors = ["jeff@thinkae.org"]
 readme = "README.md"
 packages = [{include = "mcshell"}]
 
+[virtualenvs]
+in-project = true
+
 # This section explicitly includes all necessary data files,
 # replacing the need for the custom package_files function in setup.py.
 include = [
@@ -45,6 +48,7 @@ aio-mc-rcon = "*"
 
 # We now use blockapily.BlockGenerator !
 blockapily = "*"
+voxelmap = "^5.1.1"
 
 [tool.poetry.scripts]
 # This defines the console script entry point, replacing 'entry_points'.
