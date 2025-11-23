@@ -2,7 +2,7 @@ import ast
 from mcshell.mcplayer import MCPlayer
 from mcshell.constants import *
 
-from mcshell.mcvoxel import (
+from mcshell.mcvoxel_original import (
     generate_digital_tetrahedron_coordinates,
     generate_digital_tube_coordinates,
     generate_digital_plane_coordinates,
