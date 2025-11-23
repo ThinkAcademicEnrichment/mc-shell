@@ -174,22 +174,40 @@ def generate_digital_tube_coordinates(p1: tuple[float, float, float], p2: tuple[
 import numpy as np
 import math
 
+import numpy as np
+import math
+
 def generate_digital_plane_coordinates(normal: tuple[float, float, float],
                                          point_on_plane: tuple[float, float, float],
                                          outer_rect_dims: tuple[float, float]):
     """
-    Generates a contiguous, single-voxel-thick set of coordinates for a plane.
-    This hybrid version uses precise bounds for axis-aligned planes and a
-    padded bounding box for all other orientations.
+    Generates a Standard Digital Plane (6-connected) using the Arithmetic Definition.
+
+    Theory:
+    A voxel v is part of the plane if:
+       -thickness/2 <= dot(v - center, n) < thickness/2
+
+    Where 'thickness' is variable and calculated to guarantee 6-connectivity:
+       thickness = |nx| + |ny| + |nz| (for normalized n)
     """
     coords = set()
     n = np.array(normal, dtype=float)
-    n /= np.linalg.norm(n)
+    norm_len = np.linalg.norm(n)
+    if norm_len == 0:
+        return []
+    n /= norm_len  # Normalized normal vector
+
+    # --- 1. Calculate Arithmetic Thickness for 6-Connectivity ---
+    # This is the "Manhattan Norm" (L1) of the normal vector.
+    # It ensures the plane is thick enough to be connected, but thin enough to be functional.
+    # e.g. for (0,1,0) -> thickness 1.0
+    #      for (1,1,1) -> thickness 1.732...
+    arithmetic_thickness = np.sum(np.abs(n))
 
     point = np.array(point_on_plane, dtype=float)
     width, height = outer_rect_dims
 
-    # Find two orthogonal basis vectors (u, v) that lie on the plane
+    # --- 2. Basis Vectors for Bounding ---
     if np.allclose(n, [0, 1, 0]) or np.allclose(n, [0, -1, 0]):
         u = np.array([1, 0, 0])
         v = np.array([0, 0, 1])
@@ -201,49 +219,52 @@ def generate_digital_plane_coordinates(normal: tuple[float, float, float],
         v = np.cross(n, u)
         v /= np.linalg.norm(v)
 
-    # --- THE SOLUTION: Differentiate bounding box calculation ---
-    is_axis_aligned = (np.count_nonzero(np.isclose(n, 0)) >= 2)
+    # --- 3. Define Search Space (Bounding Box) ---
+    # We create a bounding box that covers the finite rectangle.
+    half_w_vec = u * (width / 2.0)
+    half_h_vec = v * (height / 2.0)
+    corners = [
+        point + half_w_vec + half_h_vec,
+        point + half_w_vec - half_h_vec,
+        point - half_w_vec + half_h_vec,
+        point - half_w_vec - half_h_vec,
+    ]
 
-    if is_axis_aligned:
-        # For axis-aligned planes, we can calculate the exact integer bounds
-        # without extra padding, which solves the oversizing issue.
-        half_w = (width - 1) / 2.0
-        half_h = (height - 1) / 2.0
-        corners = [
-            point + u * half_w + v * half_h, point + u * half_w - v * half_h,
-            point - u * half_w + v * half_h, point - u * half_w - v * half_h
-        ]
-        min_bounds = np.round(np.min(corners, axis=0)).astype(int)
-        max_bounds = np.round(np.max(corners, axis=0)).astype(int) + 1
-    else:
-        # For diagonal planes, we need the padded bounding box for contiguity.
-        half_w_vec = u * (width / 2.0)
-        half_h_vec = v * (height / 2.0)
-        corners = [
-            point + half_w_vec + half_h_vec, point + half_w_vec - half_h_vec,
-            point - half_w_vec + half_h_vec, point - half_w_vec - half_h_vec,
-        ]
-        min_bounds = np.floor(np.min(corners, axis=0)).astype(int) - 1
-        max_bounds = np.ceil(np.max(corners, axis=0)).astype(int) + 2
+    # Add padding to ensure we catch the "thick" diagonal voxels
+    padding = 1
+    min_bounds = np.floor(np.min(corners, axis=0)).astype(int) - padding
+    max_bounds = np.ceil(np.max(corners, axis=0)).astype(int) + padding
 
-    # The rest of the algorithm is the same robust voxel-checking logic
-    for x in range(min_bounds[0], max_bounds[0]):
-        for y in range(min_bounds[1], max_bounds[1]):
-            for z in range(min_bounds[2], max_bounds[2]):
-                voxel_center = np.array([x + 0.5, y + 0.5, z + 0.5])
-                dist_from_plane = abs(np.dot(voxel_center - point, n))
+    # Use a slightly smaller boundary for the finite check to handle odd-size ambiguity
+    boundary_u = width / 2.0 - 1e-9
+    boundary_v = height / 2.0 - 1e-9
 
-                if dist_from_plane <= 0.5:
-                    signed_dist = np.dot(voxel_center - point, n)
-                    closest_point_on_plane = voxel_center - signed_dist * n
+    # --- 4. Iterate and Validate ---
+    for x in range(min_bounds[0], max_bounds[0] + 1):
+        for y in range(min_bounds[1], max_bounds[1] + 1):
+            for z in range(min_bounds[2], max_bounds[2] + 1):
+                voxel_center = np.array([x, y, z], dtype=float) # Integer coords act as center
+
+                # A. The Arithmetic Plane Check (Infinite Plane)
+                # We check the signed distance against the variable thickness.
+                # Note: arithmetic_thickness represents the full width, so we check +/- half.
+                dist = np.dot(voxel_center - point, n)
+
+                if -arithmetic_thickness / 2.0 <= dist < arithmetic_thickness / 2.0:
+
+                    # B. The Finite Rectangle Check
+                    # Project voxel center onto the geometric plane
+                    closest_point_on_plane = voxel_center - dist * n
                     vec_from_center = closest_point_on_plane - point
+
                     proj_u = np.dot(vec_from_center, u)
                     proj_v = np.dot(vec_from_center, v)
 
-                    if abs(proj_u) <= width / 2.0 and abs(proj_v) <= height / 2.0:
+                    if abs(proj_u) <= boundary_u and abs(proj_v) <= boundary_v:
                         coords.add((x, y, z))
 
     return sorted(list(coords))
+
 
 def generate_digital_disc_coordinates(normal: tuple[float, float, float],
                                       center_point: tuple[float, float, float], # Center of the disc
