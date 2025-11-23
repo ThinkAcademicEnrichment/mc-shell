@@ -101,102 +101,149 @@ def generate_digital_tube_coordinates(p1: tuple[float, float, float], p2: tuple[
                     tube_coords.add((x, y, z))
     return sorted(list(tube_coords))
 
+# def generate_digital_plane_coordinates(normal: tuple[float, float, float],
+#                                          point_on_plane: tuple[float, float, float],
+#                                          outer_rect_dims: tuple[float, float]):
+#     """
+#     Generates a contiguous, single-voxel-thick set of coordinates for a plane
+#     of any orientation. This final version uses a robust voxel-checking algorithm
+#     with a tie-breaking offset to ensure correctness for all cases.
+#     """
+#     coords = set()
+#     n = np.array(normal, dtype=float)
+#     n /= np.linalg.norm(n)  # Normalize the normal vector
+#
+#     # --- THE CRUCIAL FIX ---
+#     # Add a tiny offset to the plane's position along its normal.
+#     # This breaks the tie when a plane lies exactly between two voxel layers,
+#     # ensuring only one layer is chosen for axis-aligned planes without
+#     # affecting the outcome for diagonal planes.
+#     point = np.array(point_on_plane, dtype=float) + (n * 1e-9)
+#
+#     width, height = outer_rect_dims
+#
+#     # Find two orthogonal basis vectors (u, v) that lie on the plane
+#     if np.allclose(n, [0, 1, 0]) or np.allclose(n, [0, -1, 0]):
+#         u = np.array([1, 0, 0])
+#         v = np.array([0, 0, 1])
+#     else:
+#         u = np.cross(n, [0, 1, 0])
+#         if np.linalg.norm(u) < 1e-6:
+#             u = np.cross(n, [0, 0, 1])
+#         u /= np.linalg.norm(u)
+#         v = np.cross(n, u)
+#         v /= np.linalg.norm(v)
+#
+#     # 1. Define the four corners of the geometric plane to create a bounding box
+#     half_w_vec = u * (width / 2.0)
+#     half_h_vec = v * (height / 2.0)
+#     corners = [
+#         point + half_w_vec + half_h_vec,
+#         point + half_w_vec - half_h_vec,
+#         point - half_w_vec + half_h_vec,
+#         point - half_w_vec - half_h_vec,
+#     ]
+#
+#     # 2. Create an integer bounding box around the plane
+#     min_bounds = np.floor(np.min(corners, axis=0)).astype(int)
+#     max_bounds = np.ceil(np.max(corners, axis=0)).astype(int)
+#
+#     # 3. Iterate through every voxel in the bounding box
+#     for x in range(min_bounds[0], max_bounds[0]):
+#         for y in range(min_bounds[1], max_bounds[1]):
+#             for z in range(min_bounds[2], max_bounds[2]):
+#                 voxel_center = np.array([x + 0.5, y + 0.5, z + 0.5])
+#
+#                 dist_from_plane = abs(np.dot(voxel_center - point, n))
+#
+#                 if dist_from_plane <= 0.5:
+#                     # Find the closest point on the infinite plane to the voxel's center
+#                     signed_dist = np.dot(voxel_center - point, n)
+#                     closest_point_on_plane = voxel_center - signed_dist * n
+#
+#                     # Check if this projected point is within the rectangle's bounds
+#                     vec_from_center = closest_point_on_plane - point
+#                     proj_u = np.dot(vec_from_center, u)
+#                     proj_v = np.dot(vec_from_center, v)
+#
+#                     if abs(proj_u) <= width / 2.0 and abs(proj_v) <= height / 2.0:
+#                         coords.add((x, y, z))
+#
+#     return sorted(list(coords))
+
+import numpy as np
+import math
 
 def generate_digital_plane_coordinates(normal: tuple[float, float, float],
-                                       point_on_plane: tuple[float, float, float],
-                                       outer_rect_dims: tuple[float, float], # Now mandatory for finite plane
-                                       plane_thickness: float = 1.0,
-                                       inner_rect_dims: tuple[float, float] = None,
-                                       rect_center_offset: tuple[float, float, float] = (0.0, 0.0, 0.0)):
+                                         point_on_plane: tuple[float, float, float],
+                                         outer_rect_dims: tuple[float, float]):
     """
-    Generates integer XYZ coordinates for a finite solid or hollow (punched) rectangular digital plane.
-    This version requires outer_rect_dims to define a finite plane.
-    For infinite planes or disc shapes, use generate_digital_disc_coordinates or adjust parameters.
+    Generates a contiguous, single-voxel-thick set of coordinates for a plane.
+    This hybrid version uses precise bounds for axis-aligned planes and a
+    padded bounding box for all other orientations.
     """
-    nx, ny, nz = normal
-    px, py, pz = point_on_plane # This is the reference point for the plane equation
+    coords = set()
+    n = np.array(normal, dtype=float)
+    n /= np.linalg.norm(n)
 
-    plane_coords = set()
+    point = np.array(point_on_plane, dtype=float)
+    width, height = outer_rect_dims
 
-    norm_val = math.sqrt(nx**2 + ny**2 + nz**2)
-    if norm_val < 1e-9:
-        print("Error: Normal vector for plane cannot be zero.")
-        return []
+    # Find two orthogonal basis vectors (u, v) that lie on the plane
+    if np.allclose(n, [0, 1, 0]) or np.allclose(n, [0, -1, 0]):
+        u = np.array([1, 0, 0])
+        v = np.array([0, 0, 1])
+    else:
+        u = np.cross(n, [0, 1, 0])
+        if np.linalg.norm(u) < 1e-6:
+            u = np.cross(n, [0, 0, 1])
+        u /= np.linalg.norm(u)
+        v = np.cross(n, u)
+        v /= np.linalg.norm(v)
 
-    normal_vec_norm = np.array([nx / norm_val, ny / norm_val, nz / norm_val])
-    # D_plane defines the plane equation: normal_vec_norm . X + D_plane = 0
-    # where X is a point on the plane. So, D_plane = - (normal_vec_norm . point_on_plane)
-    D_plane = -np.dot(normal_vec_norm, np.array(point_on_plane))
+    # --- THE SOLUTION: Differentiate bounding box calculation ---
+    is_axis_aligned = (np.count_nonzero(np.isclose(n, 0)) >= 2)
 
+    if is_axis_aligned:
+        # For axis-aligned planes, we can calculate the exact integer bounds
+        # without extra padding, which solves the oversizing issue.
+        half_w = (width - 1) / 2.0
+        half_h = (height - 1) / 2.0
+        corners = [
+            point + u * half_w + v * half_h, point + u * half_w - v * half_h,
+            point - u * half_w + v * half_h, point - u * half_w - v * half_h
+        ]
+        min_bounds = np.round(np.min(corners, axis=0)).astype(int)
+        max_bounds = np.round(np.max(corners, axis=0)).astype(int) + 1
+    else:
+        # For diagonal planes, we need the padded bounding box for contiguity.
+        half_w_vec = u * (width / 2.0)
+        half_h_vec = v * (height / 2.0)
+        corners = [
+            point + half_w_vec + half_h_vec, point + half_w_vec - half_h_vec,
+            point - half_w_vec + half_h_vec, point - half_w_vec - half_h_vec,
+        ]
+        min_bounds = np.floor(np.min(corners, axis=0)).astype(int) - 1
+        max_bounds = np.ceil(np.max(corners, axis=0)).astype(int) + 2
 
-    u_vec, v_vec = get_plane_basis(normal_vec_norm)
-    # The center for the rectangular boundary, relative to the world origin
-    # It's the 'point_on_plane' shifted by 'rect_center_offset'
-    # This allows the defined rectangle to be centered elsewhere than the 'point_on_plane'
-    # while still lying on the same plane.
-    rect_world_center = np.array(point_on_plane) + np.array(rect_center_offset)
-
-
-    # Iteration bounds must be based on the rotated and translated rectangle
-    half_width_outer, half_height_outer = outer_rect_dims[0] / 2.0, outer_rect_dims[1] / 2.0
-    # Estimate corners of the rectangle in world space to define a bounding box for iteration
-    corners = []
-    for su in [-half_width_outer, half_width_outer]:
-        for sv in [-half_height_outer, half_height_outer]:
-            corners.append(rect_world_center + su * u_vec + sv * v_vec)
-
-    corners_np = np.array(corners)
-    min_bounds_iter = np.floor(corners_np.min(axis=0) - plane_thickness).astype(int)
-    max_bounds_iter = np.ceil(corners_np.max(axis=0) + plane_thickness).astype(int)
-
-    x_min, x_max = min_bounds_iter[0], max_bounds_iter[0]
-    y_min, y_max = min_bounds_iter[1], max_bounds_iter[1]
-    z_min, z_max = min_bounds_iter[2], max_bounds_iter[2]
-
-    for x in range(x_min, x_max + 1):
-        for y in range(y_min, y_max + 1):
-            for z in range(z_min, z_max + 1):
+    # The rest of the algorithm is the same robust voxel-checking logic
+    for x in range(min_bounds[0], max_bounds[0]):
+        for y in range(min_bounds[1], max_bounds[1]):
+            for z in range(min_bounds[2], max_bounds[2]):
                 voxel_center = np.array([x + 0.5, y + 0.5, z + 0.5])
-                # Distance from voxel center to the plane defined by normal_vec_norm and point_on_plane
-                signed_perpendicular_dist = np.dot(normal_vec_norm, voxel_center - np.array(point_on_plane))
-                # Alternative using D_plane: signed_perpendicular_dist = np.dot(normal_vec_norm, voxel_center) + D_plane
+                dist_from_plane = abs(np.dot(voxel_center - point, n))
 
+                if dist_from_plane <= 0.5:
+                    signed_dist = np.dot(voxel_center - point, n)
+                    closest_point_on_plane = voxel_center - signed_dist * n
+                    vec_from_center = closest_point_on_plane - point
+                    proj_u = np.dot(vec_from_center, u)
+                    proj_v = np.dot(vec_from_center, v)
 
-                if not (abs(signed_perpendicular_dist) <= plane_thickness / 2.0):
-                    continue # Voxel center is too far from the plane's median surface
+                    if abs(proj_u) <= width / 2.0 and abs(proj_v) <= height / 2.0:
+                        coords.add((x, y, z))
 
-                # Project voxel_center onto the plane, then find its coordinates in the u,v basis
-                # relative to the rectangle's center (rect_world_center)
-                projected_point_on_plane = voxel_center - signed_perpendicular_dist * normal_vec_norm
-
-                # Vector from the rectangle's center to the projected point, in world coordinates
-                vec_from_rect_center_to_proj = projected_point_on_plane - rect_world_center
-
-                # Project this vector onto the plane's basis vectors (u_vec, v_vec)
-                # to get local coordinates within the plane, relative to rect_world_center
-                local_u = np.dot(vec_from_rect_center_to_proj, u_vec)
-                local_v = np.dot(vec_from_rect_center_to_proj, v_vec)
-
-                is_within_outer_rect = (abs(local_u) <= half_width_outer and
-                                        abs(local_v) <= half_height_outer)
-
-                if not is_within_outer_rect:
-                    continue
-
-                is_part_of_shape = True
-                if inner_rect_dims:
-                    half_width_inner = inner_rect_dims[0] / 2.0
-                    half_height_inner = inner_rect_dims[1] / 2.0
-                    is_outside_inner_rect = (abs(local_u) > half_width_inner or
-                                             abs(local_v) > half_height_inner)
-                    if not is_outside_inner_rect: # Point is inside or on the edge of the inner (hollow) rectangle
-                        is_part_of_shape = False
-
-                if is_part_of_shape:
-                    plane_coords.add((x, y, z))
-
-    return sorted(list(plane_coords))
-
+    return sorted(list(coords))
 
 def generate_digital_disc_coordinates(normal: tuple[float, float, float],
                                       center_point: tuple[float, float, float], # Center of the disc
