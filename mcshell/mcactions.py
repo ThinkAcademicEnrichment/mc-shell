@@ -117,8 +117,13 @@ class TurtleActions(MCActionBase):
     Exposes Digital Turtle commands to the Blockly interface.
     Separates Value Blocks (Generators) from Statement Blocks (Consumers).
     """
-    def __init__(self, player):
-        super().__init__(player)
+    # def __init__(self, player):
+    #     super().__init__(player)
+    #     self.turtle = _GLOBAL_TURTLE
+
+    def __init__(self, mc_player_instance,delay_between_blocks=0.01):
+        super().__init__(mc_player_instance,delay_between_blocks) # Call parent constructor
+        self.default_material_id = 1 # Example: material ID for stone in voxelmap
         self.turtle = _GLOBAL_TURTLE
 
     # --- 1. VALUE BLOCKS (Shape Generators) ---
@@ -476,5 +481,5 @@ class WorldActions(MCActionBase):
         x, y, z = (float(position.x), float(position.y), float(position.z))
         self.mcplayer.pc.createExplosion(x, y, z, float(power))
 
-class MCActions(DigitalGeometry,WorldActions):
+class MCActions(TurtleActions,DigitalGeometry,WorldActions):
     '''Group All APIs for Blockly in a single class'''

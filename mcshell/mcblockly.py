@@ -498,7 +498,6 @@ def generate_mcactions_blocks():
         _block_output_path = output_blocks_dir / f'{_api_class.__name__}.mjs'
         _gens_output_path = output_python_dir / f'{_api_class.__name__}.mjs'
 
-
         _block_output = '\nimport { MCED } from "../lib/constants.mjs";' + f"\nexport function define{_api_class.__name__}Blocks(Blockly) " + "{\n"
         _gens_output = f"\n\nexport function define{_api_class.__name__}Generators(pythonGenerator) " + "{\n"
 
