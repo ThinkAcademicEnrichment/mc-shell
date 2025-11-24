@@ -111,22 +111,16 @@ class MCActionBase:
         """
         # Use .get() for a safe lookup that returns None if the key doesn't exist
         return self.bukkit_to_entity_id_map.get(bukkit_enum_string)
-
-class TurtleActions(MCActionBase):
+class TurtleShapes(MCActionBase):
     """
-    Exposes Digital Turtle commands to the Blockly interface.
-    Separates Value Blocks (Generators) from Statement Blocks (Consumers).
+    Exposes Digital Turtle generators to the Blockly interface.
     """
-    # def __init__(self, player):
-    #     super().__init__(player)
-    #     self.turtle = _GLOBAL_TURTLE
 
     def __init__(self, mc_player_instance,delay_between_blocks=0.01):
         super().__init__(mc_player_instance,delay_between_blocks) # Call parent constructor
         self.default_material_id = 1 # Example: material ID for stone in voxelmap
-        self.turtle = _GLOBAL_TURTLE
 
-    # --- 1. VALUE BLOCKS (Shape Generators) ---
+    # --- VALUE BLOCKS (Shape Generators) ---
 
     @mced_block(
         label="Digital Shape: Sphere/Diamond/Cube",
@@ -151,7 +145,21 @@ class TurtleActions(MCActionBase):
             normal.to_tuple(), (0,0,0), dims.to_tuple()
         )
 
-    # --- 2. TURTLE CONTROL (Statement Blocks) ---
+class TurtleActions(MCActionBase):
+    """
+    Exposes Digital Turtle commands to the Blockly interface.
+    """
+    # def __init__(self, player):
+    #     super().__init__(player)
+    #     self.turtle = _GLOBAL_TURTLE
+
+    def __init__(self, mc_player_instance,delay_between_blocks=0.01):
+        super().__init__(mc_player_instance,delay_between_blocks) # Call parent constructor
+        self.default_material_id = 1 # Example: material ID for stone in voxelmap
+        self.turtle = _GLOBAL_TURTLE
+
+
+    # --- TURTLE CONTROL (Statement Blocks) ---
 
     @mced_block(
         label="Turtle: Reset",
@@ -481,5 +489,5 @@ class WorldActions(MCActionBase):
         x, y, z = (float(position.x), float(position.y), float(position.z))
         self.mcplayer.pc.createExplosion(x, y, z, float(power))
 
-class MCActions(TurtleActions,DigitalGeometry,WorldActions):
+class MCActions(TurtleShapes,TurtleActions,DigitalGeometry,WorldActions):
     '''Group All APIs for Blockly in a single class'''

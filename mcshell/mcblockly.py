@@ -510,7 +510,6 @@ def generate_mcactions_blocks():
 
         print(f"Successfully generated {_block_output_path}")
         print(f"Successfully generated {_gens_output_path}")
-
         BlocklyGenerator.update_toolbox(_cat, output_toolbox_path)
         print(f"Successfully updated {output_toolbox_path}")
 
