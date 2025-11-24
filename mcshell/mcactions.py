@@ -10,7 +10,20 @@ from mcshell.mcvoxel_original import (
     generate_digital_cube_coordinates,
     generate_digital_disc_coordinates,
     generate_digital_line_coordinates,
-    generate_digital_sphere_coordinates)
+    generate_digital_sphere_coordinates
+)
+
+# Advanced Digital Geometry and Turtle
+from mcshell.mcturtle import (
+    DigitalTurtle,
+    generate_metric_ball,
+    generate_digital_plane_coordinates as generate_arithmetic_plane,
+    DigitalSet
+)
+
+
+# Global turtle instance
+_GLOBAL_TURTLE = DigitalTurtle()
 
 def mced_block(label, **kwargs):
     """
@@ -74,6 +87,13 @@ class MCActionBase:
 
         # print(f"Placed {len(coords_list)} blocks.")
 
+    def _place_digital_set(self, dset: DigitalSet, block_type):
+        """
+        Helper to render a DigitalSet into the world.
+        """
+        if not dset: return
+        coords = dset.to_list()
+        self._place_blocks_from_coords(coords, block_type)
 
     def _initialize_entity_id_map(self):
         with MC_ENTITY_ID_MAP_PATH.open('rb') as f:
@@ -91,6 +111,133 @@ class MCActionBase:
         """
         # Use .get() for a safe lookup that returns None if the key doesn't exist
         return self.bukkit_to_entity_id_map.get(bukkit_enum_string)
+
+class TurtleActions(MCActionBase):
+    """
+    Exposes Digital Turtle commands to the Blockly interface.
+    Separates Value Blocks (Generators) from Statement Blocks (Consumers).
+    """
+    def __init__(self, player):
+        super().__init__(player)
+        self.turtle = _GLOBAL_TURTLE
+
+    # --- 1. VALUE BLOCKS (Shape Generators) ---
+
+    @mced_block(
+        label="Digital Shape: Sphere/Diamond/Cube",
+        radius={'label': 'Radius', 'shadow': '<shadow type="math_number"><field name="NUM">5</field></shadow>'},
+        metric={'label': 'Metric', 'shadow': 'METRIC_DROPDOWN'}, # Needs Dropdown definition in Blockly
+        output_type="DIGITAL_SET",
+        tooltip="Creates a mathematical shape. Does not place blocks."
+    )
+    def get_metric_ball(self, radius: int, metric: str) -> DigitalSet:
+        return generate_metric_ball((0,0,0), radius, metric)
+
+    @mced_block(
+        label="Digital Shape: Arithmetic Plane",
+        normal={'label': 'Normal', 'shadow': 'VECTOR_3D_SHADOW'},
+        dims={'label': 'Size (W, H)', 'shadow': 'VECTOR_2D_SHADOW'},
+        output_type="DIGITAL_SET",
+        tooltip="Creates a digital plane using the arithmetic definition."
+    )
+    def get_arithmetic_plane(self, normal: 'Vec3', dims: 'Vec2') -> DigitalSet:
+        # Center is 0,0,0 relative to the shape origin
+        return generate_arithmetic_plane(
+            normal.to_tuple(), (0,0,0), dims.to_tuple()
+        )
+
+    # --- 2. TURTLE CONTROL (Statement Blocks) ---
+
+    @mced_block(
+        label="Turtle: Reset",
+        tooltip="Resets turtle to player position."
+    )
+    def turtle_reset(self):
+        pos = self.player.get_position()
+        self.turtle.pos = np.array([int(p) for p in pos], dtype=int)
+        self.turtle.right = np.array([1,0,0], dtype=int)
+        self.turtle.up = np.array([0,1,0], dtype=int)
+        self.turtle.forward = np.array([0,0,1], dtype=int)
+        self.turtle.stack = []
+        print(f"Turtle reset to {self.turtle.pos}")
+
+    @mced_block(
+        label="Turtle: Move",
+        direction={'label': 'Direction', 'shadow': 'DIRECTION_DROPDOWN'},
+        distance={'label': 'Distance', 'shadow': '<shadow type="math_number"><field name="NUM">1</field></shadow>'}
+    )
+    def turtle_move(self, direction: str, distance: int):
+        self.turtle.move(distance, direction)
+
+    @mced_block(
+        label="Turtle: Rotate 90",
+        axis={'label': 'Axis', 'shadow': 'AXIS_DROPDOWN'},
+        steps={'label': 'Steps (90 deg)', 'shadow': '<shadow type="math_number"><field name="NUM">1</field></shadow>'}
+    )
+    def turtle_rotate(self, axis: str, steps: int):
+        self.turtle.rotate_90(axis, steps)
+
+    @mced_block(
+        label="Turtle: Shear",
+        primary={'label': 'Primary Axis', 'shadow': 'AXIS_DROPDOWN'},
+        secondary={'label': 'Shear By Axis', 'shadow': 'AXIS_DROPDOWN'},
+        factor={'label': 'Factor', 'shadow': '<shadow type="math_number"><field name="NUM">1</field></shadow>'}
+    )
+    def turtle_shear(self, primary: str, secondary: str, factor: int):
+        self.turtle.shear(primary, secondary, factor)
+
+    @mced_block(
+        label="Turtle: Push State"
+    )
+    def turtle_push(self):
+        self.turtle.push_state()
+
+    @mced_block(
+        label="Turtle: Pop State"
+    )
+    def turtle_pop(self):
+        self.turtle.pop_state()
+
+    # --- 3. BRUSH & DRAWING (Statement Blocks) ---
+
+    @mced_block(
+        label="Turtle: Set Brush",
+        shape={'label': 'Shape', 'check': 'DIGITAL_SET'}
+    )
+    def turtle_set_brush(self, shape: DigitalSet):
+        self.turtle.set_brush(shape)
+
+    @mced_block(
+        label="Turtle: Stamp Brush",
+        block_type={'label': 'Material', 'shadow': 'BLOCK_TYPE_SHADOW'}
+    )
+    def turtle_stamp(self, block_type: 'Block'):
+        shape = self.turtle.stamp()
+        self._place_digital_set(shape, block_type)
+
+    @mced_block(
+        label="Turtle: Extrude Brush",
+        length={'label': 'Length', 'shadow': '<shadow type="math_number"><field name="NUM">5</field></shadow>'},
+        block_type={'label': 'Material', 'shadow': 'BLOCK_TYPE_SHADOW'}
+    )
+    def turtle_extrude(self, length: int, block_type: 'Block'):
+        shape = self.turtle.extrude(length)
+        self._place_digital_set(shape, block_type)
+
+    # --- 4. STATIC BRIDGE (Statement Blocks) ---
+
+    @mced_block(
+        label="Construct Shape at Player",
+        shape={'label': 'Shape', 'check': 'DIGITAL_SET'},
+        block_type={'label': 'Material', 'shadow': 'BLOCK_TYPE_SHADOW'},
+        tooltip="Places a digital shape at the player's current location."
+    )
+    def place_static_shape(self, shape: DigitalSet, block_type: 'Block'):
+        # Translate shape to player position
+        pos = self.player.get_position()
+        # Ensure integer translation
+        moved_shape = shape.translate(int(pos.x), int(pos.y), int(pos.z))
+        self._place_digital_set(moved_shape, block_type)
 
 class DigitalGeometry(MCActionBase):
     """

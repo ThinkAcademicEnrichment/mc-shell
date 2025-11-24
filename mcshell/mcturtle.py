@@ -257,19 +257,14 @@ class DigitalTurtle:
         This skews the grid, allowing for diagonal movement and organic shapes
         while strictly preserving integer coordinates.
         """
-
         vec_map = {'x': self.right, 'y': self.up, 'z': self.forward}
-
-        # Get the vectors (references)
         v_prim = vec_map.get(primary_axis)
         v_sec  = vec_map.get(secondary_axis)
 
         if v_prim is None or v_sec is None: return
 
-        # Calculation:
         result = v_prim + v_sec * int(factor)
 
-        # Re-assign to ensure safety
         if primary_axis == 'x': self.right = result
         elif primary_axis == 'y': self.up = result
         elif primary_axis == 'z': self.forward = result
@@ -280,45 +275,38 @@ class DigitalTurtle:
         Applies the Turtle's current Basis Transform to the Brush voxels.
         Global_Pos = Turtle_Pos + (v.x * Right + v.y * Up + v.z * Forward)
         """
-        if not self.brush: return []
+        if not self.brush: return DigitalSet()
 
         world_voxels = []
         for bx, by, bz in self.brush:
-            # Linear combination of integer basis vectors
             offset = (bx * self.right) + (by * self.up) + (bz * self.forward)
             final_pos = self.pos + offset
             world_voxels.append(tuple(final_pos))
 
-        return world_voxels
+        return DigitalSet(world_voxels)
 
     def extrude(self, distance: int):
         """
         Sweeps the brush forward using the current (possibly sheared) Forward vector.
         """
         start_pos = self.pos.copy()
-
-        # Vector for the path in World Space
         move_vec = self.forward * int(distance)
 
         # Generate path relative to (0,0,0)
         path = generate_linear_path((0,0,0), tuple(move_vec))
 
         world_voxels = set()
-
-        # For every step in the path (which is the Turtle moving forward)
         for px, py, pz in path:
             step_offset = np.array([px, py, pz])
             current_turtle_pos = start_pos + step_offset
 
-            # Stamp the brush at this position using the Basis
             for bx, by, bz in self.brush:
                 brush_offset = (bx * self.right) + (by * self.up) + (bz * self.forward)
                 final_pos = current_turtle_pos + brush_offset
                 world_voxels.add(tuple(final_pos))
 
-        # Update Turtle Position to end
         self.pos += move_vec
-        return sorted(list(world_voxels))
+        return DigitalSet(world_voxels)
 
     def push_state(self):
         self.stack.append((self.pos.copy(), self.forward.copy(), self.up.copy(), self.right.copy()))
