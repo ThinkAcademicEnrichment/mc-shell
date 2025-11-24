@@ -21,6 +21,8 @@ import { defineDigitalGeometryGenerators } from "./generators/python/DigitalGeom
 import { defineDigitalGeometryBlocks } from "./blocks/DigitalGeometry.mjs"
 import { defineWorldActionsGenerators } from "./generators/python/WorldActions.mjs"
 import { defineWorldActionsBlocks } from "./blocks/WorldActions.mjs"
+import { defineTurtleGenerators} from "./generators/python/TurtleActions.mjs"
+import { defineTurtleActionsBlocks} from "./blocks/TurtleActions.mjs"
 
 // --- Global Setup ---
 
