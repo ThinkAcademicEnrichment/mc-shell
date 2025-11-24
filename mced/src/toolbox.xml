@@ -543,4 +543,19 @@
     <sep />
     <block type="minecraft_picker_miscellaneous" />
   </category>
+  <category name="Digital Turtle" />
+  <category name="Turtle Actions">
+    <block type="turtle_actions_get_arithmetic_plane" />
+    <block type="turtle_actions_get_metric_ball" />
+    <block type="turtle_actions_place_static_shape" />
+    <block type="turtle_actions_turtle_extrude" />
+    <block type="turtle_actions_turtle_move" />
+    <block type="turtle_actions_turtle_pop" />
+    <block type="turtle_actions_turtle_push" />
+    <block type="turtle_actions_turtle_reset" />
+    <block type="turtle_actions_turtle_rotate" />
+    <block type="turtle_actions_turtle_set_brush" />
+    <block type="turtle_actions_turtle_shear" />
+    <block type="turtle_actions_turtle_stamp" />
+  </category>
 </xml>
