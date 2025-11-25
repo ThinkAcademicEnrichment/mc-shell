@@ -1,4 +1,6 @@
 from mcshell.constants import *
+from blockapily import BlocklyGenerator
+
 
 def make_picker_group(materials,reg_exp):
     _matches = list(filter(lambda x: x is not None, map(lambda x:re.match(reg_exp,x),set(materials))))
@@ -294,7 +296,6 @@ _newline.join(toolbox_xml_categories)
         (output_python_dir / 'entities.mjs').write_text(python_gen_output, 'utf-8')
         print("Successfully generated python/entities.mjs")
 
-        from blockapily import BlocklyGenerator
         BlocklyGenerator.update_toolbox(toolbox_xml_output, output_toolbox_path)
         print(f"Successfully updated {output_toolbox_path}")
 
@@ -459,19 +460,226 @@ function _combine_colour_and_material(colour, material) {
         print(f"Failed to generate material Blockly files: {e}")
         raise
 
+# 1. Define the decorator here
+def mced_block(label,**kwargs):
+    """
+    Decorator to configure a method for Blockly generation.
+    """
+    def decorator(func):
+        # func._mced_block_config = kwargs
+        # Ensure compatibility with blockapily if it uses _block_config
+        func._mced_block_meta = {'label': label, 'params': kwargs}
+        # func._block_config = kwargs
+        return func
+    return decorator
+
+def _generate_blockly_name(name):
+    """Converts 'COBBLESTONE_STAIRS' to 'Cobblestone Stairs'."""
+    return name.replace("_", " ").title()
+
+def _generate_picker_block_js(block_type, label, options_list, colour, tooltip, default_value=None):
+    """
+    Helper to generate the JavaScript definition for a dropdown picker block.
+    """
+    formatted_options = ',\n'.join([f'                ["{opt[0]}", "{opt[1]}"]' for opt in options_list])
+    field_name = "VALUE"
+
+    # Escape double quotes
+    safe_tooltip = tooltip.replace('"', '\\"')
+
+    # Indentation for inside the export function
+    js_def = f"""
+    Blockly.Blocks['{block_type}'] = {{
+        init: function() {{
+            this.appendDummyInput()
+                .appendField("{label}")
+                .appendField(new Blockly.FieldDropdown([
+{formatted_options}
+                ]), "{field_name}");
+            this.setOutput(true, "String");
+            this.setColour({colour});
+            this.setTooltip("{safe_tooltip}");
+        }}
+    }};"""
+
+    py_gen = f"""
+    pythonGenerator.forBlock['{block_type}'] = function(block, generator) {{
+        const code = block.getFieldValue('{field_name}');
+        return [`'${{code}}'`, generator.ORDER_ATOMIC];
+    }};"""
+
+    return js_def, py_gen
+
 def generate_mcactions_blocks():
+    """
+    Generates the Blockly block definitions (JSON/JS) and Python generators
+    for the McActions classes.
+    """
+    # 2. Defer imports to runtime
+    from mcshell.mcactions import WorldActions, DigitalGeometry, TurtleActions, TurtleShapes
 
-    _type_map = {
-        'Vec3': "3DVector", 'Matrix3': "3DMatrix", 'Block': "Block"
+    base_dir = pathlib.Path(__file__).parent.parent
+    data_dir = base_dir / "mcshell" / "data"
+    output_dir = base_dir / "mced" / "src" / "blocks"
+    gen_output_dir = base_dir / "mced" / "src" / "generators" / "python"
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    gen_output_dir.mkdir(parents=True, exist_ok=True)
+
+    print(f"Generating blocks in: {output_dir}")
+    print(f"Generating generators in: {gen_output_dir}")
+
+    # --- Load Data ---
+    with open(data_dir / "materials" / "pickers.json", "r") as f:
+        pickers_data = json.load(f)
+    with open(data_dir / "materials" / "colourables.json", "r") as f:
+        colourables_data = json.load(f)
+    with open(data_dir / "materials" / "singles.json", "r") as f:
+        singles_data = json.load(f)
+
+    with open(data_dir / "entities" / "pickers.json", "r") as f:
+        entity_pickers_data = json.load(f)
+
+    # Colours
+    picker_colour = 230
+    default_colour = 160
+    misc_colour = 20
+    entity_colour = 260
+
+    # =========================================================================
+    # 1. GENERATE MATERIAL PICKERS
+    # =========================================================================
+
+    block_defs_list = []
+    python_gen_list = []
+
+    # A. Standard Pickers
+    for name, materials in pickers_data.items():
+        block_type = f"minecraft_picker_{name.lower()}"
+        options = [(_generate_blockly_name(mat), mat) for mat in materials]
+        js, py = _generate_picker_block_js(block_type, _generate_blockly_name(name), options, picker_colour, f"Select a {_generate_blockly_name(name)} material.")
+        block_defs_list.append(js)
+        python_gen_list.append(py)
+
+    # B. Misc Picker
+    if singles_data:
+        block_type = "minecraft_picker_miscellaneous"
+        options = [(_generate_blockly_name(mat), mat) for mat in singles_data]
+        js, py = _generate_picker_block_js(block_type, "Misc. Block/Item", options, misc_colour, "Select a miscellaneous Minecraft block or item.")
+        block_defs_list.append(js)
+        python_gen_list.append(py)
+
+    # =========================================================================
+    # 2. GENERATE COLOURABLE BLOCKS
+    # =========================================================================
+
+    def _combine_colour_and_material_js():
+        return """
+    function _combine_colour_and_material(colour_code, material_suffix) {
+        let col = colour_code.replace(/'/g, "");
+        return `'${col}_${material_suffix}'`;
+    }"""
+
+    python_gen_list.append(_combine_colour_and_material_js())
+
+    for name in colourables_data:
+        block_type = f"minecraft_material_{name.lower()}"
+        tooltip = f"A {_generate_blockly_name(name)} block that can be colored."
+
+        block_defs_list.append(f"""
+    Blockly.Blocks['{block_type}'] = {{
+      init: function() {{
+        this.appendValueInput("COLOUR")
+            .setCheck("MinecraftColour")
+            .setAlign(Blockly.ALIGN_RIGHT)
+            .appendField("{name} with color");
+        this.setOutput(true, "Block");
+        this.setColour({default_colour});
+        this.setTooltip("{tooltip}");
+        MCED.Defaults.values['{block_type}'] = {{
+          COLOUR: {{ shadow: '<shadow type="minecraft_coloured_block_picker"><field name="MINECRAFT_COLOUR_ID">WHITE</field></shadow>' }}
+        }};
+        MCED.BlocklyUtils.configureShadow(this, "COLOUR");
+      }}
+    }};""")
+
+        python_gen_list.append(f"""
+    pythonGenerator.forBlock['{block_type}'] = function(block, generator) {{
+      const colour = generator.valueToCode(block, 'COLOUR', generator.ORDER_ATOMIC) || "'WHITE'";
+      const code = _combine_colour_and_material(colour, '{name}');
+      return [code, generator.ORDER_ATOMIC];
+    }};""")
+
+    # Write MinecraftMaterials.mjs
+    materials_js_path = output_dir / "MinecraftMaterials.mjs"
+    materials_py_path = gen_output_dir / "MinecraftMaterials.mjs"
+
+    with open(materials_js_path, "w") as f:
+        f.write('import { MCED } from "../lib/constants.mjs";\n')
+        f.write('export function defineMinecraftMaterialBlocks(Blockly) {\n')
+        f.write('\n'.join(block_defs_list))
+        f.write('\n}\n')
+    print(f"[OK] Wrote {materials_js_path}")
+
+    with open(materials_py_path, "w") as f:
+        f.write('export function defineMinecraftMaterialGenerator(pythonGenerator) {\n')
+        f.write('\n'.join(python_gen_list))
+        f.write('\n}\n')
+    print(f"[OK] Wrote {materials_py_path}")
+
+
+    # =========================================================================
+    # 3. GENERATE ENTITY PICKERS
+    # =========================================================================
+
+    entity_defs_list = []
+    entity_gen_list = []
+
+    for name, entities in entity_pickers_data.items():
+        block_type = f"minecraft_entity_picker_{name.lower()}"
+        options = [(_generate_blockly_name(ent), ent) for ent in entities]
+        js, py = _generate_picker_block_js(block_type, f"{_generate_blockly_name(name)}", options, entity_colour, f"Select a {_generate_blockly_name(name)} entity.")
+        entity_defs_list.append(js)
+        entity_gen_list.append(py)
+
+    # Write MinecraftEntities.mjs
+    entities_js_path = output_dir / "MinecraftEntities.mjs"
+    entities_py_path = gen_output_dir / "MinecraftEntities.mjs"
+
+    with open(entities_js_path, "w") as f:
+        f.write('import { MCED } from "../lib/constants.mjs";\n')
+        f.write('export function defineMinecraftEntityBlocks(Blockly) {\n')
+        f.write('\n'.join(entity_defs_list))
+        f.write('\n}\n')
+    print(f"[OK] Wrote {entities_js_path}")
+
+    with open(entities_py_path, "w") as f:
+        f.write('export function defineMinecraftEntityGenerator(pythonGenerator) {\n')
+        f.write('\n'.join(entity_gen_list))
+        f.write('\n}\n')
+    print(f"[OK] Wrote {entities_py_path}")
+
+
+    # =========================================================================
+    # 4. PROCESS ACTION CLASSES via BlocklyGenerator
+    # =========================================================================
+
+    # Configure Shadows for BlocklyGenerator
+    type_map = {
+        'Vec3': "3DVector", 'Matrix3': "3DMatrix", 'Block': "Block", 'DigitalSet': "DIGITAL_SET"
     }
-
-    _shadow_map = dict(
+    # type_map = {
+    #     'Vec3': "VECTOR_3D_SHADOW",
+    #     'DigitalSet': "DIGITAL_SET",
+    #     'Block': "Block"
+    # }
+    shadow_map = dict(
         Vec3='''
                  <shadow type="minecraft_vector_3d">
                     <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
                     <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
                     <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                </shadow>   
+                </shadow>
         ''',
         Block='''
                 <shadow type="minecraft_picker_world">
@@ -488,29 +696,115 @@ def generate_mcactions_blocks():
         '''
 
     )
+    # shadow_map = {
+    #     'Vec3': '<shadow type="vector_3d_shadow"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow>',
+    #     'Block': '<shadow type="minecraft_picker_world"><field name="VALUE">STONE</field></shadow>',
+    # }
 
-    output_blocks_dir = MC_APP_SRC_DIR / 'blocks'
-    output_python_dir = MC_APP_SRC_DIR / 'generators' / 'python'
-    output_toolbox_path = MC_APP_SRC_DIR / 'toolbox.xml'
+    # Custom Picker for TurtleShapes
+    metric_options = [
+        ("Euclidean (Sphere)", "euclidean"),
+        ("Manhattan (Diamond)", "manhattan"),
+        ("Chebyshev (Cube)", "chebyshev")
+    ]
+    metric_js, metric_py = _generate_picker_block_js("metric_picker", "Metric", metric_options, 230, "Select a distance metric.")
 
-    from mcshell.mcactions import MCActions
-    for _api_class in MCActions.__bases__:
-        _block_output_path = output_blocks_dir / f'{_api_class.__name__}.mjs'
-        _gens_output_path = output_python_dir / f'{_api_class.__name__}.mjs'
+    classes_to_generate = [
+        (WorldActions, "WorldActions", None, None),
+        (DigitalGeometry, "DigitalGeometry", None, None),
+        (TurtleShapes, "TurtleShapes", metric_js, metric_py),
+        (TurtleActions, "TurtleActions", None, None),
+    ]
 
-        _block_output = '\nimport { MCED } from "../lib/constants.mjs";' + f"\nexport function define{_api_class.__name__}Blocks(Blockly) " + "{\n"
-        _gens_output = f"\n\nexport function define{_api_class.__name__}Generators(pythonGenerator) " + "{\n"
+    for cls, filename_base, extra_js, extra_py in classes_to_generate:
+        if BlocklyGenerator is None:
+            print(f"[SKIP] {cls.__name__} - Blockapily not installed.")
+            continue
 
-        _blks, _gens, _cat = BlocklyGenerator(_api_class, _type_map, _shadow_map).generate()
-        _block_output += _blks + "\n"
-        _gens_output += _gens + "\n"
+        print(f"Processing class: {cls.__name__}")
 
-        _block_output_path.write_text(_block_output + "\n}", 'utf-8')
-        _gens_output_path.write_text(_gens_output + "\n}", 'utf-8')
+        # Instantiate BlocklyGenerator
+        generator = BlocklyGenerator(cls, type_map, shadow_map)
 
-        print(f"Successfully generated {_block_output_path}")
-        print(f"Successfully generated {_gens_output_path}")
-        BlocklyGenerator.update_toolbox(_cat, output_toolbox_path)
-        print(f"Successfully updated {output_toolbox_path}")
+        # Generate blocks, generators, and toolbox info
+        # Note: blockapily's generate() returns (blocks_js, generators_py, toolbox_xml)
+        blocks_js, generators_py, toolbox_xml = generator.generate()
 
+        # Combine with extras
+        final_js = blocks_js
+        final_py = generators_py
+
+        if extra_js:
+            final_js = extra_js + "\n\n" + final_js
+        if extra_py:
+            final_py = extra_py + "\n\n" + final_py
+
+        # Write JS File
+        js_content = f'import {{ MCED }} from "../lib/constants.mjs";\n\nexport function define{filename_base}Blocks(Blockly) {{\n{final_js}\n}}'
+        (output_dir / f"{filename_base}.mjs").write_text(js_content, encoding='utf-8')
+
+        # Write Python Generator File
+        py_content = f'\nexport function define{filename_base}Generators(pythonGenerator) {{\n{final_py}\n}}'
+        (gen_output_dir / f"{filename_base}.mjs").write_text(py_content, encoding='utf-8')
+
+        print(f"[OK] Wrote {filename_base}.mjs (JS & Python)")
+
+    print("\nDone generating blocks.")
+
+if __name__ == "__main__":
+    generate_mcactions_blocks()
+
+# def generate_mcactions_blocks_old():
 #
+#     _type_map = {
+#         'Vec3': "3DVector", 'Matrix3': "3DMatrix", 'Block': "Block", 'DigitalSet': "DIGITAL_SET"
+#     }
+#
+#     _shadow_map = dict(
+#         Vec3='''
+#                  <shadow type="minecraft_vector_3d">
+#                     <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+#                     <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+#                     <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+#                 </shadow>
+#         ''',
+#         Block='''
+#                 <shadow type="minecraft_picker_world">
+#                     <field name="MATERIAL_ID">STONE</field>
+#                 </shadow>
+#         ''',
+#         Entity='''
+#                 <shadow type="minecraft_entity_picker_passive_mobs">
+#                     <field name="ENTITY_ID">PIG</field>
+#                 </shadow>
+#         ''',
+#         Matrx3='''
+#                 <shadow type="minecraft_matrix_3d_euler"></shadow>
+#         '''
+#
+#     )
+#
+#     output_blocks_dir = MC_APP_SRC_DIR / 'blocks'
+#     output_python_dir = MC_APP_SRC_DIR / 'generators' / 'python'
+#     output_toolbox_path = MC_APP_SRC_DIR / 'toolbox.xml'
+#
+#     from mcshell.mcactions import MCActions
+#     for _api_class in MCActions.__bases__:
+#         _block_output_path = output_blocks_dir / f'{_api_class.__name__}.mjs'
+#         _gens_output_path = output_python_dir / f'{_api_class.__name__}.mjs'
+#
+#         _block_output = '\nimport { MCED } from "../lib/constants.mjs";' + f"\nexport function define{_api_class.__name__}Blocks(Blockly) " + "{\n"
+#         _gens_output = f"\n\nexport function define{_api_class.__name__}Generators(pythonGenerator) " + "{\n"
+#
+#         _blks, _gens, _cat = BlocklyGenerator(_api_class, _type_map, _shadow_map).generate()
+#         _block_output += _blks + "\n"
+#         _gens_output += _gens + "\n"
+#
+#         _block_output_path.write_text(_block_output + "\n}", 'utf-8')
+#         _gens_output_path.write_text(_gens_output + "\n}", 'utf-8')
+#
+#         print(f"Successfully generated {_block_output_path}")
+#         print(f"Successfully generated {_gens_output_path}")
+#         BlocklyGenerator.update_toolbox(_cat, output_toolbox_path)
+#         print(f"Successfully updated {output_toolbox_path}")
+

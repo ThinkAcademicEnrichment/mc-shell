@@ -1,5 +1,5 @@
-import ast
 from mcshell.mcplayer import MCPlayer
+from mcshell.mcblockly import mced_block
 from mcshell.constants import *
 
 from mcshell.mcvoxel_original import (
@@ -25,18 +25,18 @@ from mcshell.mcturtle import (
 # Global turtle instance
 _GLOBAL_TURTLE = DigitalTurtle()
 
-def mced_block(label, **kwargs):
-    """
-    A decorator to mark a method for Blockly block generation and attach metadata.
-    """
-    def decorator(func):
-        # Attach the metadata to a custom attribute on the function object itself.
-        # Note: The attribute is named _mced_block_meta, not _data.
-        func._mced_block_meta = {'label': label, 'params': kwargs}
-        return func
-    return decorator
+# def mced_block(label, **kwargs):
+#     """
+#     A decorator to mark a method for Blockly block generation and attach metadata.
+#     """
+#     def decorator(func):
+#         # Attach the metadata to a custom attribute on the function object itself.
+#         # Note: The attribute is named _mced_block_meta, not _data.
+#         func._mced_block_meta = {'label': label, 'params': kwargs}
+#         return func
+#     return decorator
 
-class MCActionBase:
+class MCActionsBase:
     def __init__(self, mc_player_instance:MCPlayer,delay_between_blocks:float): # Added mc_version parameter
         """
         Initializes the action base.
@@ -111,16 +111,13 @@ class MCActionBase:
         """
         # Use .get() for a safe lookup that returns None if the key doesn't exist
         return self.bukkit_to_entity_id_map.get(bukkit_enum_string)
-class TurtleShapes(MCActionBase):
-    """
-    Exposes Digital Turtle generators to the Blockly interface.
-    """
 
-    def __init__(self, mc_player_instance,delay_between_blocks=0.01):
-        super().__init__(mc_player_instance,delay_between_blocks) # Call parent constructor
-        self.default_material_id = 1 # Example: material ID for stone in voxelmap
-
-    # --- VALUE BLOCKS (Shape Generators) ---
+class TurtleShapes(MCActionsBase):
+    """
+    Value Blocks: These generate DigitalSet objects but do not change the world state.
+    """
+    def __init__(self, player):
+        super().__init__(player)
 
     @mced_block(
         label="Digital Shape: Sphere/Diamond/Cube",
@@ -133,41 +130,43 @@ class TurtleShapes(MCActionBase):
         return generate_metric_ball((0,0,0), radius, metric)
 
     @mced_block(
-        label="Digital Shape: Arithmetic Plane",
+        label="Digital Shape: Arithmetic Plane (Square)",
         normal={'label': 'Normal', 'shadow': 'VECTOR_3D_SHADOW'},
-        dims={'label': 'Size (W, H)', 'shadow': 'VECTOR_2D_SHADOW'},
+        side_length={'label': 'Side Length', 'shadow': '<shadow type="math_number"><field name="NUM">5</field></shadow>'},
         output_type="DIGITAL_SET",
-        tooltip="Creates a digital plane using the arithmetic definition."
+        tooltip="Creates a square digital plane using the arithmetic definition."
     )
-    def get_arithmetic_plane(self, normal: 'Vec3', dims: 'Vec2') -> DigitalSet:
+    def get_arithmetic_plane(self, normal: 'Vec3', side_length: int) -> DigitalSet:
         # Center is 0,0,0 relative to the shape origin
+        # Creates a square plane by using side_length for both width and height
         return generate_arithmetic_plane(
-            normal.to_tuple(), (0,0,0), dims.to_tuple()
+            normal.to_tuple(), (0,0,0), (side_length, side_length)
         )
 
-class TurtleActions(MCActionBase):
+class TurtleActions(MCActionsBase):
     """
-    Exposes Digital Turtle commands to the Blockly interface.
+    Statement Blocks: These control the Turtle state or modify the world.
     """
-    # def __init__(self, player):
-    #     super().__init__(player)
-    #     self.turtle = _GLOBAL_TURTLE
-
-    def __init__(self, mc_player_instance,delay_between_blocks=0.01):
-        super().__init__(mc_player_instance,delay_between_blocks) # Call parent constructor
-        self.default_material_id = 1 # Example: material ID for stone in voxelmap
+    def __init__(self, player):
+        super().__init__(player)
         self.turtle = _GLOBAL_TURTLE
 
-
-    # --- TURTLE CONTROL (Statement Blocks) ---
+    # --- TURTLE CONTROL ---
 
     @mced_block(
-        label="Turtle: Reset",
-        tooltip="Resets turtle to player position."
+        label="Turtle: Reset to",
+        position={'label': 'Position', 'shadow': 'VECTOR_3D_SHADOW'},
+        tooltip="Resets turtle to the specified position with default orientation."
     )
-    def turtle_reset(self):
-        pos = self.player.get_position()
-        self.turtle.pos = np.array([int(p) for p in pos], dtype=int)
+    def turtle_reset(self, position: 'Vec3'):
+        # Use provided position, fallback to player position if None (though shadow usually prevents this)
+        if position:
+            x, y, z = position.x, position.y, position.z
+        else:
+            pos = self.player.get_position()
+            x, y, z = pos.x, pos.y, pos.z
+
+        self.turtle.pos = np.array([int(x), int(y), int(z)], dtype=int)
         self.turtle.right = np.array([1,0,0], dtype=int)
         self.turtle.up = np.array([0,1,0], dtype=int)
         self.turtle.forward = np.array([0,0,1], dtype=int)
@@ -211,7 +210,7 @@ class TurtleActions(MCActionBase):
     def turtle_pop(self):
         self.turtle.pop_state()
 
-    # --- 3. BRUSH & DRAWING (Statement Blocks) ---
+    # --- BRUSH & DRAWING ---
 
     @mced_block(
         label="Turtle: Set Brush",
@@ -237,7 +236,7 @@ class TurtleActions(MCActionBase):
         shape = self.turtle.extrude(length)
         self._place_digital_set(shape, block_type)
 
-    # --- 4. STATIC BRIDGE (Statement Blocks) ---
+    # --- STATIC BRIDGE ---
 
     @mced_block(
         label="Construct Shape at Player",
@@ -252,7 +251,7 @@ class TurtleActions(MCActionBase):
         moved_shape = shape.translate(int(pos.x), int(pos.y), int(pos.z))
         self._place_digital_set(moved_shape, block_type)
 
-class DigitalGeometry(MCActionBase):
+class DigitalGeometry(MCActionsBase):
     """
     Actions that involve creating geometric shapes.
     """
@@ -395,7 +394,7 @@ class DigitalGeometry(MCActionBase):
         )
         self._place_blocks_from_coords(coords, block_type)
 
-class WorldActions(MCActionBase):
+class WorldActions(MCActionsBase):
     def __init__(self, mc_player_instance, delay_between_blocks=0):
         super().__init__(mc_player_instance, delay_between_blocks)
         self.default_material_id = 1
