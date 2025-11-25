@@ -1,5 +1,5 @@
 from mcshell.constants import *
-from blockapily import BlocklyGenerator
+from blockapily import BlocklyGenerator, mced_block
 
 
 def make_picker_group(materials,reg_exp):
@@ -460,18 +460,6 @@ function _combine_colour_and_material(colour, material) {
         print(f"Failed to generate material Blockly files: {e}")
         raise
 
-# 1. Define the decorator here
-def mced_block(label,**kwargs):
-    """
-    Decorator to configure a method for Blockly generation.
-    """
-    def decorator(func):
-        # func._mced_block_config = kwargs
-        # Ensure compatibility with blockapily if it uses _block_config
-        func._mced_block_meta = {'label': label, 'params': kwargs}
-        # func._block_config = kwargs
-        return func
-    return decorator
 
 def _generate_blockly_name(name):
     """Converts 'COBBLESTONE_STAIRS' to 'Cobblestone Stairs'."""
@@ -508,7 +496,16 @@ def _generate_picker_block_js(block_type, label, options_list, colour, tooltip, 
         return [`'${{code}}'`, generator.ORDER_ATOMIC];
     }};"""
 
-    return js_def, py_gen
+    xml_gen =  f'<block type="{block_type}"></block>'
+    return js_def, py_gen, xml_gen
+
+def _insert_block_xml_into_category(toolbox_xml, extra_xml):
+    """
+    Inserts extra_xml block definitions into the end of the toolbox_xml category.
+    """
+    if "</category>" in toolbox_xml:
+        return toolbox_xml.replace("</category>", f"{extra_xml}\n</category>")
+    return toolbox_xml
 
 def generate_mcactions_blocks():
     """
@@ -523,11 +520,15 @@ def generate_mcactions_blocks():
     output_dir = base_dir / "mced" / "src" / "blocks"
     gen_output_dir = base_dir / "mced" / "src" / "generators" / "python"
 
+
     output_dir.mkdir(parents=True, exist_ok=True)
     gen_output_dir.mkdir(parents=True, exist_ok=True)
 
+    output_toolbox_path = MC_APP_SRC_DIR / 'toolbox.xml'
+
     print(f"Generating blocks in: {output_dir}")
     print(f"Generating generators in: {gen_output_dir}")
+    print(f"Generating toolbox in: {output_toolbox_path}")
 
     # --- Load Data ---
     with open(data_dir / "materials" / "pickers.json", "r") as f:
@@ -557,7 +558,7 @@ def generate_mcactions_blocks():
     for name, materials in pickers_data.items():
         block_type = f"minecraft_picker_{name.lower()}"
         options = [(_generate_blockly_name(mat), mat) for mat in materials]
-        js, py = _generate_picker_block_js(block_type, _generate_blockly_name(name), options, picker_colour, f"Select a {_generate_blockly_name(name)} material.")
+        js, py, _ = _generate_picker_block_js(block_type, _generate_blockly_name(name), options, picker_colour, f"Select a {_generate_blockly_name(name)} material.")
         block_defs_list.append(js)
         python_gen_list.append(py)
 
@@ -565,7 +566,7 @@ def generate_mcactions_blocks():
     if singles_data:
         block_type = "minecraft_picker_miscellaneous"
         options = [(_generate_blockly_name(mat), mat) for mat in singles_data]
-        js, py = _generate_picker_block_js(block_type, "Misc. Block/Item", options, misc_colour, "Select a miscellaneous Minecraft block or item.")
+        js, py, _ = _generate_picker_block_js(block_type, "Misc. Block/Item", options, misc_colour, "Select a miscellaneous Minecraft block or item.")
         block_defs_list.append(js)
         python_gen_list.append(py)
 
@@ -616,13 +617,13 @@ def generate_mcactions_blocks():
 
     with open(materials_js_path, "w") as f:
         f.write('import { MCED } from "../lib/constants.mjs";\n')
-        f.write('export function defineMinecraftMaterialBlocks(Blockly) {\n')
+        f.write('export function defineMineCraftMaterialBlocks(Blockly) {\n')
         f.write('\n'.join(block_defs_list))
         f.write('\n}\n')
     print(f"[OK] Wrote {materials_js_path}")
 
     with open(materials_py_path, "w") as f:
-        f.write('export function defineMinecraftMaterialGenerator(pythonGenerator) {\n')
+        f.write('export function defineMineCraftMaterialGenerators(pythonGenerator) {\n')
         f.write('\n'.join(python_gen_list))
         f.write('\n}\n')
     print(f"[OK] Wrote {materials_py_path}")
@@ -638,7 +639,7 @@ def generate_mcactions_blocks():
     for name, entities in entity_pickers_data.items():
         block_type = f"minecraft_entity_picker_{name.lower()}"
         options = [(_generate_blockly_name(ent), ent) for ent in entities]
-        js, py = _generate_picker_block_js(block_type, f"{_generate_blockly_name(name)}", options, entity_colour, f"Select a {_generate_blockly_name(name)} entity.")
+        js, py, _ = _generate_picker_block_js(block_type, f"{_generate_blockly_name(name)}", options, entity_colour, f"Select a {_generate_blockly_name(name)} entity.")
         entity_defs_list.append(js)
         entity_gen_list.append(py)
 
@@ -648,13 +649,13 @@ def generate_mcactions_blocks():
 
     with open(entities_js_path, "w") as f:
         f.write('import { MCED } from "../lib/constants.mjs";\n')
-        f.write('export function defineMinecraftEntityBlocks(Blockly) {\n')
+        f.write('export function defineMineCraftEntityBlocks(Blockly) {\n')
         f.write('\n'.join(entity_defs_list))
         f.write('\n}\n')
     print(f"[OK] Wrote {entities_js_path}")
 
     with open(entities_py_path, "w") as f:
-        f.write('export function defineMinecraftEntityGenerator(pythonGenerator) {\n')
+        f.write('export function defineMineCraftEntityGenerators(pythonGenerator) {\n')
         f.write('\n'.join(entity_gen_list))
         f.write('\n}\n')
     print(f"[OK] Wrote {entities_py_path}")
@@ -707,16 +708,16 @@ def generate_mcactions_blocks():
         ("Manhattan (Diamond)", "manhattan"),
         ("Chebyshev (Cube)", "chebyshev")
     ]
-    metric_js, metric_py = _generate_picker_block_js("metric_picker", "Metric", metric_options, 230, "Select a distance metric.")
+    metric_js, metric_py, metric_xml = _generate_picker_block_js("metric_picker", "Metric", metric_options, 230, "Select a distance metric.")
 
     classes_to_generate = [
-        (WorldActions, "WorldActions", None, None),
-        (DigitalGeometry, "DigitalGeometry", None, None),
-        (TurtleShapes, "TurtleShapes", metric_js, metric_py),
-        (TurtleActions, "TurtleActions", None, None),
+        (WorldActions, "WorldActions", None, None, None),
+        (DigitalGeometry, "DigitalGeometry", None, None, None),
+        (TurtleShapes, "TurtleShapes", metric_js, metric_py, metric_xml),
+        (TurtleActions, "TurtleActions", None, None, None),
     ]
 
-    for cls, filename_base, extra_js, extra_py in classes_to_generate:
+    for cls, filename_base, extra_js, extra_py, extra_xml in classes_to_generate:
         if BlocklyGenerator is None:
             print(f"[SKIP] {cls.__name__} - Blockapily not installed.")
             continue
@@ -733,11 +734,14 @@ def generate_mcactions_blocks():
         # Combine with extras
         final_js = blocks_js
         final_py = generators_py
+        final_xml = toolbox_xml
 
         if extra_js:
             final_js = extra_js + "\n\n" + final_js
         if extra_py:
             final_py = extra_py + "\n\n" + final_py
+        if extra_xml:
+            final_xml = _insert_block_xml_into_category(toolbox_xml,extra_xml)
 
         # Write JS File
         js_content = f'import {{ MCED }} from "../lib/constants.mjs";\n\nexport function define{filename_base}Blocks(Blockly) {{\n{final_js}\n}}'
@@ -747,7 +751,10 @@ def generate_mcactions_blocks():
         py_content = f'\nexport function define{filename_base}Generators(pythonGenerator) {{\n{final_py}\n}}'
         (gen_output_dir / f"{filename_base}.mjs").write_text(py_content, encoding='utf-8')
 
+        generator.update_toolbox(final_xml,output_toolbox_path)
+
         print(f"[OK] Wrote {filename_base}.mjs (JS & Python)")
+
 
     print("\nDone generating blocks.")
 
