@@ -21,8 +21,11 @@ import { defineDigitalGeometryGenerators } from "./generators/python/DigitalGeom
 import { defineDigitalGeometryBlocks } from "./blocks/DigitalGeometry.mjs"
 import { defineWorldActionsGenerators } from "./generators/python/WorldActions.mjs"
 import { defineWorldActionsBlocks } from "./blocks/WorldActions.mjs"
-import { defineTurtleGenerators} from "./generators/python/TurtleActions.mjs"
-import { defineTurtleActionsBlocks} from "./blocks/TurtleActions.mjs"
+import {defineTurtleActionsBlocks} from "./blocks/TurtleActions.mjs";
+import {defineTurtleActionsGenerators} from "./generators/python/TurtleActions.mjs";
+import {defineTurtleShapesBlocks} from "./blocks/TurtleShapes.mjs";
+import {defineTurtleShapesGenerators} from "./generators/python/TurtleShapes.mjs";
+
 
 // --- Global Setup ---
 
@@ -460,6 +463,8 @@ async function init() {
     defineMineCraftEntityBlocks(Blockly);
     defineDigitalGeometryBlocks(Blockly);
     defineWorldActionsBlocks(Blockly);
+    defineTurtleShapesBlocks(Blockly);
+    defineTurtleActionsBlocks(Blockly);
 
     // --- Install all Python generators ---
     defineMineCraftGenerators(pythonGenerator);
@@ -467,8 +472,8 @@ async function init() {
     defineMineCraftEntityGenerators(pythonGenerator);
     defineDigitalGeometryGenerators(pythonGenerator);
     defineWorldActionsGenerators(pythonGenerator);
-
-
+    defineTurtleShapesGenerators(pythonGenerator);
+    defineTurtleActionsGenerators(pythonGenerator);
 
     // installMCGenerator(pythonGenerator);
     // installMCMaterialsGenerator(pythonGenerator);

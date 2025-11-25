@@ -1,5 +1,5 @@
-
 import { MCED } from "../lib/constants.mjs";
+
 export function defineTurtleActionsBlocks(Blockly) {
 Blockly.Blocks['turtle_actions_place_static_shape'] = {
     init: function() {
@@ -86,16 +86,22 @@ Blockly.Blocks['turtle_actions_turtle_push'] = {
 };
 Blockly.Blocks['turtle_actions_turtle_reset'] = {
     init: function() {
-        this.appendDummyInput().appendField("Turtle: Reset");
-        
+        this.appendDummyInput().appendField("Turtle: Reset to");
+        this.appendValueInput("POSITION").setCheck("3DVector").setAlign("RIGHT").appendField("Position");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(65);
-        this.setTooltip("An auto-generated block for the 'Turtle: Reset' action.");
+        this.setTooltip("An auto-generated block for the 'Turtle: Reset to' action.");
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        
+        this.getInput('POSITION').connection.setShadowDom(Blockly.utils.xml.textToDom(`
+                 <shadow type="minecraft_vector_3d">
+                    <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+                    <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+                    <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+                </shadow>
+        `));
     }
 };
 Blockly.Blocks['turtle_actions_turtle_rotate'] = {
@@ -164,5 +170,4 @@ Blockly.Blocks['turtle_actions_turtle_stamp'] = {
         `));
     }
 };
-
 }
