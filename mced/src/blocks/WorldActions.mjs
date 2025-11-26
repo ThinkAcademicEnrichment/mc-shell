@@ -13,13 +13,7 @@ Blockly.Blocks['world_actions_create_explosion'] = {
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('POSITION').connection.setShadowDom(Blockly.utils.xml.textToDom(`
-                 <shadow type="minecraft_vector_3d">
-                    <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                    <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                    <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                </shadow>
-        `));
+        this.getInput('POSITION').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="vector_3d_shadow"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow>`));
         this.getInput('POWER').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="math_number"><field name="NUM">0</field></shadow>`));
     }
 };
@@ -33,13 +27,7 @@ Blockly.Blocks['world_actions_get_block'] = {
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('POSITION').connection.setShadowDom(Blockly.utils.xml.textToDom(`
-                 <shadow type="minecraft_vector_3d">
-                    <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                    <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                    <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                </shadow>
-        `));
+        this.getInput('POSITION').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="vector_3d_shadow"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow>`));
     }
 };
 Blockly.Blocks['world_actions_get_height'] = {
@@ -52,13 +40,7 @@ Blockly.Blocks['world_actions_get_height'] = {
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('POSITION').connection.setShadowDom(Blockly.utils.xml.textToDom(`
-                 <shadow type="minecraft_vector_3d">
-                    <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                    <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                    <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                </shadow>
-        `));
+        this.getInput('POSITION').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="vector_3d_shadow"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow>`));
     }
 };
 Blockly.Blocks['world_actions_post_to_chat'] = {
@@ -87,18 +69,8 @@ Blockly.Blocks['world_actions_set_block'] = {
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('POSITION').connection.setShadowDom(Blockly.utils.xml.textToDom(`
-                 <shadow type="minecraft_vector_3d">
-                    <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                    <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                    <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                </shadow>
-        `));
-        this.getInput('BLOCK_TYPE').connection.setShadowDom(Blockly.utils.xml.textToDom(`
-                <shadow type="minecraft_picker_world">
-                    <field name="MATERIAL_ID">STONE</field>
-                </shadow>
-        `));
+        this.getInput('POSITION').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="vector_3d_shadow"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow>`));
+        this.getInput('BLOCK_TYPE').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="minecraft_picker_world"><field name="MATERIAL_ID">STONE</field></shadow>`));
     }
 };
 Blockly.Blocks['world_actions_set_blocks'] = {
@@ -114,20 +86,8 @@ Blockly.Blocks['world_actions_set_blocks'] = {
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('POSITION_1').connection.setShadowDom(Blockly.utils.xml.textToDom(`
-                 <shadow type="minecraft_vector_3d">
-                    <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                    <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                    <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                </shadow>
-        `));
-        this.getInput('POSITION_2').connection.setShadowDom(Blockly.utils.xml.textToDom(`
-                 <shadow type="minecraft_vector_3d">
-                    <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                    <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                    <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                </shadow>
-        `));
+        this.getInput('POSITION_1').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="vector_3d_shadow"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow>`));
+        this.getInput('POSITION_2').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="vector_3d_shadow"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow>`));
     }
 };
 Blockly.Blocks['world_actions_spawn_entity'] = {
@@ -142,18 +102,8 @@ Blockly.Blocks['world_actions_spawn_entity'] = {
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('POSITION').connection.setShadowDom(Blockly.utils.xml.textToDom(`
-                 <shadow type="minecraft_vector_3d">
-                    <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                    <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                    <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                </shadow>
-        `));
-        this.getInput('ENTITY').connection.setShadowDom(Blockly.utils.xml.textToDom(`
-                <shadow type="minecraft_entity_picker_passive_mobs">
-                    <field name="ENTITY_ID">PIG</field>
-                </shadow>
-        `));
+        this.getInput('POSITION').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="vector_3d_shadow"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow>`));
+        this.getInput('ENTITY').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="minecraft_entity_picker_passive_mobs"><field name="VALUE">PIG</field></shadow>`));
     }
 };
 }

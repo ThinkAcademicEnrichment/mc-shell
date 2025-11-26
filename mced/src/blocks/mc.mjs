@@ -9,6 +9,36 @@ export function defineMineCraftBlocks(Blockly) {
 
     };
 
+    // Blockly.Blocks['vector_3d_shadow'] = {
+    //     init: function () {
+    //         this.jsonInit({
+    //             "type": "vector_3d_shadow",
+    //             "message0": "Vector 3D Shadow %1 %2 %3",
+    //             "args0": [
+    //                 {
+    //                     "type": "field_number",
+    //                     "name": "X",
+    //                     "value": 0
+    //                 },
+    //                 {
+    //                     "type": "field_number",
+    //                     "name": "Y",
+    //                     "value": 0
+    //                 },
+    //                 {
+    //                     "type": "field_number",
+    //                     "name": "Z",
+    //                     "value": 0
+    //                 }
+    //             ],
+    //             "output": "Vector3D", // Or whatever type it outputs
+    //             "colour": 230, // Example color
+    //             "tooltip": "A shadow block for a 3D vector.",
+    //             "helpUrl": ""
+    //         });
+    //     }
+    // };
+
     // -- Colours Category ---:/
 
     Blockly.Blocks['minecraft_coloured_block_picker'] = {
@@ -95,6 +125,17 @@ export function defineMineCraftBlocks(Blockly) {
         }
     };
 
+    Blockly.Blocks['vector_3d_shadow'] = {
+        init: function() {
+            this.appendValueInput('X').setCheck('Number').setAlign('RIGHT').appendField('X');
+            this.appendValueInput('Y').setCheck('Number').setAlign('RIGHT').appendField('Y');
+            this.appendValueInput('Z').setCheck('Number').setAlign('RIGHT').appendField('Z');
+            this.setOutput(true, '3DVector');
+            this.setColour(20);
+            this.setTooltip('A three-dimensional vector (X, Y, Z).');
+            this.setInputsInline(true); // This keeps the x, y, z inputs on a single line
+        }
+    };
 
     Blockly.Blocks['minecraft_vector_3d'] = {
       init: function() {

@@ -1,10 +1,12 @@
 
 export function defineTurtleShapesGenerators(pythonGenerator) {
 
-    pythonGenerator.forBlock['metric_picker'] = function(block, generator) {
+    pythonGenerator.forBlock['picker_metric'] = function(block, generator) {
         const code = block.getFieldValue('VALUE');
         return [`'${code}'`, generator.ORDER_ATOMIC];
     };
+
+
 
 pythonGenerator.forBlock['turtle_shapes_get_arithmetic_plane'] = function(block, generator) {
     const normal = generator.valueToCode(block, 'NORMAL', generator.ORDER_ATOMIC) || 'None';

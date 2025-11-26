@@ -2,7 +2,7 @@ import { MCED } from "../lib/constants.mjs";
 
 export function defineTurtleShapesBlocks(Blockly) {
 
-    Blockly.Blocks['metric_picker'] = {
+    Blockly.Blocks['picker_metric'] = {
         init: function() {
             this.appendDummyInput()
                 .appendField("Metric")
@@ -13,9 +13,11 @@ export function defineTurtleShapesBlocks(Blockly) {
                 ]), "VALUE");
             this.setOutput(true, "String");
             this.setColour(230);
-            this.setTooltip("Select a distance metric.");
+            this.setTooltip("Select a Metric.");
         }
     };
+
+
 
 Blockly.Blocks['turtle_shapes_get_arithmetic_plane'] = {
     init: function() {
@@ -28,13 +30,7 @@ Blockly.Blocks['turtle_shapes_get_arithmetic_plane'] = {
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('NORMAL').connection.setShadowDom(Blockly.utils.xml.textToDom(`
-                 <shadow type="minecraft_vector_3d">
-                    <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                    <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                    <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                </shadow>
-        `));
+        this.getInput('NORMAL').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="vector_3d_shadow"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow>`));
         this.getInput('SIDE_LENGTH').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="math_number"><field name="NUM">0</field></shadow>`));
     }
 };

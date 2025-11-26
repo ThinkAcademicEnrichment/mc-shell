@@ -1,22 +1,24 @@
 
 export function defineTurtleActionsGenerators(pythonGenerator) {
 
-    pythonGenerator.forBlock['direction_picker'] = function(block, generator) {
+    pythonGenerator.forBlock['picker_direction'] = function(block, generator) {
         const code = block.getFieldValue('VALUE');
         return [`'${code}'`, generator.ORDER_ATOMIC];
     };
 
 
-    pythonGenerator.forBlock['axis_picker'] = function(block, generator) {
+    pythonGenerator.forBlock['picker_axis'] = function(block, generator) {
         const code = block.getFieldValue('VALUE');
         return [`'${code}'`, generator.ORDER_ATOMIC];
     };
 
 
-    pythonGenerator.forBlock['compass_picker'] = function(block, generator) {
+    pythonGenerator.forBlock['picker_compass'] = function(block, generator) {
         const code = block.getFieldValue('VALUE');
         return [`'${code}'`, generator.ORDER_ATOMIC];
     };
+
+
 
 pythonGenerator.forBlock['turtle_actions_place_static_shape'] = function(block, generator) {
     const shape = generator.valueToCode(block, 'SHAPE', generator.ORDER_ATOMIC) || 'None';

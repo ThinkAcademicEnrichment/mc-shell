@@ -244,6 +244,14 @@ ${indentedBlockCode}
         return [code, generator.ORDER_FUNCTION_CALL];
     };
 
+    pythonGenerator.forBlock['vector_3d_shadow'] = function(block, generator) {
+        const x = generator.valueToCode(block, 'X', generator.ORDER_ATOMIC) || '0';
+        const y = generator.valueToCode(block, 'Y', generator.ORDER_ATOMIC) || '0';
+        const z = generator.valueToCode(block, 'Z', generator.ORDER_ATOMIC) || '0';
+        const code = `Vec3(${x}, ${y}, ${z})`;
+        return [code, generator.ORDER_ATOMIC];
+    };
+
     pythonGenerator.forBlock['minecraft_vector_3d'] = function(block, generator) {
         // Use valueToCode for each input, providing a default value of '0' if nothing is connected.
         const x = generator.valueToCode(block, 'X', generator.ORDER_ATOMIC) || '0';
