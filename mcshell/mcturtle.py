@@ -45,8 +45,8 @@ class DigitalSet:
         Discrete Bijective Shear on the set elements.
         New P = Old P + floor(factor * Old S)
         """
-        idx_p = {'x': 0, 'y': 1, 'z': 2}[axis_primary]
-        idx_s = {'x': 0, 'y': 1, 'z': 2}[axis_secondary]
+        idx_p = {'x': 0, 'y': 1, 'z': 2}[axis_primary.lower()]
+        idx_s = {'x': 0, 'y': 1, 'z': 2}[axis_secondary.lower()]
 
         new_voxels = set()
         for v in self.voxels:
@@ -222,6 +222,7 @@ class DigitalTurtle:
     def move(self, distance: int, direction='forward'):
         """Moves the turtle along its current basis vectors."""
         vec = np.array([0,0,0], dtype=int)
+        direction = direction.lower() # Robustness
         if direction == 'forward': vec = self.forward
         elif direction == 'back':  vec = -self.forward
         elif direction == 'up':    vec = self.up
@@ -236,6 +237,8 @@ class DigitalTurtle:
         Discrete rotation of the coordinate frame by 90 degrees.
         This preserves the lattice structure perfectly.
         """
+        axis = axis.lower() # FIX: Handle 'Y' vs 'y'
+
         for _ in range(steps % 4):
             if axis == 'y': # Yaw (Rotate around Up): F -> R, R -> -F
                 new_f = self.right.copy()
@@ -257,6 +260,9 @@ class DigitalTurtle:
         This skews the grid, allowing for diagonal movement and organic shapes
         while strictly preserving integer coordinates.
         """
+        primary_axis = primary_axis.lower() # FIX: Handle 'X' vs 'x'
+        secondary_axis = secondary_axis.lower()
+
         vec_map = {'x': self.right, 'y': self.up, 'z': self.forward}
         v_prim = vec_map.get(primary_axis)
         v_sec  = vec_map.get(secondary_axis)
@@ -274,6 +280,7 @@ class DigitalTurtle:
         Stamps the brush into the world.
         Applies the Turtle's current Basis Transform to the Brush voxels.
         Global_Pos = Turtle_Pos + (v.x * Right + v.y * Up + v.z * Forward)
+        Returns a DigitalSet.
         """
         if not self.brush: return DigitalSet()
 
@@ -288,6 +295,7 @@ class DigitalTurtle:
     def extrude(self, distance: int):
         """
         Sweeps the brush forward using the current (possibly sheared) Forward vector.
+        Returns a DigitalSet.
         """
         start_pos = self.pos.copy()
         move_vec = self.forward * int(distance)
