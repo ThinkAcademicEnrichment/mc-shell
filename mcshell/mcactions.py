@@ -101,6 +101,32 @@ class MCActionsBase:
         # Use .get() for a safe lookup that returns None if the key doesn't exist
         return self.bukkit_to_entity_id_map.get(bukkit_enum_string)
 
+class Pickers:
+    """Registry of custom picker options for blocks."""
+
+    METRIC = [
+        ("Euclidean (Sphere)", "euclidean"),
+        ("Manhattan (Diamond)", "manhattan"),
+        ("Chebyshev (Cube)", "chebyshev")
+    ]
+
+    DIRECTION = [
+        ("Forward", "forward"), ("Back", "back"),
+        ("Up", "up"), ("Down", "down"),
+        ("Left", "left"), ("Right", "right")
+    ]
+
+    AXIS = [
+        ("Yaw (Y)", "y"), ("Pitch (X)", "x"), ("Roll (Z)", "z")
+    ]
+
+    COMPASS = [
+        ("North (-Z)", "N"), ("South (+Z)", "S"),
+        ("East (+X)", "E"), ("West (-X)", "W"),
+        ("North-East", "NE"), ("North-West", "NW"),
+        ("South-East", "SE"), ("South-West", "SW")
+    ]
+
 class TurtleShapes(MCActionsBase):
     """
     Value Blocks: These generate DigitalSet objects but do not change the world state.
@@ -302,7 +328,8 @@ class DigitalGeometry(MCActionsBase):
 
     @mced_block(
         label="Create Digital Cube",
-        center={'label': 'Center', 'shadow': 'VECTOR_3D_SHADOW'},
+        center={'label': 'Center'},
+        # center={'label': 'Center', 'shadow': 'VECTOR_3D_SHADOW'},
         side_length={'label': 'Side Length', 'shadow': '<shadow type="math_number"><field name="NUM">5</field></shadow>'},
         rotation_matrix={'label': 'Rotation Matrix', 'shadow': '<shadow type="minecraft_matrix_3d_euler"></shadow>'},
         block_type={'label': 'Block Type', 'shadow': 'BLOCK_TYPE_SHADOW'},
@@ -327,9 +354,9 @@ class DigitalGeometry(MCActionsBase):
 
     @mced_block(
         label="Create Digital Line",
-        point1={'label': 'Start Point', 'shadow': 'VECTOR_3D_SHADOW'},
-        point2={'label': 'End Point', 'shadow': 'VECTOR_3D_SHADOW'},
-        block_type={'label': 'Block Type', 'shadow': 'BLOCK_TYPE_SHADOW'}
+        point1={'label': 'Start Point'},
+        point2={'label': 'End Point'},
+        block_type={'label': 'Block Type'}
     )
     def create_digital_line(self, point1: 'Vec3', point2: 'Vec3', block_type: 'Block'):
         coords = generate_digital_line_coordinates(
@@ -340,10 +367,10 @@ class DigitalGeometry(MCActionsBase):
 
     @mced_block(
         label="Create Digital Plane",
-        center={'label': 'Center', 'shadow': 'VECTOR_3D_SHADOW'},
-        normal={'label': 'Normal', 'shadow': 'VECTOR_3D_SHADOW_Y_UP'},
+        center={'label': 'Center'},
+        normal={'label': 'Normal'},
         side_length={'label': 'Side Length', 'shadow': '<shadow type="math_number"><field name="NUM">10</field></shadow>'},
-        block_type={'label': 'Block Type', 'shadow': 'BLOCK_TYPE_SHADOW'}
+        block_type={'label': 'Block Type'}
     )
     def create_digital_plane(self, center: 'Vec3', normal: 'Vec3', side_length: float, block_type: 'Block'):
         coords = generate_digital_plane_coordinates(
@@ -355,10 +382,10 @@ class DigitalGeometry(MCActionsBase):
 
     @mced_block(
         label="Create Digital Disc",
-        center={'label': 'Center', 'shadow': 'VECTOR_3D_SHADOW'},
-        normal={'label': 'Normal', 'shadow': 'VECTOR_3D_SHADOW_Y_UP'},
+        center={'label': 'Center' },
+        normal={'label': 'Normal'},
         radius={'label': 'Radius', 'shadow': '<shadow type="math_number"><field name="NUM">5</field></shadow>'},
-        block_type={'label': 'Block Type', 'shadow': 'BLOCK_TYPE_SHADOW'}
+        block_type={'label': 'Block Type'}
     )
     def create_digital_disc(self, center: 'Vec3', normal: 'Vec3', radius: float, block_type: 'Block'):
         coords = generate_digital_disc_coordinates(
@@ -370,9 +397,9 @@ class DigitalGeometry(MCActionsBase):
 
     @mced_block(
         label="Create Digital Sphere",
-        center={'label': 'Center', 'shadow': 'VECTOR_3D_SHADOW'},
+        center={'label': 'Center'},
         radius={'label': 'Radius', 'shadow': '<shadow type="math_number"><field name="NUM">5</field></shadow>'},
-        block_type={'label': 'Block Type', 'shadow': 'BLOCK_TYPE_SHADOW'},
+        block_type={'label': 'Block Type'},
         is_hollow={'label': 'Hollow', 'shadow': '<shadow type="logic_boolean"><field name="BOOL">FALSE</field></shadow>'}
     )
     def create_digital_sphere(self, center: 'Vec3', radius: int, block_type: 'Block', is_hollow: bool):
@@ -385,9 +412,9 @@ class DigitalGeometry(MCActionsBase):
 
     @mced_block(
         label="Create Digital Ball",
-        center={'label': 'Center', 'shadow': 'VECTOR_3D_SHADOW'},
+        center={'label': 'Center'},
         radius={'label': 'Radius', 'shadow': '<shadow type="math_number"><field name="NUM">5</field></shadow>'},
-        block_type={'label': 'Block Type', 'shadow': 'BLOCK_TYPE_SHADOW'}
+        block_type={'label': 'Block Type'}
     )
     def create_digital_ball(self, center: 'Vec3', radius: int, block_type: 'Block'):
         coords = generate_digital_ball_coordinates(
@@ -398,10 +425,10 @@ class DigitalGeometry(MCActionsBase):
 
     @mced_block(
         label="Create Digital Tube",
-        start={'label': 'Start', 'shadow': 'VECTOR_3D_SHADOW'},
-        end={'label': 'End', 'shadow': 'VECTOR_3D_SHADOW'},
+        start={'label': 'Start'},
+        end={'label': 'End'},
         radius={'label': 'Radius', 'shadow': '<shadow type="math_number"><field name="NUM">3</field></shadow>'},
-        block_type={'label': 'Block Type', 'shadow': 'BLOCK_TYPE_SHADOW'},
+        block_type={'label': 'Block Type'},
         is_hollow={'label': 'Hollow', 'shadow': '<shadow type="logic_boolean"><field name="BOOL">TRUE</field></shadow>'}
     )
     def create_digital_tube(self, start: 'Vec3', end: 'Vec3', radius: float, block_type: 'Block', is_hollow: bool):
@@ -420,12 +447,12 @@ class DigitalGeometry(MCActionsBase):
 
     @mced_block(
         label="Create Digital Tetrahedron",
-        p1={'label': 'Point 1', 'shadow': 'VECTOR_3D_SHADOW'},
-        p2={'label': 'Point 2', 'shadow': 'VECTOR_3D_SHADOW'},
-        p3={'label': 'Point 3', 'shadow': 'VECTOR_3D_SHADOW'},
-        p4={'label': 'Point 4', 'shadow': 'VECTOR_3D_SHADOW'},
+        p1={'label': 'Point 1'},
+        p2={'label': 'Point 2'},
+        p3={'label': 'Point 3'},
+        p4={'label': 'Point 4'},
         inner_offset_factor={'label': 'Inner Offset Factor','shadow':'<shadow type="math_number"><field name="NUM">3</field></shadow>'},
-        block_type={'label': 'Block Type', 'shadow': 'BLOCK_TYPE_SHADOW'}
+        block_type={'label': 'Block Type'}
     )
     def create_digital_tetrahedron(self, p1:'Vec3',p2:'Vec3',p3:'Vec3',p4:'Vec3',inner_offset_factor:float,block_type: 'Block'):
         coords = generate_digital_tetrahedron_coordinates(
@@ -441,8 +468,8 @@ class WorldActions(MCActionsBase):
 
     @mced_block(
         label="Spawn Entity",
-        entity={'label': 'Entity Type', 'shadow': 'ENTITY_TYPE_SHADOW'},
-        position={'label': 'At Position', 'shadow': 'VECTOR_3D_SHADOW'}
+        entity={'label': 'Entity Type'},
+        position={'label': 'At Position'}
     )
     def spawn_entity(self, position: 'Vec3', entity: 'Entity'):
         """
@@ -456,8 +483,8 @@ class WorldActions(MCActionsBase):
 
     @mced_block(
         label="Set Block",
-        position={'label': 'At Position', 'shadow': 'VECTOR_3D_SHADOW'},
-        block_type={'label': 'Block Type', 'shadow': 'BLOCK_TYPE_SHADOW'}
+        position={'label': 'At Position'},
+        block_type={'label': 'Block Type'}
     )
     def set_block(self, position: 'Vec3', block_type: 'Block'):
         """
@@ -468,9 +495,9 @@ class WorldActions(MCActionsBase):
 
     @mced_block(
         label="Set Blocks",
-        position_1={'label': 'Position 1', 'shadow': 'VECTOR_3D_SHADOW'},
-        position_2={'label': 'Position 2', 'shadow': 'VECTOR_3D_SHADOW'},
-        block_type={'label': 'Block Type', 'shadow': 'BLOCK_TYPE_SHADOW'}
+        position_1={'label': 'Position 1'},
+        position_2={'label': 'Position 2'},
+        block_type={'label': 'Block Type'}
     )
     def set_blocks(self,position_1: 'Vec3',position_2: 'Vec3',block_type):
         """
@@ -483,7 +510,7 @@ class WorldActions(MCActionsBase):
     @mced_block(
         label="Get Block",
         output_type="Block",
-        position={'label': 'At Position', 'shadow': 'VECTOR_3D_SHADOW'}
+        position={'label': 'At Position'}
     )
     def get_block(self, position: 'Vec3') -> 'Block':
         """
@@ -496,7 +523,7 @@ class WorldActions(MCActionsBase):
     @mced_block(
         label="Get Height",
         output_type="Number",
-        position={'label': 'At Position (X,Z)', 'shadow': 'VECTOR_3D_SHADOW'}
+        position={'label': 'At Position (X,Z)'}
     )
     def get_height(self, position: 'Vec3') -> int:
         """
@@ -518,7 +545,7 @@ class WorldActions(MCActionsBase):
 
     @mced_block(
         label="Create Explosion",
-        position={'label': 'At Position', 'shadow': 'VECTOR_3D_SHADOW'},
+        position={'label': 'At Position'},
         power={'label': 'Power', 'shadow': '<shadow type="math_number"><field name="NUM">4</field></shadow>'}
     )
     def create_explosion(self, position: 'Vec3', power: float):

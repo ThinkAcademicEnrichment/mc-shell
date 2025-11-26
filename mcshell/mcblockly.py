@@ -1,6 +1,6 @@
 from mcshell.constants import *
 from blockapily import BlocklyGenerator, mced_block
-
+import xml.etree.ElementTree as ET
 
 def make_picker_group(materials,reg_exp):
     _matches = list(filter(lambda x: x is not None, map(lambda x:re.match(reg_exp,x),set(materials))))
@@ -38,6 +38,20 @@ MATERIAL_PICKER_GROUPS = {
     "redstone_components": ["REDSTONE_WIRE", "REDSTONE_BLOCK", "REDSTONE_TORCH", "REPEATER", "COMPARATOR", "PISTON", "STICKY_PISTON", "SLIME_BLOCK", "HONEY_BLOCK", "OBSERVER", "DROPPER", "DISPENSER", "HOPPER", "LECTERN", "LEVER", "DAYLIGHT_DETECTOR", "TRIPWIRE_HOOK", "TARGET", "NOTE_BLOCK", "RAIL", "POWERED_RAIL", "DETECTOR_RAIL", "ACTIVATOR_RAIL", "REDSTONE_LAMP"],
     # Add more groups as needed (stairs, slabs, fences, doors, etc.)
 }
+
+def ensure_toolbox():
+    toolbox_template_path = MC_DATA_DIR / 'toolbox_template.xml'
+    output_toolbox_path = MC_APP_SRC_DIR / 'toolbox.xml'
+    try:
+        ET.fromstring(output_toolbox_path.read_text())
+        print(f"{output_toolbox_path} is a valid xml file")
+    except Exception as e:
+        print(f"{e}")
+        print(f"Copying {toolbox_template_path} to {output_toolbox_path}")
+        with output_toolbox_path.open('w') as f:
+            f.write(toolbox_template_path.read_text())
+
+
 
 def process_materials():
     """
@@ -518,7 +532,8 @@ def generate_mcactions_blocks():
         DigitalGeometry,
         TurtleActions,
         TurtleShapes,
-        PlayerActions
+        PlayerActions,
+        Pickers
     )
 
     base_dir = pathlib.Path(__file__).parent.parent
@@ -568,42 +583,76 @@ def generate_mcactions_blocks():
         '''
 
     )
+# =========================================================================
+    # 3. GENERATE CUSTOM PICKERS (From Pickers class)
+    # =========================================================================
 
-    # Custom Picker for TurtleShapes
-    metric_options = [
-        ("Euclidean (Sphere)", "euclidean"),
-        ("Manhattan (Diamond)", "manhattan"),
-        ("Chebyshev (Cube)", "chebyshev")
-    ]
-    metric_js, metric_py, metric_xml = _generate_picker_block_js("metric_picker", "Metric", metric_options, 230, "Select a distance metric.")
+    # Dictionary to hold generated picker code for injection
+    # Key: Picker Name (e.g., 'METRIC'), Value: (js, py, xml)
+    custom_pickers = {}
 
-    # Direction Picker -> TurtleActions
-    direction_options = [("Forward", "forward"), ("Back", "back"), ("Up", "up"), ("Down", "down"), ("Left", "left"), ("Right", "right")]
-    dir_js, dir_py, dir_xml = _generate_picker_block_js("direction_picker", "Direction", direction_options, 230, "Select a movement direction.")
+    # Iterate over attributes of Pickers class
+    for name, options in inspect.getmembers(Pickers):
+        if name.isupper() and isinstance(options, list):
+            block_type = f"picker_{name.lower()}"
+            label = name.title()
+            js, py, xml = _generate_picker_block_js(block_type, label, options, 230, f"Select a {label}.")
+            custom_pickers[name] = (js, py, xml)
+            print(f"[INFO] Generated custom picker: {block_type}")
 
-    # Axis Picker -> TurtleActions
-    axis_options = [("Yaw (Y)", "y"), ("Pitch (X)", "x"), ("Roll (Z)", "z")]
-    axis_js, axis_py, axis_xml = _generate_picker_block_js("axis_picker", "Axis", axis_options, 230, "Select a rotation axis.")
 
-    # Compass Picker -> TurtleActions (NEW)
-    compass_options = [
-        ("North (-Z)", "N"), ("South (+Z)", "S"), ("East (+X)", "E"), ("West (-X)", "W"),
-        ("North-East", "NE"), ("North-West", "NW"), ("South-East", "SE"), ("South-West", "SW")
-    ]
-    comp_js, comp_py, comp_xml = _generate_picker_block_js("compass_picker", "Orientation", compass_options, 230, "Select a cardinal direction.")
+    # =========================================================================
+    # 4. PROCESS ACTION CLASSES via BlocklyGenerator
+    # =========================================================================
 
-    turtle_extras_js = f"{dir_js}\n\n{axis_js}\n\n{comp_js}"
-    turtle_extras_py = f"{dir_py}\n\n{axis_py}\n\n{comp_py}"
-    turtle_extras_xml = f"{dir_xml}\n{axis_xml}\n{comp_xml}"
+    # Configure Shadows
+    type_map = {
+        'Vec3': "3DVector",
+        'Matrix3': "3DMatrix",
+        'Block': "Block",
+        'DigitalSet': "DIGITAL_SET"
+    }
+
+    shadow_map = {
+        'Vec3': '<shadow type="vector_3d_shadow"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow>',
+        'Block': '<shadow type="minecraft_picker_world"><field name="MATERIAL_ID">STONE</field></shadow>',
+        'Entity': '<shadow type="minecraft_entity_picker_passive_mobs"><field name="VALUE">PIG</field></shadow>',
+        'Matrix3': '<shadow type="minecraft_matrix_3d_euler"></shadow>',
+
+        # Map shadow names to block types generated above
+        'picker_metric': f'<shadow type="picker_metric"><field name="VALUE">euclidean</field></shadow>',
+        'picker_direction': f'<shadow type="picker_direction"><field name="VALUE">forward</field></shadow>',
+        'picker_axis': f'<shadow type="picker_axis"><field name="VALUE">y</field></shadow>',
+        'picker_compass': f'<shadow type="picker_compass"><field name="VALUE">N</field></shadow>'
+    }
+
+    # Prepare Extras for injection
+    # We need to decide where to inject these.
+    # METRIC -> TurtleShapes
+    # DIRECTION, AXIS, COMPASS -> TurtleActions
+
+    def get_extras(picker_names):
+        js_acc, py_acc, xml_acc = "", "", ""
+        for name in picker_names:
+            if name in custom_pickers:
+                js, py, xml = custom_pickers[name]
+                js_acc += js + "\n\n"
+                py_acc += py + "\n\n"
+                xml_acc += xml + "\n"
+        return js_acc, py_acc, xml_acc
+
+    turtleshapes_extras = get_extras(["METRIC"])
+    turtleactions_extras = get_extras(["DIRECTION", "AXIS", "COMPASS"])
 
     classes_to_generate = [
         (WorldActions, "WorldActions", None, None, None, "#44DAA3"),
-        (DigitalGeometry, "DigitalGeometry", None, None, None,"#364EE7"),
-        (TurtleShapes, "TurtleShapes", metric_js, metric_py, metric_xml,"#F3BA2B"),
-        (TurtleActions, "TurtleActions", turtle_extras_js, turtle_extras_py, turtle_extras_xml,"#C7F32B"),
-        (PlayerActions, "PlayerActions", None, None, None,"#3ECDE0")
+        (DigitalGeometry, "DigitalGeometry", None, None, None, "#364EE7"),
+        (TurtleShapes, "TurtleShapes", turtleshapes_extras[0], turtleshapes_extras[1], turtleshapes_extras[2], "#F3BA2B"),
+        (TurtleActions, "TurtleActions", turtleactions_extras[0], turtleactions_extras[1], turtleactions_extras[2], "#C7F32B"),
+        (PlayerActions, "PlayerActions", None, None, None, "#3ECDE0")
     ]
 
+    full_toolbox_xml = ''
     for cls, filename_base, extra_js, extra_py, extra_xml, category_colour in classes_to_generate:
         if BlocklyGenerator is None:
             print(f"[SKIP] {cls.__name__} - Blockapily not installed.")
@@ -611,37 +660,34 @@ def generate_mcactions_blocks():
 
         print(f"Processing class: {cls.__name__}")
 
-        # Instantiate BlocklyGenerator
-        generator = BlocklyGenerator(cls, type_map, shadow_map,category_colour=category_colour)
+        generator = BlocklyGenerator(cls, type_map, shadow_map, category_colour=category_colour)
+        blocks_js, generators_py, toolbox_cat = generator.generate()
 
-        # Generate blocks, generators, and toolbox info
-        # Note: blockapily's generate() returns (blocks_js, generators_py, toolbox_xml)
-        blocks_js, generators_py, toolbox_xml = generator.generate()
-
-        # Combine with extras
         final_js = blocks_js
         final_py = generators_py
-        final_xml = toolbox_xml
+        final_xml = toolbox_cat # Start with the generated category
 
-        if extra_js:
-            final_js = extra_js + "\n\n" + final_js
-        if extra_py:
-            final_py = extra_py + "\n\n" + final_py
+        if extra_js: final_js = extra_js + "\n\n" + final_js
+        if extra_py: final_py = extra_py + "\n\n" + final_py
         if extra_xml:
-            final_xml = _insert_block_xml_into_category(toolbox_xml,extra_xml)
+            # Inject the picker blocks into the category xml
+            final_xml = _insert_block_xml_into_category(toolbox_cat, extra_xml)
 
-        # Write JS File
         js_content = f'import {{ MCED }} from "../lib/constants.mjs";\n\nexport function define{filename_base}Blocks(Blockly) {{\n{final_js}\n}}'
-        (output_dir / f"{filename_base}.mjs").write_text(js_content, encoding='utf-8')
-
-        # Write Python Generator File
         py_content = f'\nexport function define{filename_base}Generators(pythonGenerator) {{\n{final_py}\n}}'
-        (gen_output_dir / f"{filename_base}.mjs").write_text(py_content, encoding='utf-8')
 
+        (output_dir / f"{filename_base}.mjs").write_text(js_content, encoding='utf-8')
+        (gen_output_dir / f"{filename_base}.mjs").write_text(py_content, encoding='utf-8')
         generator.update_toolbox(final_xml,output_toolbox_path)
 
-        print(f"[OK] Wrote {filename_base}.mjs (JS & Python)")
+        # full_toolbox_xml += "\n" + final_xml
+        print(f"[OK] Wrote {filename_base}.mjs")
 
+    # full_toolbox_xml += "\n</xml>"
+
+    # Write Toolbox (Optional, if you want it auto-generated completely)
+    # output_toolbox_path.write_text(full_toolbox_xml, encoding='utf-8')
+    # print(f"[OK] Updated toolbox at {output_toolbox_path}")
 
     print("\nDone generating blocks.")
 
