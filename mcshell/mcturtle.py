@@ -1,6 +1,5 @@
 import numpy as np
 import math
-from collections import deque
 
 class DigitalSet:
     """

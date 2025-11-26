@@ -1,5 +1,4 @@
 from mcshell.mcplayer import MCPlayer
-from mcshell.mcblockly import mced_block
 from mcshell.constants import *
 
 from mcshell.mcvoxel_original import (
@@ -21,20 +20,10 @@ from mcshell.mcturtle import (
     DigitalSet
 )
 
+from blockapily import mced_block
 
 # Global turtle instance
 _GLOBAL_TURTLE = DigitalTurtle()
-
-# def mced_block(label, **kwargs):
-#     """
-#     A decorator to mark a method for Blockly block generation and attach metadata.
-#     """
-#     def decorator(func):
-#         # Attach the metadata to a custom attribute on the function object itself.
-#         # Note: The attribute is named _mced_block_meta, not _data.
-#         func._mced_block_meta = {'label': label, 'params': kwargs}
-#         return func
-#     return decorator
 
 class MCActionsBase:
     def __init__(self, mc_player_instance:MCPlayer,delay_between_blocks:float): # Added mc_version parameter
