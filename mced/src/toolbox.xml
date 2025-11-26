@@ -413,7 +413,7 @@
     <block type="minecraft_position_here" />
     <block type="minecraft_position_get_compass_direction" />
   </category>
-  <category name="Digital Geometry">
+  <category name="Digital Geometry" colour="#364EE7">
     <block type="digital_geometry_create_digital_ball" />
     <block type="digital_geometry_create_digital_cube" />
     <block type="digital_geometry_create_digital_disc" />
@@ -431,7 +431,7 @@
     <block type="minecraft_entity_picker_projectiles" />
     <block type="minecraft_entity_picker_utility_and_special" />
   </category>
-  <category name="World Actions">
+  <category name="World Actions" colour="#44DAA3">
     <block type="world_actions_create_explosion" />
     <block type="world_actions_get_block" />
     <block type="world_actions_get_height" />
@@ -543,7 +543,7 @@
     <sep />
     <block type="minecraft_picker_miscellaneous" />
   </category>
-  <category name="Turtle Actions">
+  <category name="Turtle Actions" colour="#C7F32B">
     <block type="turtle_actions_place_static_shape" />
     <block type="turtle_actions_turtle_extrude" />
     <block type="turtle_actions_turtle_move" />
@@ -554,9 +554,20 @@
     <block type="turtle_actions_turtle_set_brush" />
     <block type="turtle_actions_turtle_shear" />
     <block type="turtle_actions_turtle_stamp" />
+    <block type="direction_picker" />
+    <block type="axis_picker" />
+    <block type="compass_picker" />
   </category>
-  <category name="Turtle Shapes">
+  <category name="Turtle Shapes" colour="#F3BA2B">
     <block type="turtle_shapes_get_arithmetic_plane" />
     <block type="turtle_shapes_get_metric_ball" />
+    <block type="metric_picker" />
+  </category>
+  <category name="Player Actions" colour="#3ECDE0">
+    <block type="player_actions_get_compass_direction" />
+    <block type="player_actions_get_direction" />
+    <block type="player_actions_get_position" />
+    <block type="player_actions_get_tile_position" />
+    <block type="player_actions_wait_for_sword_strike" />
   </category>
 </xml>

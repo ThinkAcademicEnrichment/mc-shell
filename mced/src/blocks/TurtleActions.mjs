@@ -1,6 +1,62 @@
 import { MCED } from "../lib/constants.mjs";
 
 export function defineTurtleActionsBlocks(Blockly) {
+
+    Blockly.Blocks['direction_picker'] = {
+        init: function() {
+            this.appendDummyInput()
+                .appendField("Direction")
+                .appendField(new Blockly.FieldDropdown([
+                ["Forward", "forward"],
+                ["Back", "back"],
+                ["Up", "up"],
+                ["Down", "down"],
+                ["Left", "left"],
+                ["Right", "right"]
+                ]), "VALUE");
+            this.setOutput(true, "String");
+            this.setColour(230);
+            this.setTooltip("Select a movement direction.");
+        }
+    };
+
+
+    Blockly.Blocks['axis_picker'] = {
+        init: function() {
+            this.appendDummyInput()
+                .appendField("Axis")
+                .appendField(new Blockly.FieldDropdown([
+                ["Yaw (Y)", "y"],
+                ["Pitch (X)", "x"],
+                ["Roll (Z)", "z"]
+                ]), "VALUE");
+            this.setOutput(true, "String");
+            this.setColour(230);
+            this.setTooltip("Select a rotation axis.");
+        }
+    };
+
+
+    Blockly.Blocks['compass_picker'] = {
+        init: function() {
+            this.appendDummyInput()
+                .appendField("Orientation")
+                .appendField(new Blockly.FieldDropdown([
+                ["North (-Z)", "N"],
+                ["South (+Z)", "S"],
+                ["East (+X)", "E"],
+                ["West (-X)", "W"],
+                ["North-East", "NE"],
+                ["North-West", "NW"],
+                ["South-East", "SE"],
+                ["South-West", "SW"]
+                ]), "VALUE");
+            this.setOutput(true, "String");
+            this.setColour(230);
+            this.setTooltip("Select a cardinal direction.");
+        }
+    };
+
 Blockly.Blocks['turtle_actions_place_static_shape'] = {
     init: function() {
         this.appendDummyInput().appendField("Construct Shape at Player");
@@ -88,6 +144,7 @@ Blockly.Blocks['turtle_actions_turtle_reset'] = {
     init: function() {
         this.appendDummyInput().appendField("Turtle: Reset to");
         this.appendValueInput("POSITION").setCheck("3DVector").setAlign("RIGHT").appendField("Position");
+        this.appendValueInput("ORIENTATION").setCheck("String").setAlign("RIGHT").appendField("Facing");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(65);
@@ -102,6 +159,7 @@ Blockly.Blocks['turtle_actions_turtle_reset'] = {
                     <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
                 </shadow>
         `));
+        this.getInput('ORIENTATION').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT">N</field></shadow>`));
     }
 };
 Blockly.Blocks['turtle_actions_turtle_rotate'] = {

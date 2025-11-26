@@ -9,10 +9,10 @@ import * as Blockly from 'blockly';
 import { pythonGenerator } from 'blockly/python';
 import { defineMineCraftConstants, MCED} from "./lib/constants.mjs";
 import { defineMineCraftBlocks } from "./blocks/mc.mjs";
-import { defineMineCraftMaterialBlocks } from "./blocks/materials.mjs";
-import { defineMineCraftEntityBlocks } from "./blocks/entities.mjs";
 import { defineMineCraftBlocklyUtils } from "./lib/utils.mjs";
 import { defineMineCraftGenerators } from "./generators/python/mc.mjs"
+import { defineMineCraftMaterialBlocks } from "./blocks/materials.mjs";
+import { defineMineCraftEntityBlocks } from "./blocks/entities.mjs";
 import { defineMineCraftMaterialGenerators } from "./generators/python/materials.mjs";
 import { defineMineCraftEntityGenerators } from "./generators/python/entities.mjs";
 import { initializeHtmxListeners } from './lib/htmx_listeners.js';
@@ -25,7 +25,8 @@ import {defineTurtleActionsBlocks} from "./blocks/TurtleActions.mjs";
 import {defineTurtleActionsGenerators} from "./generators/python/TurtleActions.mjs";
 import {defineTurtleShapesBlocks} from "./blocks/TurtleShapes.mjs";
 import {defineTurtleShapesGenerators} from "./generators/python/TurtleShapes.mjs";
-
+import {definePlayerActionsBlocks} from "./blocks/PlayerActions.mjs";
+import {definePlayerActionsGenerators} from "./generators/python/PlayerActions.mjs";
 
 // --- Global Setup ---
 
@@ -465,6 +466,7 @@ async function init() {
     defineWorldActionsBlocks(Blockly);
     defineTurtleShapesBlocks(Blockly);
     defineTurtleActionsBlocks(Blockly);
+    definePlayerActionsBlocks(Blockly);
 
     // --- Install all Python generators ---
     defineMineCraftGenerators(pythonGenerator);
@@ -474,7 +476,7 @@ async function init() {
     defineWorldActionsGenerators(pythonGenerator);
     defineTurtleShapesGenerators(pythonGenerator);
     defineTurtleActionsGenerators(pythonGenerator);
-
+    definePlayerActionsGenerators(pythonGenerator);
     // installMCGenerator(pythonGenerator);
     // installMCMaterialsGenerator(pythonGenerator);
     // installMCEntityGenerator(pythonGenerator);

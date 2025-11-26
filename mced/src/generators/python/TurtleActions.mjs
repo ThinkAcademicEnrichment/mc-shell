@@ -1,5 +1,23 @@
 
 export function defineTurtleActionsGenerators(pythonGenerator) {
+
+    pythonGenerator.forBlock['direction_picker'] = function(block, generator) {
+        const code = block.getFieldValue('VALUE');
+        return [`'${code}'`, generator.ORDER_ATOMIC];
+    };
+
+
+    pythonGenerator.forBlock['axis_picker'] = function(block, generator) {
+        const code = block.getFieldValue('VALUE');
+        return [`'${code}'`, generator.ORDER_ATOMIC];
+    };
+
+
+    pythonGenerator.forBlock['compass_picker'] = function(block, generator) {
+        const code = block.getFieldValue('VALUE');
+        return [`'${code}'`, generator.ORDER_ATOMIC];
+    };
+
 pythonGenerator.forBlock['turtle_actions_place_static_shape'] = function(block, generator) {
     const shape = generator.valueToCode(block, 'SHAPE', generator.ORDER_ATOMIC) || 'None';
     const block_type = generator.valueToCode(block, 'BLOCK_TYPE', generator.ORDER_ATOMIC) || 'None';
@@ -25,7 +43,8 @@ pythonGenerator.forBlock['turtle_actions_turtle_push'] = function(block, generat
 };
 pythonGenerator.forBlock['turtle_actions_turtle_reset'] = function(block, generator) {
     const position = generator.valueToCode(block, 'POSITION', generator.ORDER_ATOMIC) || 'None';
-    return `self.action_implementer.turtle_reset(position=${position})\n`;
+    const orientation = generator.valueToCode(block, 'ORIENTATION', generator.ORDER_ATOMIC) || 'N';
+    return `self.action_implementer.turtle_reset(position=${position}, orientation=${orientation})\n`;
 };
 pythonGenerator.forBlock['turtle_actions_turtle_rotate'] = function(block, generator) {
     const axis = generator.valueToCode(block, 'AXIS', generator.ORDER_ATOMIC) || '';
