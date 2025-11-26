@@ -122,7 +122,8 @@ class TurtleShapes(MCActionsBase):
     @mced_block(
         label="Digital Shape: Sphere/Diamond/Cube",
         radius={'label': 'Radius', 'shadow': '<shadow type="math_number"><field name="NUM">5</field></shadow>'},
-        metric={'label': 'Metric', 'shadow': 'METRIC_DROPDOWN'}, # Needs Dropdown definition in Blockly
+        # metric={'label': 'Metric', 'shadow': 'METRIC_DROPDOWN'}, # Needs Dropdown definition in Blockly
+        metric={'label': 'Metric', 'shadow': '<shadow type="metric_picker"></shadow>'}, # Needs Dropdown definition in Blockly
         output_type="DIGITAL_SET",
         tooltip="Creates a mathematical shape. Does not place blocks."
     )
@@ -143,6 +144,13 @@ class TurtleShapes(MCActionsBase):
             normal.to_tuple(), (0,0,0), (side_length, side_length)
         )
 
+def _check_turtle_state(t,action='move'):
+    ic(action)
+    ic(t.pos)
+    ic(t.right)
+    ic(t.up)
+    ic(t.forward)
+
 class TurtleActions(MCActionsBase):
     """
     Statement Blocks: These control the Turtle state or modify the world.
@@ -152,14 +160,14 @@ class TurtleActions(MCActionsBase):
         self.turtle = _GLOBAL_TURTLE
 
     # --- TURTLE CONTROL ---
-
     @mced_block(
         label="Turtle: Reset to",
         position={'label': 'Position', 'shadow': 'VECTOR_3D_SHADOW'},
-        tooltip="Resets turtle to the specified position with default orientation."
+        orientation={'label': 'Facing', 'shadow': 'compass_picker'}, # Use new picker
+        tooltip="Resets turtle to position and cardinal orientation."
     )
-    def turtle_reset(self, position: 'Vec3'):
-        # Use provided position, fallback to player position if None (though shadow usually prevents this)
+    def turtle_reset(self, position: 'Vec3', orientation: str = 'N'):
+        # 1. Handle Position
         if position:
             x, y, z = position.x, position.y, position.z
         else:
@@ -167,11 +175,54 @@ class TurtleActions(MCActionsBase):
             x, y, z = pos.x, pos.y, pos.z
 
         self.turtle.pos = np.array([int(x), int(y), int(z)], dtype=int)
-        self.turtle.right = np.array([1,0,0], dtype=int)
+
+        # 2. Handle Orientation (Cardinal Basis Vectors)
+        # Up is always +Y for reset
         self.turtle.up = np.array([0,1,0], dtype=int)
-        self.turtle.forward = np.array([0,0,1], dtype=int)
+
+        # Define Basis Map: (Forward, Right)
+        # North (-Z) -> Forward=(0,0,-1), Right=(1,0,0)
+        # South (+Z) -> Forward=(0,0,1),  Right=(-1,0,0)
+        # East (+X)  -> Forward=(1,0,0),  Right=(0,0,1)
+        # West (-X)  -> Forward=(-1,0,0), Right=(0,0,-1)
+
+        orientation = orientation.upper()
+
+        if orientation == 'N':
+            self.turtle.forward = np.array([0,0,-1], dtype=int)
+            self.turtle.right   = np.array([1,0,0], dtype=int)
+        elif orientation == 'S':
+            self.turtle.forward = np.array([0,0,1], dtype=int)
+            self.turtle.right   = np.array([-1,0,0], dtype=int)
+        elif orientation == 'E':
+            self.turtle.forward = np.array([1,0,0], dtype=int)
+            self.turtle.right   = np.array([0,0,1], dtype=int)
+        elif orientation == 'W':
+            self.turtle.forward = np.array([-1,0,0], dtype=int)
+            self.turtle.right   = np.array([0,0,-1], dtype=int)
+
+        # Diagonals (45 degree basis logic is complex on integer grid for Turtle Reset)
+        # For simplicity in a reset, we snap to nearest Cardinal, or implement diagonal basis
+        # if DigitalTurtle supports non-axis-aligned basis vectors (it does).
+        elif orientation == 'NE':
+            self.turtle.forward = np.array([1,0,-1], dtype=int) # Diagonal Fwd
+            self.turtle.right   = np.array([1,0,1], dtype=int)  # Diagonal Right
+        elif orientation == 'NW':
+            self.turtle.forward = np.array([-1,0,-1], dtype=int)
+            self.turtle.right   = np.array([1,0,-1], dtype=int)
+        elif orientation == 'SE':
+            self.turtle.forward = np.array([1,0,1], dtype=int)
+            self.turtle.right   = np.array([-1,0,1], dtype=int)
+        elif orientation == 'SW':
+            self.turtle.forward = np.array([-1,0,1], dtype=int)
+            self.turtle.right   = np.array([-1,0,-1], dtype=int)
+        else:
+            # Default North
+            self.turtle.forward = np.array([0,0,-1], dtype=int)
+            self.turtle.right   = np.array([1,0,0], dtype=int)
+
         self.turtle.stack = []
-        print(f"Turtle reset to {self.turtle.pos}")
+        print(f"Turtle reset to {self.turtle.pos} facing {orientation}")
 
     @mced_block(
         label="Turtle: Move",
@@ -488,5 +539,44 @@ class WorldActions(MCActionsBase):
         x, y, z = (float(position.x), float(position.y), float(position.z))
         self.mcplayer.pc.createExplosion(x, y, z, float(power))
 
-class MCActions(TurtleShapes,TurtleActions,DigitalGeometry,WorldActions):
+class PlayerActions(MCActionsBase):
+    def __init__(self, mc_player_instance, delay_between_blocks=0):
+        super().__init__(mc_player_instance, delay_between_blocks)
+
+    @mced_block(
+        label="Get Player Direction",
+        output_type="3DVector"
+    )
+    def get_direction(self):
+        # if we return a value, we must specify output_type
+        return self.mcplayer.direction
+    @mced_block(
+        label="Get Player Position",
+        output_type="3DVector"
+    )
+    def get_position(self):
+        return self.mcplayer.position
+
+    @mced_block(
+        label="Get Player Tile Position",
+        output_type="3DVector"
+    )
+    def get_tile_position(self):
+        return self.mcplayer.tile_position
+
+    @mced_block(
+        label="Wait for Sword Strike Position",
+        output_type="3DVector"
+    )
+    def wait_for_sword_strike(self):
+        return self.mcplayer.here
+
+    @mced_block(
+        label="Get Player Compass Direction",
+        output_type="3DVector"
+    )
+    def get_compass_direction(self):
+        return self.mcplayer.compass_direction
+
+class MCActions(PlayerActions,TurtleShapes,TurtleActions,DigitalGeometry,WorldActions):
     '''Group All APIs for Blockly in a single class'''
