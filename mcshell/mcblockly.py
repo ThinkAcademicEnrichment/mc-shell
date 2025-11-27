@@ -51,8 +51,6 @@ def ensure_toolbox():
         with output_toolbox_path.open('w') as f:
             f.write(toolbox_template_path.read_text())
 
-
-
 def process_materials():
     """
     Reads the full material list and categorizes materials into
@@ -119,7 +117,6 @@ def process_materials():
         print(f"An error occurred: {e}")
     # finally:
     #     return colorable_bases, picker_data, singles_data
-
 
 # Define the groups for entity picker blocks. The key will be the picker name
 # (e.g., 'hostile_mobs') and the value is a list of entity IDs to include.
@@ -473,11 +470,6 @@ function _combine_colour_and_material(colour, material) {
     except Exception as e:
         print(f"Failed to generate material Blockly files: {e}")
         raise
-
-
-def _generate_blockly_name(name):
-    """Converts 'COBBLESTONE_STAIRS' to 'Cobblestone Stairs'."""
-    return name.replace("_", " ").title()
 
 def _generate_picker_block_js(block_type, label, options_list, colour, tooltip, output_type='String' ):
     """
