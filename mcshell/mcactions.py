@@ -594,5 +594,17 @@ class PlayerActions(MCActionsBase):
     def get_compass_direction(self):
         return self.mcplayer.compass_direction
 
+    @mced_block(
+        label="Set Player Compass Direction",
+    )
+    def set_compass_direction(self, dir: 'Compass'):
+        self.mcplayer.set_compass_direction(dir)
+
+    @mced_block(
+        label="Set Player Position",
+    )
+    def set_position(self, pos: 'Vec3'):
+        self.mcplayer.set_position(pos)
+
 class MCActions(PlayerActions,TurtleShapes,TurtleActions,DigitalGeometry,WorldActions):
     '''Group All APIs for Blockly in a single class'''
