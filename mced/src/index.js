@@ -653,96 +653,163 @@ async function init() {
      * @returns {object|null} An object containing the payload for the server, or null if the
      * required blocks for a debug run aren't found.
      */
+    // function buildDebugPayload(workspace) {
+    //     // We MUST initialize the generator to clear the state from any previous run.
+    //     pythonGenerator.init(workspace);
+    //
+    //     const topBlocks = workspace.getTopBlocks(true);
+    //
+    //     // --- Check if the workspace represents a "Functional Power" ---
+    //     // A functional power has a function definition and a corresponding call block.
+    //     const funcDefBlock = topBlocks.find(b =>
+    //         b.type === 'procedures_defnoreturn' || b.type === 'procedures_defreturn'
+    //     );
+    //
+    //     if (funcDefBlock) {
+    //         const functionName = funcDefBlock.getFieldValue('NAME');
+    //
+    //         // The "Debug-to-Define" pattern requires a corresponding call block to exist.
+    //         const funcCallBlock = topBlocks.find(b =>
+    //             (b.type === 'procedures_callnoreturn' || b.type === 'procedures_callreturn') &&
+    //             b.getFieldValue('NAME') === functionName
+    //         );
+    //
+    //         if (!funcCallBlock) {
+    //             alert(`Debug Error: To test the function '${functionName}', you must have a corresponding "call ${functionName}" block on the workspace with its arguments connected.`);
+    //             return null;
+    //         }
+    //
+    //         console.log(`Building debug payload for functional power: '${functionName}'`);
+    //
+    //         // --- Assemble the Payload for a Functional Power ---
+    //
+    //         // 1. Get the pure Python code for ONLY the function definition.
+    //         //    This part was failing before. We manually construct it now.
+    //         const funcNameForCode = pythonGenerator.nameDB_.getName(functionName, MCED.BlocklyNameTypes.PROCEDURE);
+    //         const argNames = funcDefBlock.getVars();
+    //         const argsForDef = argNames.map(name => pythonGenerator.nameDB_.getName(name, MCED.BlocklyNameTypes.VARIABLE));
+    //         let funcBody = pythonGenerator.statementToCode(funcDefBlock, 'STACK') || (pythonGenerator.INDENT + 'pass\n');
+    //         if (funcDefBlock.type === 'procedures_defreturn') {
+    //             const returnValue = pythonGenerator.valueToCode(funcDefBlock, 'RETURN', pythonGenerator.ORDER_NONE) || 'None';
+    //             funcBody += pythonGenerator.INDENT + 'return ' + returnValue + '\n';
+    //         }
+    //         const pureFunctionCode = `def ${funcNameForCode}(self, ${argsForDef.join(', ')}):\n${funcBody}`;
+    //
+    //         // 2. Extract parameter metadata (name AND type) from the call block's connections.
+    //         const parameters = argNames.map((argName, index) => {
+    //             let inferredType = 'String'; // Default type
+    //             const inputConnection = funcCallBlock.getInput('ARG' + index);
+    //             if (inputConnection?.connection?.targetBlock()) {
+    //                 const connectedBlock = inputConnection.connection.targetBlock();
+    //                 const outputConnection = connectedBlock.outputConnection;
+    //                 if (outputConnection?.getCheck()) {
+    //                     const checks = outputConnection.getCheck();
+    //                     if (checks?.length > 0) {
+    //                         inferredType = checks[0];
+    //                     }
+    //                 }
+    //             }
+    //             return { name: argName, type: inferredType };
+    //         });
+    //
+    //         // 3. Generate the full script FOR EXECUTION. workspaceToCode will now work
+    //         //    because our procedure call generator is fixed to use valueToCode.
+    //         const fullScriptForExecution = pythonGenerator.workspaceToCode(workspace);
+    //
+    //         return {
+    //             code: fullScriptForExecution, // The full script to run now
+    //             isFunctionalPower: true,
+    //             // The metadata to be saved if the user clicks "Save" later
+    //             metadata: {
+    //                 function_name: functionName,
+    //                 parameters: parameters,
+    //                 python_code: pureFunctionCode // The pure function definition for the library
+    //             }
+    //         };
+    //
+    //     } else {
+    //         // --- Case 2: This is a "Script Power" (no function definition) ---
+    //         console.log("Building debug payload for a simple script power.");
+    //
+    //         const fullScriptForExecution = pythonGenerator.workspaceToCode(workspace);
+    //
+    //         return {
+    //             code: fullScriptForExecution,
+    //             isFunctionalPower: false,
+    //             metadata: { // No specific function metadata for scripts
+    //                 function_name: null,
+    //                 parameters: [],
+    //                 python_code: fullScriptForExecution // For scripts, the whole thing is saved
+    //             }
+    //         };
+    //     }
+    // }
+    /**
+     * The definitive payload builder for the "Execute (Debug)" button.
+     * It inspects the workspace to determine if it's a single "functional power"
+     * or a general "script power".
+     * * LOGIC:
+     * 1. If the workspace contains any top-level "script blocks" (blocks that are
+     * NOT function definitions), we treat it as a SCRIPT. This allows users to
+     * load a function from the library and write a script that calls it,
+     * without triggering the "Functional Power" test harness.
+     * 2. If the workspace contains ONLY function definitions, we treat it as a
+     * FUNCTIONAL POWER and extract the function name for the test harness.
+     * * @param {Blockly.Workspace} workspace The Blockly workspace instance.
+     * @returns {object|null} An object containing the payload for the server, or null.
+     */
     function buildDebugPayload(workspace) {
-        // We MUST initialize the generator to clear the state from any previous run.
-        pythonGenerator.init(workspace);
+        const topBlocks = workspace.getTopBlocks(false);
+        if (topBlocks.length === 0) return null;
 
-        const topBlocks = workspace.getTopBlocks(true);
+        // 1. Identify Blocks types
+        // Standard Blockly procedure definition types
+        const definitionTypes = ['procedures_defnoreturn', 'procedures_defreturn'];
 
-        // --- Check if the workspace represents a "Functional Power" ---
-        // A functional power has a function definition and a corresponding call block.
-        const funcDefBlock = topBlocks.find(b =>
-            b.type === 'procedures_defnoreturn' || b.type === 'procedures_defreturn'
+        // Filter for blocks that act as script entry points (statements, calls, loops, etc.)
+        const scriptBlocks = topBlocks.filter(b =>
+            !definitionTypes.includes(b.type) && b.isEnabled()
         );
 
-        if (funcDefBlock) {
-            const functionName = funcDefBlock.getFieldValue('NAME');
+        // Filter for function definitions
+        const definitionBlocks = topBlocks.filter(b =>
+            definitionTypes.includes(b.type) && b.isEnabled()
+        );
 
-            // The "Debug-to-Define" pattern requires a corresponding call block to exist.
-            const funcCallBlock = topBlocks.find(b =>
-                (b.type === 'procedures_callnoreturn' || b.type === 'procedures_callreturn') &&
-                b.getFieldValue('NAME') === functionName
-            );
+        // 2. Determine Mode
+        // If ANY script blocks exist, we execute as a Script.
+        const isScriptMode = scriptBlocks.length > 0;
 
-            if (!funcCallBlock) {
-                alert(`Debug Error: To test the function '${functionName}', you must have a corresponding "call ${functionName}" block on the workspace with its arguments connected.`);
-                return null;
-            }
-
-            console.log(`Building debug payload for functional power: '${functionName}'`);
-
-            // --- Assemble the Payload for a Functional Power ---
-
-            // 1. Get the pure Python code for ONLY the function definition.
-            //    This part was failing before. We manually construct it now.
-            const funcNameForCode = pythonGenerator.nameDB_.getName(functionName, MCED.BlocklyNameTypes.PROCEDURE);
-            const argNames = funcDefBlock.getVars();
-            const argsForDef = argNames.map(name => pythonGenerator.nameDB_.getName(name, MCED.BlocklyNameTypes.VARIABLE));
-            let funcBody = pythonGenerator.statementToCode(funcDefBlock, 'STACK') || (pythonGenerator.INDENT + 'pass\n');
-            if (funcDefBlock.type === 'procedures_defreturn') {
-                const returnValue = pythonGenerator.valueToCode(funcDefBlock, 'RETURN', pythonGenerator.ORDER_NONE) || 'None';
-                funcBody += pythonGenerator.INDENT + 'return ' + returnValue + '\n';
-            }
-            const pureFunctionCode = `def ${funcNameForCode}(self, ${argsForDef.join(', ')}):\n${funcBody}`;
-
-            // 2. Extract parameter metadata (name AND type) from the call block's connections.
-            const parameters = argNames.map((argName, index) => {
-                let inferredType = 'String'; // Default type
-                const inputConnection = funcCallBlock.getInput('ARG' + index);
-                if (inputConnection?.connection?.targetBlock()) {
-                    const connectedBlock = inputConnection.connection.targetBlock();
-                    const outputConnection = connectedBlock.outputConnection;
-                    if (outputConnection?.getCheck()) {
-                        const checks = outputConnection.getCheck();
-                        if (checks?.length > 0) {
-                            inferredType = checks[0];
-                        }
-                    }
-                }
-                return { name: argName, type: inferredType };
-            });
-
-            // 3. Generate the full script FOR EXECUTION. workspaceToCode will now work
-            //    because our procedure call generator is fixed to use valueToCode.
-            const fullScriptForExecution = pythonGenerator.workspaceToCode(workspace);
+        if (isScriptMode) {
+            // --- SCRIPT MODE ---
+            // Generate code for the entire workspace.
+            // The generator automatically includes function definitions found in the workspace.
+            const code = pythonGenerator.workspaceToCode(workspace);
 
             return {
-                code: fullScriptForExecution, // The full script to run now
-                isFunctionalPower: true,
-                // The metadata to be saved if the user clicks "Save" later
-                metadata: {
-                    function_name: functionName,
-                    parameters: parameters,
-                    python_code: pureFunctionCode // The pure function definition for the library
-                }
+                type: 'script',
+                code: code
             };
+        } else if (definitionBlocks.length > 0) {
+            // --- FUNCTIONAL MODE ---
+            // Only definitions exist. We assume the user is defining/editing a Power
+            // and wants to test the primary function.
 
-        } else {
-            // --- Case 2: This is a "Script Power" (no function definition) ---
-            console.log("Building debug payload for a simple script power.");
+            // We select the first definition as the target.
+            const targetBlock = definitionBlocks[0];
+            const funcName = targetBlock.getFieldValue('NAME');
 
-            const fullScriptForExecution = pythonGenerator.workspaceToCode(workspace);
+            const code = pythonGenerator.workspaceToCode(workspace);
 
             return {
-                code: fullScriptForExecution,
-                isFunctionalPower: false,
-                metadata: { // No specific function metadata for scripts
-                    function_name: null,
-                    parameters: [],
-                    python_code: fullScriptForExecution // For scripts, the whole thing is saved
-                }
+                type: 'functional',
+                code: code,
+                function_name: funcName
             };
         }
+
+        // Fallback if no valid blocks found
+        return null;
     }
     // --- Wire up the "Execute (Debug)" Button ---
     const executeButton = document.getElementById('executePowerButton');

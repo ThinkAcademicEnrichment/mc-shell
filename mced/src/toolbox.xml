@@ -539,6 +539,7 @@
   </category>
   <category name="Turtle Shapes" colour="#F3BA2B">
     <block type="turtle_shapes_get_arithmetic_plane" />
+    <block type="turtle_shapes_get_line" />
     <block type="turtle_shapes_get_metric_ball" />
     <block type="picker_metric" />
   </category>
