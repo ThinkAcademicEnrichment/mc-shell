@@ -104,23 +104,23 @@ class MCActionsBase:
 class Pickers:
     """Registry of custom picker options for blocks."""
 
-    METRIC = [
+    Metric = [
         ("Euclidean (Sphere)", "euclidean"),
         ("Manhattan (Diamond)", "manhattan"),
         ("Chebyshev (Cube)", "chebyshev")
     ]
 
-    DIRECTION = [
+    Direction = [
         ("Forward", "forward"), ("Back", "back"),
         ("Up", "up"), ("Down", "down"),
         ("Left", "left"), ("Right", "right")
     ]
 
-    AXIS = [
+    Axis = [
         ("Yaw (Y)", "y"), ("Pitch (X)", "x"), ("Roll (Z)", "z")
     ]
 
-    COMPASS = [
+    Compass = [
         ("North (-Z)", "N"), ("South (+Z)", "S"),
         ("East (+X)", "E"), ("West (-X)", "W"),
         ("North-East", "NE"), ("North-West", "NW"),
@@ -131,18 +131,18 @@ class TurtleShapes(MCActionsBase):
     """
     Value Blocks: These generate DigitalSet objects but do not change the world state.
     """
-    def __init__(self, player):
-        super().__init__(player)
+    def __init__(self, mc_player_instance, delay_between_blocks=0.01):
+        super().__init__(mc_player_instance, delay_between_blocks)  # Call parent constructor
 
     @mced_block(
         label="Digital Shape: Sphere/Diamond/Cube",
         radius={'label': 'Radius', 'shadow': '<shadow type="math_number"><field name="NUM">5</field></shadow>'},
         # metric={'label': 'Metric', 'shadow': 'METRIC_DROPDOWN'}, # Needs Dropdown definition in Blockly
-        metric={'label': 'Metric', 'shadow': '<shadow type="metric_picker"></shadow>'}, # Needs Dropdown definition in Blockly
+        metric={'label': 'Metric'}, # Needs Dropdown definition in Blockly
         output_type="DIGITAL_SET",
         tooltip="Creates a mathematical shape. Does not place blocks."
     )
-    def get_metric_ball(self, radius: int, metric: str) -> DigitalSet:
+    def get_metric_ball(self, radius: int, metric: 'Metric') -> DigitalSet:
         return generate_metric_ball((0,0,0), radius, metric)
 
     @mced_block(
@@ -170,18 +170,19 @@ class TurtleActions(MCActionsBase):
     """
     Statement Blocks: These control the Turtle state or modify the world.
     """
-    def __init__(self, player):
-        super().__init__(player)
+
+    def __init__(self, mc_player_instance, delay_between_blocks=0.01):
+        super().__init__(mc_player_instance, delay_between_blocks)  # Call parent constructor
         self.turtle = _GLOBAL_TURTLE
 
     # --- TURTLE CONTROL ---
     @mced_block(
         label="Turtle: Reset to",
-        position={'label': 'Position', 'shadow': 'VECTOR_3D_SHADOW'},
-        orientation={'label': 'Facing', 'shadow': 'compass_picker'}, # Use new picker
+        position={'label': 'Position', },
+        orientation={'label': 'Facing'},
         tooltip="Resets turtle to position and cardinal orientation."
     )
-    def turtle_reset(self, position: 'Vec3', orientation: str = 'N'):
+    def turtle_reset(self, position: 'Vec3', orientation: 'Compass' = 'N'):
         # 1. Handle Position
         if position:
             x, y, z = position.x, position.y, position.z
@@ -241,27 +242,27 @@ class TurtleActions(MCActionsBase):
 
     @mced_block(
         label="Turtle: Move",
-        direction={'label': 'Direction', 'shadow': 'DIRECTION_DROPDOWN'},
+        direction={'label': 'Direction'},
         distance={'label': 'Distance', 'shadow': '<shadow type="math_number"><field name="NUM">1</field></shadow>'}
     )
-    def turtle_move(self, direction: str, distance: int):
+    def turtle_move(self, direction: 'Direction', distance: int):
         self.turtle.move(distance, direction)
 
     @mced_block(
         label="Turtle: Rotate 90",
-        axis={'label': 'Axis', 'shadow': 'AXIS_DROPDOWN'},
+        axis={'label': 'Axis'},
         steps={'label': 'Steps (90 deg)', 'shadow': '<shadow type="math_number"><field name="NUM">1</field></shadow>'}
     )
-    def turtle_rotate(self, axis: str, steps: int):
+    def turtle_rotate(self, axis: 'Axis', steps: int):
         self.turtle.rotate_90(axis, steps)
 
     @mced_block(
         label="Turtle: Shear",
-        primary={'label': 'Primary Axis', 'shadow': 'AXIS_DROPDOWN'},
-        secondary={'label': 'Shear By Axis', 'shadow': 'AXIS_DROPDOWN'},
+        primary={'label': 'Primary Axis'},
+        secondary={'label': 'Shear By Axis'},
         factor={'label': 'Factor', 'shadow': '<shadow type="math_number"><field name="NUM">1</field></shadow>'}
     )
-    def turtle_shear(self, primary: str, secondary: str, factor: int):
+    def turtle_shear(self, primary: 'Axis', secondary: 'Axis', factor: int):
         self.turtle.shear(primary, secondary, factor)
 
     @mced_block(
@@ -280,14 +281,14 @@ class TurtleActions(MCActionsBase):
 
     @mced_block(
         label="Turtle: Set Brush",
-        shape={'label': 'Shape', 'check': 'DIGITAL_SET'}
+        shape={'label': 'Shape', 'check': 'Digital_Set'}
     )
     def turtle_set_brush(self, shape: DigitalSet):
         self.turtle.set_brush(shape)
 
     @mced_block(
         label="Turtle: Stamp Brush",
-        block_type={'label': 'Material', 'shadow': 'BLOCK_TYPE_SHADOW'}
+        block_type={'label': 'Material'}
     )
     def turtle_stamp(self, block_type: 'Block'):
         shape = self.turtle.stamp()
@@ -296,18 +297,18 @@ class TurtleActions(MCActionsBase):
     @mced_block(
         label="Turtle: Extrude Brush",
         length={'label': 'Length', 'shadow': '<shadow type="math_number"><field name="NUM">5</field></shadow>'},
-        block_type={'label': 'Material', 'shadow': 'BLOCK_TYPE_SHADOW'}
+        block_type={'label': 'Material'}
     )
-    def turtle_extrude(self, length: int, block_type: 'Block'):
-        shape = self.turtle.extrude(length)
+    def turtle_extrude(self, length: int, direction: 'Direction', block_type: 'Block'):
+        shape = self.turtle.extrude(length,direction)
         self._place_digital_set(shape, block_type)
 
     # --- STATIC BRIDGE ---
 
     @mced_block(
         label="Construct Shape at Player",
-        shape={'label': 'Shape', 'check': 'DIGITAL_SET'},
-        block_type={'label': 'Material', 'shadow': 'BLOCK_TYPE_SHADOW'},
+        shape={'label': 'Shape', 'check': 'Digital_Set'},
+        block_type={'label': 'Material' },
         tooltip="Places a digital shape at the player's current location."
     )
     def place_static_shape(self, shape: DigitalSet, block_type: 'Block'):
@@ -329,10 +330,9 @@ class DigitalGeometry(MCActionsBase):
     @mced_block(
         label="Create Digital Cube",
         center={'label': 'Center'},
-        # center={'label': 'Center', 'shadow': 'VECTOR_3D_SHADOW'},
         side_length={'label': 'Side Length', 'shadow': '<shadow type="math_number"><field name="NUM">5</field></shadow>'},
         rotation_matrix={'label': 'Rotation Matrix', 'shadow': '<shadow type="minecraft_matrix_3d_euler"></shadow>'},
-        block_type={'label': 'Block Type', 'shadow': 'BLOCK_TYPE_SHADOW'},
+        block_type={'label': 'Block Type'},
         wall_thickness={'label': 'Wall Thickness (0=solid)', 'shadow': '<shadow type="math_number"><field name="NUM">0</field></shadow>'}
     )
     def create_digital_cube(self,
@@ -589,7 +589,7 @@ class PlayerActions(MCActionsBase):
 
     @mced_block(
         label="Get Player Compass Direction",
-        output_type="3DVector"
+        output_type="Compass"
     )
     def get_compass_direction(self):
         return self.mcplayer.compass_direction
