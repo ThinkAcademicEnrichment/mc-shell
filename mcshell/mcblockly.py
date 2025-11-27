@@ -479,7 +479,7 @@ def _generate_blockly_name(name):
     """Converts 'COBBLESTONE_STAIRS' to 'Cobblestone Stairs'."""
     return name.replace("_", " ").title()
 
-def _generate_picker_block_js(block_type, label, options_list, colour, tooltip, default_value=None):
+def _generate_picker_block_js(block_type, label, options_list, colour, tooltip, output_type='String' ):
     """
     Helper to generate the JavaScript definition for a dropdown picker block.
     """
@@ -498,7 +498,7 @@ def _generate_picker_block_js(block_type, label, options_list, colour, tooltip, 
                 .appendField(new Blockly.FieldDropdown([
 {formatted_options}
                 ]), "{field_name}");
-            this.setOutput(true, "String");
+            this.setOutput(true, "{output_type}");
             this.setColour({colour});
             this.setTooltip("{safe_tooltip}");
         }}
@@ -557,7 +557,14 @@ def generate_mcactions_blocks():
 
     # Configure Shadows for BlocklyGenerator
     type_map = {
-        'Vec3': "3DVector", 'Matrix3': "3DMatrix", 'Block': "Block", 'DigitalSet': "DIGITAL_SET"
+        'Vec3': "3DVector",
+        'Matrix3': "3DMatrix",
+        'Block': "Block",
+        'DigitalSet': "Digital_Set",
+        'Metric': 'Metric',
+        'Direction': 'Direction',
+        'Axis': 'Axis',
+        'Compass': 'Compass',
     }
 
     shadow_map = dict(
@@ -580,8 +587,16 @@ def generate_mcactions_blocks():
         ''',
         Matrx3='''
                 <shadow type="minecraft_matrix_3d_euler"></shadow>
-        '''
+        ''',
 
+        Metric =  '''
+                <shadow type="picker_metric">
+                    <field name="VALUE">euclidean</field>
+                </shadow>
+        ''',
+        Direction =  '<shadow type="picker_direction"><field name="VALUE">forward</field></shadow>',
+        Axis =  '<shadow type="picker_axis"><field name="VALUE">y</field></shadow>',
+        Compass = '<shadow type="picker_compass"><field name="VALUE">N</field></shadow>'
     )
 # =========================================================================
     # 3. GENERATE CUSTOM PICKERS (From Pickers class)
@@ -593,10 +608,11 @@ def generate_mcactions_blocks():
 
     # Iterate over attributes of Pickers class
     for name, options in inspect.getmembers(Pickers):
-        if name.isupper() and isinstance(options, list):
+        if isinstance(options, list):
             block_type = f"picker_{name.lower()}"
             label = name.title()
-            js, py, xml = _generate_picker_block_js(block_type, label, options, 230, f"Select a {label}.")
+            js, py, xml = _generate_picker_block_js(
+                block_type, label, options, 230, f"Select a {label}.",name)
             custom_pickers[name] = (js, py, xml)
             print(f"[INFO] Generated custom picker: {block_type}")
 
@@ -604,27 +620,6 @@ def generate_mcactions_blocks():
     # =========================================================================
     # 4. PROCESS ACTION CLASSES via BlocklyGenerator
     # =========================================================================
-
-    # Configure Shadows
-    type_map = {
-        'Vec3': "3DVector",
-        'Matrix3': "3DMatrix",
-        'Block': "Block",
-        'DigitalSet': "DIGITAL_SET"
-    }
-
-    shadow_map = {
-        'Vec3': '<shadow type="vector_3d_shadow"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow>',
-        'Block': '<shadow type="minecraft_picker_world"><field name="MATERIAL_ID">STONE</field></shadow>',
-        'Entity': '<shadow type="minecraft_entity_picker_passive_mobs"><field name="VALUE">PIG</field></shadow>',
-        'Matrix3': '<shadow type="minecraft_matrix_3d_euler"></shadow>',
-
-        # Map shadow names to block types generated above
-        'picker_metric': f'<shadow type="picker_metric"><field name="VALUE">euclidean</field></shadow>',
-        'picker_direction': f'<shadow type="picker_direction"><field name="VALUE">forward</field></shadow>',
-        'picker_axis': f'<shadow type="picker_axis"><field name="VALUE">y</field></shadow>',
-        'picker_compass': f'<shadow type="picker_compass"><field name="VALUE">N</field></shadow>'
-    }
 
     # Prepare Extras for injection
     # We need to decide where to inject these.
@@ -641,8 +636,8 @@ def generate_mcactions_blocks():
                 xml_acc += xml + "\n"
         return js_acc, py_acc, xml_acc
 
-    turtleshapes_extras = get_extras(["METRIC"])
-    turtleactions_extras = get_extras(["DIRECTION", "AXIS", "COMPASS"])
+    turtleshapes_extras = get_extras(["Metric"])
+    turtleactions_extras = get_extras(["Direction", "Axis", "Compass"])
 
     classes_to_generate = [
         (WorldActions, "WorldActions", None, None, None, "#44DAA3"),
@@ -682,12 +677,6 @@ def generate_mcactions_blocks():
 
         # full_toolbox_xml += "\n" + final_xml
         print(f"[OK] Wrote {filename_base}.mjs")
-
-    # full_toolbox_xml += "\n</xml>"
-
-    # Write Toolbox (Optional, if you want it auto-generated completely)
-    # output_toolbox_path.write_text(full_toolbox_xml, encoding='utf-8')
-    # print(f"[OK] Updated toolbox at {output_toolbox_path}")
 
     print("\nDone generating blocks.")
 
