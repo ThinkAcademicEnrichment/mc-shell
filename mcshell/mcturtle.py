@@ -291,13 +291,23 @@ class DigitalTurtle:
 
         return DigitalSet(world_voxels)
 
-    def extrude(self, distance: int):
+    def extrude(self, distance: int, direction='forward'):
         """
         Sweeps the brush forward using the current (possibly sheared) Forward vector.
         Returns a DigitalSet.
         """
+        vec = np.array([0,0,0], dtype=int)
+        direction = direction.lower() # Robustness
+        if direction == 'forward': vec = self.forward
+        elif direction == 'back':  vec = -self.forward
+        elif direction == 'up':    vec = self.up
+        elif direction == 'down':  vec = -self.up
+        elif direction == 'right': vec = self.right
+        elif direction == 'left':  vec = -self.right
+
         start_pos = self.pos.copy()
-        move_vec = self.forward * int(distance)
+
+        move_vec = vec * int(distance)
 
         # Generate path relative to (0,0,0)
         path = generate_linear_path((0,0,0), tuple(move_vec))
