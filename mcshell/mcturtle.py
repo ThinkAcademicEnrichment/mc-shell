@@ -103,39 +103,74 @@ class DigitalSet:
 # --- Generators ---
 
 def generate_linear_path(p1, p2):
-    """3D Bresenham Algorithm (26-connected)."""
+    """
+    3D Bresenham Algorithm (26-connected).
+    Returns a DigitalSet containing all voxels on the line segment from p1 to p2, inclusive.
+    """
     x1, y1, z1 = map(int, p1)
     x2, y2, z2 = map(int, p2)
     points = []
-    dx = abs(x2 - x1); dy = abs(y2 - y1); dz = abs(z2 - z1)
-    xs = 1 if x2 > x1 else -1; ys = 1 if y2 > y1 else -1; zs = 1 if z2 > z1 else -1
 
-    if dx >= dy and dx >= dz:
-        p1 = 2 * dy - dx; p2 = 2 * dz - dx
-        while x1 != x2:
-            points.append((x1, y1, z1))
-            x1 += xs
-            if p1 >= 0: y1 += ys; p1 -= 2 * dx
-            if p2 >= 0: z1 += zs; p2 -= 2 * dx
-            p1 += 2 * dy; p2 += 2 * dz
-    elif dy >= dx and dy >= dz:
-        p1 = 2 * dx - dy; p2 = 2 * dz - dy
-        while y1 != y2:
-            points.append((x1, y1, z1))
-            y1 += ys
-            if p1 >= 0: x1 += xs; p1 -= 2 * dy
-            if p2 >= 0: z1 += zs; p2 -= 2 * dy
-            p1 += 2 * dx; p2 += 2 * dz
-    else:
-        p1 = 2 * dy - dz; p2 = 2 * dx - dz
-        while z1 != z2:
-            points.append((x1, y1, z1))
-            z1 += zs
-            if p1 >= 0: y1 += ys; p1 -= 2 * dz
-            if p2 >= 0: x1 += xs; p2 -= 2 * dz
-            p1 += 2 * dy; p2 += 2 * dx
+    # Always include the starting point
     points.append((x1, y1, z1))
-    return points
+
+    dx = abs(x2 - x1)
+    dy = abs(y2 - y1)
+    dz = abs(z2 - z1)
+
+    xs = 1 if x2 > x1 else -1
+    ys = 1 if y2 > y1 else -1
+    zs = 1 if z2 > z1 else -1
+
+    # Driving axis is X
+    if dx >= dy and dx >= dz:
+        p1_err = 2 * dy - dx
+        p2_err = 2 * dz - dx
+        while x1 != x2:
+            x1 += xs
+            if p1_err >= 0:
+                y1 += ys
+                p1_err -= 2 * dx
+            if p2_err >= 0:
+                z1 += zs
+                p2_err -= 2 * dx
+            p1_err += 2 * dy
+            p2_err += 2 * dz
+            points.append((x1, y1, z1))
+
+    # Driving axis is Y
+    elif dy >= dx and dy >= dz:
+        p1_err = 2 * dx - dy
+        p2_err = 2 * dz - dy
+        while y1 != y2:
+            y1 += ys
+            if p1_err >= 0:
+                x1 += xs
+                p1_err -= 2 * dy
+            if p2_err >= 0:
+                z1 += zs
+                p2_err -= 2 * dy
+            p1_err += 2 * dx
+            p2_err += 2 * dz
+            points.append((x1, y1, z1))
+
+    # Driving axis is Z
+    else:
+        p1_err = 2 * dy - dz
+        p2_err = 2 * dx - dz
+        while z1 != z2:
+            z1 += zs
+            if p1_err >= 0:
+                y1 += ys
+                p1_err -= 2 * dz
+            if p2_err >= 0:
+                x1 += xs
+                p2_err -= 2 * dz
+            p1_err += 2 * dy
+            p2_err += 2 * dx
+            points.append((x1, y1, z1))
+
+    return DigitalSet(points)
 
 def generate_metric_ball(center, radius, metric='euclidean'):
     cx, cy, cz = center

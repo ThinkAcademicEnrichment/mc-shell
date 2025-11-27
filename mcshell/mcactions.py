@@ -17,6 +17,7 @@ from mcshell.mcturtle import (
     DigitalTurtle,
     generate_metric_ball,
     generate_digital_plane_coordinates as generate_arithmetic_plane,
+    generate_linear_path,
     DigitalSet
 )
 
@@ -137,9 +138,8 @@ class TurtleShapes(MCActionsBase):
     @mced_block(
         label="Digital Shape: Sphere/Diamond/Cube",
         radius={'label': 'Radius', 'shadow': '<shadow type="math_number"><field name="NUM">5</field></shadow>'},
-        # metric={'label': 'Metric', 'shadow': 'METRIC_DROPDOWN'}, # Needs Dropdown definition in Blockly
         metric={'label': 'Metric'}, # Needs Dropdown definition in Blockly
-        output_type="DIGITAL_SET",
+        output_type="Digital_Set",
         tooltip="Creates a mathematical shape. Does not place blocks."
     )
     def get_metric_ball(self, radius: int, metric: 'Metric') -> DigitalSet:
@@ -147,9 +147,9 @@ class TurtleShapes(MCActionsBase):
 
     @mced_block(
         label="Digital Shape: Arithmetic Plane (Square)",
-        normal={'label': 'Normal', 'shadow': 'VECTOR_3D_SHADOW'},
+        normal={'label': 'Normal'},
         side_length={'label': 'Side Length', 'shadow': '<shadow type="math_number"><field name="NUM">5</field></shadow>'},
-        output_type="DIGITAL_SET",
+        output_type="Digital_Set",
         tooltip="Creates a square digital plane using the arithmetic definition."
     )
     def get_arithmetic_plane(self, normal: 'Vec3', side_length: int) -> DigitalSet:
@@ -158,6 +158,16 @@ class TurtleShapes(MCActionsBase):
         return generate_arithmetic_plane(
             normal.to_tuple(), (0,0,0), (side_length, side_length)
         )
+
+    @mced_block(
+        label="Digital Shape: Line",
+        p1={'label': 'point_1'},
+        p2={'label': 'point_2'},
+        output_type='Digital_Set',
+        tooltip="Create a digital line using arithmetic definition"
+    )
+    def get_line(self,p1:'Vec3',p2:'Vec3') -> DigitalSet:
+        return generate_linear_path(p1.to_tuple(),p2.to_tuple())
 
 def _check_turtle_state(t,action='move'):
     ic(action)
