@@ -16,7 +16,7 @@ pythonGenerator.forBlock['turtle_shapes_get_arithmetic_plane'] = function(block,
 };
 pythonGenerator.forBlock['turtle_shapes_get_metric_ball'] = function(block, generator) {
     const radius = generator.valueToCode(block, 'RADIUS', generator.ORDER_ATOMIC) || 0;
-    const metric = generator.valueToCode(block, 'METRIC', generator.ORDER_ATOMIC) || '';
+    const metric = generator.valueToCode(block, 'METRIC', generator.ORDER_ATOMIC) || 'None';
     const code = `self.action_implementer.get_metric_ball(radius=${radius}, metric=${metric})`;
     return [code, generator.ORDER_FUNCTION_CALL];
 };

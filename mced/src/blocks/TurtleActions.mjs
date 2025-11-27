@@ -14,7 +14,7 @@ export function defineTurtleActionsBlocks(Blockly) {
                 ["Left", "left"],
                 ["Right", "right"]
                 ]), "VALUE");
-            this.setOutput(true, "String");
+            this.setOutput(true, "Direction");
             this.setColour(230);
             this.setTooltip("Select a Direction.");
         }
@@ -30,7 +30,7 @@ export function defineTurtleActionsBlocks(Blockly) {
                 ["Pitch (X)", "x"],
                 ["Roll (Z)", "z"]
                 ]), "VALUE");
-            this.setOutput(true, "String");
+            this.setOutput(true, "Axis");
             this.setColour(230);
             this.setTooltip("Select a Axis.");
         }
@@ -51,7 +51,7 @@ export function defineTurtleActionsBlocks(Blockly) {
                 ["South-East", "SE"],
                 ["South-West", "SW"]
                 ]), "VALUE");
-            this.setOutput(true, "String");
+            this.setOutput(true, "Compass");
             this.setColour(230);
             this.setTooltip("Select a Compass.");
         }
@@ -71,13 +71,18 @@ Blockly.Blocks['turtle_actions_place_static_shape'] = {
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('BLOCK_TYPE').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="minecraft_picker_world"><field name="MATERIAL_ID">STONE</field></shadow>`));
+        this.getInput('BLOCK_TYPE').connection.setShadowDom(Blockly.utils.xml.textToDom(`
+                <shadow type="minecraft_picker_world">
+                    <field name="MATERIAL_ID">STONE</field>
+                </shadow>
+        `));
     }
 };
 Blockly.Blocks['turtle_actions_turtle_extrude'] = {
     init: function() {
         this.appendDummyInput().appendField("Turtle: Extrude Brush");
         this.appendValueInput("LENGTH").setCheck("Number").setAlign("RIGHT").appendField("Length");
+        this.appendValueInput("DIRECTION").setCheck("Direction").setAlign("RIGHT").appendField("Direction");
         this.appendValueInput("BLOCK_TYPE").setCheck("Block").setAlign("RIGHT").appendField("Material");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
@@ -87,13 +92,18 @@ Blockly.Blocks['turtle_actions_turtle_extrude'] = {
 
         // Configure shadow blocks directly
         this.getInput('LENGTH').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="math_number"><field name="NUM">0</field></shadow>`));
-        this.getInput('BLOCK_TYPE').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="minecraft_picker_world"><field name="MATERIAL_ID">STONE</field></shadow>`));
+        this.getInput('DIRECTION').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="picker_direction"><field name="VALUE">forward</field></shadow>`));
+        this.getInput('BLOCK_TYPE').connection.setShadowDom(Blockly.utils.xml.textToDom(`
+                <shadow type="minecraft_picker_world">
+                    <field name="MATERIAL_ID">STONE</field>
+                </shadow>
+        `));
     }
 };
 Blockly.Blocks['turtle_actions_turtle_move'] = {
     init: function() {
         this.appendDummyInput().appendField("Turtle: Move");
-        this.appendValueInput("DIRECTION").setCheck("String").setAlign("RIGHT").appendField("Direction");
+        this.appendValueInput("DIRECTION").setCheck("Direction").setAlign("RIGHT").appendField("Direction");
         this.appendValueInput("DISTANCE").setCheck("Number").setAlign("RIGHT").appendField("Distance");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
@@ -102,7 +112,7 @@ Blockly.Blocks['turtle_actions_turtle_move'] = {
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('DIRECTION').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
+        this.getInput('DIRECTION').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="picker_direction"><field name="VALUE">forward</field></shadow>`));
         this.getInput('DISTANCE').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="math_number"><field name="NUM">0</field></shadow>`));
     }
 };
@@ -138,7 +148,7 @@ Blockly.Blocks['turtle_actions_turtle_reset'] = {
     init: function() {
         this.appendDummyInput().appendField("Turtle: Reset to");
         this.appendValueInput("POSITION").setCheck("3DVector").setAlign("RIGHT").appendField("Position");
-        this.appendValueInput("ORIENTATION").setCheck("String").setAlign("RIGHT").appendField("Facing");
+        this.appendValueInput("ORIENTATION").setCheck("Compass").setAlign("RIGHT").appendField("Facing");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(65);
@@ -146,14 +156,20 @@ Blockly.Blocks['turtle_actions_turtle_reset'] = {
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('POSITION').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="vector_3d_shadow"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow>`));
-        this.getInput('ORIENTATION').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT">N</field></shadow>`));
+        this.getInput('POSITION').connection.setShadowDom(Blockly.utils.xml.textToDom(`
+                 <shadow type="minecraft_vector_3d">
+                    <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+                    <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+                    <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+                </shadow>
+        `));
+        this.getInput('ORIENTATION').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="picker_compass"><field name="VALUE">N</field></shadow>`));
     }
 };
 Blockly.Blocks['turtle_actions_turtle_rotate'] = {
     init: function() {
         this.appendDummyInput().appendField("Turtle: Rotate 90");
-        this.appendValueInput("AXIS").setCheck("String").setAlign("RIGHT").appendField("Axis");
+        this.appendValueInput("AXIS").setCheck("Axis").setAlign("RIGHT").appendField("Axis");
         this.appendValueInput("STEPS").setCheck("Number").setAlign("RIGHT").appendField("Steps (90 deg)");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
@@ -162,7 +178,7 @@ Blockly.Blocks['turtle_actions_turtle_rotate'] = {
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('AXIS').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
+        this.getInput('AXIS').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="picker_axis"><field name="VALUE">y</field></shadow>`));
         this.getInput('STEPS').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="math_number"><field name="NUM">0</field></shadow>`));
     }
 };
@@ -183,8 +199,8 @@ Blockly.Blocks['turtle_actions_turtle_set_brush'] = {
 Blockly.Blocks['turtle_actions_turtle_shear'] = {
     init: function() {
         this.appendDummyInput().appendField("Turtle: Shear");
-        this.appendValueInput("PRIMARY").setCheck("String").setAlign("RIGHT").appendField("Primary Axis");
-        this.appendValueInput("SECONDARY").setCheck("String").setAlign("RIGHT").appendField("Shear By Axis");
+        this.appendValueInput("PRIMARY").setCheck("Axis").setAlign("RIGHT").appendField("Primary Axis");
+        this.appendValueInput("SECONDARY").setCheck("Axis").setAlign("RIGHT").appendField("Shear By Axis");
         this.appendValueInput("FACTOR").setCheck("Number").setAlign("RIGHT").appendField("Factor");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
@@ -193,8 +209,8 @@ Blockly.Blocks['turtle_actions_turtle_shear'] = {
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('PRIMARY').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
-        this.getInput('SECONDARY').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
+        this.getInput('PRIMARY').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="picker_axis"><field name="VALUE">y</field></shadow>`));
+        this.getInput('SECONDARY').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="picker_axis"><field name="VALUE">y</field></shadow>`));
         this.getInput('FACTOR').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="math_number"><field name="NUM">0</field></shadow>`));
     }
 };
@@ -209,7 +225,11 @@ Blockly.Blocks['turtle_actions_turtle_stamp'] = {
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('BLOCK_TYPE').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="minecraft_picker_world"><field name="MATERIAL_ID">STONE</field></shadow>`));
+        this.getInput('BLOCK_TYPE').connection.setShadowDom(Blockly.utils.xml.textToDom(`
+                <shadow type="minecraft_picker_world">
+                    <field name="MATERIAL_ID">STONE</field>
+                </shadow>
+        `));
     }
 };
 }
