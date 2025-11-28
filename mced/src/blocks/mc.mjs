@@ -9,6 +9,36 @@ export function defineMineCraftBlocks(Blockly) {
 
     };
 
+    // Blockly.Blocks['vector_3d_shadow'] = {
+    //     init: function () {
+    //         this.jsonInit({
+    //             "type": "vector_3d_shadow",
+    //             "message0": "Vector 3D Shadow %1 %2 %3",
+    //             "args0": [
+    //                 {
+    //                     "type": "field_number",
+    //                     "name": "X",
+    //                     "value": 0
+    //                 },
+    //                 {
+    //                     "type": "field_number",
+    //                     "name": "Y",
+    //                     "value": 0
+    //                 },
+    //                 {
+    //                     "type": "field_number",
+    //                     "name": "Z",
+    //                     "value": 0
+    //                 }
+    //             ],
+    //             "output": "Vector3D", // Or whatever type it outputs
+    //             "colour": 230, // Example color
+    //             "tooltip": "A shadow block for a 3D vector.",
+    //             "helpUrl": ""
+    //         });
+    //     }
+    // };
+
     // -- Colours Category ---:/
 
     Blockly.Blocks['minecraft_coloured_block_picker'] = {
@@ -94,7 +124,6 @@ export function defineMineCraftBlocks(Blockly) {
             MCED.BlocklyUtils.configureShadow(this, "ROLL");
         }
     };
-
 
     Blockly.Blocks['minecraft_vector_3d'] = {
       init: function() {
