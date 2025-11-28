@@ -1,5 +1,6 @@
 import numpy as np
 import math
+from collections import deque
 
 class DigitalSet:
     """
@@ -271,7 +272,7 @@ class DigitalTurtle:
         Discrete rotation of the coordinate frame by 90 degrees.
         This preserves the lattice structure perfectly.
         """
-        axis = axis.lower() # FIX: Handle 'Y' vs 'y'
+        axis = axis.lower()
 
         for _ in range(steps % 4):
             if axis == 'y': # Yaw (Rotate around Up): F -> R, R -> -F
@@ -294,7 +295,7 @@ class DigitalTurtle:
         This skews the grid, allowing for diagonal movement and organic shapes
         while strictly preserving integer coordinates.
         """
-        primary_axis = primary_axis.lower() # FIX: Handle 'X' vs 'x'
+        primary_axis = primary_axis.lower()
         secondary_axis = secondary_axis.lower()
 
         vec_map = {'x': self.right, 'y': self.up, 'z': self.forward}
@@ -326,7 +327,7 @@ class DigitalTurtle:
 
         return DigitalSet(world_voxels)
 
-    def extrude(self, distance: int, direction='forward'):
+    def extrude(self, distance: int, direction:str = 'forward'):
         """
         Sweeps the brush forward using the current (possibly sheared) Forward vector.
         Returns a DigitalSet.
@@ -341,7 +342,6 @@ class DigitalTurtle:
         elif direction == 'left':  vec = -self.right
 
         start_pos = self.pos.copy()
-
         move_vec = vec * int(distance)
 
         # Generate path relative to (0,0,0)
@@ -366,3 +366,53 @@ class DigitalTurtle:
     def pop_state(self):
         if self.stack:
             self.pos, self.forward, self.up, self.right = self.stack.pop()
+
+    def interpret_symbol(self, symbol, step_size):
+        """
+        Executes a single L-System symbol.
+        Returns a DigitalSet of placed blocks (if drawing occurred), or None.
+
+        Grammar Mapping:
+        F : Extrude (Draw)
+        f : Move (No Draw)
+        + : Yaw Right (+90 around Y)
+        - : Yaw Left (-90 around Y)
+        & : Pitch Down (+90 around X)
+        ^ : Pitch Up (-90 around X)
+        \ : Roll Right (+90 around Z)
+        / : Roll Left (-90 around Z)
+        | : Turn Around (180)
+        [ : Push State
+        ] : Pop State
+        > : Shear Forward (Z) by Right (X) (Factor +1) - "Bend Right"
+        < : Shear Forward (Z) by Right (X) (Factor -1) - "Bend Left"
+        """
+        if symbol == 'F':
+            return self.extrude(step_size)
+        elif symbol == 'f':
+            self.move(step_size)
+        elif symbol == '+':
+            self.rotate_90('y', 1)
+        elif symbol == '-':
+            self.rotate_90('y', -1)
+        elif symbol == '&':
+            self.rotate_90('x', 1)
+        elif symbol == '^':
+            self.rotate_90('x', -1)
+        elif symbol == '\\':
+            self.rotate_90('z', 1)
+        elif symbol == '/':
+            self.rotate_90('z', -1)
+        elif symbol == '|':
+            self.rotate_90('y', 2)
+        elif symbol == '[':
+            self.push_state()
+        elif symbol == ']':
+            self.pop_state()
+        # Shear symbols for organic growth on integer lattice
+        elif symbol == '>': # "Bend Right"
+             self.shear('z', 'x', 1)
+        elif symbol == '<': # "Bend Left"
+             self.shear('z', 'x', -1)
+
+        return None

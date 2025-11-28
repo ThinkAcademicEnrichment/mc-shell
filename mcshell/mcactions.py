@@ -21,6 +21,9 @@ from mcshell.mcturtle import (
     DigitalSet
 )
 
+# L-System Logic
+from mcshell.mclsystem import LSystem
+
 from blockapily import mced_block
 
 # Global turtle instance
@@ -248,7 +251,6 @@ class TurtleActions(MCActionsBase):
             self.turtle.right   = np.array([1,0,0], dtype=int)
 
         self.turtle.stack = []
-        print(f"Turtle reset to {self.turtle.pos} facing {orientation}")
 
     @mced_block(
         label="Turtle: Move",
@@ -327,6 +329,68 @@ class TurtleActions(MCActionsBase):
         # Ensure integer translation
         moved_shape = shape.translate(int(pos.x), int(pos.y), int(pos.z))
         self._place_digital_set(moved_shape, block_type)
+
+class LSystemShapes(MCActionsBase):
+    """
+    Exposes L-System grammar logic for procedural generation as a DigitalSet.
+    """
+    def __init__(self, player):
+        super().__init__(player)
+        # We need a temporary turtle for interpreting the L-system symbols into a shape
+        # This turtle is local to the generation process and doesn't affect the global turtle
+        self.local_turtle = DigitalTurtle()
+
+    @mced_block(
+        label="L-System: Define Rule",
+        predecessor={'label': 'Symbol (char)', 'shadow': 'text'},
+        successor={'label': 'Replacement', 'shadow': 'text'},
+        output_type="LSYSTEM_RULE", # Custom type for rule tuple
+        tooltip="Defines a rewrite rule: A -> AB"
+    )
+    def define_rule(self, predecessor: str, successor: str):
+        # Return a tuple or dict representing the rule
+        return (predecessor, successor)
+
+    @mced_block(
+        label="L-System: Generate Shape",
+        axiom={'label': 'Axiom', 'shadow': 'text'},
+        iterations={'label': 'Iterations', 'shadow': '<shadow type="math_number"><field name="NUM">3</field></shadow>'},
+        step_length={'label': 'Step Length', 'shadow': '<shadow type="math_number"><field name="NUM">5</field></shadow>'},
+        # rules list
+        rules={'label': 'Rules (List)', 'check': 'Array'},
+        output_type="Digital_Set",
+        tooltip="Generates a shape from an L-System grammar."
+    )
+    def get_lsystem_shape(self, axiom: str, iterations: int, step_length: int, rules: list) -> DigitalSet:
+        # 1. Parse Rules list into Dict
+        rule_dict = {}
+        if rules:
+            for r in rules:
+                if len(r) >= 2:
+                    rule_dict[r[0]] = r[1]
+
+        # 2. Run L-System Logic
+        lsys = LSystem(axiom, rule_dict)
+        final_string = lsys.iterate(int(iterations))
+
+        # 3. Interpret with Local Turtle
+        # Reset local turtle to origin for shape generation
+        self.local_turtle.pos = np.array([0,0,0], dtype=int)
+        self.local_turtle.forward = np.array([0,0,1], dtype=int) # Default Forward
+        self.local_turtle.up = np.array([0,1,0], dtype=int)
+        self.local_turtle.right = np.array([1,0,0], dtype=int)
+        self.local_turtle.brush = DigitalSet()
+        self.local_turtle.brush.add((0,0,0))
+        self.local_turtle.stack = []
+
+        accumulated_shape = DigitalSet()
+
+        for char in final_string:
+            shape_segment = self.local_turtle.interpret_symbol(char, int(step_length))
+            if shape_segment:
+                accumulated_shape = accumulated_shape.union(shape_segment)
+
+        return accumulated_shape
 
 class DigitalGeometry(MCActionsBase):
     """
@@ -541,7 +605,7 @@ class WorldActions(MCActionsBase):
         """
         x, z = (int(position.x), int(position.z))
         height = self.mcplayer.pc.getHeight(x, z)
-        return height
+        return int(height)
 
     @mced_block(
         label="Post to Chat",
@@ -616,5 +680,5 @@ class PlayerActions(MCActionsBase):
     def set_position(self, pos: 'Vec3'):
         self.mcplayer.set_position(pos)
 
-class MCActions(PlayerActions,TurtleShapes,TurtleActions,DigitalGeometry,WorldActions):
+class MCActions(LSystemShapes,PlayerActions,TurtleShapes,TurtleActions,DigitalGeometry,WorldActions):
     '''Group All APIs for Blockly in a single class'''
