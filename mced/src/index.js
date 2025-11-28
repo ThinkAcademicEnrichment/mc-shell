@@ -15,6 +15,8 @@ import { defineMineCraftMaterialBlocks } from "./blocks/materials.mjs";
 import { defineMineCraftEntityBlocks } from "./blocks/entities.mjs";
 import { defineMineCraftMaterialGenerators } from "./generators/python/materials.mjs";
 import { defineMineCraftEntityGenerators } from "./generators/python/entities.mjs";
+import { defineLSystemShapesBlocks} from "./blocks/LSystemShapes.mjs";
+
 import { initializeHtmxListeners } from './lib/htmx_listeners.js';
 
 import { defineDigitalGeometryGenerators } from "./generators/python/DigitalGeometry.mjs"
@@ -27,6 +29,7 @@ import {defineTurtleShapesBlocks} from "./blocks/TurtleShapes.mjs";
 import {defineTurtleShapesGenerators} from "./generators/python/TurtleShapes.mjs";
 import {definePlayerActionsBlocks} from "./blocks/PlayerActions.mjs";
 import {definePlayerActionsGenerators} from "./generators/python/PlayerActions.mjs";
+import { defineLSystemShapesGenerators} from "./generators/python/LSystemShapes.mjs";
 
 // --- Global Setup ---
 
@@ -526,6 +529,7 @@ async function init() {
     defineTurtleShapesBlocks(Blockly);
     defineTurtleActionsBlocks(Blockly);
     definePlayerActionsBlocks(Blockly);
+    defineLSystemShapesBlocks(Blockly);
 
     // --- Install all Python generators ---
     defineMineCraftGenerators(pythonGenerator);
@@ -536,9 +540,8 @@ async function init() {
     defineTurtleShapesGenerators(pythonGenerator);
     defineTurtleActionsGenerators(pythonGenerator);
     definePlayerActionsGenerators(pythonGenerator);
-    // installMCGenerator(pythonGenerator);
-    // installMCMaterialsGenerator(pythonGenerator);
-    // installMCEntityGenerator(pythonGenerator);
+    defineLSystemShapesGenerators(pythonGenerator);
+
 
     // --- Determine the initial workspace to load ---
     // It will prioritize localStorage, then workspace.json, then a blank slate.
