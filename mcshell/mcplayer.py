@@ -90,7 +90,6 @@ class MCPlayer(MCClient):
             'NW': np.array([-0.7071, 0., -0.7071]),
         }
         _vec = compass_vectors.get(dir,[0., 0., -1])
-        ic(_vec)
         return self.pc.player.setDirection(*compass_vectors.get(dir,[0, 0, -1]))
 
     def set_position(self, pos:Vec3):
