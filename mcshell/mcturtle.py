@@ -262,7 +262,7 @@ class DigitalTurtle:
     def move(self, distance: int, direction='forward'):
         """Moves the turtle along its current basis vectors."""
         vec = np.array([0,0,0], dtype=int)
-        direction = direction.lower() # Robustness
+        direction = direction.lower()
         if direction == 'forward': vec = self.forward
         elif direction == 'back':  vec = -self.forward
         elif direction == 'up':    vec = self.up
@@ -298,23 +298,13 @@ class DigitalTurtle:
             self.up      = apply_rotation(self.up, axis)
             self.forward = apply_rotation(self.forward, axis)
 
-    # def rotate_90(self, axis='y', steps=1):
-    #     axis = axis.lower()
-    #     for _ in range(steps % 4):
-    #         if axis == 'y': # Yaw
-    #             new_f = self.right.copy()
-    #             new_r = -self.forward.copy()
-    #             self.forward, self.right = new_f, new_r
-    #         elif axis == 'x': # Pitch
-    #             new_f = self.up.copy()
-    #             new_u = -self.forward.copy()
-    #             self.forward, self.up = new_f, new_u
-    #         elif axis == 'z': # Roll
-    #             new_u = self.right.copy()
-    #             new_r = -self.up.copy()
-    #             self.up, self.right = new_u, new_r
-
     def shear(self, primary_axis, secondary_axis, factor: int):
+        """
+        Affine Shear of the coordinate basis.
+        Example: shear('x', 'y', 1) adds 1*Up to Right.
+        This skews the grid, allowing for diagonal movement and organic shapes
+        while strictly preserving integer coordinates.
+        """
         primary_axis = primary_axis.lower()
         secondary_axis = secondary_axis.lower()
 
@@ -424,8 +414,9 @@ class DigitalTurtle:
              self.shear('z', 'x', -1)
         elif symbol == '@': # Shrink
              self.scale *= self.scale_factor
-        elif symbol == '!': # Gro10w
+             return self.extrude(scaled_step)
+        elif symbol == '!': # Grow
              if self.scale_factor > 0:
                  self.scale /= self.scale_factor
-
+             return self.extrude(scaled_step)
         return None
