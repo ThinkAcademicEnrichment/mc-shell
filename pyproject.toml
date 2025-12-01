@@ -1,12 +1,13 @@
 [tool.poetry]
 name = "mc-shell"
-version = "0.5.2"
+version = "0.5.3"
 description = "An interactive shell and editor for controlling Minecraft servers and creating powers."
 authors = ["jeff@thinkae.org"]
 readme = "README.md"
 packages = [{include = "mcshell"}]
 include = [
     "mcshell/vendored",
+    "mcshell/data/app"
 ]
 
 [virtualenvs]
