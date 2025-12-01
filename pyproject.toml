@@ -7,6 +7,7 @@ readme = "README.md"
 packages = [{include = "mcshell"}]
 include = [
     "mcshell/vendored",
+    "mcshell/data/app"
 ]
 
 [virtualenvs]
