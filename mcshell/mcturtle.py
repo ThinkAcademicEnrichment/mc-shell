@@ -1,5 +1,6 @@
 import numpy as np
 import math
+from collections import deque
 
 class DigitalSet:
     """
@@ -240,14 +241,19 @@ class DigitalTurtle:
         self.pos = np.array(start_pos, dtype=int)
 
         # Basis Vectors (The Turtle's Coordinate Frame)
-        # These are strictly integer vectors.
-        # [Right, Up, Forward]
         self.right   = np.array([1, 0, 0], dtype=int)
         self.up      = np.array([0, 1, 0], dtype=int)
         self.forward = np.array([0, 0, 1], dtype=int)
 
+        # Scale State (for L-Systems)
+        self.scale = 1.0
+        self.scale_factor = 0.666 # Default delta
+
         self.brush = DigitalSet()
         self.stack = []
+
+    def set_scale_factor(self, factor):
+        self.scale_factor = float(factor)
 
     def set_brush(self, digital_set):
         if isinstance(digital_set, DigitalSet):
@@ -256,7 +262,7 @@ class DigitalTurtle:
     def move(self, distance: int, direction='forward'):
         """Moves the turtle along its current basis vectors."""
         vec = np.array([0,0,0], dtype=int)
-        direction = direction.lower() # Robustness
+        direction = direction.lower()
         if direction == 'forward': vec = self.forward
         elif direction == 'back':  vec = -self.forward
         elif direction == 'up':    vec = self.up
@@ -264,28 +270,33 @@ class DigitalTurtle:
         elif direction == 'right': vec = self.right
         elif direction == 'left':  vec = -self.right
 
+        # Apply scaling if relevant context, but standard move usually is unit based.
+        # For L-system parity, we apply it if called via interpret_symbol.
+        # But this is the raw API. Let's keep it raw integer steps here.
         self.pos += vec * int(distance)
 
     def rotate_90(self, axis='y', steps=1):
         """
-        Discrete rotation of the coordinate frame by 90 degrees.
-        This preserves the lattice structure perfectly.
+        Discrete rotation of the turtle's entire frame around a GLOBAL axis.
         """
-        axis = axis.lower() # FIX: Handle 'Y' vs 'y'
+        axis = axis.lower()
+
+        # Define the permutation function for a single vector [x, y, z]
+        def apply_rotation(vec, axis_char):
+            x, y, z = vec
+            if axis_char == 'x':   # Rot X: (x, -z, y)
+                return np.array([x, -z, y], dtype=int)
+            elif axis_char == 'y': # Rot Y: (z, y, -x)
+                return np.array([z, y, -x], dtype=int)
+            elif axis_char == 'z': # Rot Z: (-y, x, z)
+                return np.array([-y, x, z], dtype=int)
+            return vec
 
         for _ in range(steps % 4):
-            if axis == 'y': # Yaw (Rotate around Up): F -> R, R -> -F
-                new_f = self.right.copy()
-                new_r = -self.forward.copy()
-                self.forward, self.right = new_f, new_r
-            elif axis == 'x': # Pitch (Rotate around Right): U -> F, F -> -U
-                new_f = self.up.copy()
-                new_u = -self.forward.copy()
-                self.forward, self.up = new_f, new_u
-            elif axis == 'z': # Roll (Rotate around Forward): R -> U, U -> -R
-                new_u = self.right.copy()
-                new_r = -self.up.copy()
-                self.up, self.right = new_u, new_r
+            # Apply the global rotation to ALL basis vectors independently
+            self.right   = apply_rotation(self.right, axis)
+            self.up      = apply_rotation(self.up, axis)
+            self.forward = apply_rotation(self.forward, axis)
 
     def shear(self, primary_axis, secondary_axis, factor: int):
         """
@@ -294,7 +305,7 @@ class DigitalTurtle:
         This skews the grid, allowing for diagonal movement and organic shapes
         while strictly preserving integer coordinates.
         """
-        primary_axis = primary_axis.lower() # FIX: Handle 'X' vs 'x'
+        primary_axis = primary_axis.lower()
         secondary_axis = secondary_axis.lower()
 
         vec_map = {'x': self.right, 'y': self.up, 'z': self.forward}
@@ -310,23 +321,15 @@ class DigitalTurtle:
         elif primary_axis == 'z': self.forward = result
 
     def stamp(self):
-        """
-        Stamps the brush into the world.
-        Applies the Turtle's current Basis Transform to the Brush voxels.
-        Global_Pos = Turtle_Pos + (v.x * Right + v.y * Up + v.z * Forward)
-        Returns a DigitalSet.
-        """
         if not self.brush: return DigitalSet()
-
         world_voxels = []
         for bx, by, bz in self.brush:
             offset = (bx * self.right) + (by * self.up) + (bz * self.forward)
             final_pos = self.pos + offset
             world_voxels.append(tuple(final_pos))
-
         return DigitalSet(world_voxels)
 
-    def extrude(self, distance: int, direction='forward'):
+    def extrude(self, distance: int, direction: str = 'forward'):
         """
         Sweeps the brush forward using the current (possibly sheared) Forward vector.
         Returns a DigitalSet.
@@ -341,17 +344,14 @@ class DigitalTurtle:
         elif direction == 'left':  vec = -self.right
 
         start_pos = self.pos.copy()
-
         move_vec = vec * int(distance)
 
-        # Generate path relative to (0,0,0)
         path = generate_linear_path((0,0,0), tuple(move_vec))
 
         world_voxels = set()
         for px, py, pz in path:
             step_offset = np.array([px, py, pz])
             current_turtle_pos = start_pos + step_offset
-
             for bx, by, bz in self.brush:
                 brush_offset = (bx * self.right) + (by * self.up) + (bz * self.forward)
                 final_pos = current_turtle_pos + brush_offset
@@ -361,8 +361,62 @@ class DigitalTurtle:
         return DigitalSet(world_voxels)
 
     def push_state(self):
-        self.stack.append((self.pos.copy(), self.forward.copy(), self.up.copy(), self.right.copy()))
+        # Save Scale + Vectors
+        self.stack.append((
+            self.pos.copy(),
+            self.forward.copy(),
+            self.up.copy(),
+            self.right.copy(),
+            self.scale
+        ))
 
     def pop_state(self):
         if self.stack:
-            self.pos, self.forward, self.up, self.right = self.stack.pop()
+            self.pos, self.forward, self.up, self.right, self.scale = self.stack.pop()
+
+    def interpret_symbol(self, symbol, step_size):
+        """
+        Executes a single L-System symbol.
+        Returns a DigitalSet of placed blocks (if drawing occurred), or None.
+
+        New Symbols:
+        " : Multiply scale by scale_factor (Shrink)
+        ! : Divide scale by scale_factor (Grow)
+        """
+        # Calculate Scaled Step Size (Minimum 1 block)
+        scaled_step = max(1, int(step_size * self.scale))
+
+        if symbol == 'F':
+            return self.extrude(scaled_step)
+        elif symbol == 'f':
+            self.move(scaled_step)
+        elif symbol == '+':
+            self.rotate_90('y', 1)
+        elif symbol == '-':
+            self.rotate_90('y', -1)
+        elif symbol == '&':
+            self.rotate_90('x', 1)
+        elif symbol == '^':
+            self.rotate_90('x', -1)
+        elif symbol == '\\':
+            self.rotate_90('z', 1)
+        elif symbol == '/':
+            self.rotate_90('z', -1)
+        elif symbol == '|':
+            self.rotate_90('y', 2)
+        elif symbol == '[':
+            self.push_state()
+        elif symbol == ']':
+            self.pop_state()
+        elif symbol == '>': # "Bend Right"
+             self.shear('z', 'x', 1)
+        elif symbol == '<': # "Bend Left"
+             self.shear('z', 'x', -1)
+        elif symbol == '@': # Shrink
+             self.scale *= self.scale_factor
+             return self.extrude(scaled_step)
+        elif symbol == '!': # Grow
+             if self.scale_factor > 0:
+                 self.scale /= self.scale_factor
+             return self.extrude(scaled_step)
+        return None

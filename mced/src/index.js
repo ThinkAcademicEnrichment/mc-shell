@@ -15,6 +15,8 @@ import { defineMineCraftMaterialBlocks } from "./blocks/materials.mjs";
 import { defineMineCraftEntityBlocks } from "./blocks/entities.mjs";
 import { defineMineCraftMaterialGenerators } from "./generators/python/materials.mjs";
 import { defineMineCraftEntityGenerators } from "./generators/python/entities.mjs";
+import { defineLSystemShapesBlocks} from "./blocks/LSystemShapes.mjs";
+
 import { initializeHtmxListeners } from './lib/htmx_listeners.js';
 
 import { defineDigitalGeometryGenerators } from "./generators/python/DigitalGeometry.mjs"
@@ -27,6 +29,7 @@ import {defineTurtleShapesBlocks} from "./blocks/TurtleShapes.mjs";
 import {defineTurtleShapesGenerators} from "./generators/python/TurtleShapes.mjs";
 import {definePlayerActionsBlocks} from "./blocks/PlayerActions.mjs";
 import {definePlayerActionsGenerators} from "./generators/python/PlayerActions.mjs";
+import { defineLSystemShapesGenerators} from "./generators/python/LSystemShapes.mjs";
 
 // --- Global Setup ---
 
@@ -57,35 +60,81 @@ function escapeRegExp(str) {
 }
 
 /**
- * Inspects the workspace for a functional power and opens the save modal,
- * pre-filling it with the function's name and description (comment).
+ * Inspects the workspace to determine the type of artifact being saved
+ * and pre-fills the Save Modal accordingly.
+ * * Logic:
+ * 1. If a Function Definition is found, we assume it's a "Functional Power".
+ * - Name/Desc are extracted from the block.
+ * - Category defaults to 'Powers'.
+ * 2. If NO Function Definition is found, we assume it's a "Workspace Snapshot".
+ * - Name is left empty (user must name their script).
+ * - Category defaults to 'Workspaces'.
  */
 function prepareAndOpenSaveModal() {
     let powerName = '';
     let powerDescription = '';
+    let category = 'Workspaces'; // Default to generic workspace
 
-    // Find the top-level function definition block, if it exists
-    const funcDefBlock = workspace.getTopBlocks(true).find(b =>
+    const topBlocks = workspace.getTopBlocks(false);
+
+    // Check for top-level function definition
+    const funcDefBlock = topBlocks.find(b =>
         b.type === 'procedures_defnoreturn' || b.type === 'procedures_defreturn'
     );
 
     if (funcDefBlock) {
-        // If a function block is found, use its properties as defaults
+        // CASE: Functional Power
+        // Use properties from the function definition block
         powerName = funcDefBlock.getFieldValue('NAME');
-        // The comment text is the best place for a power's description
-        powerDescription = funcDefBlock.getCommentText();
+        powerDescription = funcDefBlock.getCommentText() || '';
+        category = 'Powers'; // Enforce Powers category for defined functions
+    } else {
+        // CASE: Workspace Script / Snapshot
+        // No function definition found. We treat this as an arbitrary workspace save.
+        // We leave the name empty for the user to specify.
+        // Category remains 'Workspaces'.
     }
 
-    // Dispatch the event to open the modal, passing the extracted data.
-    // The modal's listener will use this data to pre-fill the form.
+    // Dispatch event to open the modal with pre-filled data
     window.dispatchEvent(new CustomEvent('open-save-modal', {
         detail: {
             name: powerName,
             description: powerDescription,
-            category: '' // Category can be set by the user in the modal
+            category: category
         }
     }));
 }
+
+/**
+ * Inspects the workspace for a functional power and opens the save modal,
+ * pre-filling it with the function's name and description (comment).
+ */
+// function prepareAndOpenSaveModal() {
+//     let powerName = '';
+//     let powerDescription = '';
+//
+//     // Find the top-level function definition block, if it exists
+//     const funcDefBlock = workspace.getTopBlocks(true).find(b =>
+//         b.type === 'procedures_defnoreturn' || b.type === 'procedures_defreturn'
+//     );
+//
+//     if (funcDefBlock) {
+//         // If a function block is found, use its properties as defaults
+//         powerName = funcDefBlock.getFieldValue('NAME');
+//         // The comment text is the best place for a power's description
+//         powerDescription = funcDefBlock.getCommentText();
+//     }
+//
+//     // Dispatch the event to open the modal, passing the extracted data.
+//     // The modal's listener will use this data to pre-fill the form.
+//     window.dispatchEvent(new CustomEvent('open-save-modal', {
+//         detail: {
+//             name: powerName,
+//             description: powerDescription,
+//             category: '' // Category can be set by the user in the modal
+//         }
+//     }));
+// }
 
 // TODO put this inside init() ?
 // Attach the function to the window object to make it globally accessible from HTML
@@ -296,13 +345,14 @@ async function init() {
      * Gathers data from the editor modal and the Blockly workspace,
      * then POSTs the complete "Power Object" to the server.
      *
-     * The definitive save function. It enforces the "Debug-to-Define" pattern.
-     * When saving a functional power, it requires a corresponding call block with
-     * all arguments connected to exist on the workspace. It uses these connections
-     * to authoritatively determine the parameter types.
+     * UPDATED LOGIC:
+     * 1. Functional Power: If a function definition is found, we attempt strict introspection
+     * (requiring a call block to define types). This maintains the rigorous "Power" standard.
+     * 2. Script Power: If NO function definition is found, we save the workspace as-is
+     * without requiring parameters. This allows saving arbitrary scripts/snippets.
      */
     async function handleSavePower() {
-        console.log("Handling save power with strict type introspection...");
+        console.log("Handling save power...");
 
         // 1. Get metadata from the modal form
         const formElement = document.getElementById('savePowerForm');
@@ -320,6 +370,7 @@ async function init() {
         let powerParameters = [];
         let powerFunctionName = null;
         let codeToSave = null;
+        let dependencies = [];
 
         // 3. Find the function definition block
         const topBlocks = workspace.getTopBlocks(true);
@@ -328,11 +379,12 @@ async function init() {
         );
 
         if (funcDefBlock) {
-            // --- This is a "Functional Power" ---
+            // --- FUNCTIONAL POWER MODE ---
+            // A function definition exists, so we attempt to enforce the strict Power contract.
             powerFunctionName = funcDefBlock.getFieldValue('NAME');
             console.log(`Found functional power definition: '${powerFunctionName}'.`);
 
-            // Manually construct the Python code for the function definition.
+            // Construct Python code for the function
             const funcNameForCode = pythonGenerator.nameDB_.getName(powerFunctionName, MCED.BlocklyNameTypes.PROCEDURE);
             const argNames = funcDefBlock.getVars();
             const argsForDef = argNames.map(name => pythonGenerator.nameDB_.getName(name, MCED.BlocklyNameTypes.VARIABLE));
@@ -346,39 +398,48 @@ async function init() {
 
             codeToSave = `def ${funcNameForCode}(self, ${argsForDef.join(', ')}):\n${funcBody}`;
 
-            // 4. Find the corresponding call block. It is now mandatory.
-            const funcCallBlock = topBlocks.find(b =>
-                (b.type === 'procedures_callnoreturn' || b.type === 'procedures_callreturn') &&
-                b.getFieldValue('NAME') === powerFunctionName
-            );
-
-            if (!funcCallBlock) {
-                alert(`Save Error: To save the function '${powerFunctionName}', you must place a "call ${powerFunctionName}" block on the workspace to define its parameter types.`);
-                return;
+            // --- DEPENDENCY ANALYSIS ---
+            const allChildBlocks = funcDefBlock.getDescendants(false);
+            for (const childBlock of allChildBlocks) {
+                if (childBlock.type === 'procedures_callnoreturn' || childBlock.type === 'procedures_callreturn') {
+                    const calledFunctionName = childBlock.getFieldValue('NAME');
+                    // Avoid self-dependency
+                    if (calledFunctionName && calledFunctionName !== powerFunctionName && !dependencies.includes(calledFunctionName)) {
+                        dependencies.push(calledFunctionName);
+                    }
+                }
             }
 
-            // 5. Extract parameter names and types from the call block's inputs.
-            // const argNames = funcDefBlock.getVars();
+            // --- STRICT PARAMETER INTROSPECTION ---
+            // We only enforce the Call Block requirement if there are arguments to define.
             if (argNames.length > 0) {
+                const funcCallBlock = topBlocks.find(b =>
+                    (b.type === 'procedures_callnoreturn' || b.type === 'procedures_callreturn') &&
+                    b.getFieldValue('NAME') === powerFunctionName
+                );
+
+                if (!funcCallBlock) {
+                    alert(`Save Error: To save the function '${powerFunctionName}' as a reusable Power, you must place a "call ${powerFunctionName}" block on the workspace to define its parameter types.`);
+                    return;
+                }
+
                 for (let i = 0; i < argNames.length; i++) {
                     const argName = argNames[i];
-                    let extractedType = null; // Start with null
+                    let extractedType = null;
 
                     const input = funcCallBlock.getInput('ARG' + i);
                     if (!input || !input.connection || !input.connection.targetBlock()) {
-                        // This input is empty. Abort the save.
                         alert(`Save Error for function '${powerFunctionName}': The parameter '${argName}' must have a block connected to it to define its type.`);
-                        return; // Stop the entire save process
+                        return;
                     }
 
-                    // A block is connected, so we can get its type.
                     const connectedBlock = input.connection.targetBlock();
                     const outputConnection = connectedBlock.outputConnection;
 
                     if (outputConnection && outputConnection.getCheck()) {
                         const checks = outputConnection.getCheck();
                         if (checks && checks.length > 0) {
-                            extractedType = checks[0]; // e.g., "Number", "Block", "3DVector"
+                            extractedType = checks[0];
                         }
                     }
 
@@ -387,49 +448,44 @@ async function init() {
                          return;
                     }
 
-                    console.log(`- Found parameter: '${argName}' of type '${extractedType}'`);
                     powerParameters.push({
                         name: argName,
                         type: extractedType,
-                        default: 0 // Default value can be refined later
+                        default: 0
                     });
                 }
             }
 
         } else {
-            // --- This is a "Script Power" ---
+            // --- SCRIPT POWER MODE ---
+            // No function definition found. We save this as a "Script" (Arbitrary Workspace).
+            // We default to a category if not provided, usually "Workspaces".
             console.log("No function definition found. Saving as a 'Script Power'.");
+
+            // For scripts, we save the entire workspace code, not just a function def.
             codeToSave = pythonGenerator.workspaceToCode(workspace);
-        }
 
-        // --- NEW: Dependency Analysis ---
-        const dependencies = [];
-        // getDescendants() returns the function block and all blocks inside it
-        const allChildBlocks = funcDefBlock.getDescendants(false);
+            // Scripts have no formal parameters or function name (unless implicitly defined in code)
+            powerFunctionName = null;
+            powerParameters = [];
 
-        for (const childBlock of allChildBlocks) {
-            // We are looking for blocks that call another function
-            if (childBlock.type === 'procedures_callnoreturn' || childBlock.type === 'procedures_callreturn') {
-                const calledFunctionName = childBlock.getFieldValue('NAME');
-                if (calledFunctionName && !dependencies.includes(calledFunctionName)) {
-                    dependencies.push(calledFunctionName);
-                }
+            // Ensure it goes to the correct category if the user didn't override it
+            if (!formDataObject.category || formDataObject.category.trim() === "") {
+                formDataObject.category = "Workspaces";
             }
         }
-        console.log(`Found dependencies: ${dependencies.join(', ')}`);
-        // --- END OF NEW LOGIC ---
 
-        // 6. Assemble and POST the final Power Object
+        // 4. Assemble and POST the final Power Object
         const powerDataObject = {
             name: formDataObject.name,
             description: formDataObject.description,
-            category: formDataObject.category || "General",
+            category: formDataObject.category || "Workspaces", // Default for scripts
             power_id: formDataObject.power_id || null,
             function_name: powerFunctionName,
             parameters: powerParameters,
             blockly_json: blocklyJson,
             python_code: codeToSave,
-            dependencies: dependencies // <-- Save the new dependency list
+            dependencies: dependencies
         };
 
         console.log("Sending final power data to server:", powerDataObject);
@@ -442,14 +498,20 @@ async function init() {
             });
 
             if (response.ok) {
-                alert(`Power "${formDataObject.name}" saved successfully!`);
+                alert(`Saved "${formDataObject.name}" successfully!`);
+                // Close modal if needed, or dispatch event
+                const modal = document.getElementById('savePowerModal');
+                if (modal) {
+                     // Assuming Bootstrap or similar logic to close, or just hide
+                     // For now, dispatch event for UI refresh
+                }
                 window.dispatchEvent(new CustomEvent('library-changed'));
             } else {
-                alert(`Failed to save power: ${await response.text()}`);
+                alert(`Failed to save: ${await response.text()}`);
             }
         } catch (error) {
-            console.error('Network error while saving power:', error);
-            alert('Network error. Could not save power.');
+            console.error('Network error while saving:', error);
+            alert('Network error. Could not save.');
         }
     }
     // --- Define all custom elements in the correct order ---
@@ -467,6 +529,7 @@ async function init() {
     defineTurtleShapesBlocks(Blockly);
     defineTurtleActionsBlocks(Blockly);
     definePlayerActionsBlocks(Blockly);
+    defineLSystemShapesBlocks(Blockly);
 
     // --- Install all Python generators ---
     defineMineCraftGenerators(pythonGenerator);
@@ -477,9 +540,8 @@ async function init() {
     defineTurtleShapesGenerators(pythonGenerator);
     defineTurtleActionsGenerators(pythonGenerator);
     definePlayerActionsGenerators(pythonGenerator);
-    // installMCGenerator(pythonGenerator);
-    // installMCMaterialsGenerator(pythonGenerator);
-    // installMCEntityGenerator(pythonGenerator);
+    defineLSystemShapesGenerators(pythonGenerator);
+
 
     // --- Determine the initial workspace to load ---
     // It will prioritize localStorage, then workspace.json, then a blank slate.

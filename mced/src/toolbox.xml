@@ -567,4 +567,8 @@
     <block type="player_actions_set_position" />
     <block type="player_actions_wait_for_sword_strike" />
   </category>
+  <category name="L System Shapes" colour="#75E538">
+    <block type="l_system_shapes_define_rule" />
+    <block type="l_system_shapes_get_lsystem_shape" />
+  </category>
 </xml>
