@@ -1,4 +1,6 @@
 from mcshell.constants import *
+from blockapily import BlocklyGenerator, mced_block
+import xml.etree.ElementTree as ET
 
 def make_picker_group(materials,reg_exp):
     _matches = list(filter(lambda x: x is not None, map(lambda x:re.match(reg_exp,x),set(materials))))
@@ -36,6 +38,18 @@ MATERIAL_PICKER_GROUPS = {
     "redstone_components": ["REDSTONE_WIRE", "REDSTONE_BLOCK", "REDSTONE_TORCH", "REPEATER", "COMPARATOR", "PISTON", "STICKY_PISTON", "SLIME_BLOCK", "HONEY_BLOCK", "OBSERVER", "DROPPER", "DISPENSER", "HOPPER", "LECTERN", "LEVER", "DAYLIGHT_DETECTOR", "TRIPWIRE_HOOK", "TARGET", "NOTE_BLOCK", "RAIL", "POWERED_RAIL", "DETECTOR_RAIL", "ACTIVATOR_RAIL", "REDSTONE_LAMP"],
     # Add more groups as needed (stairs, slabs, fences, doors, etc.)
 }
+
+def ensure_toolbox():
+    toolbox_template_path = MC_DATA_DIR / 'toolbox_template.xml'
+    output_toolbox_path = MC_APP_SRC_DIR / 'toolbox.xml'
+    try:
+        ET.fromstring(output_toolbox_path.read_text())
+        print(f"{output_toolbox_path} is a valid xml file")
+    except Exception as e:
+        print(f"{e}")
+        print(f"Copying {toolbox_template_path} to {output_toolbox_path}")
+        with output_toolbox_path.open('w') as f:
+            f.write(toolbox_template_path.read_text())
 
 def process_materials():
     """
@@ -103,7 +117,6 @@ def process_materials():
         print(f"An error occurred: {e}")
     # finally:
     #     return colorable_bases, picker_data, singles_data
-
 
 # Define the groups for entity picker blocks. The key will be the picker name
 # (e.g., 'hostile_mobs') and the value is a list of entity IDs to include.
@@ -294,7 +307,6 @@ _newline.join(toolbox_xml_categories)
         (output_python_dir / 'entities.mjs').write_text(python_gen_output, 'utf-8')
         print("Successfully generated python/entities.mjs")
 
-        from blockapily import BlocklyGenerator
         BlocklyGenerator.update_toolbox(toolbox_xml_output, output_toolbox_path)
         print(f"Successfully updated {output_toolbox_path}")
 
@@ -459,19 +471,102 @@ function _combine_colour_and_material(colour, material) {
         print(f"Failed to generate material Blockly files: {e}")
         raise
 
-def generate_mcactions_blocks():
+def _generate_picker_block_js(block_type, label, options_list, colour, tooltip, output_type='String' ):
+    """
+    Helper to generate the JavaScript definition for a dropdown picker block.
+    """
+    formatted_options = ',\n'.join([f'                ["{opt[0]}", "{opt[1]}"]' for opt in options_list])
+    field_name = "VALUE"
 
-    _type_map = {
-        'Vec3': "3DVector", 'Matrix3': "3DMatrix", 'Block': "Block"
+    # Escape double quotes
+    safe_tooltip = tooltip.replace('"', '\\"')
+
+    # Indentation for inside the export function
+    js_def = f"""
+    Blockly.Blocks['{block_type}'] = {{
+        init: function() {{
+            this.appendDummyInput()
+                .appendField("{label}")
+                .appendField(new Blockly.FieldDropdown([
+{formatted_options}
+                ]), "{field_name}");
+            this.setOutput(true, "{output_type}");
+            this.setColour({colour});
+            this.setTooltip("{safe_tooltip}");
+        }}
+    }};"""
+
+    py_gen = f"""
+    pythonGenerator.forBlock['{block_type}'] = function(block, generator) {{
+        const code = block.getFieldValue('{field_name}');
+        return [`'${{code}}'`, generator.ORDER_ATOMIC];
+    }};"""
+
+    xml_gen =  f'<block type="{block_type}"></block>'
+    return js_def, py_gen, xml_gen
+
+def _insert_block_xml_into_category(toolbox_xml, extra_xml):
+    """
+    Inserts extra_xml block definitions into the end of the toolbox_xml category.
+    """
+    if "</category>" in toolbox_xml:
+        return toolbox_xml.replace("</category>", f"{extra_xml}\n</category>")
+    return toolbox_xml
+
+def generate_mcactions_blocks():
+    """
+    Generates the Blockly block definitions (JSON/JS) and Python generators
+    for the McActions classes.
+    """
+    # 2. Defer imports to runtime
+    from mcshell.mcactions import (
+        WorldActions,
+        DigitalGeometry,
+        TurtleActions,
+        TurtleShapes,
+        PlayerActions,
+        LSystemShapes,
+        Pickers
+    )
+
+    base_dir = pathlib.Path(__file__).parent.parent
+    data_dir = base_dir / "mcshell" / "data"
+    output_dir = base_dir / "mced" / "src" / "blocks"
+    gen_output_dir = base_dir / "mced" / "src" / "generators" / "python"
+
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    gen_output_dir.mkdir(parents=True, exist_ok=True)
+
+    output_toolbox_path = MC_APP_SRC_DIR / 'toolbox.xml'
+
+    print(f"Generating blocks in: {output_dir}")
+    print(f"Generating generators in: {gen_output_dir}")
+    print(f"Generating toolbox in: {output_toolbox_path}")
+
+    # =========================================================================
+    # PROCESS ACTION CLASSES via BlocklyGenerator
+    # =========================================================================
+
+    # Configure Shadows for BlocklyGenerator
+    type_map = {
+        'Vec3': "3DVector",
+        'Matrix3': "3DMatrix",
+        'Block': "Block",
+        'DigitalSet': "Digital_Set",
+        'Metric': 'Metric',
+        'Direction': 'Direction',
+        'Axis': 'Axis',
+        'Compass': 'Compass',
     }
 
-    _shadow_map = dict(
+    shadow_map = dict(
         Vec3='''
                  <shadow type="minecraft_vector_3d">
                     <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
                     <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
                     <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                </shadow>   
+                </shadow>
         ''',
         Block='''
                 <shadow type="minecraft_picker_world">
@@ -485,34 +580,99 @@ def generate_mcactions_blocks():
         ''',
         Matrx3='''
                 <shadow type="minecraft_matrix_3d_euler"></shadow>
-        '''
+        ''',
 
+        Metric =  '''
+                <shadow type="picker_metric">
+                    <field name="VALUE">euclidean</field>
+                </shadow>
+        ''',
+        Direction =  '<shadow type="picker_direction"><field name="VALUE">forward</field></shadow>',
+        Axis =  '<shadow type="picker_axis"><field name="VALUE">y</field></shadow>',
+        Compass = '<shadow type="picker_compass"><field name="VALUE">N</field></shadow>'
     )
+# =========================================================================
+    # 3. GENERATE CUSTOM PICKERS (From Pickers class)
+    # =========================================================================
 
-    output_blocks_dir = MC_APP_SRC_DIR / 'blocks'
-    output_python_dir = MC_APP_SRC_DIR / 'generators' / 'python'
-    output_toolbox_path = MC_APP_SRC_DIR / 'toolbox.xml'
+    # Dictionary to hold generated picker code for injection
+    # Key: Picker Name (e.g., 'METRIC'), Value: (js, py, xml)
+    custom_pickers = {}
 
-    from mcshell.mcactions import MCActions
-    for _api_class in MCActions.__bases__:
-        _block_output_path = output_blocks_dir / f'{_api_class.__name__}.mjs'
-        _gens_output_path = output_python_dir / f'{_api_class.__name__}.mjs'
+    # Iterate over attributes of Pickers class
+    for name, options in inspect.getmembers(Pickers):
+        if isinstance(options, list):
+            block_type = f"picker_{name.lower()}"
+            label = name.title()
+            js, py, xml = _generate_picker_block_js(
+                block_type, label, options, 230, f"Select a {label}.",name)
+            custom_pickers[name] = (js, py, xml)
+            print(f"[INFO] Generated custom picker: {block_type}")
 
 
-        _block_output = '\nimport { MCED } from "../lib/constants.mjs";' + f"\nexport function define{_api_class.__name__}Blocks(Blockly) " + "{\n"
-        _gens_output = f"\n\nexport function define{_api_class.__name__}Generators(pythonGenerator) " + "{\n"
+    # =========================================================================
+    # 4. PROCESS ACTION CLASSES via BlocklyGenerator
+    # =========================================================================
 
-        _blks, _gens, _cat = BlocklyGenerator(_api_class, _type_map, _shadow_map).generate()
-        _block_output += _blks + "\n"
-        _gens_output += _gens + "\n"
+    # Prepare Extras for injection
+    # We need to decide where to inject these.
+    # METRIC -> TurtleShapes
+    # DIRECTION, AXIS, COMPASS -> TurtleActions
 
-        _block_output_path.write_text(_block_output + "\n}", 'utf-8')
-        _gens_output_path.write_text(_gens_output + "\n}", 'utf-8')
+    def get_extras(picker_names):
+        js_acc, py_acc, xml_acc = "", "", ""
+        for name in picker_names:
+            if name in custom_pickers:
+                js, py, xml = custom_pickers[name]
+                js_acc += js + "\n\n"
+                py_acc += py + "\n\n"
+                xml_acc += xml + "\n"
+        return js_acc, py_acc, xml_acc
 
-        print(f"Successfully generated {_block_output_path}")
-        print(f"Successfully generated {_gens_output_path}")
+    turtleshapes_extras = get_extras(["Metric"])
+    turtleactions_extras = get_extras(["Direction", "Axis", "Compass"])
 
-        BlocklyGenerator.update_toolbox(_cat, output_toolbox_path)
-        print(f"Successfully updated {output_toolbox_path}")
+    classes_to_generate = [
+        (WorldActions, "WorldActions", None, None, None, "#44DAA3"),
+        (DigitalGeometry, "DigitalGeometry", None, None, None, "#364EE7"),
+        (TurtleShapes, "TurtleShapes", turtleshapes_extras[0], turtleshapes_extras[1], turtleshapes_extras[2], "#F3BA2B"),
+        (TurtleActions, "TurtleActions", turtleactions_extras[0], turtleactions_extras[1], turtleactions_extras[2], "#C7F32B"),
+        (PlayerActions, "PlayerActions", None, None, None, "#3ECDE0"),
+        (LSystemShapes, "LSystemShapes", None, None, None, "#75E538")
+    ]
 
-#
+    full_toolbox_xml = ''
+    for cls, filename_base, extra_js, extra_py, extra_xml, category_colour in classes_to_generate:
+        if BlocklyGenerator is None:
+            print(f"[SKIP] {cls.__name__} - Blockapily not installed.")
+            continue
+
+        print(f"Processing class: {cls.__name__}")
+
+        generator = BlocklyGenerator(cls, type_map, shadow_map, category_colour=category_colour)
+        blocks_js, generators_py, toolbox_cat = generator.generate()
+
+        final_js = blocks_js
+        final_py = generators_py
+        final_xml = toolbox_cat # Start with the generated category
+
+        if extra_js: final_js = extra_js + "\n\n" + final_js
+        if extra_py: final_py = extra_py + "\n\n" + final_py
+        if extra_xml:
+            # Inject the picker blocks into the category xml
+            final_xml = _insert_block_xml_into_category(toolbox_cat, extra_xml)
+
+        js_content = f'import {{ MCED }} from "../lib/constants.mjs";\n\nexport function define{filename_base}Blocks(Blockly) {{\n{final_js}\n}}'
+        py_content = f'\nexport function define{filename_base}Generators(pythonGenerator) {{\n{final_py}\n}}'
+
+        (output_dir / f"{filename_base}.mjs").write_text(js_content, encoding='utf-8')
+        (gen_output_dir / f"{filename_base}.mjs").write_text(py_content, encoding='utf-8')
+        generator.update_toolbox(final_xml,output_toolbox_path)
+
+        # full_toolbox_xml += "\n" + final_xml
+        print(f"[OK] Wrote {filename_base}.mjs")
+
+    print("\nDone generating blocks.")
+
+if __name__ == "__main__":
+    generate_mcactions_blocks()

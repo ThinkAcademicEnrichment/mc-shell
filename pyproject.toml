@@ -1,10 +1,13 @@
 [tool.poetry]
 name = "mc-shell"
-version = "0.4.0"
+version = "0.5.0"
 description = "An interactive shell and editor for controlling Minecraft servers and creating powers."
 authors = ["jeff@thinkae.org"]
 readme = "README.md"
 packages = [{include = "mcshell"}]
+
+[virtualenvs]
+in-project = true
 
 # This section explicitly includes all necessary data files,
 # replacing the need for the custom package_files function in setup.py.
@@ -45,6 +48,7 @@ aio-mc-rcon = "*"
 
 # We now use blockapily.BlockGenerator !
 blockapily = "*"
+voxelmap = "^5.1.1"
 
 [tool.poetry.scripts]
 # This defines the console script entry point, replacing 'entry_points'.

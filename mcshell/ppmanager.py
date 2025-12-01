@@ -103,8 +103,38 @@ class PaperServerManager:
 
             print("--- config.yml updated successfully. ---")
 
+            print("--- Applying settings from world_manifest.json to config/paper-global.yml---")
+            paper_settings = self.world_manifest.get('paper', {})
+            if not paper_settings:
+                return # No paper settings to apply
+
+            paper_config_path = self.world_directory / 'config' / 'paper-global.yml'
+            if not paper_config_path.exists():
+                print(f"Warning: Could not find paper-global.yml at {paper_config_path}")
+                return
+
+            with open(paper_config_path, 'r') as f:
+                paper_config = yaml.safe_load(f)
+
+            # Helper function to recursively merge dictionaries
+            def merge_dicts(source, destination):
+                for key, value in source.items():
+                    if isinstance(value, dict) and key in destination and isinstance(destination[key], dict):
+                        merge_dicts(value, destination[key])
+                    else:
+                        destination[key] = value
+                return destination
+
+            # Merge the manifest settings into the loaded paper config
+            updated_config = merge_dicts(paper_settings, paper_config)
+
+            with open(paper_config_path, 'w') as f:
+                yaml.dump(updated_config, f, default_flow_style=False, sort_keys=False)
+
+            print("Applied Paper settings from manifest to paper-global.yml.")
+
         except FileNotFoundError:
-            print(f"Error: Could not find manifest or server.properties file.")
+            print(f"Error: Could not find manifest or configuration file.")
         except Exception as e:
             print(f"An error occurred while applying settings: {e}")
 
@@ -174,6 +204,53 @@ class PaperServerManager:
 
     def start(self):
         """Starts the Paper server in a new background management thread."""
+        paper_config_path = self.world_directory / 'config' / 'paper-global.yml'
+
+        # --- NEW: Initialization logic ---
+        if not paper_config_path.exists():
+            print("First-time setup: Initializing server to generate config files...")
+            command = [
+                'java',
+                '-Xms2G', '-Xmx2G', # Example memory settings
+                '-jar', str(self.jar_path),
+                'nogui'
+            ]
+            # Start the server just to generate files
+            self.server_process = subprocess.Popen(
+                command,
+                cwd=self.world_directory,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+
+            # Wait for the server to create the files. We can check for eula.txt.
+            eula_path = self.world_directory / 'eula.txt'
+            timeout = 30  # 30-second timeout
+            start_time = time.time()
+            while not eula_path.exists():
+                if time.time() - start_time > timeout:
+                    print("Error: Server initialization timed out.")
+                    self.server_process.kill()
+                    return
+                time.sleep(1)
+
+            print("Configuration files generated. Stopping server to apply settings...")
+
+            # Stop the server
+            self.server_process.stdin.write('stop\n')
+            self.server_process.stdin.flush()
+            self.server_process.wait() # Wait for the process to terminate
+            self.server_process = None
+
+            # Now apply the manifest settings to the newly created files
+            self.apply_manifest_settings()
+
+            print("\nInitial setup complete! Configuration has been applied.")
+            print("Please run the start command again to launch the server.")
+            return
+
         if self.is_alive():
             print(f"Server for world '{self.world_name}' is already running.")
             return

@@ -1,5 +1,5 @@
-
 import { MCED } from "../lib/constants.mjs";
+
 export function defineWorldActionsBlocks(Blockly) {
 Blockly.Blocks['world_actions_create_explosion'] = {
     init: function() {
@@ -18,7 +18,7 @@ Blockly.Blocks['world_actions_create_explosion'] = {
                     <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
                     <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
                     <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                </shadow>   
+                </shadow>
         `));
         this.getInput('POWER').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="math_number"><field name="NUM">0</field></shadow>`));
     }
@@ -38,7 +38,7 @@ Blockly.Blocks['world_actions_get_block'] = {
                     <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
                     <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
                     <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                </shadow>   
+                </shadow>
         `));
     }
 };
@@ -57,7 +57,7 @@ Blockly.Blocks['world_actions_get_height'] = {
                     <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
                     <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
                     <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                </shadow>   
+                </shadow>
         `));
     }
 };
@@ -92,7 +92,7 @@ Blockly.Blocks['world_actions_set_block'] = {
                     <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
                     <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
                     <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                </shadow>   
+                </shadow>
         `));
         this.getInput('BLOCK_TYPE').connection.setShadowDom(Blockly.utils.xml.textToDom(`
                 <shadow type="minecraft_picker_world">
@@ -119,14 +119,14 @@ Blockly.Blocks['world_actions_set_blocks'] = {
                     <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
                     <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
                     <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                </shadow>   
+                </shadow>
         `));
         this.getInput('POSITION_2').connection.setShadowDom(Blockly.utils.xml.textToDom(`
                  <shadow type="minecraft_vector_3d">
                     <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
                     <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
                     <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                </shadow>   
+                </shadow>
         `));
     }
 };
@@ -147,7 +147,7 @@ Blockly.Blocks['world_actions_spawn_entity'] = {
                     <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
                     <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
                     <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                </shadow>   
+                </shadow>
         `));
         this.getInput('ENTITY').connection.setShadowDom(Blockly.utils.xml.textToDom(`
                 <shadow type="minecraft_entity_picker_passive_mobs">
@@ -156,5 +156,4 @@ Blockly.Blocks['world_actions_spawn_entity'] = {
         `));
     }
 };
-
 }

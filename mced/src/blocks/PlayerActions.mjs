@@ -1,0 +1,103 @@
+import { MCED } from "../lib/constants.mjs";
+
+export function definePlayerActionsBlocks(Blockly) {
+Blockly.Blocks['player_actions_get_compass_direction'] = {
+    init: function() {
+        this.appendDummyInput().appendField("Get Player Compass Direction");
+        
+        this.setOutput(true, "Compass");
+        this.setColour(65);
+        this.setTooltip("An auto-generated block for the 'Get Player Compass Direction' action.");
+        this.setInputsInline(false);
+
+        // Configure shadow blocks directly
+        
+    }
+};
+Blockly.Blocks['player_actions_get_direction'] = {
+    init: function() {
+        this.appendDummyInput().appendField("Get Player Direction");
+        
+        this.setOutput(true, "3DVector");
+        this.setColour(65);
+        this.setTooltip("An auto-generated block for the 'Get Player Direction' action.");
+        this.setInputsInline(false);
+
+        // Configure shadow blocks directly
+        
+    }
+};
+Blockly.Blocks['player_actions_get_position'] = {
+    init: function() {
+        this.appendDummyInput().appendField("Get Player Position");
+        
+        this.setOutput(true, "3DVector");
+        this.setColour(65);
+        this.setTooltip("An auto-generated block for the 'Get Player Position' action.");
+        this.setInputsInline(false);
+
+        // Configure shadow blocks directly
+        
+    }
+};
+Blockly.Blocks['player_actions_get_tile_position'] = {
+    init: function() {
+        this.appendDummyInput().appendField("Get Player Tile Position");
+        
+        this.setOutput(true, "3DVector");
+        this.setColour(65);
+        this.setTooltip("An auto-generated block for the 'Get Player Tile Position' action.");
+        this.setInputsInline(false);
+
+        // Configure shadow blocks directly
+        
+    }
+};
+Blockly.Blocks['player_actions_set_compass_direction'] = {
+    init: function() {
+        this.appendDummyInput().appendField("Set Player Compass Direction");
+        this.appendValueInput("DIR").setCheck("Compass").setAlign("RIGHT").appendField("Dir");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(65);
+        this.setTooltip("An auto-generated block for the 'Set Player Compass Direction' action.");
+        this.setInputsInline(false);
+
+        // Configure shadow blocks directly
+        this.getInput('DIR').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="picker_compass"><field name="VALUE">N</field></shadow>`));
+    }
+};
+Blockly.Blocks['player_actions_set_position'] = {
+    init: function() {
+        this.appendDummyInput().appendField("Set Player Position");
+        this.appendValueInput("POS").setCheck("3DVector").setAlign("RIGHT").appendField("Pos");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(65);
+        this.setTooltip("An auto-generated block for the 'Set Player Position' action.");
+        this.setInputsInline(false);
+
+        // Configure shadow blocks directly
+        this.getInput('POS').connection.setShadowDom(Blockly.utils.xml.textToDom(`
+                 <shadow type="minecraft_vector_3d">
+                    <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+                    <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+                    <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+                </shadow>
+        `));
+    }
+};
+Blockly.Blocks['player_actions_wait_for_sword_strike'] = {
+    init: function() {
+        this.appendDummyInput().appendField("Wait for Sword Strike Position");
+        
+        this.setOutput(true, "3DVector");
+        this.setColour(65);
+        this.setTooltip("An auto-generated block for the 'Wait for Sword Strike Position' action.");
+        this.setInputsInline(false);
+
+        // Configure shadow blocks directly
+        
+    }
+};
+}
