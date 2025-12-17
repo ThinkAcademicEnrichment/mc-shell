@@ -898,7 +898,6 @@ class MCShell(Magics):
         minecraft_name = self._get_mc_name()
         print("Stopping any running application servers.")
         stop_app_server()
-        self.mc_name = None
         print(f"Starting application server for authorized Minecraft player: {minecraft_name}")
         start_app_server(self.server_data,minecraft_name,self.shell)
         return
