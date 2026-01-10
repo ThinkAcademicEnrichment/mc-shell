@@ -560,9 +560,12 @@
   </category>
   <category name="Player Actions" colour="#3ECDE0">
     <block type="player_actions_get_compass_direction" />
+    <block type="player_actions_get_compass_direction_by_name" />
     <block type="player_actions_get_direction" />
     <block type="player_actions_get_position" />
+    <block type="player_actions_get_position_by_name" />
     <block type="player_actions_get_tile_position" />
+    <block type="player_actions_get_tile_position_by_name" />
     <block type="player_actions_set_compass_direction" />
     <block type="player_actions_set_position" />
     <block type="player_actions_wait_for_sword_strike" />
