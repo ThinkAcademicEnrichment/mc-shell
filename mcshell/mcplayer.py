@@ -73,7 +73,6 @@ class MCPlayer(MCClient):
     def here(self):
         return Vec3(*self.get_sword_hit_position())
 
-
     @property
     def compass_direction(self):
         return self._get_compass_direction(self.direction.to_tuple())
