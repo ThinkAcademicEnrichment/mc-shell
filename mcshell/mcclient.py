@@ -18,6 +18,10 @@ class MCClient:
         self.fruit_juice_port  = fj_port
 
 
+    @property
+    def server_args(self):
+        """For helping create fellow players on the same server"""
+        return dict(zip(('host','port','rcon_port','fj_port','password'),(self.host,self.port,self.rcon_port,self.fruit_juice_port,self.password)))
 
     def run(self, *args):
         """

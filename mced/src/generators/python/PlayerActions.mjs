@@ -5,6 +5,11 @@ pythonGenerator.forBlock['player_actions_get_compass_direction'] = function(bloc
     const code = `self.action_implementer.get_compass_direction()`;
     return [code, generator.ORDER_FUNCTION_CALL];
 };
+pythonGenerator.forBlock['player_actions_get_compass_direction_by_name'] = function(block, generator) {
+    const player_name = generator.valueToCode(block, 'PLAYER_NAME', generator.ORDER_ATOMIC) || '';
+    const code = `self.action_implementer.get_compass_direction_by_name(player_name=${player_name})`;
+    return [code, generator.ORDER_FUNCTION_CALL];
+};
 pythonGenerator.forBlock['player_actions_get_direction'] = function(block, generator) {
     
     const code = `self.action_implementer.get_direction()`;
@@ -15,9 +20,19 @@ pythonGenerator.forBlock['player_actions_get_position'] = function(block, genera
     const code = `self.action_implementer.get_position()`;
     return [code, generator.ORDER_FUNCTION_CALL];
 };
+pythonGenerator.forBlock['player_actions_get_position_by_name'] = function(block, generator) {
+    const player_name = generator.valueToCode(block, 'PLAYER_NAME', generator.ORDER_ATOMIC) || '';
+    const code = `self.action_implementer.get_position_by_name(player_name=${player_name})`;
+    return [code, generator.ORDER_FUNCTION_CALL];
+};
 pythonGenerator.forBlock['player_actions_get_tile_position'] = function(block, generator) {
     
     const code = `self.action_implementer.get_tile_position()`;
+    return [code, generator.ORDER_FUNCTION_CALL];
+};
+pythonGenerator.forBlock['player_actions_get_tile_position_by_name'] = function(block, generator) {
+    const player_name = generator.valueToCode(block, 'PLAYER_NAME', generator.ORDER_ATOMIC) || '';
+    const code = `self.action_implementer.get_tile_position_by_name(player_name=${player_name})`;
     return [code, generator.ORDER_FUNCTION_CALL];
 };
 pythonGenerator.forBlock['player_actions_set_compass_direction'] = function(block, generator) {

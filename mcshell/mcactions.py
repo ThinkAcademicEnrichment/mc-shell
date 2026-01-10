@@ -640,6 +640,7 @@ class PlayerActions(MCActionsBase):
     def get_direction(self):
         # if we return a value, we must specify output_type
         return self.mcplayer.direction
+
     @mced_block(
         label="Get Player Position",
         output_type="3DVector"
@@ -648,11 +649,63 @@ class PlayerActions(MCActionsBase):
         return self.mcplayer.position
 
     @mced_block(
+        label="Get Position by Name",
+        player_name={'label': 'Player Name', 'shadow': 'text'},
+        output_type="3DVector",
+        tooltip="Returns the current XYZ coordinates of a player on this server."
+    )
+    def get_position_by_name(self, player_name: str) -> Vec3:
+        """
+        Uses the high-level MCPlayer properties to resolve another player's position.
+        """
+        from mcshell.mcplayer import MCPlayer
+
+        # 1. Self-reference check
+        if not player_name or player_name.lower() == self.mcplayer.name.lower():
+            return self.mcplayer.position
+
+        try:
+            # 2. Instantiate a contextual peer using server arguments from our own player.
+            # We assume the user has fixed server_args to return {host, port, rcon_port, fj_port, password}.
+            target = MCPlayer(player_name, **self.mcplayer.server_args)
+            # 3. Access the 'position' property which encapsulates self.pc.player.getPos()
+            return target.position
+        except Exception as e:
+            # Fallback to executor's position to maintain script stability
+            return self.mcplayer.position
+
+    @mced_block(
         label="Get Player Tile Position",
         output_type="3DVector"
     )
     def get_tile_position(self):
         return self.mcplayer.tile_position
+
+    @mced_block(
+        label="Get Tile Position by Name",
+        player_name={'label': 'Player Name', 'shadow': 'text'},
+        output_type="3DVector",
+        tooltip="Returns the current XYZ coordinates of a player on this server."
+    )
+    def get_tile_position_by_name(self, player_name: str) -> Vec3:
+        """
+        Uses the high-level MCPlayer properties to resolve another player's position.
+        """
+        from mcshell.mcplayer import MCPlayer
+
+        # 1. Self-reference check
+        if not player_name or player_name.lower() == self.mcplayer.name.lower():
+            return self.mcplayer.tile_position
+
+        try:
+            # 2. Instantiate a contextual peer using server arguments from our own player.
+            # We assume the user has fixed server_args to return {host, port, rcon_port, fj_port, password}.
+            target = MCPlayer(player_name, **self.mcplayer.server_args)
+            # 3. Access the 'position' property which encapsulates self.pc.player.getPos()
+            return target.tile_position
+        except Exception as e:
+            # Fallback to executor's position to maintain script stability
+            return self.mcplayer.tile_position
 
     @mced_block(
         label="Wait for Sword Strike Position",
@@ -667,6 +720,31 @@ class PlayerActions(MCActionsBase):
     )
     def get_compass_direction(self):
         return self.mcplayer.compass_direction
+
+    @mced_block(
+        label="Get Compass Direction by Name",
+        player_name={'label': 'Player Name', 'shadow': 'text'},
+        output_type="Compass",
+    )
+    def get_compass_direction_by_name(self, player_name: str) -> Vec3:
+        """
+        Uses the high-level MCPlayer properties to resolve another player's compass direction.
+        """
+        from mcshell.mcplayer import MCPlayer
+
+        # 1. Self-reference check
+        if not player_name or player_name.lower() == self.mcplayer.name.lower():
+            return self.mcplayer.compass_direction
+
+        try:
+            # 2. Instantiate a contextual peer using server arguments from our own player.
+            # We assume the user has fixed server_args to return {host, port, rcon_port, fj_port, password}.
+            target = MCPlayer(player_name, **self.mcplayer.server_args)
+            # 3. Access the 'position' property which encapsulates self.pc.player.getPos()
+            return target.compass_direction
+        except Exception as e:
+            # Fallback to executor's position to maintain script stability
+            return self.mcplayer.compass_direction
 
     @mced_block(
         label="Set Player Compass Direction",
