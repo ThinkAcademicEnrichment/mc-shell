@@ -777,5 +777,25 @@ class PlayerActions(MCActionsBase):
     def set_position(self, pos: 'Vec3'):
         self.mcplayer.set_position(pos)
 
+    @mced_block(
+        label="Send Title",
+        title={'label': 'Title Text', 'shadow': 'text'},
+        subtitle={'label': 'Subtitle Text', 'shadow': 'text'},
+        stay={'label': 'Time Onscreen','shadow':'text'},
+    )
+    def send_title(self,title:str,subtitle:str,stay:int=70):
+        self.mcplayer.pc.player.sendTitle(title=title,subTitle=subtitle,stay=stay)
+
+    @mced_block(
+        label="Send Title by Name",
+        player_name={'label': 'Player Name','shadow':'text'},
+        title={'label': 'Title Text', 'shadow': 'text'},
+        subtitle={'label': 'Subtitle Text', 'shadow': 'text'},
+        stay={'label': 'Time Onscreen','shadow':'text'},
+    )
+    def send_title_by_name(self,player_name:str,title:str,subtitle:str,stay:int=70):
+        target_player = self._get_player_by_name(player_name)
+        target_player.pc.player.sendTitle(title=title,subTitle=subtitle,stay=stay)
+
 class MCActions(LSystemShapes,PlayerActions,TurtleShapes,TurtleActions,DigitalGeometry,WorldActions):
     '''Group All APIs for Blockly in a single class'''
