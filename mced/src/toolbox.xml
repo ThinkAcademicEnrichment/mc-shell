@@ -566,6 +566,8 @@
     <block type="player_actions_get_position_by_name" />
     <block type="player_actions_get_tile_position" />
     <block type="player_actions_get_tile_position_by_name" />
+    <block type="player_actions_send_title" />
+    <block type="player_actions_send_title_by_name" />
     <block type="player_actions_set_compass_direction" />
     <block type="player_actions_set_position" />
     <block type="player_actions_wait_for_sword_strike" />

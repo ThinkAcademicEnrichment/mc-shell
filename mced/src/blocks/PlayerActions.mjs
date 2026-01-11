@@ -92,6 +92,44 @@ Blockly.Blocks['player_actions_get_tile_position_by_name'] = {
         this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
     }
 };
+Blockly.Blocks['player_actions_send_title'] = {
+    init: function() {
+        this.appendDummyInput().appendField("Send Title");
+        this.appendValueInput("TITLE").setCheck("String").setAlign("RIGHT").appendField("Title Text");
+        this.appendValueInput("SUBTITLE").setCheck("String").setAlign("RIGHT").appendField("Subtitle Text");
+        this.appendValueInput("STAY").setCheck("Number").setAlign("RIGHT").appendField("Time Onscreen");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(65);
+        this.setTooltip("An auto-generated block for the 'Send Title' action.");
+        this.setInputsInline(false);
+
+        // Configure shadow blocks directly
+        this.getInput('TITLE').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
+        this.getInput('SUBTITLE').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
+        this.getInput('STAY').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="math_number"><field name="NUM">70</field></shadow>`));
+    }
+};
+Blockly.Blocks['player_actions_send_title_by_name'] = {
+    init: function() {
+        this.appendDummyInput().appendField("Send Title by Name");
+        this.appendValueInput("PLAYER_NAME").setCheck("String").setAlign("RIGHT").appendField("Player Name");
+        this.appendValueInput("TITLE").setCheck("String").setAlign("RIGHT").appendField("Title Text");
+        this.appendValueInput("SUBTITLE").setCheck("String").setAlign("RIGHT").appendField("Subtitle Text");
+        this.appendValueInput("STAY").setCheck("Number").setAlign("RIGHT").appendField("Time Onscreen");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(65);
+        this.setTooltip("An auto-generated block for the 'Send Title by Name' action.");
+        this.setInputsInline(false);
+
+        // Configure shadow blocks directly
+        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
+        this.getInput('TITLE').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
+        this.getInput('SUBTITLE').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
+        this.getInput('STAY').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="math_number"><field name="NUM">70</field></shadow>`));
+    }
+};
 Blockly.Blocks['player_actions_set_compass_direction'] = {
     init: function() {
         this.appendDummyInput().appendField("Set Player Compass Direction");
