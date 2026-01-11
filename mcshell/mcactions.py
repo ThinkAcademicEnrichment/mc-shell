@@ -105,6 +105,25 @@ class MCActionsBase:
         # Use .get() for a safe lookup that returns None if the key doesn't exist
         return self.bukkit_to_entity_id_map.get(bukkit_enum_string)
 
+    def _get_player_by_name(self,player_name):
+
+        from mcshell.mcplayer import MCPlayer
+
+        # 1. Self-reference check
+        if not player_name or player_name.lower() == self.mcplayer.name.lower():
+            return self.mcplayer
+
+        try:
+            # 2. Instantiate a contextual peer using server arguments from our own player.
+            # We assume the user has fixed server_args to return {host, port, rcon_port, fj_port, password}.
+            target = MCPlayer(player_name, **self.mcplayer.server_args)
+            # 3. Access the 'position' property which encapsulates self.pc.player.getPos()
+            return target
+        except Exception as e:
+            # Fallback to executor's position to maintain script stability
+            return self.mcplayer
+
+
 class Pickers:
     """Registry of custom picker options for blocks."""
 
