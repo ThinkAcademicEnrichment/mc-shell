@@ -24,12 +24,15 @@ import { defineDigitalGeometryBlocks } from "./blocks/DigitalGeometry.mjs"
 import { defineWorldActionsGenerators } from "./generators/python/WorldActions.mjs"
 import { defineWorldActionsBlocks } from "./blocks/WorldActions.mjs"
 import {defineTurtleActionsBlocks} from "./blocks/TurtleActions.mjs";
+import { definePyncraftActionsBlocks } from "./blocks/PyncraftActions.mjs";
+
 import {defineTurtleActionsGenerators} from "./generators/python/TurtleActions.mjs";
 import {defineTurtleShapesBlocks} from "./blocks/TurtleShapes.mjs";
 import {defineTurtleShapesGenerators} from "./generators/python/TurtleShapes.mjs";
 import {definePlayerActionsBlocks} from "./blocks/PlayerActions.mjs";
 import {definePlayerActionsGenerators} from "./generators/python/PlayerActions.mjs";
 import { defineLSystemShapesGenerators} from "./generators/python/LSystemShapes.mjs";
+import { definePyncraftActionsGenerators} from "./generators/python/PyncraftActions.mjs";
 
 // --- Global Setup ---
 
@@ -530,6 +533,7 @@ async function init() {
     defineTurtleActionsBlocks(Blockly);
     definePlayerActionsBlocks(Blockly);
     defineLSystemShapesBlocks(Blockly);
+    definePyncraftActionsBlocks(Blockly);
 
     // --- Install all Python generators ---
     defineMineCraftGenerators(pythonGenerator);
@@ -541,6 +545,7 @@ async function init() {
     defineTurtleActionsGenerators(pythonGenerator);
     definePlayerActionsGenerators(pythonGenerator);
     defineLSystemShapesGenerators(pythonGenerator);
+    definePyncraftActionsGenerators(pythonGenerator);
 
 
     // --- Determine the initial workspace to load ---

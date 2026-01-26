@@ -25,7 +25,7 @@ from mcshell.mcturtle import (
 from mcshell.mclsystem import LSystem
 
 from blockapily import mced_block
-
+from mcshell.pyncactions import PyncraftActions
 # Global turtle instance
 _GLOBAL_TURTLE = DigitalTurtle()
 
@@ -797,5 +797,5 @@ class PlayerActions(MCActionsBase):
         target_player = self._get_player_by_name(player_name)
         target_player.pc.player.sendTitle(title=title,subTitle=subtitle,stay=stay)
 
-class MCActions(LSystemShapes,PlayerActions,TurtleShapes,TurtleActions,DigitalGeometry,WorldActions):
+class MCActions(LSystemShapes,PlayerActions,TurtleShapes,TurtleActions,DigitalGeometry,WorldActions,PyncraftActions):
     '''Group All APIs for Blockly in a single class'''

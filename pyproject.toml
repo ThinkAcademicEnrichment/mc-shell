@@ -2,7 +2,7 @@
 name = "mc-shell"
 version = "0.6.4"
 description = "An interactive shell and editor for controlling Minecraft servers and creating powers."
-authors = ["jeff@thinkae.org"]
+authors = ["Jeff <jeff@thinkae.org>"]
 readme = "README.md"
 packages = [{include = "mcshell"}]
 include = [
