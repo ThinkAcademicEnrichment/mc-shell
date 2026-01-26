@@ -103,26 +103,26 @@ class PyncraftActions:
 
     # --- Camera Control (CmdCamera) ---
 
-    # @mced_block(
-    #     label="Camera: Normal for [player]",
-    #     player_name={'label': 'Player', 'shadow': 'text'}
-    # )
-    # def camera_set_normal_by_name(self, player_name: str):
-    #     self._get_player_by_name(player_name).pc.camera.setNormal()
-    #
-    # @mced_block(
-    #     label="Camera: Fixed for [player]",
-    #     player_name={'label': 'Player', 'shadow': 'text'}
-    # )
-    # def camera_set_fixed_by_name(self, player_name: str):
-    #     self._get_player_by_name(player_name).pc.camera.setFixed()
-    #
-    # @mced_block(
-    #     label="Camera: Follow [player]",
-    #     player_name={'label': 'Player', 'shadow': 'text'}
-    # )
-    # def camera_set_follow_by_name(self, player_name: str):
-    #     self._get_player_by_name(player_name).pc.camera.setFollow()
+    @mced_block(
+        label="Camera: Normal for [player]",
+        player_name={'label': 'Player', 'shadow': 'text'}
+    )
+    def camera_set_normal_by_name(self, player_name: str):
+        self._get_player_by_name(player_name).pc.camera.setNormal()
+
+    @mced_block(
+        label="Camera: Fixed for [player]",
+        player_name={'label': 'Player', 'shadow': 'text'}
+    )
+    def camera_set_fixed_by_name(self, player_name: str):
+        self._get_player_by_name(player_name).pc.camera.setFixed()
+
+    @mced_block(
+        label="Camera: Follow [player]",
+        player_name={'label': 'Player', 'shadow': 'text'}
+    )
+    def camera_set_follow_by_name(self, player_name: str):
+        self._get_player_by_name(player_name).pc.camera.setFollow()
 
     # --- World Manipulation (Minecraft) ---
 
@@ -163,10 +163,11 @@ class PyncraftActions:
     @mced_block(
         label="Spawn Entity",
         position={'label': 'At Position'},
-        entity={'label': 'Entity'}
+        entity_id={'label': 'Entity ID', 'shadow': '<shadow type="math_number"><field name="NUM">1</field></shadow>'},
+        output_type="Number"
     )
-    def spawn_entity(self, position: 'Vec3', entity: 'Entity') -> int:
-        self.mcplayer.pc.spawnEntity(int(position.x), int(position.y), int(position.z), entity)
+    def spawn_entity(self, position: 'Vec3', entity_id: int) -> int:
+        return self.mcplayer.pc.spawnEntity(int(position.x), int(position.y), int(position.z), entity_id)
 
     @mced_block(
         label="Create Explosion",
