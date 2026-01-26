@@ -7,32 +7,16 @@ import 'prismjs/themes/prism-okaidia.css';
 
 import * as Blockly from 'blockly';
 import { pythonGenerator } from 'blockly/python';
-import { defineMineCraftConstants, MCED} from "./lib/constants.mjs";
-import { defineMineCraftBlocks } from "./blocks/mc.mjs";
-import { defineMineCraftBlocklyUtils } from "./lib/utils.mjs";
-import { defineMineCraftGenerators } from "./generators/python/mc.mjs"
-import { defineMineCraftMaterialBlocks } from "./blocks/materials.mjs";
-import { defineMineCraftEntityBlocks } from "./blocks/entities.mjs";
-import { defineMineCraftMaterialGenerators } from "./generators/python/materials.mjs";
-import { defineMineCraftEntityGenerators } from "./generators/python/entities.mjs";
-import { defineLSystemShapesBlocks} from "./blocks/LSystemShapes.mjs";
 
 import { initializeHtmxListeners } from './lib/htmx_listeners.js';
 
-import { defineDigitalGeometryGenerators } from "./generators/python/DigitalGeometry.mjs"
-import { defineDigitalGeometryBlocks } from "./blocks/DigitalGeometry.mjs"
-import { defineWorldActionsGenerators } from "./generators/python/WorldActions.mjs"
-import { defineWorldActionsBlocks } from "./blocks/WorldActions.mjs"
-import {defineTurtleActionsBlocks} from "./blocks/TurtleActions.mjs";
-import { definePyncraftActionsBlocks } from "./blocks/PyncraftActions.mjs";
+import { defineMineCraftConstants, MCED } from "./lib/constants.mjs";
+import { defineMineCraftBlocklyUtils } from "./lib/utils.mjs";
 
-import {defineTurtleActionsGenerators} from "./generators/python/TurtleActions.mjs";
-import {defineTurtleShapesBlocks} from "./blocks/TurtleShapes.mjs";
-import {defineTurtleShapesGenerators} from "./generators/python/TurtleShapes.mjs";
-import {definePlayerActionsBlocks} from "./blocks/PlayerActions.mjs";
-import {definePlayerActionsGenerators} from "./generators/python/PlayerActions.mjs";
-import { defineLSystemShapesGenerators} from "./generators/python/LSystemShapes.mjs";
-import { definePyncraftActionsGenerators} from "./generators/python/PyncraftActions.mjs";
+// --- NEW: Registry Imports ---
+// These two files now manage all your blocks and generators automatically.
+import { registerAllBlocks } from "./blocks/registry.mjs";
+import { registerAllGenerators } from "./generators/python/registry.mjs";
 
 // --- Global Setup ---
 
@@ -523,30 +507,13 @@ async function init() {
     // Constants populates Blockly.Msg and MCED.Defaults used by other blocks.
     defineMineCraftConstants(Blockly);
 
-    // Now define all block types.
-    defineMineCraftBlocks(Blockly);
-    defineMineCraftMaterialBlocks(Blockly);
-    defineMineCraftEntityBlocks(Blockly);
-    defineDigitalGeometryBlocks(Blockly);
-    defineWorldActionsBlocks(Blockly);
-    defineTurtleShapesBlocks(Blockly);
-    defineTurtleActionsBlocks(Blockly);
-    definePlayerActionsBlocks(Blockly);
-    defineLSystemShapesBlocks(Blockly);
-    definePyncraftActionsBlocks(Blockly);
+    // Register All Blocks
+    // This function calls all the 'define...' functions found in src/blocks/
+    registerAllBlocks(Blockly);
 
-    // --- Install all Python generators ---
-    defineMineCraftGenerators(pythonGenerator);
-    defineMineCraftMaterialGenerators(pythonGenerator);
-    defineMineCraftEntityGenerators(pythonGenerator);
-    defineDigitalGeometryGenerators(pythonGenerator);
-    defineWorldActionsGenerators(pythonGenerator);
-    defineTurtleShapesGenerators(pythonGenerator);
-    defineTurtleActionsGenerators(pythonGenerator);
-    definePlayerActionsGenerators(pythonGenerator);
-    defineLSystemShapesGenerators(pythonGenerator);
-    definePyncraftActionsGenerators(pythonGenerator);
-
+    // 4. Register All Generators
+    // This function calls all the 'define...' functions found in src/generators/python/
+    registerAllGenerators(pythonGenerator);
 
     // --- Determine the initial workspace to load ---
     // It will prioritize localStorage, then workspace.json, then a blank slate.

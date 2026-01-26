@@ -518,24 +518,11 @@
     <sep />
     <block type="minecraft_picker_miscellaneous" />
   </category>
-  <category name="World Actions" colour="#44DAA3">
-    <block type="world_actions_create_explosion" />
-    <block type="world_actions_get_block" />
-    <block type="world_actions_get_height" />
-    <block type="world_actions_post_to_chat" />
-    <block type="world_actions_set_block" />
-    <block type="world_actions_set_blocks" />
-    <block type="world_actions_spawn_entity" />
-  </category>
   <category name="Digital Geometry" colour="#364EE7">
-    <block type="digital_geometry_create_digital_ball" />
     <block type="digital_geometry_create_digital_cube" />
     <block type="digital_geometry_create_digital_disc" />
     <block type="digital_geometry_create_digital_line" />
-    <block type="digital_geometry_create_digital_plane" />
     <block type="digital_geometry_create_digital_sphere" />
-    <block type="digital_geometry_create_digital_tetrahedron" />
-    <block type="digital_geometry_create_digital_tube" />
   </category>
   <category name="Turtle Shapes" colour="#F3BA2B">
     <block type="turtle_shapes_get_arithmetic_plane" />
@@ -544,15 +531,12 @@
     <block type="picker_metric" />
   </category>
   <category name="Turtle Actions" colour="#C7F32B">
-    <block type="turtle_actions_place_static_shape" />
-    <block type="turtle_actions_turtle_extrude" />
     <block type="turtle_actions_turtle_move" />
     <block type="turtle_actions_turtle_pop" />
     <block type="turtle_actions_turtle_push" />
     <block type="turtle_actions_turtle_reset" />
     <block type="turtle_actions_turtle_rotate" />
     <block type="turtle_actions_turtle_set_brush" />
-    <block type="turtle_actions_turtle_shear" />
     <block type="turtle_actions_turtle_stamp" />
     <block type="picker_direction" />
     <block type="picker_axis" />
@@ -577,6 +561,9 @@
     <block type="l_system_shapes_get_lsystem_shape" />
   </category>
   <category name="Pyncraft Actions" colour="#252E28">
+    <block type="pyncraft_actions_camera_set_fixed_by_name" />
+    <block type="pyncraft_actions_camera_set_follow_by_name" />
+    <block type="pyncraft_actions_camera_set_normal_by_name" />
     <block type="pyncraft_actions_create_explosion" />
     <block type="pyncraft_actions_get_block" />
     <block type="pyncraft_actions_get_food_level_by_name" />
@@ -593,5 +580,11 @@
     <block type="pyncraft_actions_set_rotation_by_name" />
     <block type="pyncraft_actions_set_sign" />
     <block type="pyncraft_actions_spawn_entity" />
+  </category>
+  <category name="Event Actions" colour="#FCBA03">
+    <block type="event_actions_clear_events" />
+    <block type="event_actions_wait_for_chat_by_name" />
+    <block type="event_actions_wait_for_projectile_by_name" />
+    <block type="event_actions_wait_for_sword_strike_by_name" />
   </category>
 </xml>

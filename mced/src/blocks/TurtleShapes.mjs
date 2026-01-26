@@ -7,9 +7,9 @@ export function defineTurtleShapesBlocks(Blockly) {
             this.appendDummyInput()
                 .appendField("Metric")
                 .appendField(new Blockly.FieldDropdown([
-                ["Euclidean (Sphere)", "euclidean"],
-                ["Manhattan (Diamond)", "manhattan"],
-                ["Chebyshev (Cube)", "chebyshev"]
+                ["Euclidean", "euclidean"],
+                ["Manhattan", "manhattan"],
+                ["Chebyshev", "chebyshev"]
                 ]), "VALUE");
             this.setOutput(true, "Metric");
             this.setColour(230);
@@ -71,7 +71,7 @@ Blockly.Blocks['turtle_shapes_get_metric_ball'] = {
     init: function() {
         this.appendDummyInput().appendField("Digital Shape: Sphere/Diamond/Cube");
         this.appendValueInput("RADIUS").setCheck("Number").setAlign("RIGHT").appendField("Radius");
-        this.appendValueInput("METRIC").setCheck("Metric").setAlign("RIGHT").appendField("Metric");
+        this.appendValueInput("METRIC").setCheck("String").setAlign("RIGHT").appendField("Metric");
         this.setOutput(true, "Digital_Set");
         this.setColour(65);
         this.setTooltip("An auto-generated block for the 'Digital Shape: Sphere/Diamond/Cube' action.");
@@ -79,11 +79,7 @@ Blockly.Blocks['turtle_shapes_get_metric_ball'] = {
 
         // Configure shadow blocks directly
         this.getInput('RADIUS').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="math_number"><field name="NUM">0</field></shadow>`));
-        this.getInput('METRIC').connection.setShadowDom(Blockly.utils.xml.textToDom(`
-                <shadow type="picker_metric">
-                    <field name="VALUE">euclidean</field>
-                </shadow>
-        `));
+        this.getInput('METRIC').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
     }
 };
 }
