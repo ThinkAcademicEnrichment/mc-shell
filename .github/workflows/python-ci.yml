@@ -33,6 +33,12 @@ jobs:
 
       - name: Install Poetry
         uses: snok/install-poetry@v1
+        with:
+          version: 2.2.1  # Pin to 2.2.1 to avoid 2.3.1 installation issues
+          virtualenvs-create: true
+          virtualenvs-in-project: false
+          virtualenvs-path: ~/.virtualenvs
+          installer-parallel: true
 
       - name: Install all dependencies
         run: |
