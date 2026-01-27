@@ -40,19 +40,6 @@ Blockly.Blocks['player_actions_get_direction'] = {
         
     }
 };
-Blockly.Blocks['player_actions_get_position'] = {
-    init: function() {
-        this.appendDummyInput().appendField("Get Player Position");
-        
-        this.setOutput(true, "3DVector");
-        this.setColour(65);
-        this.setTooltip("An auto-generated block for the 'Get Player Position' action.");
-        this.setInputsInline(false);
-
-        // Configure shadow blocks directly
-        
-    }
-};
 Blockly.Blocks['player_actions_get_position_by_name'] = {
     init: function() {
         this.appendDummyInput().appendField("Get Position by Name");

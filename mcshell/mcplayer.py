@@ -1,21 +1,39 @@
 from mcshell.mcclient import MCClient
 from mcshell.constants import *
+import time
+import numpy as np
+import re
+import json
+import asyncio
 
 # Define a tolerance for floating-point comparisons near zero
 DEFAULT_TOLERANCE = 1e-9
 
 class MCPlayer(MCClient):
+    """
+    Represents a player on the Minecraft server.
+    Handles connection, state management, and direct interactions (events, positioning).
+    """
     def __init__(self, name, host=MC_SERVER_HOST, port=MC_SERVER_PORT,rcon_port=MC_RCON_PORT, fj_port=FJ_PLUGIN_PORT, password=None,  cancel_event=None):
         super().__init__(host, port, rcon_port, fj_port,password)
         self.name = name
         self.state = {}
+        # Threading event used to cancel long-running tasks (like waiting for a sword strike)
         self.cancel_event = cancel_event
 
     def get_data(self,data_path):
+        """
+        Retrieves NBT data for the player from the server.
+        Args:
+            data_path: The NBT path to query (e.g., 'Pos', 'Motion').
+        """
         _args = ['get','entity',f'@p[name={self.name}]',data_path]
         return self.data(*_args)
 
     def build(self):
+        """
+        Synchronously builds the player's local state by fetching common NBT data.
+        """
         for _data_path in DATA_PATHS:
             if _data_path in FORBIDDEN_DATA_PATHS:
                 continue
@@ -46,6 +64,9 @@ class MCPlayer(MCClient):
             _data = await self.get_data_async(f"recipeBook.{_data_path}")
 
     def build_async(self):
+        """
+        Asynchronously builds the player's local state.
+        """
         asyncio.run(self.build_player_data_async())
         return self
 
@@ -54,30 +75,44 @@ class MCPlayer(MCClient):
 
     @property
     def pc(self):
+        """Returns the pyncraft Minecraft client instance for this player."""
         return self.py_client(self.name)
 
     @property
     def position(self):
+        """Current player position as a Vec3."""
         return Vec3(*self.pc.player.getPos())
 
     @property
     def tile_position(self):
+        """Current player block coordinates (integers) as a Vec3."""
         return Vec3(*self.pc.player.getTilePos())
 
     @property
     def direction(self):
+        """Current player facing direction as a normalized Vec3."""
         # note the cast from pyncraft.vec3.Vec3 to mcshell.Vec3.Vec3
         return Vec3(*self.pc.player.getDirection())
 
     @property
     def here(self):
+        """
+        Blocks execution until the player strikes a block with a sword,
+        then returns the coordinates of that block.
+        """
         return Vec3(*self.get_sword_hit_position())
 
     @property
     def compass_direction(self):
+        """Returns the cardinal direction (N, S, E, W, etc.) the player is facing."""
         return self._get_compass_direction(self.direction.to_tuple())
 
     def set_compass_direction(self,dir:str):
+        """
+        Sets the player's rotation to face a specific cardinal direction.
+        Args:
+            dir: String like 'N', 'NE', 'E', etc.
+        """
         compass_vectors = {
             'N': np.array([0., 0., -1.]),
             'NE': np.array([0.7071, 0., -0.7071]),  # sqrt(2)/2
@@ -94,32 +129,93 @@ class MCPlayer(MCClient):
     def set_position(self, pos:Vec3):
         return self.pc.player.setPos(*pos)
 
-    def get_sword_hit_position(self):
-        '''
-            The following sword hits will all be detected:
-            DIAMOND_SWORD,
-            GOLDEN_SWORD,
-            IRON_SWORD,
-            STONE_SWORD,
-            WOODEN_SWORD
-        '''
-        print('Waiting for a sword strike...')
-        while True:
+    # --- Event Polling Methods ---
 
+    def clear_events(self):
+        """
+        Clears all queued events on the server for this client.
+        Useful to call before starting a new 'Wait for...' block to avoid
+        processing old clicks or chats.
+        """
+        self.pc.events.clearAll()
+
+    def get_sword_hit_position(self):
+        """
+        Blocks until the player hits a block with a sword.
+        Supported Swords: Diamond, Golden, Iron, Stone, Wooden.
+
+        Returns:
+            Vec3: The coordinates of the block that was hit.
+
+        Raises:
+            PowerCancelledException: If the script is stopped by the user.
+        """
+        print(f'Waiting for a sword strike from {self.name}...')
+        while True:
+            # check if the user has cancelled the script
             if self.cancel_event and self.cancel_event.isSet():
                 raise PowerCancelledException
 
+            # Poll for block hit events (Right click with sword)
             _hits = self.pc.events.pollBlockHits()
             if _hits:
                 _hit = _hits[0]
-                # We must check that our player did the strike!
+                # We must check that our player (by ID) did the strike!
+                # Note: self.pc.playerId is retrieved automatically by pyncraft
                 if not _hit.entityId == self.pc.playerId:
                     continue
-                _v0 = _hit.pos.clone()
 
+                # Clone the position to avoid reference issues
                 return _hit.pos.clone()
 
+            # Sleep briefly to avoid maxing out the CPU while waiting
+            time.sleep(0.1)
 
+    def wait_for_chat_post(self, entity_id=None):
+        """
+        Blocks until a chat message is received.
+
+        Args:
+            entity_id (int, optional): If provided, only returns messages from this entity ID.
+                                       If None, returns the next message from anyone.
+
+        Returns:
+            str: The message content.
+        """
+        print(f'Waiting for chat post (Entity ID: {entity_id})...')
+        while True:
+            if self.cancel_event and self.cancel_event.isSet():
+                raise PowerCancelledException
+
+            # Poll for chat events
+            posts = self.pc.events.pollChatPosts()
+            if posts:
+                for post in posts:
+                    # If we care about WHO said it, check the ID.
+                    if entity_id is None or post.entityId == entity_id:
+                        return post.message
+
+            time.sleep(0.1)
+
+    def wait_for_projectile_hit(self):
+        """
+        Blocks until a projectile (like an arrow) hits something.
+
+        Returns:
+            Vec3: The position where the projectile landed.
+        """
+        print('Waiting for projectile hit...')
+        while True:
+            if self.cancel_event and self.cancel_event.isSet():
+                raise PowerCancelledException
+
+            # Poll for projectile events
+            hits = self.pc.events.pollProjectileHits()
+            if hits:
+                # Return the position of the first hit detected
+                return hits[0].pos
+
+            time.sleep(0.1)
 
     def _get_compass_direction(self,direction_vector: tuple[float, float, float]) -> str:
         """

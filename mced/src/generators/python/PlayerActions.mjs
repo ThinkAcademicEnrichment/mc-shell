@@ -15,11 +15,6 @@ pythonGenerator.forBlock['player_actions_get_direction'] = function(block, gener
     const code = `self.action_implementer.get_direction()`;
     return [code, generator.ORDER_FUNCTION_CALL];
 };
-pythonGenerator.forBlock['player_actions_get_position'] = function(block, generator) {
-    
-    const code = `self.action_implementer.get_position()`;
-    return [code, generator.ORDER_FUNCTION_CALL];
-};
 pythonGenerator.forBlock['player_actions_get_position_by_name'] = function(block, generator) {
     const player_name = generator.valueToCode(block, 'PLAYER_NAME', generator.ORDER_ATOMIC) || '';
     const code = `self.action_implementer.get_position_by_name(player_name=${player_name})`;

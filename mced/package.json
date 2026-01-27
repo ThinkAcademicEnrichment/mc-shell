@@ -6,7 +6,8 @@
   "scripts": {
     "clean": "rimraf ../mcshell/data/app",
     "build:all": "poetry run python ../build.py",
-    "build": "npm run clean && npm run build:all && parcel build src/index.html src/control.html --dist-dir ../mcshell/data/app --no-cache"
+    "build:registries": "poetry run python ../update_registries.py",
+    "build": "npm run clean && npm run build:all && npm run build:registries && parcel build src/index.html src/control.html --dist-dir ../mcshell/data/app --no-cache"
   },
   "dependencies": {
     "alpinejs": "^3.14.9",
@@ -18,8 +19,8 @@
     "sortablejs": "^1.15.6"
   },
   "devDependencies": {
-    "@parcel/packager-xml": "^2.15.2",
-    "@parcel/transformer-xml": "^2.15.2",
+    "@parcel/packager-xml": "^2.16.3",
+    "@parcel/transformer-xml": "^2.16.3",
     "parcel": "^2.12.0",
     "path-browserify": "^1.0.1",
     "process": "^0.11.10",

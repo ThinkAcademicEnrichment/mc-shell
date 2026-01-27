@@ -1,6 +1,48 @@
 import { MCED } from "../lib/constants.mjs";
 
 export function definePyncraftActionsBlocks(Blockly) {
+Blockly.Blocks['pyncraft_actions_camera_set_fixed_by_name'] = {
+    init: function() {
+        this.appendDummyInput().appendField("Camera: Fixed for [player]");
+        this.appendValueInput("PLAYER_NAME").setCheck("String").setAlign("RIGHT").appendField("Player");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(65);
+        this.setTooltip("An auto-generated block for the 'Camera: Fixed for [player]' action.");
+        this.setInputsInline(false);
+
+        // Configure shadow blocks directly
+        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT">SELF</field></shadow>`));
+    }
+};
+Blockly.Blocks['pyncraft_actions_camera_set_follow_by_name'] = {
+    init: function() {
+        this.appendDummyInput().appendField("Camera: Follow [player]");
+        this.appendValueInput("PLAYER_NAME").setCheck("String").setAlign("RIGHT").appendField("Player");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(65);
+        this.setTooltip("An auto-generated block for the 'Camera: Follow [player]' action.");
+        this.setInputsInline(false);
+
+        // Configure shadow blocks directly
+        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT">SELF</field></shadow>`));
+    }
+};
+Blockly.Blocks['pyncraft_actions_camera_set_normal_by_name'] = {
+    init: function() {
+        this.appendDummyInput().appendField("Camera: Normal for [player]");
+        this.appendValueInput("PLAYER_NAME").setCheck("String").setAlign("RIGHT").appendField("Player");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(65);
+        this.setTooltip("An auto-generated block for the 'Camera: Normal for [player]' action.");
+        this.setInputsInline(false);
+
+        // Configure shadow blocks directly
+        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT">SELF</field></shadow>`));
+    }
+};
 Blockly.Blocks['pyncraft_actions_create_explosion'] = {
     init: function() {
         this.appendDummyInput().appendField("Create Explosion");
@@ -42,6 +84,38 @@ Blockly.Blocks['pyncraft_actions_get_block'] = {
         `));
     }
 };
+Blockly.Blocks['pyncraft_actions_get_block_with_data'] = {
+    init: function() {
+        this.appendDummyInput().appendField("Get Block With Data");
+        this.appendValueInput("POSITION").setCheck("3DVector").setAlign("RIGHT").appendField("At Position");
+        this.setOutput(true, "String");
+        this.setColour(65);
+        this.setTooltip("An auto-generated block for the 'Get Block With Data' action.");
+        this.setInputsInline(false);
+
+        // Configure shadow blocks directly
+        this.getInput('POSITION').connection.setShadowDom(Blockly.utils.xml.textToDom(`
+                 <shadow type="minecraft_vector_3d">
+                    <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+                    <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+                    <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+                </shadow>
+        `));
+    }
+};
+Blockly.Blocks['pyncraft_actions_get_direction_by_name'] = {
+    init: function() {
+        this.appendDummyInput().appendField("Get Direction for [player]");
+        this.appendValueInput("PLAYER_NAME").setCheck("String").setAlign("RIGHT").appendField("Player");
+        this.setOutput(true, "3DVector");
+        this.setColour(65);
+        this.setTooltip("An auto-generated block for the 'Get Direction for [player]' action.");
+        this.setInputsInline(false);
+
+        // Configure shadow blocks directly
+        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT">SELF</field></shadow>`));
+    }
+};
 Blockly.Blocks['pyncraft_actions_get_food_level_by_name'] = {
     init: function() {
         this.appendDummyInput().appendField("Get Food Level for [player]");
@@ -52,7 +126,7 @@ Blockly.Blocks['pyncraft_actions_get_food_level_by_name'] = {
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
+        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT">SELF</field></shadow>`));
     }
 };
 Blockly.Blocks['pyncraft_actions_get_health_by_name'] = {
@@ -65,7 +139,7 @@ Blockly.Blocks['pyncraft_actions_get_health_by_name'] = {
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
+        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT">SELF</field></shadow>`));
     }
 };
 Blockly.Blocks['pyncraft_actions_get_height'] = {
@@ -93,7 +167,33 @@ Blockly.Blocks['pyncraft_actions_get_pitch_by_name'] = {
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
+        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT">SELF</field></shadow>`));
+    }
+};
+Blockly.Blocks['pyncraft_actions_get_player_entity_id'] = {
+    init: function() {
+        this.appendDummyInput().appendField("Get Player Entity ID");
+        this.appendValueInput("NAME").setCheck("String").setAlign("RIGHT").appendField("Player Name");
+        this.setOutput(true, "Number");
+        this.setColour(65);
+        this.setTooltip("An auto-generated block for the 'Get Player Entity ID' action.");
+        this.setInputsInline(false);
+
+        // Configure shadow blocks directly
+        this.getInput('NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
+    }
+};
+Blockly.Blocks['pyncraft_actions_get_player_entity_ids'] = {
+    init: function() {
+        this.appendDummyInput().appendField("Get Player Entity IDs");
+        
+        this.setOutput(true, "Array");
+        this.setColour(65);
+        this.setTooltip("An auto-generated block for the 'Get Player Entity IDs' action.");
+        this.setInputsInline(false);
+
+        // Configure shadow blocks directly
+        
     }
 };
 Blockly.Blocks['pyncraft_actions_get_position_by_name'] = {
@@ -106,7 +206,7 @@ Blockly.Blocks['pyncraft_actions_get_position_by_name'] = {
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
+        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT">SELF</field></shadow>`));
     }
 };
 Blockly.Blocks['pyncraft_actions_get_rotation_by_name'] = {
@@ -119,7 +219,20 @@ Blockly.Blocks['pyncraft_actions_get_rotation_by_name'] = {
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
+        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT">SELF</field></shadow>`));
+    }
+};
+Blockly.Blocks['pyncraft_actions_get_tile_position_by_name'] = {
+    init: function() {
+        this.appendDummyInput().appendField("Get Tile Position for [player]");
+        this.appendValueInput("PLAYER_NAME").setCheck("String").setAlign("RIGHT").appendField("Player");
+        this.setOutput(true, "3DVector");
+        this.setColour(65);
+        this.setTooltip("An auto-generated block for the 'Get Tile Position for [player]' action.");
+        this.setInputsInline(false);
+
+        // Configure shadow blocks directly
+        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT">SELF</field></shadow>`));
     }
 };
 Blockly.Blocks['pyncraft_actions_get_yaw_by_name'] = {
@@ -132,16 +245,44 @@ Blockly.Blocks['pyncraft_actions_get_yaw_by_name'] = {
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
+        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT">SELF</field></shadow>`));
+    }
+};
+Blockly.Blocks['pyncraft_actions_restore_checkpoint'] = {
+    init: function() {
+        this.appendDummyInput().appendField("Restore Checkpoint");
+        
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(65);
+        this.setTooltip("An auto-generated block for the 'Restore Checkpoint' action.");
+        this.setInputsInline(false);
+
+        // Configure shadow blocks directly
+        
+    }
+};
+Blockly.Blocks['pyncraft_actions_save_checkpoint'] = {
+    init: function() {
+        this.appendDummyInput().appendField("Save Checkpoint");
+        
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(65);
+        this.setTooltip("An auto-generated block for the 'Save Checkpoint' action.");
+        this.setInputsInline(false);
+
+        // Configure shadow blocks directly
+        
     }
 };
 Blockly.Blocks['pyncraft_actions_send_title_by_name'] = {
     init: function() {
         this.appendDummyInput().appendField("Send Title to [player]");
-        this.appendValueInput("PLAYER_NAME").setCheck("String").setAlign("RIGHT").appendField("Player");
         this.appendValueInput("TITLE").setCheck("String").setAlign("RIGHT").appendField("Title");
         this.appendValueInput("SUBTITLE").setCheck("String").setAlign("RIGHT").appendField("Subtitle");
         this.appendValueInput("STAY").setCheck("Number").setAlign("RIGHT").appendField("Stay (Ticks)");
+        this.appendValueInput("PLAYER_NAME").setCheck("String").setAlign("RIGHT").appendField("Player");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(65);
@@ -149,10 +290,10 @@ Blockly.Blocks['pyncraft_actions_send_title_by_name'] = {
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
         this.getInput('TITLE').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
         this.getInput('SUBTITLE').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
         this.getInput('STAY').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="math_number"><field name="NUM">70</field></shadow>`));
+        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT">SELF</field></shadow>`));
     }
 };
 Blockly.Blocks['pyncraft_actions_set_block'] = {
@@ -207,11 +348,33 @@ Blockly.Blocks['pyncraft_actions_set_blocks'] = {
         this.getInput('BLOCK_TYPE').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
     }
 };
+Blockly.Blocks['pyncraft_actions_set_direction_by_name'] = {
+    init: function() {
+        this.appendDummyInput().appendField("Set Direction for [player]");
+        this.appendValueInput("DIRECTION").setCheck("3DVector").setAlign("RIGHT").appendField("Direction Vector");
+        this.appendValueInput("PLAYER_NAME").setCheck("String").setAlign("RIGHT").appendField("Player");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(65);
+        this.setTooltip("An auto-generated block for the 'Set Direction for [player]' action.");
+        this.setInputsInline(false);
+
+        // Configure shadow blocks directly
+        this.getInput('DIRECTION').connection.setShadowDom(Blockly.utils.xml.textToDom(`
+                 <shadow type="minecraft_vector_3d">
+                    <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+                    <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+                    <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+                </shadow>
+        `));
+        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT">SELF</field></shadow>`));
+    }
+};
 Blockly.Blocks['pyncraft_actions_set_position_by_name'] = {
     init: function() {
         this.appendDummyInput().appendField("Set Position for [player]");
-        this.appendValueInput("PLAYER_NAME").setCheck("String").setAlign("RIGHT").appendField("Player");
         this.appendValueInput("POSITION").setCheck("3DVector").setAlign("RIGHT").appendField("To Position");
+        this.appendValueInput("PLAYER_NAME").setCheck("String").setAlign("RIGHT").appendField("Player");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(65);
@@ -219,7 +382,6 @@ Blockly.Blocks['pyncraft_actions_set_position_by_name'] = {
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
         this.getInput('POSITION').connection.setShadowDom(Blockly.utils.xml.textToDom(`
                  <shadow type="minecraft_vector_3d">
                     <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
@@ -227,14 +389,15 @@ Blockly.Blocks['pyncraft_actions_set_position_by_name'] = {
                     <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
                 </shadow>
         `));
+        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT">SELF</field></shadow>`));
     }
 };
 Blockly.Blocks['pyncraft_actions_set_rotation_by_name'] = {
     init: function() {
         this.appendDummyInput().appendField("Set Rotation for [player]");
-        this.appendValueInput("PLAYER_NAME").setCheck("String").setAlign("RIGHT").appendField("Player");
         this.appendValueInput("YAW").setCheck("Number").setAlign("RIGHT").appendField("Yaw");
         this.appendValueInput("PITCH").setCheck("Number").setAlign("RIGHT").appendField("Pitch");
+        this.appendValueInput("PLAYER_NAME").setCheck("String").setAlign("RIGHT").appendField("Player");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(65);
@@ -242,9 +405,9 @@ Blockly.Blocks['pyncraft_actions_set_rotation_by_name'] = {
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
         this.getInput('YAW').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="math_number"><field name="NUM">0</field></shadow>`));
         this.getInput('PITCH').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="math_number"><field name="NUM">0</field></shadow>`));
+        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT">SELF</field></shadow>`));
     }
 };
 Blockly.Blocks['pyncraft_actions_set_sign'] = {
@@ -279,13 +442,34 @@ Blockly.Blocks['pyncraft_actions_set_sign'] = {
         this.getInput('LINE4').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
     }
 };
+Blockly.Blocks['pyncraft_actions_set_tile_position_by_name'] = {
+    init: function() {
+        this.appendDummyInput().appendField("Set Tile Position for [player]");
+        this.appendValueInput("POSITION").setCheck("3DVector").setAlign("RIGHT").appendField("To Tile Position");
+        this.appendValueInput("PLAYER_NAME").setCheck("String").setAlign("RIGHT").appendField("Player");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(65);
+        this.setTooltip("An auto-generated block for the 'Set Tile Position for [player]' action.");
+        this.setInputsInline(false);
+
+        // Configure shadow blocks directly
+        this.getInput('POSITION').connection.setShadowDom(Blockly.utils.xml.textToDom(`
+                 <shadow type="minecraft_vector_3d">
+                    <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+                    <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+                    <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+                </shadow>
+        `));
+        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT">SELF</field></shadow>`));
+    }
+};
 Blockly.Blocks['pyncraft_actions_spawn_entity'] = {
     init: function() {
         this.appendDummyInput().appendField("Spawn Entity");
         this.appendValueInput("POSITION").setCheck("3DVector").setAlign("RIGHT").appendField("At Position");
-        this.appendValueInput("ENTITY").setCheck(null).setAlign("RIGHT").appendField("Entity");
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
+        this.appendValueInput("ENTITY_ID").setCheck("Number").setAlign("RIGHT").appendField("Entity ID");
+        this.setOutput(true, "Number");
         this.setColour(65);
         this.setTooltip("An auto-generated block for the 'Spawn Entity' action.");
         this.setInputsInline(false);
@@ -298,11 +482,23 @@ Blockly.Blocks['pyncraft_actions_spawn_entity'] = {
                     <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
                 </shadow>
         `));
-        this.getInput('ENTITY').connection.setShadowDom(Blockly.utils.xml.textToDom(`
-                <shadow type="minecraft_entity_picker_passive_mobs">
-                    <field name="ENTITY_ID">PIG</field>
-                </shadow>
-        `));
+        this.getInput('ENTITY_ID').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="math_number"><field name="NUM">0</field></shadow>`));
+    }
+};
+Blockly.Blocks['pyncraft_actions_world_setting'] = {
+    init: function() {
+        this.appendDummyInput().appendField("World Setting");
+        this.appendValueInput("SETTING").setCheck("String").setAlign("RIGHT").appendField("Setting Name");
+        this.appendValueInput("STATUS").setCheck("Boolean").setAlign("RIGHT").appendField("Enabled");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(65);
+        this.setTooltip("An auto-generated block for the 'World Setting' action.");
+        this.setInputsInline(false);
+
+        // Configure shadow blocks directly
+        this.getInput('SETTING').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
+        this.getInput('STATUS').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="logic_boolean"><field name="BOOL">TRUE</field></shadow>`));
     }
 };
 }

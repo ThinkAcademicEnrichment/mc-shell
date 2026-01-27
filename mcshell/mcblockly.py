@@ -520,13 +520,13 @@ def generate_mcactions_blocks():
     """
     # 2. Defer imports to runtime
     from mcshell.mcactions import (
-        WorldActions,
         DigitalGeometry,
         TurtleActions,
         TurtleShapes,
         PlayerActions,
         LSystemShapes,
         PyncraftActions,
+        EventActions,
         Pickers
     )
 
@@ -634,11 +634,11 @@ def generate_mcactions_blocks():
     turtleactions_extras = get_extras(["Direction", "Axis", "Compass"])
 
     classes_to_generate = [
-        (WorldActions, "WorldActions", None, None, None, "#44DAA3"),
         (DigitalGeometry, "DigitalGeometry", None, None, None, "#364EE7"),
         (TurtleShapes, "TurtleShapes", turtleshapes_extras[0], turtleshapes_extras[1], turtleshapes_extras[2], "#F3BA2B"),
         (TurtleActions, "TurtleActions", turtleactions_extras[0], turtleactions_extras[1], turtleactions_extras[2], "#C7F32B"),
         (PlayerActions, "PlayerActions", None, None, None, "#3ECDE0"),
+        (EventActions, "EventActions", None, None, None, "#FCBA03"),
         (LSystemShapes, "LSystemShapes", None, None, None, "#75E538"),
         (PyncraftActions, "PyncraftActions", None, None, None, "#252E28")
     ]
