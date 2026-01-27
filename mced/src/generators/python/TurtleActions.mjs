@@ -20,8 +20,14 @@ export function defineTurtleActionsGenerators(pythonGenerator) {
 
 
 
+pythonGenerator.forBlock['turtle_actions_turtle_extrude'] = function(block, generator) {
+    const length = generator.valueToCode(block, 'LENGTH', generator.ORDER_ATOMIC) || 0;
+    const direction = generator.valueToCode(block, 'DIRECTION', generator.ORDER_ATOMIC) || 'None';
+    const block_type = generator.valueToCode(block, 'BLOCK_TYPE', generator.ORDER_ATOMIC) || 'None';
+    return `self.action_implementer.turtle_extrude(length=${length}, direction=${direction}, block_type=${block_type})\n`;
+};
 pythonGenerator.forBlock['turtle_actions_turtle_move'] = function(block, generator) {
-    const direction = generator.valueToCode(block, 'DIRECTION', generator.ORDER_ATOMIC) || '';
+    const direction = generator.valueToCode(block, 'DIRECTION', generator.ORDER_ATOMIC) || 'None';
     const distance = generator.valueToCode(block, 'DISTANCE', generator.ORDER_ATOMIC) || 0;
     return `self.action_implementer.turtle_move(direction=${direction}, distance=${distance})\n`;
 };
@@ -39,7 +45,7 @@ pythonGenerator.forBlock['turtle_actions_turtle_reset'] = function(block, genera
     return `self.action_implementer.turtle_reset(position=${position}, orientation=${orientation})\n`;
 };
 pythonGenerator.forBlock['turtle_actions_turtle_rotate'] = function(block, generator) {
-    const axis = generator.valueToCode(block, 'AXIS', generator.ORDER_ATOMIC) || '';
+    const axis = generator.valueToCode(block, 'AXIS', generator.ORDER_ATOMIC) || 'None';
     const steps = generator.valueToCode(block, 'STEPS', generator.ORDER_ATOMIC) || 0;
     return `self.action_implementer.turtle_rotate(axis=${axis}, steps=${steps})\n`;
 };
@@ -48,7 +54,7 @@ pythonGenerator.forBlock['turtle_actions_turtle_set_brush'] = function(block, ge
     return `self.action_implementer.turtle_set_brush(shape=${shape})\n`;
 };
 pythonGenerator.forBlock['turtle_actions_turtle_stamp'] = function(block, generator) {
-    const block_type = generator.valueToCode(block, 'BLOCK_TYPE', generator.ORDER_ATOMIC) || '';
+    const block_type = generator.valueToCode(block, 'BLOCK_TYPE', generator.ORDER_ATOMIC) || 'None';
     return `self.action_implementer.turtle_stamp(block_type=${block_type})\n`;
 };
 }

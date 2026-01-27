@@ -531,6 +531,7 @@
     <block type="picker_metric" />
   </category>
   <category name="Turtle Actions" colour="#C7F32B">
+    <block type="turtle_actions_turtle_extrude" />
     <block type="turtle_actions_turtle_move" />
     <block type="turtle_actions_turtle_pop" />
     <block type="turtle_actions_turtle_push" />
@@ -546,12 +547,12 @@
     <block type="player_actions_get_compass_direction" />
     <block type="player_actions_get_compass_direction_by_name" />
     <block type="player_actions_get_direction" />
-    <block type="player_actions_get_position_by_name" />
+    <block type="player_actions_get_position" />
     <block type="player_actions_get_tile_position" />
     <block type="player_actions_get_tile_position_by_name" />
     <block type="player_actions_send_title" />
-    <block type="player_actions_send_title_by_name" />
     <block type="player_actions_set_compass_direction" />
+    <block type="player_actions_set_direction" />
     <block type="player_actions_set_position" />
     <block type="player_actions_wait_for_sword_strike" />
   </category>
@@ -595,5 +596,20 @@
     <block type="event_actions_wait_for_chat_by_name" />
     <block type="event_actions_wait_for_projectile_by_name" />
     <block type="event_actions_wait_for_sword_strike_by_name" />
+  </category>
+  <category name="World Actions" colour="#75E538">
+    <block type="world_actions_get_height" />
+    <block type="world_actions_post_to_chat" />
+    <block type="world_actions_set_block" />
+  </category>
+  <category name="Server Actions" colour="#252E28">
+    <block type="server_actions_server_clear_inventory" />
+    <block type="server_actions_server_execute_command" />
+    <block type="server_actions_server_locate" />
+    <block type="server_actions_server_set_difficulty" />
+    <block type="server_actions_server_set_gamemode" />
+    <block type="server_actions_server_set_gamerule" />
+    <block type="server_actions_server_set_time" />
+    <block type="server_actions_server_set_weather" />
   </category>
 </xml>
