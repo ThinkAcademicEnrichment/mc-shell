@@ -77,7 +77,6 @@ class TurtleShapes(MCActionsBase):
     def get_line(self, p1: 'Vec3', p2: 'Vec3') -> DigitalSet:
         return generate_linear_path(p1.to_tuple(), p2.to_tuple())
 
-
 class TurtleActions(MCActionsBase):
     """
     Statement Blocks: These control the Turtle state or modify the world.
@@ -140,7 +139,6 @@ class TurtleActions(MCActionsBase):
         shape = self.turtle.stamp()
         self._place_digital_set(shape, block_type)
 
-
 class LSystemShapes(MCActionsBase):
     """
     Exposes L-System grammar logic for procedural generation as a DigitalSet.
@@ -174,7 +172,6 @@ class LSystemShapes(MCActionsBase):
             if shape_segment:
                 accumulated_shape = accumulated_shape.union(shape_segment)
         return accumulated_shape
-
 
 class DigitalGeometry(MCActionsBase):
     """
@@ -237,7 +234,6 @@ class WorldActions(MCActionsBase):
     def post_to_chat(self, message: str):
         self.mcplayer.pc.postToChat(str(message))
 
-
 class PlayerActions(MCActionsBase):
     def __init__(self, mc_player_instance, delay_between_blocks=0):
         super().__init__(mc_player_instance, delay_between_blocks)
@@ -250,12 +246,12 @@ class PlayerActions(MCActionsBase):
         # if we return a value, we must specify output_type
         return self.mcplayer.direction
 
-    @mced_block(
-        label="Get Player Position",
-        output_type="3DVector"
-    )
-    def get_position(self):
-        return self.mcplayer.position
+    # @mced_block(
+    #     label="Get Player Position",
+    #     output_type="3DVector"
+    # )
+    # def get_position(self):
+    #     return self.mcplayer.position
 
     @mced_block(
         label="Get Position by Name",

@@ -81,12 +81,23 @@ class MCActionsBase:
     def _get_player_by_name(self, player_name: str) -> MCPlayer:
         """
         Helper to resolve a string name to an MCPlayer object.
-        If the name matches the current player, returns self.mcplayer.
-        Otherwise, creates a new MCPlayer instance for that target.
+
+        Logic:
+        1. If name is None or empty -> Return self (Current Player)
+        2. If name is 'SELF' (case-insensitive) -> Return self (Current Player)
+        3. If name matches self.name -> Return self
+        4. Otherwise -> Create new MCPlayer instance for target
         """
         from mcshell.mcplayer import MCPlayer
-        if not player_name or player_name.lower() == self.mcplayer.name.lower():
+
+        # Check for empty or special "SELF" keyword
+        if not player_name or player_name.strip().upper() == "SELF":
             return self.mcplayer
+
+        # Check for explicit self-name
+        if player_name.lower() == self.mcplayer.name.lower():
+            return self.mcplayer
+
         try:
             # Create a contextual peer using server arguments from our own player.
             target = MCPlayer(player_name, **self.mcplayer.server_args)

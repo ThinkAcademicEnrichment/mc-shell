@@ -1,35 +1,26 @@
 from mcshell.mcplayer import MCPlayer
+# Use new file for base class import
+from mcshell.mcactions_base import MCActionsBase
 from blockapily import mced_block
 from typing import Optional
 
-class PyncraftActions:
+class PyncraftActions(MCActionsBase):
     """
     Exposes direct pyncraft API methods as Blockly blocks with multi-player support.
     Uses minecraft.py as the definitive source of truth for available methods.
     """
     def __init__(self, mc_player_instance, delay_between_blocks=0):
-        self.mcplayer = mc_player_instance
-        self.delay_between_blocks = delay_between_blocks
+        super().__init__(mc_player_instance, delay_between_blocks)
 
-    def _get_player_by_name(self, player_name: str) -> MCPlayer:
-        """Helper to resolve a string name to an MCPlayer object."""
-        from mcshell.mcplayer import MCPlayer
-        if not player_name or player_name.lower() == self.mcplayer.name.lower():
-            return self.mcplayer
-        try:
-            target = MCPlayer(player_name, **self.mcplayer.server_args)
-            return target
-        except Exception:
-            return self.mcplayer
-
-    # --- Player Stats & Status (CmdPlayer) ---
+    # --- Player Control (CmdPlayer) ---
 
     @mced_block(
         label="Get Health for [player]",
         player_name={'label': 'Player', 'shadow': 'text'},
         output_type="Number"
     )
-    def get_health_by_name(self, player_name: str) -> float:
+    def get_health_by_name(self, player_name: str = "SELF") -> float:
+        """Returns the health of the specified player."""
         return self._get_player_by_name(player_name).pc.player.getHealth()
 
     @mced_block(
@@ -37,7 +28,8 @@ class PyncraftActions:
         player_name={'label': 'Player', 'shadow': 'text'},
         output_type="Number"
     )
-    def get_food_level_by_name(self, player_name: str) -> int:
+    def get_food_level_by_name(self, player_name: str = "SELF") -> int:
+        """Returns the food level of the specified player."""
         return self._get_player_by_name(player_name).pc.player.getFoodLevel()
 
     @mced_block(
@@ -45,7 +37,8 @@ class PyncraftActions:
         player_name={'label': 'Player', 'shadow': 'text'},
         output_type="Number"
     )
-    def get_pitch_by_name(self, player_name: str) -> float:
+    def get_pitch_by_name(self, player_name: str = "SELF") -> float:
+        """Returns the pitch (vertical rotation) of the specified player."""
         return self._get_player_by_name(player_name).pc.player.getPitch()
 
     @mced_block(
@@ -53,7 +46,8 @@ class PyncraftActions:
         player_name={'label': 'Player', 'shadow': 'text'},
         output_type="Number"
     )
-    def get_yaw_by_name(self, player_name: str) -> float:
+    def get_yaw_by_name(self, player_name: str = "SELF") -> float:
+        """Returns the yaw (horizontal rotation) of the specified player."""
         return self._get_player_by_name(player_name).pc.player.getYaw()
 
     @mced_block(
@@ -61,7 +55,8 @@ class PyncraftActions:
         player_name={'label': 'Player', 'shadow': 'text'},
         output_type="Number"
     )
-    def get_rotation_by_name(self, player_name: str) -> float:
+    def get_rotation_by_name(self, player_name: str = "SELF") -> float:
+        """Returns the rotation of the specified player."""
         return self._get_player_by_name(player_name).pc.player.getRotation()
 
     @mced_block(
@@ -69,62 +64,103 @@ class PyncraftActions:
         player_name={'label': 'Player', 'shadow': 'text'},
         output_type="3DVector"
     )
-    def get_position_by_name(self, player_name: str):
-        pos = self._get_player_by_name(player_name).pc.player.getPos()
-        # Returns Vec3
-        return pos
+    def get_position_by_name(self, player_name: str = "SELF"):
+        """Returns the 3D vector position of the specified player."""
+        return self._get_player_by_name(player_name).pc.player.getPos()
+
+    @mced_block(
+        label="Get Tile Position for [player]",
+        player_name={'label': 'Player', 'shadow': 'text'},
+        output_type="3DVector"
+    )
+    def get_tile_position_by_name(self, player_name: str = "SELF"):
+        """Returns the integer tile position of the specified player."""
+        return self._get_player_by_name(player_name).pc.player.getTilePos()
 
     @mced_block(
         label="Set Position for [player]",
-        player_name={'label': 'Player', 'shadow': 'text'},
-        position={'label': 'To Position'}
+        position={'label': 'To Position'},
+        player_name={'label': 'Player', 'shadow': 'text'}
     )
-    def set_position_by_name(self, player_name: str, position: 'Vec3'):
+    def set_position_by_name(self, position: 'Vec3', player_name: str = "SELF"):
+        """Sets the position of the specified player."""
         self._get_player_by_name(player_name).pc.player.setPos(position.x, position.y, position.z)
 
     @mced_block(
-        label="Set Rotation for [player]",
-        player_name={'label': 'Player', 'shadow': 'text'},
-        yaw={'label': 'Yaw', 'shadow': '<shadow type="math_number"><field name="NUM">0</field></shadow>'},
-        pitch={'label': 'Pitch', 'shadow': '<shadow type="math_number"><field name="NUM">0</field></shadow>'}
+        label="Set Tile Position for [player]",
+        position={'label': 'To Tile Position'},
+        player_name={'label': 'Player', 'shadow': 'text'}
     )
-    def set_rotation_by_name(self, player_name: str, yaw: float, pitch: float):
+    def set_tile_position_by_name(self, position: 'Vec3', player_name: str = "SELF"):
+        """Sets the tile position of the specified player."""
+        self._get_player_by_name(player_name).pc.player.setTilePos(int(position.x), int(position.y), int(position.z))
+
+    @mced_block(
+        label="Set Rotation for [player]",
+        yaw={'label': 'Yaw', 'shadow': '<shadow type="math_number"><field name="NUM">0</field></shadow>'},
+        pitch={'label': 'Pitch', 'shadow': '<shadow type="math_number"><field name="NUM">0</field></shadow>'},
+        player_name={'label': 'Player', 'shadow': 'text'}
+    )
+    def set_rotation_by_name(self, yaw: float, pitch: float, player_name: str = "SELF"):
+        """Sets the rotation (yaw and pitch) of the specified player."""
         self._get_player_by_name(player_name).pc.player.setRotation(yaw, pitch)
 
     @mced_block(
-        label="Send Title to [player]",
+        label="Set Direction for [player]",
+        direction={'label': 'Direction Vector'},
+        player_name={'label': 'Player', 'shadow': 'text'}
+    )
+    def set_direction_by_name(self, direction: 'Vec3', player_name: str = "SELF"):
+        """Sets the direction the player is facing."""
+        self._get_player_by_name(player_name).pc.player.setDirection(direction.x, direction.y, direction.z)
+
+    @mced_block(
+        label="Get Direction for [player]",
         player_name={'label': 'Player', 'shadow': 'text'},
+        output_type="3DVector"
+    )
+    def get_direction_by_name(self, player_name: str = "SELF"):
+        """Returns the direction vector the player is facing."""
+        return self._get_player_by_name(player_name).pc.player.getDirection()
+
+    @mced_block(
+        label="Send Title to [player]",
         title={'label': 'Title', 'shadow': 'text'},
         subtitle={'label': 'Subtitle', 'shadow': 'text'},
-        stay={'label': 'Stay (Ticks)', 'shadow': '<shadow type="math_number"><field name="NUM">70</field></shadow>'}
+        stay={'label': 'Stay (Ticks)', 'shadow': '<shadow type="math_number"><field name="NUM">70</field></shadow>'},
+        player_name={'label': 'Player', 'shadow': 'text'}
     )
-    def send_title_by_name(self, player_name: str, title: str = "", subtitle: str = "", stay: int = 70):
+    def send_title_by_name(self, title: str = "", subtitle: str = "", stay: int = 70, player_name: str = "SELF"):
+        """Sends a title and subtitle to the specified player's screen."""
         self._get_player_by_name(player_name).pc.player.sendTitle(title=title, subTitle=subtitle, stay=stay)
 
-    # --- Camera Control (CmdCamera) ---
+    # --- Camera Manipulation (CmdCamera) ---
 
     @mced_block(
         label="Camera: Normal for [player]",
         player_name={'label': 'Player', 'shadow': 'text'}
     )
-    def camera_set_normal_by_name(self, player_name: str):
+    def camera_set_normal_by_name(self, player_name: str = "SELF"):
+        """Resets the camera to normal view for the specified player."""
         self._get_player_by_name(player_name).pc.camera.setNormal()
 
     @mced_block(
         label="Camera: Fixed for [player]",
         player_name={'label': 'Player', 'shadow': 'text'}
     )
-    def camera_set_fixed_by_name(self, player_name: str):
+    def camera_set_fixed_by_name(self, player_name: str = "SELF"):
+        """Sets the camera to a fixed position for the specified player."""
         self._get_player_by_name(player_name).pc.camera.setFixed()
 
     @mced_block(
         label="Camera: Follow [player]",
         player_name={'label': 'Player', 'shadow': 'text'}
     )
-    def camera_set_follow_by_name(self, player_name: str):
+    def camera_set_follow_by_name(self, player_name: str = "SELF"):
+        """Sets the camera to follow the specified player."""
         self._get_player_by_name(player_name).pc.camera.setFollow()
 
-    # --- World Manipulation (Minecraft) ---
+    # --- World Manipulation (Minecraft Class) ---
 
     @mced_block(
         label="Set Block",
@@ -132,6 +168,7 @@ class PyncraftActions:
         block_type={'label': 'Block Type'}
     )
     def set_block(self, position: 'Vec3', block_type: str):
+        """Sets a block at the specified position."""
         self.mcplayer.pc.setBlock(int(position.x), int(position.y), int(position.z), block_type)
 
     @mced_block(
@@ -141,6 +178,7 @@ class PyncraftActions:
         block_type={'label': 'Block Type'}
     )
     def set_blocks(self, p1: 'Vec3', p2: 'Vec3', block_type: str):
+        """Sets a cuboid of blocks defined by two corners."""
         self.mcplayer.pc.setBlocks(int(p1.x), int(p1.y), int(p1.z), int(p2.x), int(p2.y), int(p2.z), block_type)
 
     @mced_block(
@@ -149,7 +187,18 @@ class PyncraftActions:
         output_type="String"
     )
     def get_block(self, position: 'Vec3') -> str:
+        """Returns the block type at the specified position."""
         return str(self.mcplayer.pc.getBlock(int(position.x), int(position.y), int(position.z)))
+
+    @mced_block(
+        label="Get Block With Data",
+        position={'label': 'At Position'},
+        output_type="String"
+    )
+    def get_block_with_data(self, position: 'Vec3') -> str:
+        """Returns the block type and data at the specified position."""
+        # Returns Block object, converting to string representation
+        return str(self.mcplayer.pc.getBlockWithData(int(position.x), int(position.y), int(position.z)))
 
     @mced_block(
         label="Get Height",
@@ -158,7 +207,25 @@ class PyncraftActions:
         output_type="Number"
     )
     def get_height(self, x: int, z: int) -> int:
+        """Returns the height of the world (y-coordinate) at the given x and z coordinates."""
         return int(self.mcplayer.pc.getHeight(x, z))
+
+    @mced_block(
+        label="Get Player Entity IDs",
+        output_type="Array"
+    )
+    def get_player_entity_ids(self) -> list:
+        """Returns a list of entity IDs for all connected players."""
+        return self.mcplayer.pc.getPlayerEntityIds()
+
+    @mced_block(
+        label="Get Player Entity ID",
+        name={'label': 'Player Name', 'shadow': 'text'},
+        output_type="Number"
+    )
+    def get_player_entity_id(self, name: str) -> int:
+        """Returns the entity ID of the named player."""
+        return self.mcplayer.pc.getPlayerEntityId(name)
 
     @mced_block(
         label="Spawn Entity",
@@ -167,6 +234,7 @@ class PyncraftActions:
         output_type="Number"
     )
     def spawn_entity(self, position: 'Vec3', entity_id: int) -> int:
+        """Spawns an entity at the specified position."""
         return self.mcplayer.pc.spawnEntity(int(position.x), int(position.y), int(position.z), entity_id)
 
     @mced_block(
@@ -175,6 +243,7 @@ class PyncraftActions:
         power={'label': 'Power', 'shadow': '<shadow type="math_number"><field name="NUM">4</field></shadow>'}
     )
     def create_explosion(self, position: 'Vec3', power: int = 4):
+        """Creates an explosion at the specified position."""
         self.mcplayer.pc.createExplosion(int(position.x), int(position.y), int(position.z), power)
 
     @mced_block(
@@ -189,5 +258,31 @@ class PyncraftActions:
     )
     def set_sign(self, position: 'Vec3', sign_type: str = "OAK", direction: int = 0,
                  line1: str = "", line2: str = "", line3: str = "", line4: str = ""):
+        """Sets the text and type of a sign at the specified position."""
         self.mcplayer.pc.setSign(int(position.x), int(position.y), int(position.z),
                                  sign_type, direction, line1, line2, line3, line4)
+
+    @mced_block(
+        label="Save Checkpoint",
+        tooltip="Saves the current state of the world as a checkpoint."
+    )
+    def save_checkpoint(self):
+        """Saves a checkpoint of the world."""
+        self.mcplayer.pc.saveCheckpoint()
+
+    @mced_block(
+        label="Restore Checkpoint",
+        tooltip="Restores the world to the last saved checkpoint."
+    )
+    def restore_checkpoint(self):
+        """Restores the world to the last checkpoint."""
+        self.mcplayer.pc.restoreCheckpoint()
+
+    @mced_block(
+        label="World Setting",
+        setting={'label': 'Setting Name', 'shadow': 'text'},
+        status={'label': 'Enabled', 'shadow': '<shadow type="logic_boolean"><field name="BOOL">TRUE</field></shadow>'}
+    )
+    def world_setting(self, setting: str, status: bool):
+        """Sets a world setting (e.g., 'world_immutable', 'nametags_visible')."""
+        self.mcplayer.pc.setting(setting, status)

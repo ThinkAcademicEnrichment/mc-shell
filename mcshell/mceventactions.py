@@ -7,10 +7,6 @@ from blockapily import mced_block
 class EventActions(MCActionsBase):
     """
     Consolidated class for all Event-driven blocks.
-    These blocks typically pause execution ("Wait for...") until a specific game event occurs,
-    such as a sword strike, a chat message, or an arrow hit.
-
-    This class delegates the heavy lifting (polling loops) to the MCPlayer class methods.
     """
     def __init__(self, mc_player_instance, delay_between_blocks=0):
         super().__init__(mc_player_instance, delay_between_blocks)
@@ -31,12 +27,11 @@ class EventActions(MCActionsBase):
         output_type="3DVector",
         tooltip="Pauses execution until the specified player hits a block with a sword. Returns the block's position."
     )
-    def wait_for_sword_strike_by_name(self, player_name: str) -> Vec3:
+    def wait_for_sword_strike_by_name(self, player_name: str = "SELF") -> Vec3:
         """
         Resolves the target player and waits for them to strike a block.
         """
         target = self._get_player_by_name(player_name)
-        # Call the blocking method on the target MCPlayer instance
         pos = target.get_sword_hit_position()
         return Vec3(pos.x, pos.y, pos.z)
 
@@ -46,16 +41,12 @@ class EventActions(MCActionsBase):
         output_type="String",
         tooltip="Pauses execution until the specified player types a message in chat. Returns the message text."
     )
-    def wait_for_chat_by_name(self, player_name: str) -> str:
+    def wait_for_chat_by_name(self, player_name: str = "SELF") -> str:
         """
         Resolves the target player and waits for a chat message from them.
         """
         target = self._get_player_by_name(player_name)
-
-        # We need the entity ID of the target player to filter chat messages specifically from them.
-        # This prevents the block from triggering if *another* player says something.
         target_id = target.pc.getPlayerEntityId(target.name)
-
         return target.wait_for_chat_post(entity_id=target_id)
 
     @mced_block(
@@ -64,10 +55,9 @@ class EventActions(MCActionsBase):
         output_type="3DVector",
         tooltip="Pauses execution until an arrow (or projectile) hits a block. Returns the hit position."
     )
-    def wait_for_projectile_by_name(self, player_name: str) -> Vec3:
+    def wait_for_projectile_by_name(self, player_name: str = "SELF") -> Vec3:
         """
         Resolves the target player and waits for a projectile hit event.
-        Note: Currently returns any projectile hit detected by the target's client connection.
         """
         target = self._get_player_by_name(player_name)
         vec = target.wait_for_projectile_hit()
