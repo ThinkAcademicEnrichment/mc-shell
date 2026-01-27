@@ -111,9 +111,57 @@ class Pickers:
     Metric = [("Euclidean", "euclidean"), ("Manhattan", "manhattan"), ("Chebyshev", "chebyshev")]
     Direction = [("Forward", "forward"), ("Back", "back"), ("Up", "up"), ("Down", "down"), ("Left", "left"), ("Right", "right")]
     Axis = [("Yaw (Y)", "y"), ("Pitch (X)", "x"), ("Roll (Z)", "z")]
-    # Compass = [("North (-Z)", "N"), ("South (+Z)", "S"), ("East (+X)", "E"), ("West (-X)", "W")]
     Compass = [
         ("North (-Z)", "N"), ("South (+Z)", "S"),
         ("East (+X)", "E"), ("West (-X)", "W"),
         ("North-East", "NE"), ("North-West", "NW"),
         ("South-East", "SE"), ("South-West", "SW")]
+
+    Time = [
+        ("Day (1000)", "day"),
+        ("Noon (6000)", "noon"),
+        ("Sunset (12000)", "sunset"),
+        ("Night (13000)", "night"),
+        ("Midnight (18000)", "midnight"),
+        ("Sunrise (23000)", "sunrise")
+    ]
+
+    Weather = [
+        ("Clear", "clear"),
+        ("Rain", "rain"),
+        ("Thunder", "thunder")
+    ]
+
+    Difficulty = [
+        ("Peaceful", "peaceful"),
+        ("Easy", "easy"),
+        ("Normal", "normal"),
+        ("Hard", "hard")
+    ]
+
+    Gamemode = [
+        ("Survival", "survival"),
+        ("Creative", "creative"),
+        ("Adventure", "adventure"),
+        ("Spectator", "spectator")
+    ]
+
+    # Common GameRule (Boolean only for now)
+    GameRule = [
+        ("Do Daylight Cycle", "doDaylightCycle"),
+        ("Do Weather Cycle", "doWeatherCycle"),
+        ("Do Mob Spawning", "doMobSpawning"),
+        ("Do Mob Loot", "doMobLoot"),
+        ("Do Tile Drops", "doTileDrops"),
+        ("Keep Inventory", "keepInventory"),
+        ("Mob Griefing", "mobGriefing"),
+        ("Natural Regeneration", "naturalRegeneration"),
+        ("Do Fire Tick", "doFireTick"),
+        ("Command Block Output", "commandBlockOutput"),
+        ("Show Death Messages", "showDeathMessages"),
+        ("Log Admin Commands", "logAdminCommands"),
+        ("Do Insomnia (Phantoms)", "doInsomnia"),
+        ("Drowning Damage", "drowningDamage"),
+        ("Fall Damage", "fallDamage"),
+        ("Fire Damage", "fireDamage")
+    ]

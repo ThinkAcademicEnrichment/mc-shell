@@ -1,5 +1,4 @@
 from mcshell.mcactions_base import MCActionsBase
-from mcshell.server_pickers import ServerPickers
 from blockapily import mced_block
 import time
 
@@ -19,13 +18,9 @@ class ServerActions(MCActionsBase):
         if not cmd.startswith("/"):
             cmd = "/" + cmd
 
-        # We use the player's connection to send the command.
-        # This acts as if the player typed it in chat.
-        # Requires the player to have OP permissions for most commands.
         print(f"Executing Server Command: {cmd}")
         self.mcplayer.pc.conn.send(b"chat", cmd)
 
-        # Optional: Sleep briefly to ensure command processes before next action
         if self.delay_between_blocks > 0:
             time.sleep(self.delay_between_blocks)
 
@@ -33,38 +28,37 @@ class ServerActions(MCActionsBase):
 
     @mced_block(
         label="Set Time to [time]",
-        time_option={'label': 'Time', 'options': ServerPickers.Time}
+        time_option={'label': 'Time'}
     )
-    def server_set_time(self, time_option: str):
+    def server_set_time(self, time_option: 'Time'):
         """Sets the world time."""
         self._run_command(f"time set {time_option}")
 
     @mced_block(
         label="Set Weather to [weather]",
-        weather_option={'label': 'Weather', 'options': ServerPickers.Weather}
+        weather_option={'label': 'Weather'}
     )
-    def server_set_weather(self, weather_option: str):
+    def server_set_weather(self, weather_option: 'Weather'):
         """Sets the world weather."""
         self._run_command(f"weather {weather_option}")
 
     @mced_block(
         label="Set Difficulty to [difficulty]",
-        difficulty_option={'label': 'Difficulty', 'options': ServerPickers.Difficulty}
+        difficulty_option={'label': 'Difficulty'}
     )
-    def server_set_difficulty(self, difficulty_option: str):
+    def server_set_difficulty(self, difficulty_option: 'Difficulty'):
         """Sets the game difficulty."""
         self._run_command(f"difficulty {difficulty_option}")
 
     @mced_block(
         label="Set Gamemode [mode] for [target]",
-        mode={'label': 'Mode', 'options': ServerPickers.Gamemode},
+        mode={'label': 'Mode'},
         target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'}
     )
-    def server_set_gamemode(self, mode: str, target: str = "SELF"):
+    def server_set_gamemode(self, mode: 'Gamemode', target: str = "SELF"):
         """
         Sets the gamemode for a specific player.
         """
-        # Resolve 'SELF' to the actual player name for the command string
         if not target or target.strip().upper() == "SELF":
             target_name = self.mcplayer.name
         else:
@@ -76,10 +70,10 @@ class ServerActions(MCActionsBase):
 
     @mced_block(
         label="Set Game Rule [rule] to [value]",
-        rule={'label': 'Rule', 'options': ServerPickers.GameRules},
+        rule={'label': 'Rule'},
         value={'label': 'Enabled', 'shadow': '<shadow type="logic_boolean"><field name="BOOL">TRUE</field></shadow>'}
     )
-    def server_set_gamerule(self, rule: str, value: bool):
+    def server_set_gamerule(self, rule: 'GameRule', value: bool):
         """Sets a boolean game rule."""
         str_value = "true" if value else "false"
         self._run_command(f"gamerule {rule} {str_value}")
