@@ -611,5 +611,10 @@
     <block type="server_actions_server_set_gamerule" />
     <block type="server_actions_server_set_time" />
     <block type="server_actions_server_set_weather" />
+    <block type="picker_time" />
+    <block type="picker_weather" />
+    <block type="picker_difficulty" />
+    <block type="picker_gamemode" />
+    <block type="picker_gamerule" />
   </category>
 </xml>
