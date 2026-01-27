@@ -527,6 +527,8 @@ def generate_mcactions_blocks():
         LSystemShapes,
         PyncraftActions,
         EventActions,
+        WorldActions,
+        ServerActions,
         Pickers
     )
 
@@ -640,7 +642,9 @@ def generate_mcactions_blocks():
         (PlayerActions, "PlayerActions", None, None, None, "#3ECDE0"),
         (EventActions, "EventActions", None, None, None, "#FCBA03"),
         (LSystemShapes, "LSystemShapes", None, None, None, "#75E538"),
-        (PyncraftActions, "PyncraftActions", None, None, None, "#252E28")
+        (PyncraftActions, "PyncraftActions", None, None, None, "#252E28"),
+        (WorldActions, "WorldActions", None, None, None, "#75E538"),
+        (ServerActions, "ServerActions", None, None, None, "#252E28")
     ]
 
     full_toolbox_xml = ''
