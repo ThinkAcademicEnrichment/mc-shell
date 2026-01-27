@@ -526,6 +526,7 @@ def generate_mcactions_blocks():
         TurtleShapes,
         PlayerActions,
         LSystemShapes,
+        PyncraftActions,
         Pickers
     )
 
@@ -638,7 +639,8 @@ def generate_mcactions_blocks():
         (TurtleShapes, "TurtleShapes", turtleshapes_extras[0], turtleshapes_extras[1], turtleshapes_extras[2], "#F3BA2B"),
         (TurtleActions, "TurtleActions", turtleactions_extras[0], turtleactions_extras[1], turtleactions_extras[2], "#C7F32B"),
         (PlayerActions, "PlayerActions", None, None, None, "#3ECDE0"),
-        (LSystemShapes, "LSystemShapes", None, None, None, "#75E538")
+        (LSystemShapes, "LSystemShapes", None, None, None, "#75E538"),
+        (PyncraftActions, "PyncraftActions", None, None, None, "#252E28")
     ]
 
     full_toolbox_xml = ''

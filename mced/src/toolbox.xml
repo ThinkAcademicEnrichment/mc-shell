@@ -576,4 +576,22 @@
     <block type="l_system_shapes_define_rule" />
     <block type="l_system_shapes_get_lsystem_shape" />
   </category>
+  <category name="Pyncraft Actions" colour="#252E28">
+    <block type="pyncraft_actions_create_explosion" />
+    <block type="pyncraft_actions_get_block" />
+    <block type="pyncraft_actions_get_food_level_by_name" />
+    <block type="pyncraft_actions_get_health_by_name" />
+    <block type="pyncraft_actions_get_height" />
+    <block type="pyncraft_actions_get_pitch_by_name" />
+    <block type="pyncraft_actions_get_position_by_name" />
+    <block type="pyncraft_actions_get_rotation_by_name" />
+    <block type="pyncraft_actions_get_yaw_by_name" />
+    <block type="pyncraft_actions_send_title_by_name" />
+    <block type="pyncraft_actions_set_block" />
+    <block type="pyncraft_actions_set_blocks" />
+    <block type="pyncraft_actions_set_position_by_name" />
+    <block type="pyncraft_actions_set_rotation_by_name" />
+    <block type="pyncraft_actions_set_sign" />
+    <block type="pyncraft_actions_spawn_entity" />
+  </category>
 </xml>
