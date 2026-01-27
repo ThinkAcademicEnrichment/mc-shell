@@ -25,7 +25,7 @@ Blockly.Blocks['event_actions_wait_for_chat_by_name'] = {
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
+        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT">SELF</field></shadow>`));
     }
 };
 Blockly.Blocks['event_actions_wait_for_projectile_by_name'] = {
@@ -38,7 +38,7 @@ Blockly.Blocks['event_actions_wait_for_projectile_by_name'] = {
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
+        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT">SELF</field></shadow>`));
     }
 };
 Blockly.Blocks['event_actions_wait_for_sword_strike_by_name'] = {
@@ -51,7 +51,7 @@ Blockly.Blocks['event_actions_wait_for_sword_strike_by_name'] = {
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
+        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT">SELF</field></shadow>`));
     }
 };
 }
