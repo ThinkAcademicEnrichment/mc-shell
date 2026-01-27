@@ -111,4 +111,9 @@ class Pickers:
     Metric = [("Euclidean", "euclidean"), ("Manhattan", "manhattan"), ("Chebyshev", "chebyshev")]
     Direction = [("Forward", "forward"), ("Back", "back"), ("Up", "up"), ("Down", "down"), ("Left", "left"), ("Right", "right")]
     Axis = [("Yaw (Y)", "y"), ("Pitch (X)", "x"), ("Roll (Z)", "z")]
-    Compass = [("North (-Z)", "N"), ("South (+Z)", "S"), ("East (+X)", "E"), ("West (-X)", "W")]
+    # Compass = [("North (-Z)", "N"), ("South (+Z)", "S"), ("East (+X)", "E"), ("West (-X)", "W")]
+    Compass = [
+        ("North (-Z)", "N"), ("South (+Z)", "S"),
+        ("East (+X)", "E"), ("West (-X)", "W"),
+        ("North-East", "NE"), ("North-West", "NW"),
+        ("South-East", "SE"), ("South-West", "SW")]
