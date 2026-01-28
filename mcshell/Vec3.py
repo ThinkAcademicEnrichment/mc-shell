@@ -12,6 +12,11 @@ class Vec3:
             self.y = 0.0
             self.z = 0.0
 
+    def __eq__(self, other):
+        if self.x == other.x and self.y == other.y and self.z == other.z:
+            return True
+        return False
+
     def __repr__(self):
         return f"Vec3({self.x}, {self.y}, {self.z})"
 
