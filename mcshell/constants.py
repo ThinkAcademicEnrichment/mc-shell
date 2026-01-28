@@ -69,6 +69,7 @@ MC_DATA_DIR = pathlib.Path(__file__).parent.joinpath('data')
 
 FJ_JAR_PATH = MC_DATA_DIR.joinpath('FruitJuice-0.4.1.jar')
 
+MC_WEBPAGE_CACHE = MC_DATA_DIR.joinpath('webpage-cache')
 MC_DOC_URL = yarl.URL("https://minecraft.fandom.com/wiki/Commands")
 MC_DOC_DIR = MC_DATA_DIR.joinpath('doc')
 MC_DOC_PATH = MC_DOC_DIR.joinpath('command_docs.pkl')

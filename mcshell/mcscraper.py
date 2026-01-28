@@ -3,52 +3,123 @@ from bs4 import BeautifulSoup
 
 from mcshell.constants import *
 
+import urllib.robotparser
+import urllib.request
+import pickle
+import time
+import yarl
+from bs4 import BeautifulSoup
+from pathlib import Path
+
+# --- Configuration & Setup ---
+# USER_AGENT = "MinecraftCommandDocBot/1.0"
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+# Initialize robots.txt parser once
+rp = urllib.robotparser.RobotFileParser()
+rp.set_url("https://minecraft.fandom.com/robots.txt")
+rp.read()
+
 def fetch_html(url):
-    _pkl_path = MC_DATA_DIR.joinpath(f"{url.name}.pkl")
+    """Fetches HTML with robots.txt compliance and local caching."""
+    _pkl_path = MC_WEBPAGE_CACHE.joinpath(f"{url.name}.pkl")
+
+    # 1. Local Cache Check (High Efficiency)
     if _pkl_path.exists():
-        print(f'loading from {_pkl_path}')
-        _data = pickle.load(_pkl_path.open('rb'))
-    else:
-        # retrieve document from url
-        print(f'fetching from {url}')
-        try:
-            with urllib.request.urlopen(str(url)) as response:
-                _data = response.read()
-        except Exception as e:
-            print(e)
-            return
-        pickle.dump(_data,_pkl_path.open('wb'))
-    return _data
+        print(f'Loading from cache: {_pkl_path.name}')
+        with _pkl_path.open('rb') as f:
+            return pickle.load(f)
+
+    # 2. Robots.txt Check
+    url_str = str(url)
+    if not rp.can_fetch(USER_AGENT, url_str):
+        print(f'Skipping (Blocked by robots.txt): {url_str}')
+        return None
+
+    # 3. Etiquette: Crawl Delay
+    # Use robots.txt value or default to 1 second
+    delay = rp.crawl_delay(USER_AGENT) or 1
+    time.sleep(delay)
+
+    # 4. Retrieval with custom User-Agent
+    print(f'Fetching: {url_str}')
+    try:
+        req = urllib.request.Request(url_str, headers={'User-Agent': USER_AGENT})
+        with urllib.request.urlopen(req) as response:
+            _data = response.read()
+
+        with _pkl_path.open('wb') as f:
+            pickle.dump(_data, f)
+        return _data
+    except Exception as e:
+        print(f"Failed to fetch {url_str}: {e}")
+        return None
 
 def make_docs():
-    _soup_data = BeautifulSoup(fetch_html(MC_DOC_URL), 'html.parser')
+    # Fetch the main list page
+    main_html = fetch_html(MC_DOC_URL)
+    if not main_html:
+        return {}
 
-    _tables = _soup_data.find_all('table',attrs={'class':'stikitable'})
+    _soup_data = BeautifulSoup(main_html, 'html.parser')
+    _tables = _soup_data.find_all('table', attrs={'class': 'stikitable'})
+
+    if not _tables:
+        print("Could not find the commands table.")
+        return {}
+
     _code_elements = _tables[0].select('code')
-
     _doc_dict = {}
+
     for _code_element in _code_elements:
-        _cmd = _code_element.text[1:]
+        _cmd = _code_element.text.strip().lstrip('/') # Clean command name
         _parent = _code_element.find_parent()
-        _doc_line = _parent.find_next_siblings()[0].text.strip()
+
+        # Guard against index errors if the table structure shifts
+        siblings = _parent.find_next_siblings()
+        if not siblings: continue
+        _doc_line = siblings[0].text.strip()
+
         try:
-            _doc_url_stub = yarl.URL(_code_element.find_all('a')[0].attrs['href'])
-            _doc_url = MC_DOC_URL.joinpath(_doc_url_stub)
-        except IndexError:
+            anchor = _code_element.find_all('a')
+            if not anchor: continue
+
+            _doc_url_stub = yarl.URL(anchor[0].attrs['href'])
+            # Ensure we are joining paths correctly with yarl
+            _doc_url = MC_DOC_URL.joinpath(str(_doc_url_stub).lstrip('/'))
+        except (IndexError, KeyError):
             continue
 
-        _doc_soup_data = BeautifulSoup(fetch_html(_doc_url),'html.parser')
-        try:
-            _syntax_h2s = list(filter(lambda x:x is not None,map(lambda x:x.find('span',string='Syntax'),_doc_soup_data.find_all('h2'))))
-            assert len(_syntax_h2s) == 1
-            _doc_code_elements = list(filter(lambda x:x != [] and x is not None,map(lambda x:x.find('code'),_syntax_h2s.pop().parent.find_next_sibling('dl').find_all('dd'))))
-            _doc_code_lines = list(filter(lambda x:x.split()[0] == _cmd,map(lambda x:x.text,_doc_code_elements)))
-        except:
+        # Recursive Fetch
+        sub_html = fetch_html(_doc_url)
+        if not sub_html:
             continue
 
-        _doc_dict[_cmd] = (_doc_line,str(_doc_url),_doc_code_lines)
+        _doc_soup_data = BeautifulSoup(sub_html, 'html.parser')
 
-    pickle.dump(_doc_dict,MC_DOC_PATH.open('wb'))
+        try:
+            # More robust way to find the Syntax header
+            _syntax_span = _doc_soup_data.find('span', id='Syntax') or \
+                           _doc_soup_data.find('span', string='Syntax')
+
+            if _syntax_span:
+                _h2_parent = _syntax_span.find_parent('h2')
+                _dl_block = _h2_parent.find_next_sibling('dl')
+                _doc_code_elements = _dl_block.find_all('code')
+
+                _doc_code_lines = [
+                    code.text.strip() for code in _doc_code_elements
+                    if code.text.strip().startswith(_cmd)
+                ]
+            else:
+                _doc_code_lines = []
+        except Exception:
+            _doc_code_lines = []
+
+        _doc_dict[_cmd] = (_doc_line, str(_doc_url), _doc_code_lines)
+
+    # Save final results
+    with MC_DOC_PATH.open('wb') as f:
+        pickle.dump(_doc_dict, f)
 
     return _doc_dict
 
@@ -110,7 +181,11 @@ def make_entity_id_map() -> Optional[dict[str, int]]:
             is_deprecated = True
             continue
 
-        match = pattern.match(str(stripped_line,'utf-8'))
+        try:
+            match = pattern.match(str(stripped_line,'utf-8'))
+        except TypeError:
+            match = pattern.match(str(stripped_line))
+
         if match and not is_deprecated:
             enum_name = match.group(1)
             entity_id = int(match.group(2))
