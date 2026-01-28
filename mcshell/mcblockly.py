@@ -607,6 +607,7 @@ def generate_mcactions_blocks():
         Difficulty = '<shadow type="picker_difficulty"><field name="VALUE">normal</field></shadow>',
         Gamemode = '<shadow type="picker_gamemode"><field name="VALUE">creative</field></shadow>',
         GameRule = '<shadow type="picker_gamerule"><field name="VALUE">doDaylightCycle</field></shadow>',
+        IntegerGameRule = '<shadow type="picker_integergamerule"><field name="VALUE">respawn_radius</field></shadow>',
         LocateType = '<shadow type="picker_locatetype"><field name="VALUE">structure</field></shadow>',
         Structure = '<shadow type="picker_structure"><field name="VALUE">ancient_city</field></shadow>',
         Biome='<shadow type="picker_biome"><field name="VALUE">badlands</field></shadow>',
@@ -653,7 +654,7 @@ def generate_mcactions_blocks():
     turtleshapes_extras = get_extras(["Metric"])
     turtleactions_extras = get_extras(["Direction", "Axis", "Compass"])
     serveractions_extras = get_extras(
-        ["Time","Weather","Difficulty","Gamemode","GameRule","LocateType","Structure","Biome","Poi"])
+        ["Time","Weather","Difficulty","Gamemode","GameRule","IntegerGameRule","LocateType","Structure","Biome","Poi"])
 
     classes_to_generate = [
         (DigitalGeometry, "DigitalGeometry", None, None, None, "#364EE7"),

@@ -369,7 +369,7 @@ class PlayerActions(MCActionsBase):
         label="Send Title",
         title={'label': 'Title Text', 'shadow': 'text'},
         subtitle={'label': 'Subtitle Text', 'shadow': 'text'},
-        stay={'label': 'Time Onscreen','shadow':'text'},
+        stay={'label': 'Time Onscreen'},
         player_name={'label': 'Player', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'}
     )
     def send_title(self,title:str,subtitle:str,stay:int=70,player_name:str="SELF"):

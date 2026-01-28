@@ -112,6 +112,15 @@ class ServerActions(MCActionsBase):
         str_value = "true" if value else "false"
         self._run_command(f"gamerule {rule} {str_value}")
 
+    @mced_block(
+        label="Set Integer Game Rule [rule] to [value]",
+        rule={'label': 'Rule'},
+        value={'label': 'Value'}
+    )
+    def server_set_integer_gamerule(self, rule: 'IntegerGameRule', value: int):
+        """Sets a boolean game rule."""
+        self._run_command(f"gamerule {rule} {value}")
+
     # --- Stage 3: Advanced Utility ---
 
     @mced_block(
