@@ -31,6 +31,30 @@ export function defineServerActionsGenerators(pythonGenerator) {
     };
 
 
+    pythonGenerator.forBlock['picker_locatetype'] = function(block, generator) {
+        const code = block.getFieldValue('VALUE');
+        return [`'${code}'`, generator.ORDER_ATOMIC];
+    };
+
+
+    pythonGenerator.forBlock['picker_structure'] = function(block, generator) {
+        const code = block.getFieldValue('VALUE');
+        return [`'${code}'`, generator.ORDER_ATOMIC];
+    };
+
+
+    pythonGenerator.forBlock['picker_biome'] = function(block, generator) {
+        const code = block.getFieldValue('VALUE');
+        return [`'${code}'`, generator.ORDER_ATOMIC];
+    };
+
+
+    pythonGenerator.forBlock['picker_poi'] = function(block, generator) {
+        const code = block.getFieldValue('VALUE');
+        return [`'${code}'`, generator.ORDER_ATOMIC];
+    };
+
+
 
 pythonGenerator.forBlock['server_actions_server_clear_inventory'] = function(block, generator) {
     const target = generator.valueToCode(block, 'TARGET', generator.ORDER_ATOMIC) || 'SELF';
@@ -41,8 +65,10 @@ pythonGenerator.forBlock['server_actions_server_execute_command'] = function(blo
     return `self.action_implementer.server_execute_command(command=${command})\n`;
 };
 pythonGenerator.forBlock['server_actions_server_locate'] = function(block, generator) {
-    const structure = generator.valueToCode(block, 'STRUCTURE', generator.ORDER_ATOMIC) || '';
-    return `self.action_implementer.server_locate(structure=${structure})\n`;
+    const locate_type = generator.valueToCode(block, 'LOCATE_TYPE', generator.ORDER_ATOMIC) || 'None';
+    const target = generator.valueToCode(block, 'TARGET', generator.ORDER_ATOMIC) || 'None';
+    const code = `self.action_implementer.server_locate(locate_type=${locate_type}, target=${target})`;
+    return [code, generator.ORDER_FUNCTION_CALL];
 };
 pythonGenerator.forBlock['server_actions_server_set_difficulty'] = function(block, generator) {
     const difficulty_option = generator.valueToCode(block, 'DIFFICULTY_OPTION', generator.ORDER_ATOMIC) || 'None';

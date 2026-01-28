@@ -100,6 +100,139 @@ export function defineServerActionsBlocks(Blockly) {
     };
 
 
+    Blockly.Blocks['picker_locatetype'] = {
+        init: function() {
+            this.appendDummyInput()
+                .appendField("Locatetype")
+                .appendField(new Blockly.FieldDropdown([
+                ["Structure", "structure"],
+                ["Biome", "biome"],
+                ["Point of Interest (POI)", "poi"]
+                ]), "VALUE");
+            this.setOutput(true, "LocateType");
+            this.setColour(230);
+            this.setTooltip("Select a Locatetype.");
+        }
+    };
+
+
+    Blockly.Blocks['picker_structure'] = {
+        init: function() {
+            this.appendDummyInput()
+                .appendField("Structure")
+                .appendField(new Blockly.FieldDropdown([
+                ["Ancient City", "ancient_city"],
+                ["Bastion Remnant", "bastion_remnant"],
+                ["Buried Treasure", "buried_treasure"],
+                ["Desert Pyramid", "desert_pyramid"],
+                ["End City", "end_city"],
+                ["Fortress", "fortress"],
+                ["Igloo", "igloo"],
+                ["Jungle Pyramid", "jungle_pyramid"],
+                ["Mansion", "mansion"],
+                ["Mineshaft", "mineshaft"],
+                ["Monument", "monument"],
+                ["Nether Fossil", "nether_fossil"],
+                ["Ocean Ruin", "ocean_ruin"],
+                ["Pillager Outpost", "pillager_outpost"],
+                ["Ruined Portal", "ruined_portal"],
+                ["Shipwreck", "shipwreck"],
+                ["Stronghold", "stronghold"],
+                ["Swamp Hut", "swamp_hut"],
+                ["Village", "village"],
+                ["Woodland Mansion", "mansion"]
+                ]), "VALUE");
+            this.setOutput(true, "Structure");
+            this.setColour(230);
+            this.setTooltip("Select a Structure.");
+        }
+    };
+
+
+    Blockly.Blocks['picker_biome'] = {
+        init: function() {
+            this.appendDummyInput()
+                .appendField("Biome")
+                .appendField(new Blockly.FieldDropdown([
+                ["Badlands", "badlands"],
+                ["Bamboo Jungle", "bamboo_jungle"],
+                ["Beach", "beach"],
+                ["Birch Forest", "birch_forest"],
+                ["Cherry Grove", "cherry_grove"],
+                ["Dark Forest", "dark_forest"],
+                ["Deep Dark", "deep_dark"],
+                ["Desert", "desert"],
+                ["Dripstone Caves", "dripstone_caves"],
+                ["End Highlands", "end_highlands"],
+                ["End Midlands", "end_midlands"],
+                ["Forest", "forest"],
+                ["Frozen Peaks", "frozen_peaks"],
+                ["Grove", "grove"],
+                ["Ice Spikes", "ice_spikes"],
+                ["Jagged Peaks", "jagged_peaks"],
+                ["Jungle", "jungle"],
+                ["Lush Caves", "lush_caves"],
+                ["Mangrove Swamp", "mangrove_swamp"],
+                ["Meadow", "meadow"],
+                ["Mushroom Fields", "mushroom_fields"],
+                ["Nether Wastes", "nether_wastes"],
+                ["Ocean", "ocean"],
+                ["Plains", "plains"],
+                ["River", "river"],
+                ["Savanna", "savanna"],
+                ["Snowy Beach", "snowy_beach"],
+                ["Snowy Plains", "snowy_plains"],
+                ["Snowy Taiga", "snowy_taiga"],
+                ["Soul Sand Valley", "soul_sand_valley"],
+                ["Stony Peaks", "stony_peaks"],
+                ["Swamp", "swamp"],
+                ["Taiga", "taiga"],
+                ["The End", "the_end"],
+                ["The Void", "the_void"],
+                ["Warm Ocean", "warm_ocean"],
+                ["Warped Forest", "warped_forest"]
+                ]), "VALUE");
+            this.setOutput(true, "Biome");
+            this.setColour(230);
+            this.setTooltip("Select a Biome.");
+        }
+    };
+
+
+    Blockly.Blocks['picker_poi'] = {
+        init: function() {
+            this.appendDummyInput()
+                .appendField("Poi")
+                .appendField(new Blockly.FieldDropdown([
+                ["Armorer", "armorer"],
+                ["Butcher", "butcher"],
+                ["Cartographer", "cartographer"],
+                ["Cleric", "cleric"],
+                ["Farmer", "farmer"],
+                ["Fisherman", "fisherman"],
+                ["Fletcher", "fletcher"],
+                ["Leatherworker", "leatherworker"],
+                ["Librarian", "librarian"],
+                ["Mason", "mason"],
+                ["Shepherd", "shepherd"],
+                ["Toolsmith", "toolsmith"],
+                ["Weaponsmith", "weaponsmith"],
+                ["Beehive", "beehive"],
+                ["Bee Nest", "bee_nest"],
+                ["End Portal", "end_portal"],
+                ["Home", "home"],
+                ["Lightning Rod", "lightning_rod"],
+                ["Lodestone", "lodestone"],
+                ["Meeting", "meeting"],
+                ["Nether Portal", "nether_portal"]
+                ]), "VALUE");
+            this.setOutput(true, "Poi");
+            this.setColour(230);
+            this.setTooltip("Select a Poi.");
+        }
+    };
+
+
 
 Blockly.Blocks['server_actions_server_clear_inventory'] = {
     init: function() {
@@ -131,16 +264,16 @@ Blockly.Blocks['server_actions_server_execute_command'] = {
 };
 Blockly.Blocks['server_actions_server_locate'] = {
     init: function() {
-        this.appendDummyInput().appendField("Locate Structure [structure]");
-        this.appendValueInput("STRUCTURE").setCheck("String").setAlign("RIGHT").appendField("Structure Type");
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
+        this.appendDummyInput().appendField("Locate [type] [target]");
+        this.appendValueInput("LOCATE_TYPE").setCheck("LocateType").setAlign("RIGHT").appendField("Type");
+        this.appendValueInput("TARGET").setCheck(null).setAlign("RIGHT").appendField("Structure/Biome/POI");
+        this.setOutput(true, "3DVector");
         this.setColour(65);
-        this.setTooltip("An auto-generated block for the 'Locate Structure [structure]' action.");
+        this.setTooltip("An auto-generated block for the 'Locate [type] [target]' action.");
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('STRUCTURE').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
+        this.getInput('LOCATE_TYPE').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="picker_locatetype"><field name="VALUE">structure</field></shadow>`));
     }
 };
 Blockly.Blocks['server_actions_server_set_difficulty'] = {
