@@ -12,14 +12,38 @@ class ServerActions(MCActionsBase):
 
     def _run_command(self, cmd: str):
         """
-        Helper to execute a raw server command.
-        Ensures the command starts with '/' and sends it via the connection.
+        Helper to execute a raw server command using the MCClient's run method.
+        This handles authentication and the RCON connection properly.
         """
-        if not cmd.startswith("/"):
-            cmd = "/" + cmd
+        # 1. Clean the command string
+        if cmd.startswith("/"):
+            cmd = cmd[1:]
 
-        print(f"Executing Server Command: {cmd}")
-        self.mcplayer.pc.conn.send(b"chat", cmd)
+        # 2. Prepare arguments for MCClient.run(*args)
+        # We split by space to pass command parts as separate arguments.
+        # Note: This simple split might break quoted arguments with spaces (e.g. say "Hello World")
+        # but works for the current set of simple server commands.
+        arg_list = cmd.split(' ')
+
+        # 3. Normalize command name (e.g., convert 'save_all' -> 'save-all')
+        arg_list[0] = arg_list[0].replace('_', '-')
+
+        print(f"Sending: {' '.join(arg_list)}")
+
+        try:
+            # 4. Execute via RCON
+            response = self.mcplayer.run(*arg_list)
+
+            # 5. Handle Response
+            if response:
+                # Log success or server feedback
+                print(f"Server Response: {response}")
+
+        except Exception as e:
+            # 6. Error Handling
+            print(f"Error executing command '{cmd}': {e}")
+            # We explicitly pass here to allow the script to continue even if one command fails
+            pass
 
         if self.delay_between_blocks > 0:
             time.sleep(self.delay_between_blocks)
