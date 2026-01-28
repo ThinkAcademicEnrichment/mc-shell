@@ -165,3 +165,100 @@ class Pickers:
         ("Fall Damage", "fallDamage"),
         ("Fire Damage", "fireDamage")
     ]
+
+
+    LocateType = [
+        ("Structure", "structure"),
+        ("Biome", "biome"),
+        ("Point of Interest (POI)", "poi")
+    ]
+
+    # Structures (Minecraft 1.19+)
+    Structure = [
+        ("Ancient City", "ancient_city"),
+        ("Bastion Remnant", "bastion_remnant"),
+        ("Buried Treasure", "buried_treasure"),
+        ("Desert Pyramid", "desert_pyramid"),
+        ("End City", "end_city"),
+        ("Fortress", "fortress"),
+        ("Igloo", "igloo"),
+        ("Jungle Pyramid", "jungle_pyramid"),
+        ("Mansion", "mansion"),
+        ("Mineshaft", "mineshaft"),
+        ("Monument", "monument"),
+        ("Nether Fossil", "nether_fossil"),
+        ("Ocean Ruin", "ocean_ruin"),
+        ("Pillager Outpost", "pillager_outpost"),
+        ("Ruined Portal", "ruined_portal"),
+        ("Shipwreck", "shipwreck"),
+        ("Stronghold", "stronghold"),
+        ("Swamp Hut", "swamp_hut"),
+        ("Village", "village"),
+        ("Woodland Mansion", "mansion")
+    ]
+
+    # Biomes (Common selection)
+    Biome = [
+        ("Badlands", "badlands"),
+        ("Bamboo Jungle", "bamboo_jungle"),
+        ("Beach", "beach"),
+        ("Birch Forest", "birch_forest"),
+        ("Cherry Grove", "cherry_grove"),
+        ("Dark Forest", "dark_forest"),
+        ("Deep Dark", "deep_dark"),
+        ("Desert", "desert"),
+        ("Dripstone Caves", "dripstone_caves"),
+        ("End Highlands", "end_highlands"),
+        ("End Midlands", "end_midlands"),
+        ("Forest", "forest"),
+        ("Frozen Peaks", "frozen_peaks"),
+        ("Grove", "grove"),
+        ("Ice Spikes", "ice_spikes"),
+        ("Jagged Peaks", "jagged_peaks"),
+        ("Jungle", "jungle"),
+        ("Lush Caves", "lush_caves"),
+        ("Mangrove Swamp", "mangrove_swamp"),
+        ("Meadow", "meadow"),
+        ("Mushroom Fields", "mushroom_fields"),
+        ("Nether Wastes", "nether_wastes"),
+        ("Ocean", "ocean"),
+        ("Plains", "plains"),
+        ("River", "river"),
+        ("Savanna", "savanna"),
+        ("Snowy Beach", "snowy_beach"),
+        ("Snowy Plains", "snowy_plains"),
+        ("Snowy Taiga", "snowy_taiga"),
+        ("Soul Sand Valley", "soul_sand_valley"),
+        ("Stony Peaks", "stony_peaks"),
+        ("Swamp", "swamp"),
+        ("Taiga", "taiga"),
+        ("The End", "the_end"),
+        ("The Void", "the_void"),
+        ("Warm Ocean", "warm_ocean"),
+        ("Warped Forest", "warped_forest")
+    ]
+
+    # Points of Interest (Villager jobs + others)
+    Poi = [
+        ("Armorer", "armorer"),
+        ("Butcher", "butcher"),
+        ("Cartographer", "cartographer"),
+        ("Cleric", "cleric"),
+        ("Farmer", "farmer"),
+        ("Fisherman", "fisherman"),
+        ("Fletcher", "fletcher"),
+        ("Leatherworker", "leatherworker"),
+        ("Librarian", "librarian"),
+        ("Mason", "mason"),
+        ("Shepherd", "shepherd"),
+        ("Toolsmith", "toolsmith"),
+        ("Weaponsmith", "weaponsmith"),
+        ("Beehive", "beehive"),
+        ("Bee Nest", "bee_nest"),
+        ("End Portal", "end_portal"),
+        ("Home", "home"),
+        ("Lightning Rod", "lightning_rod"),
+        ("Lodestone", "lodestone"),
+        ("Meeting", "meeting"),
+        ("Nether Portal", "nether_portal")
+    ]

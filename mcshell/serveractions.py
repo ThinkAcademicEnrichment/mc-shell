@@ -1,6 +1,9 @@
 from mcshell.mcactions_base import MCActionsBase
+from mcshell.constants import Vec3
 from blockapily import mced_block
 import time
+import re
+from typing import Union
 
 class ServerActions(MCActionsBase):
     """
@@ -10,43 +13,50 @@ class ServerActions(MCActionsBase):
     def __init__(self, mc_player_instance, delay_between_blocks=0):
         super().__init__(mc_player_instance, delay_between_blocks)
 
-    def _run_command(self, cmd: str):
+    def _run_command(self, cmd: str) -> str:
         """
         Helper to execute a raw server command using the MCClient's run method.
         This handles authentication and the RCON connection properly.
+
+        Args:
+            cmd (str): The full command string (e.g., "time set day").
+
+        Returns:
+            str: The response from the server, or None if failed.
         """
         # 1. Clean the command string
         if cmd.startswith("/"):
             cmd = cmd[1:]
 
-        # 2. Prepare arguments for MCClient.run(*args)
-        # We split by space to pass command parts as separate arguments.
-        # Note: This simple split might break quoted arguments with spaces (e.g. say "Hello World")
-        # but works for the current set of simple server commands.
-        arg_list = cmd.split(' ')
+        # 2. Normalize command syntax
+        parts = cmd.split(' ', 1)
+        verb = parts[0].replace('_', '-')
+        if len(parts) > 1:
+            cmd = f"{verb} {parts[1]}"
+        else:
+            cmd = verb
 
-        # 3. Normalize command name (e.g., convert 'save_all' -> 'save-all')
-        arg_list[0] = arg_list[0].replace('_', '-')
-
-        print(f"Sending: {' '.join(arg_list)}")
+        print(f"Sending Server Command: {cmd}")
 
         try:
-            # 4. Execute via RCON
-            response = self.mcplayer.run(*arg_list)
+            # 3. Execute via RCON
+            response = self.mcplayer.run(cmd)
 
-            # 5. Handle Response
+            # 4. Handle Response
             if response:
-                # Log success or server feedback
                 print(f"Server Response: {response}")
+                return response
 
         except Exception as e:
-            # 6. Error Handling
+            # 5. Error Handling
             print(f"Error executing command '{cmd}': {e}")
-            # We explicitly pass here to allow the script to continue even if one command fails
             pass
 
         if self.delay_between_blocks > 0:
             time.sleep(self.delay_between_blocks)
+
+        return ""
+
 
     # --- Stage 1: Basic World Control ---
 
@@ -105,16 +115,63 @@ class ServerActions(MCActionsBase):
     # --- Stage 3: Advanced Utility ---
 
     @mced_block(
-        label="Locate Structure [structure]",
-        structure={'label': 'Structure Type', 'shadow': 'text'},
-        tooltip="Finds the nearest structure. Prints coordinates to chat."
+        label="Locate [type] [target]",
+        locate_type={'label': 'Type'},
+        target={'label': 'Structure/Biome/POI', 'shadow': 'text'},
+        output_type="3DVector",
+        tooltip="Finds coordinates of nearest structure/biome/poi. Returns a Vec3."
     )
-    def server_locate(self, structure: str):
+    def server_locate(self, locate_type: 'LocateType', target: Union['Structure','Biome','Poi']) -> Vec3:
         """
-        Locates a structure.
-        Note: The result is printed to the game chat, not returned to the block.
+        Locates a structure, biome, or POI and returns its coordinates.
+        Example response: "The nearest minecraft:mason is at [-389, ~, 268] (132 blocks away)"
+        Failure response: 'Could not find a biome of type "minecraft:warped_forest" within reasonable distance'
         """
-        self._run_command(f"locate structure {structure}")
+        # Execute command
+        response = self._run_command(f"locate {locate_type} {target}")
+
+        if not response:
+            print("Locate failed: No response from server.")
+            # Return current position as fallback to prevent crashes, but warn user.
+            return self.mcplayer.position
+
+        # Check for failure message
+        if "Could not find" in response:
+            print(f"Locate failed: {response}")
+            # Return current position as fallback
+            return self.mcplayer.position
+
+        # Parse output using regex to find [x, y, z] pattern
+        # Matches numbers or '~' inside square brackets: [-389, ~, 268]
+        match = re.search(r'\[(.*?)\]', response)
+
+        if match:
+            # Extract content inside brackets: "-389, ~, 268"
+            coords_str = match.group(1)
+            # Split by comma
+            parts = [p.strip() for p in coords_str.split(',')]
+
+            if len(parts) >= 3:
+                try:
+                    # Parse X
+                    x = float(parts[0])
+
+                    # Parse Y (Handle tilde '~')
+                    if parts[1] == '~':
+                        # Use player's current Y if unknown, or default to world surface
+                        y = self.mcplayer.position.y
+                    else:
+                        y = float(parts[1])
+
+                    # Parse Z
+                    z = float(parts[2])
+
+                    return Vec3(x, y, z)
+                except ValueError:
+                    print(f"Locate failed: Could not parse coordinates from '{coords_str}'")
+
+        print(f"Locate failed: Could not find coordinate pattern in response '{response}'")
+        return self.mcplayer.position
 
     @mced_block(
         label="Clear Inventory of [target]",

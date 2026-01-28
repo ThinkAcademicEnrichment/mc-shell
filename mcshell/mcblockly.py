@@ -566,6 +566,10 @@ def generate_mcactions_blocks():
         'Difficulty': 'Difficulty',
         'Gamemode': 'Gamemode',
         'GameRule': 'GameRule',
+        'LocateType': 'LocateType',
+        'Structure': 'Structure',
+        'Biome': 'Biome',
+        'Poi': 'Poi',
     }
 
     shadow_map = dict(
@@ -602,7 +606,11 @@ def generate_mcactions_blocks():
         Weather = '<shadow type="picker_weather"><field name="VALUE">clear</field></shadow>',
         Difficulty = '<shadow type="picker_difficulty"><field name="VALUE">normal</field></shadow>',
         Gamemode = '<shadow type="picker_gamemode"><field name="VALUE">creative</field></shadow>',
-        GameRule = '<shadow type="picker_gamerule"><field name="VALUE">doDaylightCycle</field></shadow>'
+        GameRule = '<shadow type="picker_gamerule"><field name="VALUE">doDaylightCycle</field></shadow>',
+        LocateType = '<shadow type="picker_locatetype"><field name="VALUE">structure</field></shadow>',
+        Structure = '<shadow type="picker_structure"><field name="VALUE">ancient_city</field></shadow>',
+        Biome='<shadow type="picker_biome"><field name="VALUE">badlands</field></shadow>',
+        Poi ='<shadow type="picker_poi"><field name="VALUE">armorer</field></shadow>',
     )
 # =========================================================================
     # 3. GENERATE CUSTOM PICKERS (From Pickers class)
@@ -644,7 +652,8 @@ def generate_mcactions_blocks():
 
     turtleshapes_extras = get_extras(["Metric"])
     turtleactions_extras = get_extras(["Direction", "Axis", "Compass"])
-    serveractions_extras = get_extras(["Time","Weather","Difficulty","Gamemode","GameRule"])
+    serveractions_extras = get_extras(
+        ["Time","Weather","Difficulty","Gamemode","GameRule","LocateType","Structure","Biome","Poi"])
 
     classes_to_generate = [
         (DigitalGeometry, "DigitalGeometry", None, None, None, "#364EE7"),
