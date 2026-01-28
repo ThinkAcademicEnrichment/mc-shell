@@ -609,6 +609,7 @@
     <block type="server_actions_server_set_difficulty" />
     <block type="server_actions_server_set_gamemode" />
     <block type="server_actions_server_set_gamerule" />
+    <block type="server_actions_server_set_integer_gamerule" />
     <block type="server_actions_server_set_time" />
     <block type="server_actions_server_set_weather" />
     <block type="picker_time" />
@@ -616,9 +617,8 @@
     <block type="picker_difficulty" />
     <block type="picker_gamemode" />
     <block type="picker_gamerule" />
+    <block type="picker_integergamerule" />
     <block type="picker_locatetype" />
-    <block type="picker_structure" />
-    <block type="picker_biome" />
     <block type="picker_poi" />
   </category>
 </xml>

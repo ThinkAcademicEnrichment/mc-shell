@@ -31,19 +31,13 @@ export function defineServerActionsGenerators(pythonGenerator) {
     };
 
 
+    pythonGenerator.forBlock['picker_integergamerule'] = function(block, generator) {
+        const code = block.getFieldValue('VALUE');
+        return [`'${code}'`, generator.ORDER_ATOMIC];
+    };
+
+
     pythonGenerator.forBlock['picker_locatetype'] = function(block, generator) {
-        const code = block.getFieldValue('VALUE');
-        return [`'${code}'`, generator.ORDER_ATOMIC];
-    };
-
-
-    pythonGenerator.forBlock['picker_structure'] = function(block, generator) {
-        const code = block.getFieldValue('VALUE');
-        return [`'${code}'`, generator.ORDER_ATOMIC];
-    };
-
-
-    pythonGenerator.forBlock['picker_biome'] = function(block, generator) {
         const code = block.getFieldValue('VALUE');
         return [`'${code}'`, generator.ORDER_ATOMIC];
     };
@@ -83,6 +77,11 @@ pythonGenerator.forBlock['server_actions_server_set_gamerule'] = function(block,
     const rule = generator.valueToCode(block, 'RULE', generator.ORDER_ATOMIC) || 'None';
     const value = generator.valueToCode(block, 'VALUE', generator.ORDER_ATOMIC) || true;
     return `self.action_implementer.server_set_gamerule(rule=${rule}, value=${value})\n`;
+};
+pythonGenerator.forBlock['server_actions_server_set_integer_gamerule'] = function(block, generator) {
+    const rule = generator.valueToCode(block, 'RULE', generator.ORDER_ATOMIC) || 'None';
+    const value = generator.valueToCode(block, 'VALUE', generator.ORDER_ATOMIC) || 0;
+    return `self.action_implementer.server_set_integer_gamerule(rule=${rule}, value=${value})\n`;
 };
 pythonGenerator.forBlock['server_actions_server_set_time'] = function(block, generator) {
     const time_option = generator.valueToCode(block, 'TIME_OPTION', generator.ORDER_ATOMIC) || 'None';
