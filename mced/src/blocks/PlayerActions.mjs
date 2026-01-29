@@ -16,50 +16,50 @@ Blockly.Blocks['player_actions_get_compass_direction'] = {
 };
 Blockly.Blocks['player_actions_get_compass_direction_by_name'] = {
     init: function() {
-        this.appendDummyInput().appendField("Get Compass Direction by Name");
-        this.appendValueInput("PLAYER_NAME").setCheck("String").setAlign("RIGHT").appendField("Player Name");
+        this.appendDummyInput().appendField("Get Compass Direction for [player]");
+        this.appendValueInput("PLAYER_NAME").setCheck("String").setAlign("RIGHT").appendField("Player");
         this.setOutput(true, "Compass");
         this.setColour(65);
-        this.setTooltip("An auto-generated block for the 'Get Compass Direction by Name' action.");
+        this.setTooltip("An auto-generated block for the 'Get Compass Direction for [player]' action.");
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
+        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT">SELF</field></shadow>`));
     }
 };
 Blockly.Blocks['player_actions_get_direction'] = {
     init: function() {
-        this.appendDummyInput().appendField("Get Player Direction");
+        this.appendDummyInput().appendField("Get Direction");
         
         this.setOutput(true, "3DVector");
         this.setColour(65);
-        this.setTooltip("An auto-generated block for the 'Get Player Direction' action.");
+        this.setTooltip("An auto-generated block for the 'Get Direction' action.");
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
         
     }
 };
-Blockly.Blocks['player_actions_get_position_by_name'] = {
+Blockly.Blocks['player_actions_get_position'] = {
     init: function() {
-        this.appendDummyInput().appendField("Get Position by Name");
-        this.appendValueInput("PLAYER_NAME").setCheck("String").setAlign("RIGHT").appendField("Player Name");
+        this.appendDummyInput().appendField("Get Player Position");
+        
         this.setOutput(true, "3DVector");
         this.setColour(65);
-        this.setTooltip("An auto-generated block for the 'Get Position by Name' action.");
+        this.setTooltip("An auto-generated block for the 'Get Player Position' action.");
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
+        
     }
 };
 Blockly.Blocks['player_actions_get_tile_position'] = {
     init: function() {
-        this.appendDummyInput().appendField("Get Player Tile Position");
+        this.appendDummyInput().appendField("Get Tile Position");
         
         this.setOutput(true, "3DVector");
         this.setColour(65);
-        this.setTooltip("An auto-generated block for the 'Get Player Tile Position' action.");
+        this.setTooltip("An auto-generated block for the 'Get Tile Position' action.");
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
@@ -85,6 +85,7 @@ Blockly.Blocks['player_actions_send_title'] = {
         this.appendValueInput("TITLE").setCheck("String").setAlign("RIGHT").appendField("Title Text");
         this.appendValueInput("SUBTITLE").setCheck("String").setAlign("RIGHT").appendField("Subtitle Text");
         this.appendValueInput("STAY").setCheck("Number").setAlign("RIGHT").appendField("Time Onscreen");
+        this.appendValueInput("PLAYER_NAME").setCheck("String").setAlign("RIGHT").appendField("Player");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(65);
@@ -95,32 +96,13 @@ Blockly.Blocks['player_actions_send_title'] = {
         this.getInput('TITLE').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
         this.getInput('SUBTITLE').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
         this.getInput('STAY').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="math_number"><field name="NUM">70</field></shadow>`));
-    }
-};
-Blockly.Blocks['player_actions_send_title_by_name'] = {
-    init: function() {
-        this.appendDummyInput().appendField("Send Title by Name");
-        this.appendValueInput("PLAYER_NAME").setCheck("String").setAlign("RIGHT").appendField("Player Name");
-        this.appendValueInput("TITLE").setCheck("String").setAlign("RIGHT").appendField("Title Text");
-        this.appendValueInput("SUBTITLE").setCheck("String").setAlign("RIGHT").appendField("Subtitle Text");
-        this.appendValueInput("STAY").setCheck("Number").setAlign("RIGHT").appendField("Time Onscreen");
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(65);
-        this.setTooltip("An auto-generated block for the 'Send Title by Name' action.");
-        this.setInputsInline(false);
-
-        // Configure shadow blocks directly
-        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
-        this.getInput('TITLE').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
-        this.getInput('SUBTITLE').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
-        this.getInput('STAY').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="math_number"><field name="NUM">70</field></shadow>`));
+        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT">SELF</field></shadow>`));
     }
 };
 Blockly.Blocks['player_actions_set_compass_direction'] = {
     init: function() {
         this.appendDummyInput().appendField("Set Player Compass Direction");
-        this.appendValueInput("DIR").setCheck("Compass").setAlign("RIGHT").appendField("Dir");
+        this.appendValueInput("DIR").setCheck("Compass").setAlign("RIGHT").appendField("Direction");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(65);
@@ -131,10 +113,30 @@ Blockly.Blocks['player_actions_set_compass_direction'] = {
         this.getInput('DIR').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="picker_compass"><field name="VALUE">N</field></shadow>`));
     }
 };
+Blockly.Blocks['player_actions_set_direction'] = {
+    init: function() {
+        this.appendDummyInput().appendField("Set Direction");
+        this.appendValueInput("DIRECTION").setCheck("3DVector").setAlign("RIGHT").appendField("Direction Vector");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(65);
+        this.setTooltip("An auto-generated block for the 'Set Direction' action.");
+        this.setInputsInline(false);
+
+        // Configure shadow blocks directly
+        this.getInput('DIRECTION').connection.setShadowDom(Blockly.utils.xml.textToDom(`
+                 <shadow type="minecraft_vector_3d">
+                    <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+                    <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+                    <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+                </shadow>
+        `));
+    }
+};
 Blockly.Blocks['player_actions_set_position'] = {
     init: function() {
         this.appendDummyInput().appendField("Set Player Position");
-        this.appendValueInput("POS").setCheck("3DVector").setAlign("RIGHT").appendField("Pos");
+        this.appendValueInput("POS").setCheck("3DVector").setAlign("RIGHT").appendField("Position");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(65);
@@ -153,11 +155,11 @@ Blockly.Blocks['player_actions_set_position'] = {
 };
 Blockly.Blocks['player_actions_wait_for_sword_strike'] = {
     init: function() {
-        this.appendDummyInput().appendField("Wait for Sword Strike Position");
+        this.appendDummyInput().appendField("Wait for Sword Strike Position (Legacy)");
         
         this.setOutput(true, "3DVector");
         this.setColour(65);
-        this.setTooltip("An auto-generated block for the 'Wait for Sword Strike Position' action.");
+        this.setTooltip("An auto-generated block for the 'Wait for Sword Strike Position (Legacy)' action.");
         this.setInputsInline(false);
 
         // Configure shadow blocks directly

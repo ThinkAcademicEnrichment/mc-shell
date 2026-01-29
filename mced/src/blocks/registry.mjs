@@ -7,8 +7,10 @@ import { defineEventActionsBlocks } from "./EventActions.mjs";
 import { defineLSystemShapesBlocks } from "./LSystemShapes.mjs";
 import { definePlayerActionsBlocks } from "./PlayerActions.mjs";
 import { definePyncraftActionsBlocks } from "./PyncraftActions.mjs";
+import { defineServerActionsBlocks } from "./ServerActions.mjs";
 import { defineTurtleActionsBlocks } from "./TurtleActions.mjs";
 import { defineTurtleShapesBlocks } from "./TurtleShapes.mjs";
+import { defineWorldActionsBlocks } from "./WorldActions.mjs";
 import { defineMineCraftEntityBlocks } from "./entities.mjs";
 import { defineMineCraftMaterialBlocks } from "./materials.mjs";
 
@@ -19,8 +21,10 @@ export function registerAllBlocks(Blockly) {
     defineLSystemShapesBlocks(Blockly);
     definePlayerActionsBlocks(Blockly);
     definePyncraftActionsBlocks(Blockly);
+    defineServerActionsBlocks(Blockly);
     defineTurtleActionsBlocks(Blockly);
     defineTurtleShapesBlocks(Blockly);
+    defineWorldActionsBlocks(Blockly);
     defineMineCraftEntityBlocks(Blockly);
     defineMineCraftMaterialBlocks(Blockly);
 }

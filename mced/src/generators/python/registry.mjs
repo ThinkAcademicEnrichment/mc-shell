@@ -7,8 +7,10 @@ import { defineEventActionsGenerators } from "./EventActions.mjs";
 import { defineLSystemShapesGenerators } from "./LSystemShapes.mjs";
 import { definePlayerActionsGenerators } from "./PlayerActions.mjs";
 import { definePyncraftActionsGenerators } from "./PyncraftActions.mjs";
+import { defineServerActionsGenerators } from "./ServerActions.mjs";
 import { defineTurtleActionsGenerators } from "./TurtleActions.mjs";
 import { defineTurtleShapesGenerators } from "./TurtleShapes.mjs";
+import { defineWorldActionsGenerators } from "./WorldActions.mjs";
 import { defineMineCraftEntityGenerators } from "./entities.mjs";
 import { defineMineCraftMaterialGenerators } from "./materials.mjs";
 
@@ -19,8 +21,10 @@ export function registerAllGenerators(pythonGenerator) {
     defineLSystemShapesGenerators(pythonGenerator);
     definePlayerActionsGenerators(pythonGenerator);
     definePyncraftActionsGenerators(pythonGenerator);
+    defineServerActionsGenerators(pythonGenerator);
     defineTurtleActionsGenerators(pythonGenerator);
     defineTurtleShapesGenerators(pythonGenerator);
+    defineWorldActionsGenerators(pythonGenerator);
     defineMineCraftEntityGenerators(pythonGenerator);
     defineMineCraftMaterialGenerators(pythonGenerator);
 }
