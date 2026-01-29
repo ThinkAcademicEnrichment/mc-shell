@@ -18,7 +18,32 @@ USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTM
 rp = urllib.robotparser.RobotFileParser()
 rp.set_url("https://minecraft.fandom.com/robots.txt")
 rp.read()
+from playwright.sync_api import sync_playwright
+import time
 
+def fetch_with_browser(url):
+    with sync_playwright() as p:
+        # Launch a real browser (headless=True means no window pops up)
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        )
+        page = context.new_page()
+
+        print(f"Navigating to {url}...")
+        page.goto(str(url))
+
+        # Wait a moment to ensure JS-heavy wiki content loads
+        time.sleep(2)
+
+        # Get the rendered HTML source
+        html = page.content()
+
+        browser.close()
+        return html
+
+# Integrate into your existing scraper
+# raw_html = fetch_with_browser("https://minecraft.fandom.com/wiki/Commands")
 def fetch_html(url):
     """Fetches HTML with robots.txt compliance and local caching."""
     _pkl_path = MC_WEBPAGE_CACHE.joinpath(f"{url.name}.pkl")
