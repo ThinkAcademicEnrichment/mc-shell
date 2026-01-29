@@ -47,10 +47,10 @@ try:
 except ImportError:  # Graceful fallback if IceCream isn't installed.
     ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
+# the default version when using %pp_create_world
+MC_VERSION = '1.21.11' # this must match the client version
+
 # default server data
-
-MC_VERSION = '1.21.4' # this must match the client version
-
 MC_SERVER_HOST = 'localhost'
 MC_RCON_PORT = 25575
 MC_SERVER_PORT = 25565
@@ -66,7 +66,7 @@ MC_SERVER_DATA = {
 }
 
 MC_DATA_DIR = pathlib.Path(__file__).parent.joinpath('data')
-
+MC_PAPER_GLOBAL_TEMPLATE = MC_DATA_DIR / 'paper-global-template.yaml'
 FJ_JAR_PATH = MC_DATA_DIR.joinpath('FruitJuice-0.4.1.jar')
 
 MC_WEBPAGE_CACHE = MC_DATA_DIR.joinpath('webpage-cache')

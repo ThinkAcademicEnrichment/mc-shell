@@ -109,12 +109,16 @@ class PaperServerManager:
                 return # No paper settings to apply
 
             paper_config_path = self.world_directory / 'config' / 'paper-global.yml'
+            # --- Create file if missing using a template file ---
             if not paper_config_path.exists():
-                print(f"Warning: Could not find paper-global.yml at {paper_config_path}")
-                return
+                print(f"Creating new paper-global.yml at {paper_config_path}...")
+                paper_config_path.parent.mkdir(parents=True, exist_ok=True)
+                # Copy over
+                with open(paper_config_path, 'w') as f:
+                    f.write(MC_PAPER_GLOBAL_TEMPLATE.read_text())
 
             with open(paper_config_path, 'r') as f:
-                paper_config = yaml.safe_load(f)
+                paper_config = yaml.safe_load(f) or {}
 
             # Helper function to recursively merge dictionaries
             def merge_dicts(source, destination):
@@ -211,23 +215,21 @@ class PaperServerManager:
             print("First-time setup: Initializing server to generate config files...")
             command = [
                 'java',
-                '-Xms2G', '-Xmx2G', # Example memory settings
-                '-jar', str(self.jar_path),
-                'nogui'
+                '--initSettings',
             ]
-            # Start the server just to generate files
+            # Start the server to generate files (EULA, properties, etc.)
             self.server_process = subprocess.Popen(
                 command,
                 cwd=self.world_directory,
                 stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
+                stdout=subprocess.PIPE, # Keep stdout captured to avoid clutter
                 stderr=subprocess.PIPE,
                 text=True
             )
 
-            # Wait for the server to create the files. We can check for eula.txt.
+            # Wait for EULA to be generated
             eula_path = self.world_directory / 'eula.txt'
-            timeout = 30  # 30-second timeout
+            timeout = 60
             start_time = time.time()
             while not eula_path.exists():
                 if time.time() - start_time > timeout:
@@ -236,12 +238,10 @@ class PaperServerManager:
                     return
                 time.sleep(1)
 
-            print("Configuration files generated. Stopping server to apply settings...")
+            print("Configuration files generated. Waiting for server to exit...")
 
-            # Stop the server
-            self.server_process.stdin.write('stop\n')
-            self.server_process.stdin.flush()
-            self.server_process.wait() # Wait for the process to terminate
+            # FIX: Do NOT send 'stop'. The server will exit automatically because EULA is false.
+            self.server_process.wait()
             self.server_process = None
 
             # Now apply the manifest settings to the newly created files

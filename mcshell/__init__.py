@@ -179,6 +179,7 @@ class MCShell(Magics):
                 "motd": f"MC-ED World: {world_name}",
                 "enable-rcon": "true",
                 "server-port": self.server_data.get('port', MC_SERVER_PORT),
+                "query.port": self.server_data.get('port', MC_SERVER_PORT),
                 "rcon.port": self.server_data.get('rcon_port', MC_RCON_PORT),
                 "rcon.password": self.server_data.get('password', 'minecraft'),
                 "enable-command-block":'true',
@@ -258,6 +259,10 @@ class MCShell(Magics):
         # Start the Paper server
         self.active_paper_server = PaperServerManager(world_name, world_directory)
         self.active_paper_server.start()
+        # now start it after files are generated and it is terminated once
+        if not self.active_paper_server.is_alive():
+            self.active_paper_server = PaperServerManager(world_name, world_directory)
+            self.active_paper_server.start()
 
         if not self.active_paper_server.is_alive():
             print("Could not start Paper server. Aborting.")
