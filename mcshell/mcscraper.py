@@ -123,7 +123,7 @@ def make_docs():
 
             _doc_url_stub = yarl.URL(anchor[0].attrs['href'])
             # Ensure we are joining paths correctly with yarl
-            _doc_url = MC_DOC_URL.joinpath(str(_doc_url_stub).lstrip('/'))
+            _doc_url = MC_DOC_URL.origin().joinpath(str(_doc_url_stub).lstrip('/'))
         except (IndexError, KeyError):
             continue
 
