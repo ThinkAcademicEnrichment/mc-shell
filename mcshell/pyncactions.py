@@ -134,32 +134,6 @@ class PyncraftActions(MCActionsBase):
         """Sends a title and subtitle to the specified player's screen."""
         self._get_player_by_name(player_name).pc.player.sendTitle(title=title, subTitle=subtitle, stay=stay)
 
-    # --- Camera Manipulation (CmdCamera) ---
-
-    @mced_block(
-        label="Camera: Normal for [player]",
-        player_name={'label': 'Player', 'shadow': 'text'}
-    )
-    def camera_set_normal_by_name(self, player_name: str = "SELF"):
-        """Resets the camera to normal view for the specified player."""
-        self._get_player_by_name(player_name).pc.camera.setNormal()
-
-    @mced_block(
-        label="Camera: Fixed for [player]",
-        player_name={'label': 'Player', 'shadow': 'text'}
-    )
-    def camera_set_fixed_by_name(self, player_name: str = "SELF"):
-        """Sets the camera to a fixed position for the specified player."""
-        self._get_player_by_name(player_name).pc.camera.setFixed()
-
-    @mced_block(
-        label="Camera: Follow [player]",
-        player_name={'label': 'Player', 'shadow': 'text'}
-    )
-    def camera_set_follow_by_name(self, player_name: str = "SELF"):
-        """Sets the camera to follow the specified player."""
-        self._get_player_by_name(player_name).pc.camera.setFollow()
-
     # --- World Manipulation (Minecraft Class) ---
 
     @mced_block(
@@ -262,27 +236,19 @@ class PyncraftActions(MCActionsBase):
         self.mcplayer.pc.setSign(int(position.x), int(position.y), int(position.z),
                                  sign_type, direction, line1, line2, line3, line4)
 
-    @mced_block(
-        label="Save Checkpoint",
-        tooltip="Saves the current state of the world as a checkpoint."
-    )
-    def save_checkpoint(self):
-        """Saves a checkpoint of the world."""
-        self.mcplayer.pc.saveCheckpoint()
-
-    @mced_block(
-        label="Restore Checkpoint",
-        tooltip="Restores the world to the last saved checkpoint."
-    )
-    def restore_checkpoint(self):
-        """Restores the world to the last checkpoint."""
-        self.mcplayer.pc.restoreCheckpoint()
-
-    @mced_block(
-        label="World Setting",
-        setting={'label': 'Setting Name', 'shadow': 'text'},
-        status={'label': 'Enabled', 'shadow': '<shadow type="logic_boolean"><field name="BOOL">TRUE</field></shadow>'}
-    )
-    def world_setting(self, setting: str, status: bool):
-        """Sets a world setting (e.g., 'world_immutable', 'nametags_visible')."""
-        self.mcplayer.pc.setting(setting, status)
+    # TODO: what would it take to support this in FruitJuice?
+    # @mced_block(
+    #     label="Save Checkpoint",
+    #     tooltip="Saves the current state of the world as a checkpoint."
+    # )
+    # def save_checkpoint(self):
+    #     """Saves a checkpoint of the world."""
+    #     self.mcplayer.pc.saveCheckpoint()
+    #
+    # @mced_block(
+    #     label="Restore Checkpoint",
+    #     tooltip="Restores the world to the last saved checkpoint."
+    # )
+    # def restore_checkpoint(self):
+    #     """Restores the world to the last checkpoint."""
+    #     self.mcplayer.pc.restoreCheckpoint()
