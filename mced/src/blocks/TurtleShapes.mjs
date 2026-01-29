@@ -7,9 +7,9 @@ export function defineTurtleShapesBlocks(Blockly) {
             this.appendDummyInput()
                 .appendField("Metric")
                 .appendField(new Blockly.FieldDropdown([
-                ["Euclidean (Sphere)", "euclidean"],
-                ["Manhattan (Diamond)", "manhattan"],
-                ["Chebyshev (Cube)", "chebyshev"]
+                ["Euclidean", "euclidean"],
+                ["Manhattan", "manhattan"],
+                ["Chebyshev", "chebyshev"]
                 ]), "VALUE");
             this.setOutput(true, "Metric");
             this.setColour(230);

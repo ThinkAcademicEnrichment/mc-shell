@@ -59,25 +59,6 @@ export function defineTurtleActionsBlocks(Blockly) {
 
 
 
-Blockly.Blocks['turtle_actions_place_static_shape'] = {
-    init: function() {
-        this.appendDummyInput().appendField("Construct Shape at Player");
-        this.appendValueInput("SHAPE").setCheck(null).setAlign("RIGHT").appendField("Shape");
-        this.appendValueInput("BLOCK_TYPE").setCheck("Block").setAlign("RIGHT").appendField("Material");
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(65);
-        this.setTooltip("An auto-generated block for the 'Construct Shape at Player' action.");
-        this.setInputsInline(false);
-
-        // Configure shadow blocks directly
-        this.getInput('BLOCK_TYPE').connection.setShadowDom(Blockly.utils.xml.textToDom(`
-                <shadow type="minecraft_picker_world">
-                    <field name="MATERIAL_ID">STONE</field>
-                </shadow>
-        `));
-    }
-};
 Blockly.Blocks['turtle_actions_turtle_extrude'] = {
     init: function() {
         this.appendDummyInput().appendField("Turtle: Extrude Brush");
@@ -194,24 +175,6 @@ Blockly.Blocks['turtle_actions_turtle_set_brush'] = {
 
         // Configure shadow blocks directly
         
-    }
-};
-Blockly.Blocks['turtle_actions_turtle_shear'] = {
-    init: function() {
-        this.appendDummyInput().appendField("Turtle: Shear");
-        this.appendValueInput("PRIMARY").setCheck("Axis").setAlign("RIGHT").appendField("Primary Axis");
-        this.appendValueInput("SECONDARY").setCheck("Axis").setAlign("RIGHT").appendField("Shear By Axis");
-        this.appendValueInput("FACTOR").setCheck("Number").setAlign("RIGHT").appendField("Factor");
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(65);
-        this.setTooltip("An auto-generated block for the 'Turtle: Shear' action.");
-        this.setInputsInline(false);
-
-        // Configure shadow blocks directly
-        this.getInput('PRIMARY').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="picker_axis"><field name="VALUE">y</field></shadow>`));
-        this.getInput('SECONDARY').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="picker_axis"><field name="VALUE">y</field></shadow>`));
-        this.getInput('FACTOR').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="math_number"><field name="NUM">0</field></shadow>`));
     }
 };
 Blockly.Blocks['turtle_actions_turtle_stamp'] = {

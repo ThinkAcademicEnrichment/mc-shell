@@ -1,5 +1,10 @@
 from mcshell.mcclient import MCClient
 from mcshell.constants import *
+import time
+import numpy as np
+import re
+import json
+import asyncio
 
 # Define a tolerance for floating-point comparisons near zero
 DEFAULT_TOLERANCE = 1e-9
@@ -94,6 +99,12 @@ class MCPlayer(MCClient):
     def set_position(self, pos:Vec3):
         return self.pc.player.setPos(*pos)
 
+    # --- New Methods for Event Actions ---
+
+    def clear_events(self):
+        """Clears all queued events on the server for this client."""
+        self.pc.events.clearAll()
+
     def get_sword_hit_position(self):
         '''
             The following sword hits will all be detected:
@@ -119,22 +130,46 @@ class MCPlayer(MCClient):
 
                 return _hit.pos.clone()
 
+            time.sleep(0.1)
 
+    def wait_for_chat_post(self, entity_id=None):
+        """
+        Polls for chat posts. If entity_id is provided, filters for that player.
+        Returns the message string.
+        """
+        print('Waiting for chat post...')
+        while True:
+            if self.cancel_event and self.cancel_event.isSet():
+                raise PowerCancelledException
+
+            posts = self.pc.events.pollChatPosts()
+            if posts:
+                for post in posts:
+                    if entity_id is None or post.entityId == entity_id:
+                        return post.message
+
+            time.sleep(0.1)
+
+    def wait_for_projectile_hit(self):
+        """
+        Polls for projectile hits.
+        Returns the Vec3 position of the hit.
+        """
+        print('Waiting for projectile hit...')
+        while True:
+            if self.cancel_event and self.cancel_event.isSet():
+                raise PowerCancelledException
+
+            hits = self.pc.events.pollProjectileHits()
+            if hits:
+                # Return the position of the first hit detected
+                return hits[0].pos
+
+            time.sleep(0.1)
 
     def _get_compass_direction(self,direction_vector: tuple[float, float, float]) -> str:
         """
         Determines the closest 8-point compass direction from a 3D direction vector.
-
-        This function ignores the Y (up/down) component and normalizes the X and Z
-        components to find the closest cardinal or intercardinal direction.
-
-        Args:
-            direction_vector: A tuple, list, or Vec3-like object with x, y, and z components
-                              representing the direction the player is facing.
-
-        Returns:
-            A string representing the compass direction (e.g., 'N', 'NE', 'E', etc.).
-            Returns 'N' if the input vector is a zero vector in the XZ plane.
         """
         # Define the 8 compass directions as normalized 2D vectors (x, z)
         # Note: In Minecraft, negative Z is North and positive X is East.
@@ -169,9 +204,6 @@ class MCPlayer(MCClient):
 
         normalized_player_vector = player_xz_vector / norm
 
-        # Find the compass direction with the highest dot product
-        # The dot product of two unit vectors is the cosine of the angle between them.
-        # The highest dot product (closest to 1.0) means the smallest angle.
         max_dot_product = -1
         closest_direction = 'N'
 

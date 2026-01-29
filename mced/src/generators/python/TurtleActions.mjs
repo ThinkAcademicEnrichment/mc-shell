@@ -20,11 +20,6 @@ export function defineTurtleActionsGenerators(pythonGenerator) {
 
 
 
-pythonGenerator.forBlock['turtle_actions_place_static_shape'] = function(block, generator) {
-    const shape = generator.valueToCode(block, 'SHAPE', generator.ORDER_ATOMIC) || 'None';
-    const block_type = generator.valueToCode(block, 'BLOCK_TYPE', generator.ORDER_ATOMIC) || 'None';
-    return `self.action_implementer.place_static_shape(shape=${shape}, block_type=${block_type})\n`;
-};
 pythonGenerator.forBlock['turtle_actions_turtle_extrude'] = function(block, generator) {
     const length = generator.valueToCode(block, 'LENGTH', generator.ORDER_ATOMIC) || 0;
     const direction = generator.valueToCode(block, 'DIRECTION', generator.ORDER_ATOMIC) || 'None';
@@ -57,12 +52,6 @@ pythonGenerator.forBlock['turtle_actions_turtle_rotate'] = function(block, gener
 pythonGenerator.forBlock['turtle_actions_turtle_set_brush'] = function(block, generator) {
     const shape = generator.valueToCode(block, 'SHAPE', generator.ORDER_ATOMIC) || 'None';
     return `self.action_implementer.turtle_set_brush(shape=${shape})\n`;
-};
-pythonGenerator.forBlock['turtle_actions_turtle_shear'] = function(block, generator) {
-    const primary = generator.valueToCode(block, 'PRIMARY', generator.ORDER_ATOMIC) || 'None';
-    const secondary = generator.valueToCode(block, 'SECONDARY', generator.ORDER_ATOMIC) || 'None';
-    const factor = generator.valueToCode(block, 'FACTOR', generator.ORDER_ATOMIC) || 0;
-    return `self.action_implementer.turtle_shear(primary=${primary}, secondary=${secondary}, factor=${factor})\n`;
 };
 pythonGenerator.forBlock['turtle_actions_turtle_stamp'] = function(block, generator) {
     const block_type = generator.valueToCode(block, 'BLOCK_TYPE', generator.ORDER_ATOMIC) || 'None';

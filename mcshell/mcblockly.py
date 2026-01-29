@@ -520,12 +520,15 @@ def generate_mcactions_blocks():
     """
     # 2. Defer imports to runtime
     from mcshell.mcactions import (
-        WorldActions,
         DigitalGeometry,
         TurtleActions,
         TurtleShapes,
         PlayerActions,
         LSystemShapes,
+        PyncraftActions,
+        EventActions,
+        WorldActions,
+        ServerActions,
         Pickers
     )
 
@@ -558,6 +561,15 @@ def generate_mcactions_blocks():
         'Direction': 'Direction',
         'Axis': 'Axis',
         'Compass': 'Compass',
+        'Time': 'Time',
+        'Weather': 'Weather',
+        'Difficulty': 'Difficulty',
+        'Gamemode': 'Gamemode',
+        'GameRule': 'GameRule',
+        'LocateType': 'LocateType',
+        'Structure': 'Structure',
+        'Biome': 'Biome',
+        'Poi': 'Poi',
     }
 
     shadow_map = dict(
@@ -578,7 +590,7 @@ def generate_mcactions_blocks():
                     <field name="ENTITY_ID">PIG</field>
                 </shadow>
         ''',
-        Matrx3='''
+        Matrix3='''
                 <shadow type="minecraft_matrix_3d_euler"></shadow>
         ''',
 
@@ -589,7 +601,17 @@ def generate_mcactions_blocks():
         ''',
         Direction =  '<shadow type="picker_direction"><field name="VALUE">forward</field></shadow>',
         Axis =  '<shadow type="picker_axis"><field name="VALUE">y</field></shadow>',
-        Compass = '<shadow type="picker_compass"><field name="VALUE">N</field></shadow>'
+        Compass = '<shadow type="picker_compass"><field name="VALUE">N</field></shadow>',
+        Time = '<shadow type="picker_time"><field name="VALUE">day</field></shadow>',
+        Weather = '<shadow type="picker_weather"><field name="VALUE">clear</field></shadow>',
+        Difficulty = '<shadow type="picker_difficulty"><field name="VALUE">normal</field></shadow>',
+        Gamemode = '<shadow type="picker_gamemode"><field name="VALUE">creative</field></shadow>',
+        GameRule = '<shadow type="picker_gamerule"><field name="VALUE">doDaylightCycle</field></shadow>',
+        IntegerGameRule = '<shadow type="picker_integergamerule"><field name="VALUE">respawn_radius</field></shadow>',
+        LocateType = '<shadow type="picker_locatetype"><field name="VALUE">structure</field></shadow>',
+        Structure = '<shadow type="picker_structure"><field name="VALUE">ancient_city</field></shadow>',
+        Biome='<shadow type="picker_biome"><field name="VALUE">badlands</field></shadow>',
+        Poi ='<shadow type="picker_poi"><field name="VALUE">armorer</field></shadow>',
     )
 # =========================================================================
     # 3. GENERATE CUSTOM PICKERS (From Pickers class)
@@ -631,14 +653,19 @@ def generate_mcactions_blocks():
 
     turtleshapes_extras = get_extras(["Metric"])
     turtleactions_extras = get_extras(["Direction", "Axis", "Compass"])
+    serveractions_extras = get_extras(
+        ["Time","Weather","Difficulty","Gamemode","GameRule","IntegerGameRule","LocateType","Structure","Biome","Poi"])
 
     classes_to_generate = [
-        (WorldActions, "WorldActions", None, None, None, "#44DAA3"),
         (DigitalGeometry, "DigitalGeometry", None, None, None, "#364EE7"),
         (TurtleShapes, "TurtleShapes", turtleshapes_extras[0], turtleshapes_extras[1], turtleshapes_extras[2], "#F3BA2B"),
         (TurtleActions, "TurtleActions", turtleactions_extras[0], turtleactions_extras[1], turtleactions_extras[2], "#C7F32B"),
         (PlayerActions, "PlayerActions", None, None, None, "#3ECDE0"),
-        (LSystemShapes, "LSystemShapes", None, None, None, "#75E538")
+        (EventActions, "EventActions", None, None, None, "#FCBA03"),
+        (LSystemShapes, "LSystemShapes", None, None, None, "#75E538"),
+        (PyncraftActions, "PyncraftActions", None, None, None, "#252E28"),
+        (WorldActions, "WorldActions", None, None, None, "#75E538"),
+        (ServerActions, "ServerActions", serveractions_extras[0], serveractions_extras[1], serveractions_extras[2], "#252E28")
     ]
 
     full_toolbox_xml = ''
