@@ -1,48 +1,6 @@
 import { MCED } from "../lib/constants.mjs";
 
 export function definePyncraftActionsBlocks(Blockly) {
-Blockly.Blocks['pyncraft_actions_camera_set_fixed_by_name'] = {
-    init: function() {
-        this.appendDummyInput().appendField("Camera: Fixed for [player]");
-        this.appendValueInput("PLAYER_NAME").setCheck("String").setAlign("RIGHT").appendField("Player");
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(65);
-        this.setTooltip("An auto-generated block for the 'Camera: Fixed for [player]' action.");
-        this.setInputsInline(false);
-
-        // Configure shadow blocks directly
-        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT">SELF</field></shadow>`));
-    }
-};
-Blockly.Blocks['pyncraft_actions_camera_set_follow_by_name'] = {
-    init: function() {
-        this.appendDummyInput().appendField("Camera: Follow [player]");
-        this.appendValueInput("PLAYER_NAME").setCheck("String").setAlign("RIGHT").appendField("Player");
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(65);
-        this.setTooltip("An auto-generated block for the 'Camera: Follow [player]' action.");
-        this.setInputsInline(false);
-
-        // Configure shadow blocks directly
-        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT">SELF</field></shadow>`));
-    }
-};
-Blockly.Blocks['pyncraft_actions_camera_set_normal_by_name'] = {
-    init: function() {
-        this.appendDummyInput().appendField("Camera: Normal for [player]");
-        this.appendValueInput("PLAYER_NAME").setCheck("String").setAlign("RIGHT").appendField("Player");
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(65);
-        this.setTooltip("An auto-generated block for the 'Camera: Normal for [player]' action.");
-        this.setInputsInline(false);
-
-        // Configure shadow blocks directly
-        this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT">SELF</field></shadow>`));
-    }
-};
 Blockly.Blocks['pyncraft_actions_create_explosion'] = {
     init: function() {
         this.appendDummyInput().appendField("Create Explosion");
@@ -246,34 +204,6 @@ Blockly.Blocks['pyncraft_actions_get_yaw_by_name'] = {
 
         // Configure shadow blocks directly
         this.getInput('PLAYER_NAME').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT">SELF</field></shadow>`));
-    }
-};
-Blockly.Blocks['pyncraft_actions_restore_checkpoint'] = {
-    init: function() {
-        this.appendDummyInput().appendField("Restore Checkpoint");
-        
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(65);
-        this.setTooltip("An auto-generated block for the 'Restore Checkpoint' action.");
-        this.setInputsInline(false);
-
-        // Configure shadow blocks directly
-        
-    }
-};
-Blockly.Blocks['pyncraft_actions_save_checkpoint'] = {
-    init: function() {
-        this.appendDummyInput().appendField("Save Checkpoint");
-        
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(65);
-        this.setTooltip("An auto-generated block for the 'Save Checkpoint' action.");
-        this.setInputsInline(false);
-
-        // Configure shadow blocks directly
-        
     }
 };
 Blockly.Blocks['pyncraft_actions_send_title_by_name'] = {
@@ -483,22 +413,6 @@ Blockly.Blocks['pyncraft_actions_spawn_entity'] = {
                 </shadow>
         `));
         this.getInput('ENTITY_ID').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="math_number"><field name="NUM">0</field></shadow>`));
-    }
-};
-Blockly.Blocks['pyncraft_actions_world_setting'] = {
-    init: function() {
-        this.appendDummyInput().appendField("World Setting");
-        this.appendValueInput("SETTING").setCheck("String").setAlign("RIGHT").appendField("Setting Name");
-        this.appendValueInput("STATUS").setCheck("Boolean").setAlign("RIGHT").appendField("Enabled");
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(65);
-        this.setTooltip("An auto-generated block for the 'World Setting' action.");
-        this.setInputsInline(false);
-
-        // Configure shadow blocks directly
-        this.getInput('SETTING').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
-        this.getInput('STATUS').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="logic_boolean"><field name="BOOL">TRUE</field></shadow>`));
     }
 };
 }

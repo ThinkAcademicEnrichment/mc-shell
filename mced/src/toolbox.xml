@@ -561,9 +561,6 @@
     <block type="l_system_shapes_get_lsystem_shape" />
   </category>
   <category name="Pyncraft Actions" colour="#252E28">
-    <block type="pyncraft_actions_camera_set_fixed_by_name" />
-    <block type="pyncraft_actions_camera_set_follow_by_name" />
-    <block type="pyncraft_actions_camera_set_normal_by_name" />
     <block type="pyncraft_actions_create_explosion" />
     <block type="pyncraft_actions_get_block" />
     <block type="pyncraft_actions_get_block_with_data" />
@@ -578,8 +575,6 @@
     <block type="pyncraft_actions_get_rotation_by_name" />
     <block type="pyncraft_actions_get_tile_position_by_name" />
     <block type="pyncraft_actions_get_yaw_by_name" />
-    <block type="pyncraft_actions_restore_checkpoint" />
-    <block type="pyncraft_actions_save_checkpoint" />
     <block type="pyncraft_actions_send_title_by_name" />
     <block type="pyncraft_actions_set_block" />
     <block type="pyncraft_actions_set_blocks" />
@@ -589,7 +584,6 @@
     <block type="pyncraft_actions_set_sign" />
     <block type="pyncraft_actions_set_tile_position_by_name" />
     <block type="pyncraft_actions_spawn_entity" />
-    <block type="pyncraft_actions_world_setting" />
   </category>
   <category name="Event Actions" colour="#FCBA03">
     <block type="event_actions_clear_events" />

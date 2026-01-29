@@ -1,17 +1,5 @@
 
 export function definePyncraftActionsGenerators(pythonGenerator) {
-pythonGenerator.forBlock['pyncraft_actions_camera_set_fixed_by_name'] = function(block, generator) {
-    const player_name = generator.valueToCode(block, 'PLAYER_NAME', generator.ORDER_ATOMIC) || 'SELF';
-    return `self.action_implementer.camera_set_fixed_by_name(player_name=${player_name})\n`;
-};
-pythonGenerator.forBlock['pyncraft_actions_camera_set_follow_by_name'] = function(block, generator) {
-    const player_name = generator.valueToCode(block, 'PLAYER_NAME', generator.ORDER_ATOMIC) || 'SELF';
-    return `self.action_implementer.camera_set_follow_by_name(player_name=${player_name})\n`;
-};
-pythonGenerator.forBlock['pyncraft_actions_camera_set_normal_by_name'] = function(block, generator) {
-    const player_name = generator.valueToCode(block, 'PLAYER_NAME', generator.ORDER_ATOMIC) || 'SELF';
-    return `self.action_implementer.camera_set_normal_by_name(player_name=${player_name})\n`;
-};
 pythonGenerator.forBlock['pyncraft_actions_create_explosion'] = function(block, generator) {
     const position = generator.valueToCode(block, 'POSITION', generator.ORDER_ATOMIC) || 'None';
     const power = generator.valueToCode(block, 'POWER', generator.ORDER_ATOMIC) || 4;
@@ -83,14 +71,6 @@ pythonGenerator.forBlock['pyncraft_actions_get_yaw_by_name'] = function(block, g
     const code = `self.action_implementer.get_yaw_by_name(player_name=${player_name})`;
     return [code, generator.ORDER_FUNCTION_CALL];
 };
-pythonGenerator.forBlock['pyncraft_actions_restore_checkpoint'] = function(block, generator) {
-    
-    return `self.action_implementer.restore_checkpoint()\n`;
-};
-pythonGenerator.forBlock['pyncraft_actions_save_checkpoint'] = function(block, generator) {
-    
-    return `self.action_implementer.save_checkpoint()\n`;
-};
 pythonGenerator.forBlock['pyncraft_actions_send_title_by_name'] = function(block, generator) {
     const title = generator.valueToCode(block, 'TITLE', generator.ORDER_ATOMIC) || '';
     const subtitle = generator.valueToCode(block, 'SUBTITLE', generator.ORDER_ATOMIC) || '';
@@ -145,10 +125,5 @@ pythonGenerator.forBlock['pyncraft_actions_spawn_entity'] = function(block, gene
     const entity_id = generator.valueToCode(block, 'ENTITY_ID', generator.ORDER_ATOMIC) || 0;
     const code = `self.action_implementer.spawn_entity(position=${position}, entity_id=${entity_id})`;
     return [code, generator.ORDER_FUNCTION_CALL];
-};
-pythonGenerator.forBlock['pyncraft_actions_world_setting'] = function(block, generator) {
-    const setting = generator.valueToCode(block, 'SETTING', generator.ORDER_ATOMIC) || '';
-    const status = generator.valueToCode(block, 'STATUS', generator.ORDER_ATOMIC) || true;
-    return `self.action_implementer.world_setting(setting=${setting}, status=${status})\n`;
 };
 }
