@@ -6,7 +6,7 @@ Blockly.Blocks['digital_geometry_create_digital_cube'] = {
         this.appendDummyInput().appendField("Create Digital Cube");
         this.appendValueInput("CENTER").setCheck("3DVector").setAlign("RIGHT").appendField("Center");
         this.appendValueInput("SIDE_LENGTH").setCheck("Number").setAlign("RIGHT").appendField("Side Length");
-        this.appendValueInput("BLOCK_TYPE").setCheck("String").setAlign("RIGHT").appendField("Block Type");
+        this.appendValueInput("BLOCK_TYPE").setCheck("Block").setAlign("RIGHT").appendField("Block Type");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(65);
@@ -22,7 +22,11 @@ Blockly.Blocks['digital_geometry_create_digital_cube'] = {
                 </shadow>
         `));
         this.getInput('SIDE_LENGTH').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="math_number"><field name="NUM">0</field></shadow>`));
-        this.getInput('BLOCK_TYPE').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
+        this.getInput('BLOCK_TYPE').connection.setShadowDom(Blockly.utils.xml.textToDom(`
+                <shadow type="minecraft_picker_world">
+                    <field name="MATERIAL_ID">STONE</field>
+                </shadow>
+        `));
     }
 };
 Blockly.Blocks['digital_geometry_create_digital_disc'] = {
@@ -31,7 +35,7 @@ Blockly.Blocks['digital_geometry_create_digital_disc'] = {
         this.appendValueInput("CENTER").setCheck("3DVector").setAlign("RIGHT").appendField("Center");
         this.appendValueInput("RADIUS").setCheck("Number").setAlign("RIGHT").appendField("Radius");
         this.appendValueInput("NORMAL").setCheck("3DVector").setAlign("RIGHT").appendField("Normal");
-        this.appendValueInput("BLOCK_TYPE").setCheck("String").setAlign("RIGHT").appendField("Block Type");
+        this.appendValueInput("BLOCK_TYPE").setCheck("Block").setAlign("RIGHT").appendField("Block Type");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(65);
@@ -54,7 +58,11 @@ Blockly.Blocks['digital_geometry_create_digital_disc'] = {
                     <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
                 </shadow>
         `));
-        this.getInput('BLOCK_TYPE').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
+        this.getInput('BLOCK_TYPE').connection.setShadowDom(Blockly.utils.xml.textToDom(`
+                <shadow type="minecraft_picker_world">
+                    <field name="MATERIAL_ID">STONE</field>
+                </shadow>
+        `));
     }
 };
 Blockly.Blocks['digital_geometry_create_digital_line'] = {
@@ -62,7 +70,7 @@ Blockly.Blocks['digital_geometry_create_digital_line'] = {
         this.appendDummyInput().appendField("Create Digital Line");
         this.appendValueInput("POINT1").setCheck("3DVector").setAlign("RIGHT").appendField("Start Point");
         this.appendValueInput("POINT2").setCheck("3DVector").setAlign("RIGHT").appendField("End Point");
-        this.appendValueInput("BLOCK_TYPE").setCheck("String").setAlign("RIGHT").appendField("Block Type");
+        this.appendValueInput("BLOCK_TYPE").setCheck("Block").setAlign("RIGHT").appendField("Block Type");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(65);
@@ -84,7 +92,11 @@ Blockly.Blocks['digital_geometry_create_digital_line'] = {
                     <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
                 </shadow>
         `));
-        this.getInput('BLOCK_TYPE').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
+        this.getInput('BLOCK_TYPE').connection.setShadowDom(Blockly.utils.xml.textToDom(`
+                <shadow type="minecraft_picker_world">
+                    <field name="MATERIAL_ID">STONE</field>
+                </shadow>
+        `));
     }
 };
 Blockly.Blocks['digital_geometry_create_digital_sphere'] = {
@@ -92,7 +104,7 @@ Blockly.Blocks['digital_geometry_create_digital_sphere'] = {
         this.appendDummyInput().appendField("Create Digital Sphere");
         this.appendValueInput("CENTER").setCheck("3DVector").setAlign("RIGHT").appendField("Center");
         this.appendValueInput("RADIUS").setCheck("Number").setAlign("RIGHT").appendField("Radius");
-        this.appendValueInput("BLOCK_TYPE").setCheck("String").setAlign("RIGHT").appendField("Block Type");
+        this.appendValueInput("BLOCK_TYPE").setCheck("Block").setAlign("RIGHT").appendField("Block Type");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(65);
@@ -108,7 +120,11 @@ Blockly.Blocks['digital_geometry_create_digital_sphere'] = {
                 </shadow>
         `));
         this.getInput('RADIUS').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="math_number"><field name="NUM">0</field></shadow>`));
-        this.getInput('BLOCK_TYPE').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
+        this.getInput('BLOCK_TYPE').connection.setShadowDom(Blockly.utils.xml.textToDom(`
+                <shadow type="minecraft_picker_world">
+                    <field name="MATERIAL_ID">STONE</field>
+                </shadow>
+        `));
     }
 };
 }

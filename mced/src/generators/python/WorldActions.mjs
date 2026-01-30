@@ -11,7 +11,7 @@ pythonGenerator.forBlock['world_actions_post_to_chat'] = function(block, generat
 };
 pythonGenerator.forBlock['world_actions_set_block'] = function(block, generator) {
     const position = generator.valueToCode(block, 'POSITION', generator.ORDER_ATOMIC) || 'None';
-    const block_type = generator.valueToCode(block, 'BLOCK_TYPE', generator.ORDER_ATOMIC) || '';
+    const block_type = generator.valueToCode(block, 'BLOCK_TYPE', generator.ORDER_ATOMIC) || 'None';
     return `self.action_implementer.set_block(position=${position}, block_type=${block_type})\n`;
 };
 }

@@ -1,5 +1,5 @@
 import eventlet
-from rcon import Client
+from rcon.source import Client
 from aiomcrcon import Client as AioClient
 
 from rcon.errorhandler import WrongPassword

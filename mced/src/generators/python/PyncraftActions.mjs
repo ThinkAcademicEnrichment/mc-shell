@@ -80,13 +80,13 @@ pythonGenerator.forBlock['pyncraft_actions_send_title_by_name'] = function(block
 };
 pythonGenerator.forBlock['pyncraft_actions_set_block'] = function(block, generator) {
     const position = generator.valueToCode(block, 'POSITION', generator.ORDER_ATOMIC) || 'None';
-    const block_type = generator.valueToCode(block, 'BLOCK_TYPE', generator.ORDER_ATOMIC) || '';
+    const block_type = generator.valueToCode(block, 'BLOCK_TYPE', generator.ORDER_ATOMIC) || 'None';
     return `self.action_implementer.set_block(position=${position}, block_type=${block_type})\n`;
 };
 pythonGenerator.forBlock['pyncraft_actions_set_blocks'] = function(block, generator) {
     const p1 = generator.valueToCode(block, 'P1', generator.ORDER_ATOMIC) || 'None';
     const p2 = generator.valueToCode(block, 'P2', generator.ORDER_ATOMIC) || 'None';
-    const block_type = generator.valueToCode(block, 'BLOCK_TYPE', generator.ORDER_ATOMIC) || '';
+    const block_type = generator.valueToCode(block, 'BLOCK_TYPE', generator.ORDER_ATOMIC) || 'None';
     return `self.action_implementer.set_blocks(p1=${p1}, p2=${p2}, block_type=${block_type})\n`;
 };
 pythonGenerator.forBlock['pyncraft_actions_set_direction_by_name'] = function(block, generator) {
