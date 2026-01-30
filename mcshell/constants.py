@@ -96,6 +96,12 @@ MC_CONTROL_LAYOUT_PATH = MC_DATA_DIR.joinpath('control_layout.json')
 MC_WORLDS_BASE_DIR = pathlib.Path('~').expanduser().joinpath('mc-worlds')
 MC_CENTRAL_CONFIG_FILE = pathlib.Path("/etc/mc-shell/user_map.json")
 
+MC_JRE_DIR = MC_WORLDS_BASE_DIR / 'jre'
+# Determine the binary name based on the OS
+JRE_BINARY = "java.exe" if os.name == "nt" else "bin/java"
+
+MC_JRE_PATH = MC_JRE_DIR / JRE_BINARY
+
 RE_NON_JSON_VALUE = r"(?<!\")\b(?:[0-9]+[a-zA-Z]+|[0-9]+(?:\.[0-9]+)?[a-zA-Z]+|true|false|null)\b(?!\")"
 RE_NON_JSON_ARRAY = r"\[[BISL];\s*[^\]]+\]"
 
