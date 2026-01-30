@@ -246,7 +246,7 @@ class DigitalGeometry(MCActionsBase):
         side_length={'label': 'Side Length', 'shadow': '<shadow type="math_number"><field name="NUM">5</field></shadow>'},
         block_type={'label': 'Block Type'}
     )
-    def create_digital_cube(self, center: 'Vec3', side_length: float, block_type: str):
+    def create_digital_cube(self, center: 'Vec3', side_length: float, block_type: 'Block'):
         coords = generate_digital_cube_coordinates(center=center.to_tuple(), side_length=float(side_length))
         self._place_blocks_from_coords(coords, block_type)
 
@@ -256,7 +256,7 @@ class DigitalGeometry(MCActionsBase):
         point2={'label': 'End Point'},
         block_type={'label': 'Block Type'}
     )
-    def create_digital_line(self, point1: 'Vec3', point2: 'Vec3', block_type: str):
+    def create_digital_line(self, point1: 'Vec3', point2: 'Vec3', block_type: 'Block'):
         coords = generate_digital_line_coordinates(p1=point1.to_tuple(), p2=point2.to_tuple())
         self._place_blocks_from_coords(coords, block_type)
 
@@ -266,7 +266,7 @@ class DigitalGeometry(MCActionsBase):
         radius={'label': 'Radius', 'shadow': '<shadow type="math_number"><field name="NUM">5</field></shadow>'},
         block_type={'label': 'Block Type'}
     )
-    def create_digital_sphere(self, center: 'Vec3', radius: float, block_type: str):
+    def create_digital_sphere(self, center: 'Vec3', radius: float, block_type: 'Block'):
         coords = generate_digital_sphere_coordinates(center=center.to_tuple(), radius=float(radius))
         self._place_blocks_from_coords(coords, block_type)
 
@@ -277,8 +277,9 @@ class DigitalGeometry(MCActionsBase):
         normal={'label': 'Normal'},
         block_type={'label': 'Block Type'}
     )
-    def create_digital_disc(self, center: 'Vec3', radius: float, normal: 'Vec3', block_type: str):
-        coords = generate_digital_disc_coordinates(center=center.to_tuple(), radius=float(radius), normal=normal.to_tuple())
+    def create_digital_disc(self, center: 'Vec3', radius: float, normal: 'Vec3', block_type: 'Block'):
+        # coords = generate_digital_disc_coordinates(center=center.to_tuple(), radius=float(radius), normal=normal.to_tuple())
+        coords = generate_digital_disc_coordinates(normal=normal.to_tuple(),center_point=center.to_tuple(),outer_radius=radius)
         self._place_blocks_from_coords(coords, block_type)
 
 class WorldActions(MCActionsBase):
@@ -286,7 +287,7 @@ class WorldActions(MCActionsBase):
         super().__init__(mc_player_instance, delay_between_blocks)
 
     @mced_block(label="Set Block", position={'label': 'At Position'}, block_type={'label': 'Block Type'})
-    def set_block(self, position: 'Vec3', block_type: str):
+    def set_block(self, position: 'Vec3', block_type: 'Block'):
         self.mcplayer.pc.setBlock(int(position.x), int(position.y), int(position.z), block_type)
 
     @mced_block(label="Post to Chat", message={'label': 'Message', 'shadow': '<shadow type="text"><field name="TEXT">Hello!</field></shadow>'})

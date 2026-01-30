@@ -25,8 +25,10 @@ class MCClient:
 
     def run(self, *args):
         """
-        Note: the rcon connection is stateless; it cannot be persisted and must be
-        created anew with each request
+        Executes a command via RCON.
+
+        Args:
+            *args: Command components. Will be joined by spaces.
         """
         if not self.password:
             print('A password is required!')
@@ -35,8 +37,14 @@ class MCClient:
         if not args:
             raise MCClientException("Arguments required!")
 
+        # Join arguments into a single command string
+        full_command = " ".join(str(a) for a in args)
+
         with Client(self.host, self.rcon_port, passwd=self.password) as client:
-            _response = client.run(*args)
+            # client.run/command handles the basic send/recv cycle.
+            # Note: Automatic reassembly of fragmented >4KB packets depends on the
+            # underlying mcrcon library version.
+            _response = client.run(full_command)
 
         return _response
 

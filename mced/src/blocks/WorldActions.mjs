@@ -38,7 +38,7 @@ Blockly.Blocks['world_actions_set_block'] = {
     init: function() {
         this.appendDummyInput().appendField("Set Block");
         this.appendValueInput("POSITION").setCheck("3DVector").setAlign("RIGHT").appendField("At Position");
-        this.appendValueInput("BLOCK_TYPE").setCheck("String").setAlign("RIGHT").appendField("Block Type");
+        this.appendValueInput("BLOCK_TYPE").setCheck("Block").setAlign("RIGHT").appendField("Block Type");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(65);
@@ -53,7 +53,11 @@ Blockly.Blocks['world_actions_set_block'] = {
                     <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
                 </shadow>
         `));
-        this.getInput('BLOCK_TYPE').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
+        this.getInput('BLOCK_TYPE').connection.setShadowDom(Blockly.utils.xml.textToDom(`
+                <shadow type="minecraft_picker_world">
+                    <field name="MATERIAL_ID">STONE</field>
+                </shadow>
+        `));
     }
 };
 }

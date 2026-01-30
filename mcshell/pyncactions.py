@@ -141,7 +141,7 @@ class PyncraftActions(MCActionsBase):
         position={'label': 'At Position'},
         block_type={'label': 'Block Type'}
     )
-    def set_block(self, position: 'Vec3', block_type: str):
+    def set_block(self, position: 'Vec3', block_type: 'Block'):
         """Sets a block at the specified position."""
         self.mcplayer.pc.setBlock(int(position.x), int(position.y), int(position.z), block_type)
 
@@ -151,7 +151,7 @@ class PyncraftActions(MCActionsBase):
         p2={'label': 'Position 2'},
         block_type={'label': 'Block Type'}
     )
-    def set_blocks(self, p1: 'Vec3', p2: 'Vec3', block_type: str):
+    def set_blocks(self, p1: 'Vec3', p2: 'Vec3', block_type: 'Block'):
         """Sets a cuboid of blocks defined by two corners."""
         self.mcplayer.pc.setBlocks(int(p1.x), int(p1.y), int(p1.z), int(p2.x), int(p2.y), int(p2.z), block_type)
 
