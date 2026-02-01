@@ -34,6 +34,9 @@
 
                 <main id="main-content-panel">
                     <div id="controls">
+                        <button @click="isLibraryCollapsed = !isLibraryCollapsed">Toggle Library</button>
+                        <button @click="isCodeCollapsed = !isCodeCollapsed">Toggle Code</button>
+
                         <button id="savePowerAsButton" @click="prepareAndOpenSaveModal()">Save/Update Power...</button>
                         <button id="loadPowerFromFileButton">Load from File...</button>
 

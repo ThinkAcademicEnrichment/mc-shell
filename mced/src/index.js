@@ -1002,6 +1002,16 @@ async function init() {
 
     window.triggerBlocklyResize = triggerBlocklyResize;
 
+    // ------------------------------------------------------------------------------
+    const mainLayout = document.querySelector('.editor-layout');
+
+    // Listen for the end of the width transition on side panels
+    mainLayout.addEventListener('transitionend', (e) => {
+        if (e.propertyName === 'width') {
+            window.triggerBlocklyResize(); // Use your existing helper
+        }
+    });
+    // ------------------------------------------------------------------------------
 
     // --- TEMPORARY DEBUGGING LISTENER ---
     // Add this anywhere inside the init() function.
