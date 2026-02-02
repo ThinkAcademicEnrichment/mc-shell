@@ -165,7 +165,17 @@ html, body {
     font-size: 20px !important;
 }
 
+/* Center the numpad and give it a calculator-like width */
+.simple-keyboard.hg-layout-numpad {
+    max-width: 300px;
+    margin: 0 auto; /* Center it at the bottom of the screen */
+}
 
+/* Ensure keys are large and easy to hit on a touchscreen */
+.hg-button {
+    height: 60px !important;
+    font-size: 1.2rem !important;
+}
 
 /* --- MODAL STYLES --- */
 
