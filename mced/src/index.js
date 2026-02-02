@@ -233,34 +233,35 @@ async function init() {
                 currentInput.dispatchEvent(new Event('input', { bubbles: true }));
             }
         },
-      onKeyPress: button => {
-        // 1. Handle Shift Toggle
+        onKeyPress: button => {
+        // 1. Handle Manual Toggles
         if (button === "{shift}" || button === "{lock}") {
           const currentLayout = keyboardInstance.options.layoutName;
           const nextLayout = currentLayout === "default" ? "shift" : "default";
           keyboardInstance.setOptions({ layoutName: nextLayout });
         }
-
-        // 2. Handle Numpad Toggle
-        if (button === "{numpad}") {
+        else if (button === "{numpad}") {
           keyboardInstance.setOptions({ layoutName: "numpad" });
         }
-
-        // 3. Handle back to Alpha (ABC) Toggle
-        if (button === "{abc}") {
+        else if (button === "{abc}") {
+          keyboardInstance.setOptions({ layoutName: "default" });
+        }
+        // 2. NON-STICKY SHIFT: If a standard key is pressed while in shift mode,
+        // reset the layout to default automatically.
+        else if (keyboardInstance.options.layoutName === "shift" && !button.includes("{")) {
           keyboardInstance.setOptions({ layoutName: "default" });
         }
       },
       layout: {
         'default': [
-          '1 2 3 4 5 6 7 8 9 0 {bksp}',
+          '1 2 3 4 5 6 7 8 9 0 - {bksp}',
           'q w e r t y u i o p [ ]',
           'a s d f g h j k l ; \'',
           '{shift} z x c v b n m , . /',
           '{numpad} {space}' // Added numpad toggle button
         ],
         'shift': [
-          '! @ # $ % ^ & * ( ) {bksp}',
+          '! @ # $ % ^ & * ( ) _ {bksp}',
           'Q W E R T Y U I O P { }',
           'A S D F G H J K L : "',
           '{shift} Z X C V B N M < > ?',
