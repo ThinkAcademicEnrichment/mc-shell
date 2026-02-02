@@ -169,6 +169,24 @@ window.handleDeletePower = handleDeletePower;
 // --- Main Application Logic ---
 async function init() {
 
+    // Override the default Blockly prompt
+    Blockly.dialog.setPrompt((message, defaultValue, callback) => {
+        console.log("Custom Blockly prompt triggered");
+        window.dispatchEvent(new CustomEvent('blockly-prompt', {
+            detail: { message, defaultValue, callback }
+        }));
+    });
+
+    // Optionally override Alert and Confirm as well for a consistent UI
+    Blockly.dialog.setAlert((message, callback) => {
+        alert(message); // You can replace these with Alpine modals too
+        callback();
+    });
+
+    Blockly.dialog.setConfirm((message, callback) => {
+        callback(confirm(message));
+    });
+
     // 1. Variable to track the last executed power ID
     let lastExecutedPowerId = null;
 
@@ -192,15 +210,29 @@ async function init() {
         }
     }
 
+    // 1. A more robust focus tracker
+    let currentInput = null;
+
+    document.addEventListener('focusin', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+            currentInput = e.target;
+            console.log("Keyboard target switched to:", currentInput);
+
+            if (keyboardInstance) {
+                keyboardInstance.setInput(currentInput.value);
+            }
+        }
+    });
+
 
     const keyboardInstance = new Keyboard({
-      onChange: input => {
-        const activeInput = Blockly.WidgetDiv.getDiv().querySelector('input');
-        if (activeInput) {
-          activeInput.value = input;
-          activeInput.dispatchEvent(new Event('input', { bubbles: true }));
-        }
-      },
+        onChange: input => {
+            if (currentInput) {
+                currentInput.value = input;
+                // Trigger input event for Alpine.js/Blockly reactivity
+                currentInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        },
       onKeyPress: button => {
         // 1. Handle Shift Toggle
         if (button === "{shift}" || button === "{lock}") {
@@ -1153,17 +1185,26 @@ async function init() {
         }
     });
 
-    // 2. Sync the keyboard whenever a Blockly editor opens
+    // // 2. Sync the keyboard whenever a Blockly editor opens
+    // const widgetDiv = Blockly.WidgetDiv.getDiv();
+    // const syncObserver = new MutationObserver(() => {
+    //     const activeInput = widgetDiv.querySelector('input');
+    //     if (activeInput && keyboardInstance) {
+    //         keyboardInstance.setInput(activeInput.value);
+    //     }
+    // });
+    // syncObserver.observe(widgetDiv, { childList: true });
+
     const widgetDiv = Blockly.WidgetDiv.getDiv();
-    const syncObserver = new MutationObserver(() => {
-        const activeInput = widgetDiv.querySelector('input');
-        if (activeInput && keyboardInstance) {
-            keyboardInstance.setInput(activeInput.value);
+    const blocklyInputObserver = new MutationObserver(() => {
+        const blocklyInput = widgetDiv.querySelector('input');
+        if (blocklyInput) {
+            activeElement = blocklyInput;
+            keyboardInstance.setInput(activeElement.value);
         }
     });
-    syncObserver.observe(widgetDiv, { childList: true });
 
-
+    blocklyInputObserver.observe(widgetDiv, { childList: true });
     // --- TEMPORARY DEBUGGING LISTENER ---
     // Add this anywhere inside the init() function.
     document.body.addEventListener('library-changed', (event) => {

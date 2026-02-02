@@ -139,6 +139,35 @@
                         </div>
                     </div>
                 </div>
+
+                <div x-data="{
+                        show: false,
+                        message: '',
+                        defaultValue: '',
+                        callback: null,
+                        inputValue: ''
+                     }"
+                     @blockly-prompt.window="
+                        show = true;
+                        message = $event.detail.message;
+                        defaultValue = $event.detail.defaultValue;
+                        callback = $event.detail.callback;
+                        inputValue = $event.detail.defaultValue;
+                        // Use nextTick to wait for the modal to be visible before focusing
+                        $nextTick(() => { $refs.promptInput.focus(); });
+                     "
+                     x-show="show"
+                     class="modal-overlay"
+                     style="z-index: 35000;"> <div class="modal-content">
+                        <p x-text="message"></p>
+                        <input type="text" x-model="inputValue" @keyup.enter="callback(inputValue); show = false;">
+                        <div class="modal-buttons">
+                            <button @click="callback(inputValue); show = false;">OK</button>
+                            <button @click="callback(null); show = false;">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </template>
 
