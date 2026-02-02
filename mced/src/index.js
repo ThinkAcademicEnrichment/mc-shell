@@ -169,7 +169,6 @@ window.handleDeletePower = handleDeletePower;
 // --- Main Application Logic ---
 async function init() {
 
-    // index.js - Inside init()
     const keyboardInstance = new Keyboard({
       onChange: input => {
         const activeInput = Blockly.WidgetDiv.getDiv().querySelector('input');
@@ -179,11 +178,21 @@ async function init() {
         }
       },
       onKeyPress: button => {
-        // Handle the shift toggle logic
+        // 1. Handle Shift Toggle
         if (button === "{shift}" || button === "{lock}") {
           const currentLayout = keyboardInstance.options.layoutName;
-          const shiftToggle = currentLayout === "default" ? "shift" : "default";
-          keyboardInstance.setOptions({ layoutName: shiftToggle });
+          const nextLayout = currentLayout === "default" ? "shift" : "default";
+          keyboardInstance.setOptions({ layoutName: nextLayout });
+        }
+
+        // 2. Handle Numpad Toggle
+        if (button === "{numpad}") {
+          keyboardInstance.setOptions({ layoutName: "numpad" });
+        }
+
+        // 3. Handle back to Alpha (ABC) Toggle
+        if (button === "{abc}") {
+          keyboardInstance.setOptions({ layoutName: "default" });
         }
       },
       layout: {
@@ -192,20 +201,28 @@ async function init() {
           'q w e r t y u i o p [ ]',
           'a s d f g h j k l ; \'',
           '{shift} z x c v b n m , . /',
-          '{space}'
+          '{numpad} {space}' // Added numpad toggle button
         ],
         'shift': [
           '! @ # $ % ^ & * ( ) {bksp}',
           'Q W E R T Y U I O P { }',
           'A S D F G H J K L : "',
           '{shift} Z X C V B N M < > ?',
-          '{space}'
+          '{numpad} {space}' // Keep toggle accessible in shift mode
+        ],
+        'numpad': [
+          '1 2 3',
+          '4 5 6',
+          '7 8 9',
+          '{abc} 0 . {bksp}' // Added ABC toggle to go back
         ]
       },
       display: {
         '{shift}': 'Shift',
         '{bksp}': '⌫',
-        '{space}': 'Space'
+        '{space}': 'Space',
+        '{numpad}': '123', // Label for the numpad toggle
+        '{abc}': 'ABC'      // Label to switch back to text
       },
       preventMouseDownDefault: true
     });
@@ -923,7 +940,7 @@ async function init() {
             const output = await executeIPythonCommand(command, JSON.stringify(payload));
 
             if (output) {
-                alert("Debug Output:\n\n" + output);
+                console.log("Debug Output:\n\n" + output);
             }
         });
     }
