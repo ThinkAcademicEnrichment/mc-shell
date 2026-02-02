@@ -32,6 +32,13 @@ const BLANK_WORKSPACE_JSON = {
 
 // Use a constant for the localStorage key to avoid typos
 const AUTOSAVE_KEY = 'mcEdWorkspaceAutosave';
+// ------------------------------------------------------------------------------
+import Keyboard from 'simple-keyboard';
+import 'simple-keyboard/build/css/index.css';
+// let keyboardInstance;
+
+
+// ------------------------------------------------------------------------------
 
 // A module-scoped variable to hold the main workspace instance
 let workspace;
@@ -157,8 +164,68 @@ async function handleDeletePower(powerId) {
 
 window.handleDeletePower = handleDeletePower;
 
+
+
 // --- Main Application Logic ---
 async function init() {
+
+    const keyboardInstance = new Keyboard({
+      onChange: input => {
+        const activeInput = Blockly.WidgetDiv.getDiv().querySelector('input');
+        if (activeInput) {
+          activeInput.value = input;
+          activeInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      },
+      onKeyPress: button => {
+        // 1. Handle Shift Toggle
+        if (button === "{shift}" || button === "{lock}") {
+          const currentLayout = keyboardInstance.options.layoutName;
+          const nextLayout = currentLayout === "default" ? "shift" : "default";
+          keyboardInstance.setOptions({ layoutName: nextLayout });
+        }
+
+        // 2. Handle Numpad Toggle
+        if (button === "{numpad}") {
+          keyboardInstance.setOptions({ layoutName: "numpad" });
+        }
+
+        // 3. Handle back to Alpha (ABC) Toggle
+        if (button === "{abc}") {
+          keyboardInstance.setOptions({ layoutName: "default" });
+        }
+      },
+      layout: {
+        'default': [
+          '1 2 3 4 5 6 7 8 9 0 {bksp}',
+          'q w e r t y u i o p [ ]',
+          'a s d f g h j k l ; \'',
+          '{shift} z x c v b n m , . /',
+          '{numpad} {space}' // Added numpad toggle button
+        ],
+        'shift': [
+          '! @ # $ % ^ & * ( ) {bksp}',
+          'Q W E R T Y U I O P { }',
+          'A S D F G H J K L : "',
+          '{shift} Z X C V B N M < > ?',
+          '{numpad} {space}' // Keep toggle accessible in shift mode
+        ],
+        'numpad': [
+          '1 2 3',
+          '4 5 6',
+          '7 8 9',
+          '{abc} 0 . {bksp}' // Added ABC toggle to go back
+        ]
+      },
+      display: {
+        '{shift}': 'Shift',
+        '{bksp}': '⌫',
+        '{space}': 'Space',
+        '{numpad}': '123', // Label for the numpad toggle
+        '{abc}': 'ABC'      // Label to switch back to text
+      },
+      preventMouseDownDefault: true
+    });
 
     /**
      * Sends a command and its arguments to the Flask server's IPython endpoint.
@@ -873,7 +940,7 @@ async function init() {
             const output = await executeIPythonCommand(command, JSON.stringify(payload));
 
             if (output) {
-                alert("Debug Output:\n\n" + output);
+                console.log("Debug Output:\n\n" + output);
             }
         });
     }
@@ -1002,6 +1069,26 @@ async function init() {
 
     window.triggerBlocklyResize = triggerBlocklyResize;
 
+    // ------------------------------------------------------------------------------
+    const mainLayout = document.querySelector('.editor-layout');
+
+    // Listen for the end of the width transition on side panels
+    mainLayout.addEventListener('transitionend', (e) => {
+        if (e.propertyName === 'width') {
+            window.triggerBlocklyResize(); // Use your existing helper
+        }
+    });
+
+    // 2. Sync the keyboard whenever a Blockly editor opens
+    const widgetDiv = Blockly.WidgetDiv.getDiv();
+    const syncObserver = new MutationObserver(() => {
+        const activeInput = widgetDiv.querySelector('input');
+        if (activeInput && keyboardInstance) {
+            keyboardInstance.setInput(activeInput.value);
+        }
+    });
+    syncObserver.observe(widgetDiv, { childList: true });
+
 
     // --- TEMPORARY DEBUGGING LISTENER ---
     // Add this anywhere inside the init() function.
@@ -1017,6 +1104,11 @@ async function init() {
         // alert(`Delete event dispatched for power name: ${event.detail.powerName}`);
     });
     // --- END OF DEBUGGING LISTENER ---
+
+    // Ensure sidebars are physically collapsed and Blockly is resized for portrait mode
+    if (window.triggerBlocklyResize) {
+        window.triggerBlocklyResize();
+    }
 }
 
 // --- Main Execution ---
