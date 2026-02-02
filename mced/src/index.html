@@ -7,10 +7,7 @@
         <link rel="stylesheet" href="./editor.css">
 
     </head>
-    <body x-data="{
-        isLibraryCollapsed: false,
-        isCodeCollapsed: false
-    }">
+    <body x-data="{ isLibraryCollapsed: true, isCodeCollapsed: true, keyboardVisible: false }">
             <div class="editor-layout" :class="{ 'library-collapsed': isLibraryCollapsed, 'code-collapsed': isCodeCollapsed }">
                 <aside id="power-library-panel">
 
@@ -42,6 +39,12 @@
 
                         <button id="executePowerButton">Execute (Debug)</button>
                         <button id="clearWorkspaceButton">Clear Workspace</button>
+                        <button
+                            class="control-button"
+                            @click="keyboardVisible = !keyboardVisible"
+                            :class="keyboardVisible ? 'btn-active' : ''">
+                            <i class="fas fa-keyboard"></i> Toggle Keyboard
+                        </button>
                     </div>
                     <div id="blocklyDiv"></div>
                 </main>
@@ -139,5 +142,9 @@
         </template>
 
         <script type="module" src="./index.js"></script>
+        <div class="simple-keyboard"
+             x-show="keyboardVisible"
+             style="position: fixed; bottom: 0; left: 0; width: 100%; z-index: 20000; background: white;">
+        </div>
     </body>
 </html>

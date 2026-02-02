@@ -153,6 +153,19 @@ html, body {
     border: none !important;
 }
 /*-------------------------------------------------------------*/
+.simple-keyboard {
+    background-color: #f5f5f5;
+    padding: 10px;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
+}
+
+/* Ensure the keys are large enough for touchscreens */
+.hg-button {
+    height: 50px !important;
+    font-size: 20px !important;
+}
+
+
 
 /* --- MODAL STYLES --- */
 
