@@ -763,12 +763,13 @@ class MCShell(Magics):
 
             RUNNING_POWERS[execution_id] = {'thread': thread, 'cancel_event': cancel_event}
 
-            # --- Save Metadata (This part remains synchronous) ---
             power_repo = JsonFileRepository(player_name)
 
             if power_repo:
                 print(f"--- Power '{metadata.get('function_name')}' metadata defined/updated. ---")
                 print(f"--- Started debug execution with ID: {execution_id} ---")
+                # ADD THIS LINE: A specific prefix for the frontend to find
+                print(f"MCED_EXECUTION_ID:{execution_id}")
                 print("--- To stop it, run: %mc_cancel_power " + execution_id + " ---")
 
         except Exception as e:

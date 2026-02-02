@@ -169,14 +169,70 @@ window.handleDeletePower = handleDeletePower;
 // --- Main Application Logic ---
 async function init() {
 
-    const keyboardInstance = new Keyboard({
-      onChange: input => {
-        const activeInput = Blockly.WidgetDiv.getDiv().querySelector('input');
-        if (activeInput) {
-          activeInput.value = input;
-          activeInput.dispatchEvent(new Event('input', { bubbles: true }));
+    // Override the default Blockly prompt
+    Blockly.dialog.setPrompt((message, defaultValue, callback) => {
+        console.log("Custom Blockly prompt triggered");
+        window.dispatchEvent(new CustomEvent('blockly-prompt', {
+            detail: { message, defaultValue, callback }
+        }));
+    });
+
+    // Optionally override Alert and Confirm as well for a consistent UI
+    Blockly.dialog.setAlert((message, callback) => {
+        alert(message); // You can replace these with Alpine modals too
+        callback();
+    });
+
+    Blockly.dialog.setConfirm((message, callback) => {
+        callback(confirm(message));
+    });
+
+    // 1. Variable to track the last executed power ID
+    let lastExecutedPowerId = null;
+
+    /**
+     * Sends a request to the backend to cancel the currently running power.
+     */
+    async function handleCancelPower() {
+        if (!lastExecutedPowerId) {
+            console.log("No power is currently tracked as running.");
+            // We can still send the command without an ID if the backend
+            // supports cancelling the "latest" power.
         }
-      },
+
+        console.log(`Requesting cancellation for power ID: ${lastExecutedPowerId}`);
+
+        // Call your existing magic command API
+        const output = await executeIPythonCommand('%mc_cancel_power', lastExecutedPowerId || '');
+
+        if (output) {
+            console.log("Cancel Output:", output);
+        }
+    }
+
+    // 1. A more robust focus tracker
+    let currentInput = null;
+
+    document.addEventListener('focusin', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+            currentInput = e.target;
+            console.log("Keyboard target switched to:", currentInput);
+
+            if (keyboardInstance) {
+                keyboardInstance.setInput(currentInput.value);
+            }
+        }
+    });
+
+
+    const keyboardInstance = new Keyboard({
+        onChange: input => {
+            if (currentInput) {
+                currentInput.value = input;
+                // Trigger input event for Alpine.js/Blockly reactivity
+                currentInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        },
       onKeyPress: button => {
         // 1. Handle Shift Toggle
         if (button === "{shift}" || button === "{lock}") {
@@ -913,37 +969,87 @@ async function init() {
         return null;
     }
     // --- Wire up the "Execute (Debug)" Button ---
+    /**
+     * Removes ANSI escape codes (used for terminal colors) from a string.
+     * @param {string} str The string to clean.
+     * @returns {string} The cleaned string.
+     */
+    function stripAnsi(str) {
+        // This regex targets the standard escape sequences used by terminal libraries like 'rich'
+        const ansiRegex = /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g;
+        return str.replace(ansiRegex, '');
+    }
+
     const executeButton = document.getElementById('executePowerButton');
     if (executeButton) {
         executeButton.addEventListener('click', async () => {
-            console.log("Execute (Debug) button clicked.");
-
-            // 1. Build the complete payload using our new helper function
             const payload = buildDebugPayload(workspace);
+            if (!payload) return;
 
-            // If payload is null, it means the workspace wasn't set up correctly for debugging.
-            if (!payload) {
-                return;
-            }
-
-            // For display, show the full script that will be executed
-            const codeDisplay = document.getElementById('pythonCodeDisplay');
-            if (codeDisplay) {
-                codeDisplay.textContent = payload.code;
-                if(window.Prism) Prism.highlightElement(codeDisplay);
-            }
-
-            // 2. Define the new magic command and prepare the arguments
             const command = '%mc_debug_and_define';
-
-            // The argument is the full payload object, stringified as JSON
             const output = await executeIPythonCommand(command, JSON.stringify(payload));
 
             if (output) {
-                console.log("Debug Output:\n\n" + output);
+                // 1. Strip the color codes from the entire output
+                const cleanOutput = stripAnsi(output);
+                console.log("Cleaned Output for parsing:", cleanOutput);
+
+                // 2. Use a simple regex on the clean text
+                const idMatch = cleanOutput.match(/MCED_EXECUTION_ID:(\S+)/);
+
+                if (idMatch && idMatch[1]) {
+                    lastExecutedPowerId = idMatch[1];
+                    console.log(`Tracking Power ID for cancellation: ${lastExecutedPowerId}`);
+                }
             }
         });
     }
+
+    // 3. New Cancel Button Listener
+    const cancelBtn = document.getElementById('cancelPowerButton');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', async () => {
+            // Fallback to empty string so the backend prints usage instead of crashing
+            const idToCancel = lastExecutedPowerId || '';
+
+            console.log(`Requesting cancel for ID: ${idToCancel}`);
+            await executeIPythonCommand('%mc_cancel_power', idToCancel);
+
+            // Clear the ID after a cancellation attempt
+            lastExecutedPowerId = null;
+        });
+    }
+    // const executeButton = document.getElementById('executePowerButton');
+    // if (executeButton) {
+    //     executeButton.addEventListener('click', async () => {
+    //         console.log("Execute (Debug) button clicked.");
+    //
+    //         // 1. Build the complete payload using our new helper function
+    //         const payload = buildDebugPayload(workspace);
+    //
+    //         // If payload is null, it means the workspace wasn't set up correctly for debugging.
+    //         if (!payload) {
+    //             return;
+    //         }
+    //
+    //         // For display, show the full script that will be executed
+    //         const codeDisplay = document.getElementById('pythonCodeDisplay');
+    //         if (codeDisplay) {
+    //             codeDisplay.textContent = payload.code;
+    //             if(window.Prism) Prism.highlightElement(codeDisplay);
+    //         }
+    //
+    //         // 2. Define the new magic command and prepare the arguments
+    //         const command = '%mc_debug_and_define';
+    //
+    //         // The argument is the full payload object, stringified as JSON
+    //         const output = await executeIPythonCommand(command, JSON.stringify(payload));
+    //
+    //         if (output) {
+    //             console.log("Debug Output:\n\n" + output);
+    //         }
+    //     });
+    // }
 
 
     document.body.addEventListener('loadPower', function(event) {
@@ -1079,17 +1185,26 @@ async function init() {
         }
     });
 
-    // 2. Sync the keyboard whenever a Blockly editor opens
+    // // 2. Sync the keyboard whenever a Blockly editor opens
+    // const widgetDiv = Blockly.WidgetDiv.getDiv();
+    // const syncObserver = new MutationObserver(() => {
+    //     const activeInput = widgetDiv.querySelector('input');
+    //     if (activeInput && keyboardInstance) {
+    //         keyboardInstance.setInput(activeInput.value);
+    //     }
+    // });
+    // syncObserver.observe(widgetDiv, { childList: true });
+
     const widgetDiv = Blockly.WidgetDiv.getDiv();
-    const syncObserver = new MutationObserver(() => {
-        const activeInput = widgetDiv.querySelector('input');
-        if (activeInput && keyboardInstance) {
-            keyboardInstance.setInput(activeInput.value);
+    const blocklyInputObserver = new MutationObserver(() => {
+        const blocklyInput = widgetDiv.querySelector('input');
+        if (blocklyInput) {
+            activeElement = blocklyInput;
+            keyboardInstance.setInput(activeElement.value);
         }
     });
-    syncObserver.observe(widgetDiv, { childList: true });
 
-
+    blocklyInputObserver.observe(widgetDiv, { childList: true });
     // --- TEMPORARY DEBUGGING LISTENER ---
     // Add this anywhere inside the init() function.
     document.body.addEventListener('library-changed', (event) => {
