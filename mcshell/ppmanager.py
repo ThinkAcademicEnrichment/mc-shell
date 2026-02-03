@@ -49,6 +49,8 @@ class PaperServerManager:
                             properties[key] = value
 
             for key, value in settings_to_apply.items():
+                if isinstance(value,dict):
+                    value = json.dumps(value, separators=(',', ':'))
                 properties[key] = str(value)
 
             with open(properties_path, 'w') as f:

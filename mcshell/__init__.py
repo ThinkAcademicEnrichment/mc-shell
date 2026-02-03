@@ -86,23 +86,33 @@ class MCShell(Magics):
     @line_magic
     def pp_create_world(self, line):
         """
-        Creates a new, self-contained Paper server instance in its own directory.
-        Usage: % pp_create_world < world_name > --version=<mc_version>
-        Example: %pp_create_world my_creative_world
+        Creates a new Paper server instance with optional settings injection.
+        Usage: %pp_create_world <world_name> [--version=<v>] [--settings=<path>]
         """
         args = line.split()
         if not args:
-            print("Usage: %pp_create_world <world_name> [--version=<mc_version>]")
+            print("Usage: %pp_create_world <world_name> [--version=<v>] [--settings=<path>]")
             return
 
         world_name = args[0]
-        mc_version = MC_VERSION # default
+        mc_version = MC_VERSION # default from constants
+        injected_settings = {}
 
-        # Simple argument parsing for --version flag if we use it
-        # Usage: % pp_create_world < world_name > --version = < mc_version >
+        # Enhanced argument parsing
         for arg in args[1:]:
             if arg.startswith("--version="):
                 mc_version = arg.split('=', 1)[1]
+            elif arg.startswith("--settings="):
+                settings_path = Path(arg.split('=', 1)[1])
+                if settings_path.exists():
+                    try:
+                        with settings_path.open('r') as f:
+                            injected_settings = json.load(f)
+                        print(f"Loaded additional settings from {settings_path}")
+                    except json.JSONDecodeError as e:
+                        print(f"Error parsing settings JSON: {e}")
+                else:
+                    print(f"Warning: Settings file not found at {settings_path}")
 
         # Define paths
         world_dir = MC_WORLDS_BASE_DIR.joinpath(world_name)
@@ -206,6 +216,17 @@ class MCShell(Magics):
                 },
             }
         }
+
+        # Deep merge injected settings into the manifest
+        def deep_merge(source, destination):
+            for key, value in source.items():
+                if isinstance(value, dict) and key in destination:
+                    deep_merge(value, destination[key])
+                else:
+                    destination[key] = value
+            return destination
+
+        manifest = deep_merge(injected_settings, manifest)
 
         try:
             with open(world_dir / "world_manifest.json", "w") as f:
