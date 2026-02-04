@@ -160,7 +160,7 @@ class MCPlayer(MCClient):
             if self.cancel_event and self.cancel_event.isSet():
                 raise PowerCancelledException
 
-            hits = self.pc.events.pollProjectileHits()
+            hits = self.pc.events.pollArrowHits()
             if hits:
                 # Return the position of the first hit detected
                 return hits[0].pos
