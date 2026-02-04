@@ -87,18 +87,10 @@ class MCPlayer(MCClient):
         return self._get_q_direction(self.direction.to_tuple())
 
     def set_compass_direction(self,dir:str):
-        compass_vectors = {
-            'N': np.array([0., 0., -1.]),
-            'NE': np.array([0.7071, 0., -0.7071]),  # sqrt(2)/2
-            'E': np.array([1., 0., 0.]),
-            'SE': np.array([0.7071, 0., 0.7071]),
-            'S': np.array([0., 0., 1.]),
-            'SW': np.array([-0.7071, 0., 0.7071]),
-            'W': np.array([-1., 0., 0.]),
-            'NW': np.array([-0.7071, 0., -0.7071]),
-        }
-        _vec = compass_vectors.get(dir,[0., 0., -1])
-        return self.pc.player.setDirection(*compass_vectors.get(dir,[0, 0, -1]))
+        return self.pc.player.setDirection(*self._get_direction_vector(dir).to_tuple())
+
+    def set_q_direction(self, dir: str):
+        return self.pc.player.setDirection(*self._get_q_direction_vector(dir).to_tuple())
 
     def set_position(self, pos:Vec3):
         return self.pc.player.setPos(*pos)
