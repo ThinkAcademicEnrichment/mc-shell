@@ -18,12 +18,11 @@ from mcshell.ppdownloader import *
 
 from mcshell.mcserver import stop_app_server
 
-#pycraft.settings
-SHOW_DEBUG=False
-SHOW_Log=False
+import atexit
 
 @magics_class
 class MCShell(Magics):
+
     def __init__(self,shell):
         super(MCShell,self).__init__(shell)
 
@@ -85,34 +84,22 @@ class MCShell(Magics):
 
     @line_magic
     def pp_create_world(self, line):
-        """
-        Creates a new Paper server instance with optional settings injection.
-        Usage: %pp_create_world <world_name> [--version=<v>] [--settings=<path>]
-        """
         args = line.split()
         if not args:
-            print("Usage: %pp_create_world <world_name> [--version=<v>] [--settings=<path>]")
+            print("Usage: %pp_create_world <world_name> [--version=<v>] [--datapacks=p1,p2]")
             return
 
         world_name = args[0]
-        mc_version = MC_VERSION # default from constants
-        injected_settings = {}
+        mc_version = MC_VERSION
+        datapacks_to_install = []
 
         # Enhanced argument parsing
         for arg in args[1:]:
             if arg.startswith("--version="):
                 mc_version = arg.split('=', 1)[1]
-            elif arg.startswith("--settings="):
-                settings_path = Path(arg.split('=', 1)[1])
-                if settings_path.exists():
-                    try:
-                        with settings_path.open('r') as f:
-                            injected_settings = json.load(f)
-                        print(f"Loaded additional settings from {settings_path}")
-                    except json.JSONDecodeError as e:
-                        print(f"Error parsing settings JSON: {e}")
-                else:
-                    print(f"Warning: Settings file not found at {settings_path}")
+            elif arg.startswith("--datapacks="):
+                # Expects a comma-separated list of names
+                datapacks_to_install = arg.split('=', 1)[1].split(',')
 
         # Define paths
         world_dir = MC_WORLDS_BASE_DIR.joinpath(world_name)
@@ -217,17 +204,6 @@ class MCShell(Magics):
             }
         }
 
-        # Deep merge injected settings into the manifest
-        def deep_merge(source, destination):
-            for key, value in source.items():
-                if isinstance(value, dict) and key in destination:
-                    deep_merge(value, destination[key])
-                else:
-                    destination[key] = value
-            return destination
-
-        manifest = deep_merge(injected_settings, manifest)
-
         try:
             with open(world_dir / "world_manifest.json", "w") as f:
                 json.dump(manifest, f, indent=4)
@@ -243,6 +219,30 @@ class MCShell(Magics):
         plugin_urls = manifest.get("plugins", [])
         if plugin_urls:
             downloader.install_plugins(plugin_urls, plugins_dir)
+
+        # --- Datapack Installation Logic ---
+        if datapacks_to_install:
+            # Datapacks must be in 'world/datapacks' for first-run generation
+            world_datapacks_dir = world_dir / "world" / "datapacks"
+            world_datapacks_dir.mkdir(parents=True, exist_ok=True)
+
+            for pack_name in datapacks_to_install:
+                pack_name = pack_name.strip()
+                source = MC_DATAPACK_LIB_DIR / pack_name
+
+                # Check for the name directly (folder) or with .zip extension
+                if not source.exists():
+                    source = MC_DATAPACK_LIB_DIR / f"{pack_name}.zip"
+
+                if source.exists():
+                    target = world_datapacks_dir / source.name
+                    if source.is_dir():
+                        shutil.copytree(source, target)
+                    else:
+                        shutil.copy2(source, target)
+                    print(f"Installed datapack: {pack_name}")
+                else:
+                    print(f"Warning: Datapack '{pack_name}' not found in library.")
 
         print(f"\nWorld '{world_name}' created successfully.")
         print(f"To start it, run: %pp_start_world {world_name}")
@@ -999,13 +999,29 @@ class MCShell(Magics):
         except requests.exceptions.RequestException as e:
             print(f"Error: Could not connect to the other player's application server. {e}")
 
-import atexit # <-- Import the standard library module
+def sync_datapack_library():
+    """
+    Synchronizes the internal datapack library to the user's worlds directory.
+    Does not overwrite existing files to allow students to tweak their copies.
+    """
+    if MC_INTERNAL_DATAPACKS.exists():
+        MC_DATAPACK_LIB_DIR.mkdir(parents=True, exist_ok=True)
+        for item in MC_INTERNAL_DATAPACKS.iterdir():
+            target = MC_DATAPACK_LIB_DIR / item.name
+            if not target.exists():
+                if item.is_dir():
+                    shutil.copytree(item, target)
+                else:
+                    shutil.copy2(item, target)
 
 def load_ipython_extension(ip):
     """
     Called by IPython when the extension is loaded.
     This is where we register the magics and the shutdown hook.
     """
+
+    sync_datapack_library()
+
     # Register the main magic class
     mcshell_instance = MCShell(ip)
     ip.register_magics(mcshell_instance)
