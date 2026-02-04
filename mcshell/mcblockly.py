@@ -652,7 +652,7 @@ def generate_mcactions_blocks():
         return js_acc, py_acc, xml_acc
 
     turtleshapes_extras = get_extras(["Metric"])
-    turtleactions_extras = get_extras(["Direction", "Axis", "Compass"])
+    turtleactions_extras = get_extras(["Direction", "Axis", "Compass","QDirections"])
     serveractions_extras = get_extras(
         ["Time","Weather","Difficulty","Gamemode","GameRule","IntegerGameRule","LocateType","Structure","Biome","Poi"])
 

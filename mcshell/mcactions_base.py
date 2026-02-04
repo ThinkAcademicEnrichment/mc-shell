@@ -117,6 +117,28 @@ class Pickers:
         ("North-East", "NE"), ("North-West", "NW"),
         ("South-East", "SE"), ("South-West", "SW")]
 
+    QDirections = [
+        # --- Pure Cardinal Directions (6) ---
+        ("North (-Z)", "N"), ("South (+Z)", "S"),
+        ("East (+X)", "E"), ("West (-X)", "W"),
+        ("Up (+Y)", "U"), ("Down (-Y)", "D"),
+
+        # --- Horizontal Diagonals (4) ---
+        ("North-East", "NE"), ("North-West", "NW"),
+        ("South-East", "SE"), ("South-West", "SW"),
+
+        # --- Vertical Diagonals (Planar) (8) ---
+        ("North-Up", "NU"), ("North-Down", "ND"),
+        ("South-Up", "SU"), ("South-Down", "SD"),
+        ("East-Up", "EU"), ("East-Down", "ED"),
+        ("West-Up", "WU"), ("West-Down", "WD"),
+
+        # --- Full 3D Diagonals (Corners) (8) ---
+        ("North-East-Up", "NEU"), ("North-East-Down", "NED"),
+        ("North-West-Up", "NWU"), ("North-West-Down", "NWD"),
+        ("South-East-Up", "SEU"), ("South-East-Down", "SED"),
+        ("South-West-Up", "SWU"), ("South-West-Down", "SWD")
+    ]
     Time = [
         ("Day (1000)", "day"),
         ("Noon (6000)", "noon"),
