@@ -35,9 +35,6 @@ const AUTOSAVE_KEY = 'mcEdWorkspaceAutosave';
 // ------------------------------------------------------------------------------
 import Keyboard from 'simple-keyboard';
 import 'simple-keyboard/build/css/index.css';
-// let keyboardInstance;
-
-
 // ------------------------------------------------------------------------------
 
 // A module-scoped variable to hold the main workspace instance
@@ -99,38 +96,7 @@ function prepareAndOpenSaveModal() {
     }));
 }
 
-/**
- * Inspects the workspace for a functional power and opens the save modal,
- * pre-filling it with the function's name and description (comment).
- */
-// function prepareAndOpenSaveModal() {
-//     let powerName = '';
-//     let powerDescription = '';
-//
-//     // Find the top-level function definition block, if it exists
-//     const funcDefBlock = workspace.getTopBlocks(true).find(b =>
-//         b.type === 'procedures_defnoreturn' || b.type === 'procedures_defreturn'
-//     );
-//
-//     if (funcDefBlock) {
-//         // If a function block is found, use its properties as defaults
-//         powerName = funcDefBlock.getFieldValue('NAME');
-//         // The comment text is the best place for a power's description
-//         powerDescription = funcDefBlock.getCommentText();
-//     }
-//
-//     // Dispatch the event to open the modal, passing the extracted data.
-//     // The modal's listener will use this data to pre-fill the form.
-//     window.dispatchEvent(new CustomEvent('open-save-modal', {
-//         detail: {
-//             name: powerName,
-//             description: powerDescription,
-//             category: '' // Category can be set by the user in the modal
-//         }
-//     }));
-// }
 
-// TODO put this inside init() ?
 // Attach the function to the window object to make it globally accessible from HTML
 window.prepareAndOpenSaveModal = prepareAndOpenSaveModal;
 
@@ -168,24 +134,65 @@ window.handleDeletePower = handleDeletePower;
 
 // --- Main Application Logic ---
 async function init() {
-
-    // Override the default Blockly prompt
     Blockly.dialog.setPrompt((message, defaultValue, callback) => {
-        console.log("Custom Blockly prompt triggered");
+        window.isBlocklyPromptOpen = true;
+
+        // 1. Preemptively blur the active element to satisfy the FocusManager
+        if (document.activeElement) {
+            document.activeElement.blur();
+        }
+
         window.dispatchEvent(new CustomEvent('blockly-prompt', {
-            detail: { message, defaultValue, callback }
+            detail: {
+                message,
+                defaultValue,
+                onComplete: (value) => {
+                    window.isBlocklyPromptOpen = false;
+                    callback(value);
+                    // Return focus once the modal is gone
+                    workspace.markFocused();
+                }
+            }
         }));
     });
-
-    // Optionally override Alert and Confirm as well for a consistent UI
-    Blockly.dialog.setAlert((message, callback) => {
-        alert(message); // You can replace these with Alpine modals too
-        callback();
-    });
-
-    Blockly.dialog.setConfirm((message, callback) => {
-        callback(confirm(message));
-    });
+    // Blockly.dialog.setPrompt((message, defaultValue, callback) => {
+    //     // Set a flag that the flyout override can see
+    //     window.isBlocklyPromptOpen = true;
+    //
+    //     window.dispatchEvent(new CustomEvent('blockly-prompt', {
+    //         detail: {
+    //             message,
+    //             defaultValue,
+    //             onComplete: (value) => {
+    //                 // Reset flag
+    //                 window.isBlocklyPromptOpen = false;
+    //
+    //                 // Execute Blockly's callback with the user's input
+    //                 callback(value);
+    //
+    //                 // Tell the FocusManager exactly where to go now
+    //                 workspace.markFocused();
+    //             }
+    //         }
+    //     }));
+    // });
+    // Override the default Blockly prompt
+    // Blockly.dialog.setPrompt((message, defaultValue, callback) => {
+    //     console.log("Custom Blockly prompt triggered");
+    //     window.dispatchEvent(new CustomEvent('blockly-prompt', {
+    //         detail: { message, defaultValue, callback }
+    //     }));
+    // });
+    //
+    // // Optionally override Alert and Confirm as well for a consistent UI
+    // Blockly.dialog.setAlert((message, callback) => {
+    //     alert(message); // You can replace these with Alpine modals too
+    //     callback();
+    // });
+    //
+    // Blockly.dialog.setConfirm((message, callback) => {
+    //     callback(confirm(message));
+    // });
 
     // 1. Variable to track the last executed power ID
     let lastExecutedPowerId = null;
@@ -689,8 +696,15 @@ async function init() {
     // Later, this could load from an autosave or a default file.
     workspace = Blockly.inject('blocklyDiv', {
         toolbox: toolboxXml,
+        trashcan: {
+            // You can set vertical and horizontal positions
+            position: {
+              vertical: 'top',
+              horizontal: 'right'
+            }
+        },
         grid: {
-            spacing: 20,
+            spacing: 26,
             length: 3,
             colour: '#ccc',
             snap: true
@@ -708,6 +722,51 @@ async function init() {
             drag: true,
             wheel: false // Usually false if you have zoom on wheel
         }
+    });
+
+    // 1. Get the flyout instance
+    const flyout = workspace.getFlyout();
+
+    // 2. Override the auto-hide behavior
+    // We preserve the original function in case we need to call it manually
+    const originalHide = flyout.hide;
+
+    // flyout.hide = function() {
+    //   // By doing nothing here, the flyout stays open when you drag a block!
+    //   console.log("Flyout tried to hide, but we're staying open.");
+    // };
+    flyout.hide = function() {
+        // If we are currently showing a prompt, ALLOW the hide.
+        // This cleans up the internal focus state so the console doesn't crash.
+        if (window.isBlocklyPromptOpen) {
+            originalHide.call(this);
+            return;
+        }
+
+        // Otherwise, stay open for Oscar's dragging
+        console.log("Flyout kept open for dragging.");
+    };
+    // 3. Optional: Close it only when clicking the workspace background
+    workspace.addChangeListener((event) => {
+      if (event.type === Blockly.Events.CLICK && !event.blockId) {
+        // If they click the empty workspace, then we actually hide it
+        originalHide.call(flyout);
+      }
+    });
+
+    workspace.addChangeListener((event) => {
+      if (event.type === Blockly.Events.VAR_CREATE || event.type === Blockly.Events.VAR_RENAME) {
+        const toolbox = workspace.getToolbox();
+        if (toolbox) {
+          // Small delay ensures the workspace has regained focus from the prompt
+          setTimeout(() => {
+            const item = toolbox.getPreviouslySelectedItem();
+            if (item) {
+              toolbox.setSelectedItem(item);
+            }
+          }, 50);
+        }
+      }
     });
 
     initializeHtmxListeners();
@@ -1183,7 +1242,12 @@ async function init() {
     mainLayout.addEventListener('transitionend', (e) => {
         if (e.propertyName === 'width') {
             window.triggerBlocklyResize(); // Use your existing helper
-        }
+
+            const widgetDiv = Blockly.WidgetDiv.getDiv();
+            const blocklyInputObserver = new MutationObserver(() => {
+                const blocklyInput = widgetDiv.querySelector('input');
+                if (blocklyInput) {
+                }
     });
 
     // // 2. Sync the keyboard whenever a Blockly editor opens
@@ -1195,12 +1259,7 @@ async function init() {
     //     }
     // });
     // syncObserver.observe(widgetDiv, { childList: true });
-
-    const widgetDiv = Blockly.WidgetDiv.getDiv();
-    const blocklyInputObserver = new MutationObserver(() => {
-        const blocklyInput = widgetDiv.querySelector('input');
-        if (blocklyInput) {
-            activeElement = blocklyInput;
+activeElement = blocklyInput;
             keyboardInstance.setInput(activeElement.value);
         }
     });

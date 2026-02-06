@@ -151,7 +151,9 @@
                         show = true;
                         message = $event.detail.message;
                         defaultValue = $event.detail.defaultValue;
-                        callback = $event.detail.callback;
+                        /* Change this line to use onComplete */
+                        callback = $event.detail.onComplete;
+                        /* callback = $event.detail.callback; */
                         inputValue = $event.detail.defaultValue;
                         // Use nextTick to wait for the modal to be visible before focusing
                         $nextTick(() => { $refs.promptInput.focus(); });
