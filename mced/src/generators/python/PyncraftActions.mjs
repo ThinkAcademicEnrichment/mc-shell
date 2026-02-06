@@ -122,8 +122,7 @@ pythonGenerator.forBlock['pyncraft_actions_set_tile_position_by_name'] = functio
 };
 pythonGenerator.forBlock['pyncraft_actions_spawn_entity'] = function(block, generator) {
     const position = generator.valueToCode(block, 'POSITION', generator.ORDER_ATOMIC) || 'None';
-    const entity_id = generator.valueToCode(block, 'ENTITY_ID', generator.ORDER_ATOMIC) || 0;
-    const code = `self.action_implementer.spawn_entity(position=${position}, entity_id=${entity_id})`;
-    return [code, generator.ORDER_FUNCTION_CALL];
+    const entity = generator.valueToCode(block, 'ENTITY', generator.ORDER_ATOMIC) || 'None';
+    return `self.action_implementer.spawn_entity(position=${position}, entity=${entity})\n`;
 };
 }

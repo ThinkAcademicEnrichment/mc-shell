@@ -203,13 +203,18 @@ class PyncraftActions(MCActionsBase):
 
     @mced_block(
         label="Spawn Entity",
-        position={'label': 'At Position'},
-        entity_id={'label': 'Entity ID', 'shadow': '<shadow type="math_number"><field name="NUM">1</field></shadow>'},
-        output_type="Number"
+        entity={'label': 'Entity Type'},
+        position={'label': 'At Position'}
     )
-    def spawn_entity(self, position: 'Vec3', entity_id: int) -> int:
-        """Spawns an entity at the specified position."""
-        return self.mcplayer.pc.spawnEntity(int(position.x), int(position.y), int(position.z), entity_id)
+    def spawn_entity(self, position: 'Vec3', entity: 'Entity'):
+        """
+        Blockly action to spawn a Minecraft entity.
+        """
+        entity_id_int = self._get_entity_id_from_bukkit_name(entity)
+        if entity_id_int is None:
+            print(f"Warning: Could not find a numerical ID for entity type '{entity}'. Cannot spawn.")
+            return
+        self.mcplayer.pc.spawnEntity(position.x, position.y + 1, position.z, entity_id_int)
 
     @mced_block(
         label="Create Explosion",

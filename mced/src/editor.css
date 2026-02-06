@@ -86,9 +86,41 @@ html, body {
 
 #blocklyDiv {
     flex-grow: 1; /* Blockly editor takes up most of the space in this pane */
-    position: relative; /* Needed for Blockly's UI elements */
+    /*position: relative; !* Needed for Blockly's UI elements *!*/
+    position: relative !important;
 }
 
+/* Ensure the main container can hold the absolute button */
+/*#blocklyDiv {*/
+/*  position: relative !important;*/
+/*}*/
+
+/*.toolbox-toggle-btn {*/
+/*  position: absolute;*/
+/*  top: 10px;*/
+/*  !* 'left' is now managed by JS to track the toolbox width *!*/
+/*  width: 44px;*/
+/*  height: 44px;*/
+/*  background: #333;*/
+/*  color: white;*/
+/*  display: flex;*/
+/*  align-items: center;*/
+/*  justify-content: center;*/
+/*  border-radius: 0 8px 8px 0;*/
+/*  cursor: pointer;*/
+/*  z-index: 1000; !* Over everything *!*/
+/*  box-shadow: 2px 0 10px rgba(0,0,0,0.5);*/
+/*  transition: left 0.3s ease-in-out;*/
+/*}*/
+
+/*.blocklyToolboxDiv {*/
+/*  transition: transform 0.3s ease-in-out;*/
+/*  !* No more overflow:visible needed here since button is outside *!*/
+/*}*/
+
+/*.toolbox-collapsed {*/
+/*  transform: translateX(-100%);*/
+/*}*/
 #code-container {
     /* REMOVED: height: 250px; */
     /* REMOVED: flex-shrink: 0; */
@@ -393,3 +425,5 @@ Because #code-container now takes up 0 height, the #blocklyDiv (with its flex-gr
 will automatically expand to fill the space that was just freed up inside the
 #editor-preview-pane flex container.
 */
+
+
