@@ -72,7 +72,13 @@ class MCPlayer(MCClient):
     @property
     def direction(self):
         # note the cast from pyncraft.vec3.Vec3 to mcshell.Vec3.Vec3
+        # this is an arbitrary direction vector
         return Vec3(*self.pc.player.getDirection())
+
+    @property
+    def q_direction(self):
+        # this is a quantized direction vector
+        return self._get_q_direction_vector(self.q_compass_direction)
 
     @property
     def here(self):
@@ -83,13 +89,13 @@ class MCPlayer(MCClient):
         return self._get_compass_direction(self.direction.to_tuple())
 
     @property
-    def q_direction(self):
-        return self._get_q_direction(self.direction.to_tuple())
+    def q_compass_direction(self):
+        return self._get_q_compass_direction(self.direction.to_tuple())
 
     def set_compass_direction(self,dir:str):
         return self.pc.player.setDirection(*self._get_direction_vector(dir).to_tuple())
 
-    def set_q_direction(self, dir: str):
+    def set_q_compass_direction(self, dir: str):
         return self.pc.player.setDirection(*self._get_q_direction_vector(dir).to_tuple())
 
     def set_position(self, pos:Vec3):
@@ -248,7 +254,7 @@ class MCPlayer(MCClient):
         # Return the mapped Vec3, defaulting to North if key is invalid
         return direction_map.get(key, Vec3(0.0, 0.0, -1.0))
 
-    def _get_q_direction(self, direction_vector) -> str:
+    def _get_q_compass_direction(self, direction_vector) -> str:
         """
         Determines the closest 'q-direction' (26-point 3D direction) from a 3D vector.
 
@@ -288,26 +294,26 @@ class MCPlayer(MCClient):
 
         return q_str
 
-    def _get_q_direction_vector(self, q_direction: str) -> Vec3:
+    def _get_q_direction_vector(self, q_compass_direction: str) -> Vec3:
         """
         Maps a 3D q-direction string to a normalized 3D unit vector.
 
         Args:
-            q_direction (str): A string like 'NEU', 'S', 'D', 'SED', etc.
+            q_compass_direction (str): A string like 'NEU', 'S', 'D', 'SED', etc.
 
         Returns:
             Vec3: A normalized unit vector representing that direction.
         """
-        q_direction = q_direction.upper()
+        q_compass_direction = q_compass_direction.upper()
         x, y, z = 0.0, 0.0, 0.0
 
         # Mapping tokens to axes
-        if 'E' in q_direction: x += 1.0
-        if 'W' in q_direction: x -= 1.0
-        if 'U' in q_direction: y += 1.0
-        if 'D' in q_direction: y -= 1.0
-        if 'S' in q_direction: z += 1.0
-        if 'N' in q_direction: z -= 1.0
+        if 'E' in q_compass_direction: x += 1.0
+        if 'W' in q_compass_direction: x -= 1.0
+        if 'U' in q_compass_direction: y += 1.0
+        if 'D' in q_compass_direction: y -= 1.0
+        if 'S' in q_compass_direction: z += 1.0
+        if 'N' in q_compass_direction: z -= 1.0
 
         # Calculate magnitude for normalization
         mag = (x**2 + y**2 + z**2)**0.5
