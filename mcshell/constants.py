@@ -96,6 +96,10 @@ MC_CONTROL_LAYOUT_PATH = MC_DATA_DIR.joinpath('control_layout.json')
 MC_WORLDS_BASE_DIR = pathlib.Path('~').expanduser().joinpath('mc-worlds')
 MC_CENTRAL_CONFIG_FILE = pathlib.Path("/etc/mc-shell/user_map.json")
 
+# new: datapacks
+MC_INTERNAL_DATAPACKS = MC_DATA_DIR / 'datapacks'
+MC_DATAPACK_LIB_DIR = MC_WORLDS_BASE_DIR / 'datapacks-library'
+
 MC_JRE_DIR = MC_WORLDS_BASE_DIR / 'jre'
 # Determine the binary name based on the OS
 JRE_BINARY = "java.exe" if os.name == "nt" else "bin/java"

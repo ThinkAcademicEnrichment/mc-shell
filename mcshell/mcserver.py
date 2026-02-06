@@ -189,14 +189,15 @@ def execute_power_in_thread(power_id,execution_id, python_code, player_name, ser
     """
     This is the new, shared worker function. It runs in a background thread.
     """
+    # For debugging only
     # --- Send the initial 'running' status with ALL required fields ---
-    print(f"THREAD {execution_id}: Emitting 'running' status...")
-    socketio.emit('power_status', {
-        'id': power_id,
-        'execution_id': execution_id,
-        'status': 'running',
-        'message': ''
-    })
+    # print(f"THREAD {execution_id}: Emitting 'running' status...")
+    # socketio.emit('power_status', {
+    #     'id': power_id,
+    #     'execution_id': execution_id,
+    #     'status': 'running',
+    #     'message': ''
+    # })
 
     try:
         # We need the app context for config

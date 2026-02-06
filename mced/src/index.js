@@ -32,6 +32,10 @@ const BLANK_WORKSPACE_JSON = {
 
 // Use a constant for the localStorage key to avoid typos
 const AUTOSAVE_KEY = 'mcEdWorkspaceAutosave';
+// ------------------------------------------------------------------------------
+import Keyboard from 'simple-keyboard';
+import 'simple-keyboard/build/css/index.css';
+// ------------------------------------------------------------------------------
 
 // A module-scoped variable to hold the main workspace instance
 let workspace;
@@ -92,38 +96,7 @@ function prepareAndOpenSaveModal() {
     }));
 }
 
-/**
- * Inspects the workspace for a functional power and opens the save modal,
- * pre-filling it with the function's name and description (comment).
- */
-// function prepareAndOpenSaveModal() {
-//     let powerName = '';
-//     let powerDescription = '';
-//
-//     // Find the top-level function definition block, if it exists
-//     const funcDefBlock = workspace.getTopBlocks(true).find(b =>
-//         b.type === 'procedures_defnoreturn' || b.type === 'procedures_defreturn'
-//     );
-//
-//     if (funcDefBlock) {
-//         // If a function block is found, use its properties as defaults
-//         powerName = funcDefBlock.getFieldValue('NAME');
-//         // The comment text is the best place for a power's description
-//         powerDescription = funcDefBlock.getCommentText();
-//     }
-//
-//     // Dispatch the event to open the modal, passing the extracted data.
-//     // The modal's listener will use this data to pre-fill the form.
-//     window.dispatchEvent(new CustomEvent('open-save-modal', {
-//         detail: {
-//             name: powerName,
-//             description: powerDescription,
-//             category: '' // Category can be set by the user in the modal
-//         }
-//     }));
-// }
 
-// TODO put this inside init() ?
 // Attach the function to the window object to make it globally accessible from HTML
 window.prepareAndOpenSaveModal = prepareAndOpenSaveModal;
 
@@ -157,8 +130,166 @@ async function handleDeletePower(powerId) {
 
 window.handleDeletePower = handleDeletePower;
 
+
+
 // --- Main Application Logic ---
 async function init() {
+    Blockly.dialog.setPrompt((message, defaultValue, callback) => {
+        window.isBlocklyPromptOpen = true;
+
+        // 1. Preemptively blur the active element to satisfy the FocusManager
+        if (document.activeElement) {
+            document.activeElement.blur();
+        }
+
+        window.dispatchEvent(new CustomEvent('blockly-prompt', {
+            detail: {
+                message,
+                defaultValue,
+                onComplete: (value) => {
+                    window.isBlocklyPromptOpen = false;
+                    callback(value);
+                    // Return focus once the modal is gone
+                    workspace.markFocused();
+                }
+            }
+        }));
+    });
+    // Blockly.dialog.setPrompt((message, defaultValue, callback) => {
+    //     // Set a flag that the flyout override can see
+    //     window.isBlocklyPromptOpen = true;
+    //
+    //     window.dispatchEvent(new CustomEvent('blockly-prompt', {
+    //         detail: {
+    //             message,
+    //             defaultValue,
+    //             onComplete: (value) => {
+    //                 // Reset flag
+    //                 window.isBlocklyPromptOpen = false;
+    //
+    //                 // Execute Blockly's callback with the user's input
+    //                 callback(value);
+    //
+    //                 // Tell the FocusManager exactly where to go now
+    //                 workspace.markFocused();
+    //             }
+    //         }
+    //     }));
+    // });
+    // Override the default Blockly prompt
+    // Blockly.dialog.setPrompt((message, defaultValue, callback) => {
+    //     console.log("Custom Blockly prompt triggered");
+    //     window.dispatchEvent(new CustomEvent('blockly-prompt', {
+    //         detail: { message, defaultValue, callback }
+    //     }));
+    // });
+    //
+    // // Optionally override Alert and Confirm as well for a consistent UI
+    // Blockly.dialog.setAlert((message, callback) => {
+    //     alert(message); // You can replace these with Alpine modals too
+    //     callback();
+    // });
+    //
+    // Blockly.dialog.setConfirm((message, callback) => {
+    //     callback(confirm(message));
+    // });
+
+    // 1. Variable to track the last executed power ID
+    let lastExecutedPowerId = null;
+
+    /**
+     * Sends a request to the backend to cancel the currently running power.
+     */
+    async function handleCancelPower() {
+        if (!lastExecutedPowerId) {
+            console.log("No power is currently tracked as running.");
+            // We can still send the command without an ID if the backend
+            // supports cancelling the "latest" power.
+        }
+
+        console.log(`Requesting cancellation for power ID: ${lastExecutedPowerId}`);
+
+        // Call your existing magic command API
+        const output = await executeIPythonCommand('%mc_cancel_power', lastExecutedPowerId || '');
+
+        if (output) {
+            console.log("Cancel Output:", output);
+        }
+    }
+
+    // 1. A more robust focus tracker
+    let currentInput = null;
+
+    document.addEventListener('focusin', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+            currentInput = e.target;
+            console.log("Keyboard target switched to:", currentInput);
+
+            if (keyboardInstance) {
+                keyboardInstance.setInput(currentInput.value);
+            }
+        }
+    });
+
+
+    const keyboardInstance = new Keyboard({
+        onChange: input => {
+            if (currentInput) {
+                currentInput.value = input;
+                // Trigger input event for Alpine.js/Blockly reactivity
+                currentInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        },
+        onKeyPress: button => {
+        // 1. Handle Manual Toggles
+        if (button === "{shift}" || button === "{lock}") {
+          const currentLayout = keyboardInstance.options.layoutName;
+          const nextLayout = currentLayout === "default" ? "shift" : "default";
+          keyboardInstance.setOptions({ layoutName: nextLayout });
+        }
+        else if (button === "{numpad}") {
+          keyboardInstance.setOptions({ layoutName: "numpad" });
+        }
+        else if (button === "{abc}") {
+          keyboardInstance.setOptions({ layoutName: "default" });
+        }
+        // 2. NON-STICKY SHIFT: If a standard key is pressed while in shift mode,
+        // reset the layout to default automatically.
+        else if (keyboardInstance.options.layoutName === "shift" && !button.includes("{")) {
+          keyboardInstance.setOptions({ layoutName: "default" });
+        }
+      },
+      layout: {
+        'default': [
+          '1 2 3 4 5 6 7 8 9 0 - {bksp}',
+          'q w e r t y u i o p [ ]',
+          'a s d f g h j k l ; \'',
+          '{shift} z x c v b n m , . /',
+          '{numpad} {space}' // Added numpad toggle button
+        ],
+        'shift': [
+          '! @ # $ % ^ & * ( ) _ {bksp}',
+          'Q W E R T Y U I O P { }',
+          'A S D F G H J K L : "',
+          '{shift} Z X C V B N M < > ?',
+          '{numpad} {space}' // Keep toggle accessible in shift mode
+        ],
+        'numpad': [
+          '1 2 3',
+          '4 5 6',
+          '7 8 9',
+          '{abc} 0 . {bksp}' // Added ABC toggle to go back
+        ]
+      },
+      display: {
+        '{shift}': 'Shift',
+        '{bksp}': '⌫',
+        '{space}': 'Space',
+        '{numpad}': '123', // Label for the numpad toggle
+        '{abc}': 'ABC'      // Label to switch back to text
+      },
+      preventMouseDownDefault: true
+    });
 
     /**
      * Sends a command and its arguments to the Flask server's IPython endpoint.
@@ -565,8 +696,15 @@ async function init() {
     // Later, this could load from an autosave or a default file.
     workspace = Blockly.inject('blocklyDiv', {
         toolbox: toolboxXml,
+        trashcan: {
+            // You can set vertical and horizontal positions
+            position: {
+              vertical: 'top',
+              horizontal: 'right'
+            }
+        },
         grid: {
-            spacing: 20,
+            spacing: 26,
             length: 3,
             colour: '#ccc',
             snap: true
@@ -584,6 +722,51 @@ async function init() {
             drag: true,
             wheel: false // Usually false if you have zoom on wheel
         }
+    });
+
+    // 1. Get the flyout instance
+    const flyout = workspace.getFlyout();
+
+    // 2. Override the auto-hide behavior
+    // We preserve the original function in case we need to call it manually
+    const originalHide = flyout.hide;
+
+    // flyout.hide = function() {
+    //   // By doing nothing here, the flyout stays open when you drag a block!
+    //   console.log("Flyout tried to hide, but we're staying open.");
+    // };
+    flyout.hide = function() {
+        // If we are currently showing a prompt, ALLOW the hide.
+        // This cleans up the internal focus state so the console doesn't crash.
+        if (window.isBlocklyPromptOpen) {
+            originalHide.call(this);
+            return;
+        }
+
+        // Otherwise, stay open for Oscar's dragging
+        console.log("Flyout kept open for dragging.");
+    };
+    // 3. Optional: Close it only when clicking the workspace background
+    workspace.addChangeListener((event) => {
+      if (event.type === Blockly.Events.CLICK && !event.blockId) {
+        // If they click the empty workspace, then we actually hide it
+        originalHide.call(flyout);
+      }
+    });
+
+    workspace.addChangeListener((event) => {
+      if (event.type === Blockly.Events.VAR_CREATE || event.type === Blockly.Events.VAR_RENAME) {
+        const toolbox = workspace.getToolbox();
+        if (toolbox) {
+          // Small delay ensures the workspace has regained focus from the prompt
+          setTimeout(() => {
+            const item = toolbox.getPreviouslySelectedItem();
+            if (item) {
+              toolbox.setSelectedItem(item);
+            }
+          }, 50);
+        }
+      }
     });
 
     initializeHtmxListeners();
@@ -846,37 +1029,87 @@ async function init() {
         return null;
     }
     // --- Wire up the "Execute (Debug)" Button ---
+    /**
+     * Removes ANSI escape codes (used for terminal colors) from a string.
+     * @param {string} str The string to clean.
+     * @returns {string} The cleaned string.
+     */
+    function stripAnsi(str) {
+        // This regex targets the standard escape sequences used by terminal libraries like 'rich'
+        const ansiRegex = /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g;
+        return str.replace(ansiRegex, '');
+    }
+
     const executeButton = document.getElementById('executePowerButton');
     if (executeButton) {
         executeButton.addEventListener('click', async () => {
-            console.log("Execute (Debug) button clicked.");
-
-            // 1. Build the complete payload using our new helper function
             const payload = buildDebugPayload(workspace);
+            if (!payload) return;
 
-            // If payload is null, it means the workspace wasn't set up correctly for debugging.
-            if (!payload) {
-                return;
-            }
-
-            // For display, show the full script that will be executed
-            const codeDisplay = document.getElementById('pythonCodeDisplay');
-            if (codeDisplay) {
-                codeDisplay.textContent = payload.code;
-                if(window.Prism) Prism.highlightElement(codeDisplay);
-            }
-
-            // 2. Define the new magic command and prepare the arguments
             const command = '%mc_debug_and_define';
-
-            // The argument is the full payload object, stringified as JSON
             const output = await executeIPythonCommand(command, JSON.stringify(payload));
 
             if (output) {
-                alert("Debug Output:\n\n" + output);
+                // 1. Strip the color codes from the entire output
+                const cleanOutput = stripAnsi(output);
+                console.log("Cleaned Output for parsing:", cleanOutput);
+
+                // 2. Use a simple regex on the clean text
+                const idMatch = cleanOutput.match(/MCED_EXECUTION_ID:(\S+)/);
+
+                if (idMatch && idMatch[1]) {
+                    lastExecutedPowerId = idMatch[1];
+                    console.log(`Tracking Power ID for cancellation: ${lastExecutedPowerId}`);
+                }
             }
         });
     }
+
+    // 3. New Cancel Button Listener
+    const cancelBtn = document.getElementById('cancelPowerButton');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', async () => {
+            // Fallback to empty string so the backend prints usage instead of crashing
+            const idToCancel = lastExecutedPowerId || '';
+
+            console.log(`Requesting cancel for ID: ${idToCancel}`);
+            await executeIPythonCommand('%mc_cancel_power', idToCancel);
+
+            // Clear the ID after a cancellation attempt
+            lastExecutedPowerId = null;
+        });
+    }
+    // const executeButton = document.getElementById('executePowerButton');
+    // if (executeButton) {
+    //     executeButton.addEventListener('click', async () => {
+    //         console.log("Execute (Debug) button clicked.");
+    //
+    //         // 1. Build the complete payload using our new helper function
+    //         const payload = buildDebugPayload(workspace);
+    //
+    //         // If payload is null, it means the workspace wasn't set up correctly for debugging.
+    //         if (!payload) {
+    //             return;
+    //         }
+    //
+    //         // For display, show the full script that will be executed
+    //         const codeDisplay = document.getElementById('pythonCodeDisplay');
+    //         if (codeDisplay) {
+    //             codeDisplay.textContent = payload.code;
+    //             if(window.Prism) Prism.highlightElement(codeDisplay);
+    //         }
+    //
+    //         // 2. Define the new magic command and prepare the arguments
+    //         const command = '%mc_debug_and_define';
+    //
+    //         // The argument is the full payload object, stringified as JSON
+    //         const output = await executeIPythonCommand(command, JSON.stringify(payload));
+    //
+    //         if (output) {
+    //             console.log("Debug Output:\n\n" + output);
+    //         }
+    //     });
+    // }
 
 
     document.body.addEventListener('loadPower', function(event) {
@@ -1002,7 +1235,36 @@ async function init() {
 
     window.triggerBlocklyResize = triggerBlocklyResize;
 
+    // ------------------------------------------------------------------------------
+    const mainLayout = document.querySelector('.editor-layout');
 
+    // Listen for the end of the width transition on side panels
+    mainLayout.addEventListener('transitionend', (e) => {
+        if (e.propertyName === 'width') {
+            window.triggerBlocklyResize(); // Use your existing helper
+
+            const widgetDiv = Blockly.WidgetDiv.getDiv();
+            const blocklyInputObserver = new MutationObserver(() => {
+                const blocklyInput = widgetDiv.querySelector('input');
+                if (blocklyInput) {
+                }
+    });
+
+    // // 2. Sync the keyboard whenever a Blockly editor opens
+    // const widgetDiv = Blockly.WidgetDiv.getDiv();
+    // const syncObserver = new MutationObserver(() => {
+    //     const activeInput = widgetDiv.querySelector('input');
+    //     if (activeInput && keyboardInstance) {
+    //         keyboardInstance.setInput(activeInput.value);
+    //     }
+    // });
+    // syncObserver.observe(widgetDiv, { childList: true });
+activeElement = blocklyInput;
+            keyboardInstance.setInput(activeElement.value);
+        }
+    });
+
+    blocklyInputObserver.observe(widgetDiv, { childList: true });
     // --- TEMPORARY DEBUGGING LISTENER ---
     // Add this anywhere inside the init() function.
     document.body.addEventListener('library-changed', (event) => {
@@ -1017,6 +1279,11 @@ async function init() {
         // alert(`Delete event dispatched for power name: ${event.detail.powerName}`);
     });
     // --- END OF DEBUGGING LISTENER ---
+
+    // Ensure sidebars are physically collapsed and Blockly is resized for portrait mode
+    if (window.triggerBlocklyResize) {
+        window.triggerBlocklyResize();
+    }
 }
 
 // --- Main Execution ---

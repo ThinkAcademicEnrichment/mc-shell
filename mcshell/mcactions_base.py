@@ -1,21 +1,15 @@
 from mcshell.mcplayer import MCPlayer
 from mcshell.constants import *
-import time
-import numpy as np
-import pickle
-from typing import Optional
 
-# Advanced Digital Geometry and Turtle
 from mcshell.mcturtle import (
     DigitalTurtle,
-    generate_metric_ball,
-    generate_digital_plane_coordinates as generate_arithmetic_plane,
-    generate_linear_path,
+    QTurtle,
     DigitalSet
 )
 
 # Global turtle instance (needed by subclasses)
 _GLOBAL_TURTLE = DigitalTurtle()
+_GLOBAL_QTURTLE = QTurtle()
 
 class MCActionsBase:
     """
@@ -109,13 +103,60 @@ class MCActionsBase:
 class Pickers:
     """Registry of custom picker options for blocks (Dropdown menus)."""
     Metric = [("Euclidean", "euclidean"), ("Manhattan", "manhattan"), ("Chebyshev", "chebyshev")]
-    Direction = [("Forward", "forward"), ("Back", "back"), ("Up", "up"), ("Down", "down"), ("Left", "left"), ("Right", "right")]
     Axis = [("Yaw (Y)", "y"), ("Pitch (X)", "x"), ("Roll (Z)", "z")]
     Compass = [
         ("North (-Z)", "N"), ("South (+Z)", "S"),
         ("East (+X)", "E"), ("West (-X)", "W"),
         ("North-East", "NE"), ("North-West", "NW"),
         ("South-East", "SE"), ("South-West", "SW")]
+
+    QCompass = [
+        # --- Pure Cardinal Directions (6) ---
+        ("North (-Z)", "N"), ("South (+Z)", "S"),
+        ("East (+X)", "E"), ("West (-X)", "W"),
+        ("Up (+Y)", "U"), ("Down (-Y)", "D"),
+
+        # --- Horizontal Diagonals (4) ---
+        ("North-East", "NE"), ("North-West", "NW"),
+        ("South-East", "SE"), ("South-West", "SW"),
+
+        # --- Vertical Diagonals (Planar) (8) ---
+        ("North-Up", "NU"), ("North-Down", "ND"),
+        ("South-Up", "SU"), ("South-Down", "SD"),
+        ("East-Up", "EU"), ("East-Down", "ED"),
+        ("West-Up", "WU"), ("West-Down", "WD"),
+
+        # --- Full 3D Diagonals (Corners) (8) ---
+        ("North-East-Up", "NEU"), ("North-East-Down", "NED"),
+        ("North-West-Up", "NWU"), ("North-West-Down", "NWD"),
+        ("South-East-Up", "SEU"), ("South-East-Down", "SED"),
+        ("South-West-Up", "SWU"), ("South-West-Down", "SWD")
+    ]
+
+    Direction = [("Forward", "forward"), ("Back", "back"), ("Up", "up"), ("Down", "down"), ("Left", "left"), ("Right", "right")]
+
+    QDirection = [
+        # --- Pure Local Directions (6) ---
+        ("Forward", "F"), ("Back", "B"),
+        ("Right", "R"), ("Left", "L"),
+        ("Up", "U"), ("Down", "D"),
+
+        # --- Local Planar Diagonals (4) ---
+        ("Forward-Right", "FR"), ("Forward-Left", "FL"),
+        ("Back-Right", "BR"), ("Back-Left", "BL"),
+
+        # --- Local Vertical Diagonals (8) ---
+        ("Forward-Up", "FU"), ("Forward-Down", "FD"),
+        ("Back-Up", "BU"), ("Back-Down", "BD"),
+        ("Right-Up", "RU"), ("Right-Down", "RD"),
+        ("Left-Up", "LU"), ("Left-Down", "LD"),
+
+        # --- Local 3D Diagonals (Corners) (8) ---
+        ("Forward-Right-Up", "FRU"), ("Forward-Right-Down", "FRD"),
+        ("Forward-Left-Up", "FLU"), ("Forward-Left-Down", "FLD"),
+        ("Back-Right-Up", "BRU"), ("Back-Right-Down", "BRD"),
+        ("Back-Left-Up", "BLU"), ("Back-Left-Down", "BLD")
+    ]
 
     Time = [
         ("Day (1000)", "day"),

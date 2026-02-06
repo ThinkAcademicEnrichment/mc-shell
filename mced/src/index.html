@@ -7,10 +7,7 @@
         <link rel="stylesheet" href="./editor.css">
 
     </head>
-    <body x-data="{
-        isLibraryCollapsed: false,
-        isCodeCollapsed: false
-    }">
+    <body x-data="{ isLibraryCollapsed: true, isCodeCollapsed: true, keyboardVisible: false }">
             <div class="editor-layout" :class="{ 'library-collapsed': isLibraryCollapsed, 'code-collapsed': isCodeCollapsed }">
                 <aside id="power-library-panel">
 
@@ -34,11 +31,21 @@
 
                 <main id="main-content-panel">
                     <div id="controls">
+                        <button @click="isLibraryCollapsed = !isLibraryCollapsed">Toggle Library</button>
+                        <button @click="isCodeCollapsed = !isCodeCollapsed">Toggle Code</button>
+
                         <button id="savePowerAsButton" @click="prepareAndOpenSaveModal()">Save/Update Power...</button>
                         <button id="loadPowerFromFileButton">Load from File...</button>
 
                         <button id="executePowerButton">Execute (Debug)</button>
+                        <button id="cancelPowerButton" style="background-color: #d9534f; color: white;">Cancel Power</button>
                         <button id="clearWorkspaceButton">Clear Workspace</button>
+                        <button
+                            class="control-button"
+                            @click="keyboardVisible = !keyboardVisible"
+                            :class="keyboardVisible ? 'btn-active' : ''">
+                            <i class="fas fa-keyboard"></i> Toggle Keyboard
+                        </button>
                     </div>
                     <div id="blocklyDiv"></div>
                 </main>
@@ -132,9 +139,44 @@
                         </div>
                     </div>
                 </div>
+
+                <div x-data="{
+                        show: false,
+                        message: '',
+                        defaultValue: '',
+                        callback: null,
+                        inputValue: ''
+                     }"
+                     @blockly-prompt.window="
+                        show = true;
+                        message = $event.detail.message;
+                        defaultValue = $event.detail.defaultValue;
+                        /* Change this line to use onComplete */
+                        callback = $event.detail.onComplete;
+                        /* callback = $event.detail.callback; */
+                        inputValue = $event.detail.defaultValue;
+                        // Use nextTick to wait for the modal to be visible before focusing
+                        $nextTick(() => { $refs.promptInput.focus(); });
+                     "
+                     x-show="show"
+                     class="modal-overlay"
+                     style="z-index: 35000;"> <div class="modal-content">
+                        <p x-text="message"></p>
+                        <input type="text" x-model="inputValue" @keyup.enter="callback(inputValue); show = false;">
+                        <div class="modal-buttons">
+                            <button @click="callback(inputValue); show = false;">OK</button>
+                            <button @click="callback(null); show = false;">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </template>
 
         <script type="module" src="./index.js"></script>
+        <div class="simple-keyboard"
+             x-show="keyboardVisible"
+             style="position: fixed; bottom: 0; left: 0; width: 100%; z-index: 20000; background: white;">
+        </div>
     </body>
 </html>

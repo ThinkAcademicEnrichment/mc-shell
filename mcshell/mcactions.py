@@ -6,7 +6,7 @@ import pickle
 from typing import Optional
 
 # Import the Base Action Class
-from mcshell.mcactions_base import MCActionsBase, Pickers, _GLOBAL_TURTLE
+from mcshell.mcactions_base import MCActionsBase, Pickers, _GLOBAL_TURTLE, _GLOBAL_QTURTLE
 
 from mcshell.mcvoxel_original import (
     generate_digital_tetrahedron_coordinates,
@@ -62,48 +62,7 @@ class TurtleShapes(MCActionsBase):
         output_type="Digital_Set"
     )
     def get_arithmetic_plane(self, normal: 'Vec3', side_length: int) -> DigitalSet:
-        # Note: Depending on implementation, normal might be expected as a string from picker or Vec3.
-        # The reference shows it taking a 'Vec3' type hint but likely getting a string from picker in JS?
-        # The reference implementation:
-        # normal={'label': 'Normal', 'options': Pickers.Axis},
-        # def get_arithmetic_plane(self, normal: str, side_length: int) -> DigitalSet:
-        # But here you have normal: 'Vec3' in previous version.
-        # Reference file says: normal={'label': 'Normal', 'options': Pickers.Axis}
-        # and signature: def get_arithmetic_plane(self, normal: str, side_length: int) -> DigitalSet:
-
-        # However, the previous code I generated had:
-        # def get_arithmetic_plane(self, normal: 'Vec3', side_length: int) -> DigitalSet:
-        # return generate_arithmetic_plane(normal.to_tuple(), ...)
-
-        # I must stick to the REFERENCE decorators.
-        # Reference for get_arithmetic_plane:
-        # @mced_block(..., normal={'label': 'Normal', 'options': Pickers.Axis}, ...)
-        # def get_arithmetic_plane(self, normal: str, side_length: int) -> DigitalSet:
-
-        # Wait, if I change it to string, I need to convert string 'x','y','z' to vector?
-        # generate_arithmetic_plane expects a tuple/vector.
-        # If the picker returns "x", "y", "z", I need to handle that.
-        # The mcvoxel_original.py or mcturtle.py likely handles this?
-        # Let's look at mcturtle.py if possible? No time.
-        # I will implement conversion here for safety if switching to picker.
-
-        # Actually, looking at the reference file snippet provided in chat history isn't complete for this method.
-        # But if I use Pickers.Axis, the value is "x", "y", or "z".
-
-        # Let's assume the previous version was actually correct for YOUR usage if you want a vector input.
-        # But if you want the picker (as requested "correct decorators"), I must use options.
-
-        # Let's stick to the previous working version for this specific block unless reference contradicts.
-        # The user specifically mentioned "Compass" shadow.
-        pass
         return generate_arithmetic_plane(normal.to_tuple(), (0,0,0), (side_length, side_length))
-
-    # CORRECTING get_arithmetic_plane to match the structure of a picker input if that was intended
-    # BUT since I cannot see the full reference for this specific method, I will keep the one that takes a Vec3
-    # to be safe, as that was working.
-    # Actually, looking at the `mcactions.py` uploaded, let me double check.
-    # It is not in the snippets. I will assume the previous one was okay for this,
-    # but I will fix `get_line` which IS in the snippets? No.
 
     @mced_block(
         label="Digital Shape: Arithmetic Plane (Square)",
@@ -113,7 +72,6 @@ class TurtleShapes(MCActionsBase):
     )
     def get_arithmetic_plane(self, normal: 'Vec3', side_length: int) -> DigitalSet:
         return generate_arithmetic_plane(normal.to_tuple(), (0,0,0), (side_length, side_length))
-
 
     @mced_block(
         label="Digital Shape: Line",
@@ -353,6 +311,11 @@ class PlayerActions(MCActionsBase):
         """Returns the direction the player is looking as a unit vector."""
         return self.mcplayer.direction
 
+    @mced_block(label="Get Q Direction", output_type="3DVector")
+    def get_direction(self):
+        """Returns the quantized direction the player is looking as a unit vector."""
+        return self.mcplayer.q_direction
+
     @mced_block(
         label="Set Direction",
         direction={'label': 'Direction Vector'}
@@ -406,7 +369,6 @@ class PlayerActions(MCActionsBase):
     def set_compass_direction(self, dir: 'Compass'):
         self.mcplayer.set_compass_direction(dir)
 
-    # depprecated; just for porting
     @mced_block(
         label="Get Player Compass Direction",
         output_type='Compass',
@@ -421,14 +383,160 @@ class PlayerActions(MCActionsBase):
     def set_position(self, pos: 'Vec3'):
         self.mcplayer.set_position(pos)
 
-class MCActions(LSystemShapes, PlayerActions, TurtleShapes, TurtleActions, DigitalGeometry, WorldActions, PyncraftActions, EventActions, ServerActions):
+    @mced_block(
+        label="Get Player QCompass Direction",
+        output_type='QCompass',
+    )
+    def get_q_compass_direction(self):
+        return self.mcplayer.q_compass_direction
+
+    @mced_block(
+        label="Set Player Q Compass Direction",
+        dir={'label': 'Q Direction'}
+    )
+    def set_compass_q_direction(self, dir: 'QCompass'):
+        self.mcplayer.set_q_compass_direction(dir)
+
+class QTurtleActions(MCActionsBase):
+    def __init__(self, mc_player_instance, delay_between_blocks=0.001):
+        super().__init__(mc_player_instance, delay_between_blocks)
+        self.turtle = _GLOBAL_QTURTLE
+
+    @mced_block(
+        label="QTurtle: Reset to",
+        position={'label': 'Position'},
+        orientation={'label': 'Facing'}
+    )
+    def reset(self, position, heading_q_str:'QCompass'='N'):
+        """
+        Resets the turtle to a specific position and aligns its Forward vector
+        with the specified Global Q-Direction (e.g., 'N', 'NE', 'SWU').
+
+        It automatically recalculates the orthogonal(ish) Right and Up vectors
+        to form a consistent basis frame.
+        """
+        if position:
+            x, y, z = position.x, position.y, position.z
+        else:
+            pos = self.mcplayer.position
+            x, y, z = pos.x, pos.y, pos.z
+        self.turtle.pos = np.array([int(x), int(y), int(z)], dtype=int)
+
+        # 1. Determine Forward Vector from Global Q-String
+        global_forward = self.turtle._parse_global_q(heading_q_str)
+        if not np.any(global_forward):
+            global_forward = np.array([0, 0, -1]) # Default North (-Z)
+
+        self.turtle.forward = global_forward
+
+        # 2. Determine Up Vector
+        # Standard reference Up is Global Y (0,1,0)
+        ref_up = np.array([0, 1, 0])
+
+        # If Forward is parallel to Reference Up (looking straight Up/Down)
+        # we must choose a different reference for 'Local Up' (usually Global North or South)
+        if np.array_equal(np.abs(global_forward), ref_up):
+            # If looking Up/Down, align Local Up with Global North (-Z) to keep bearing
+            ref_up = np.array([0, 0, -1])
+
+        # 3. Calculate Right Vector (Cross Product)
+        # Right = Forward x Up
+        right_raw = np.cross(self.turtle.forward, ref_up)
+
+        # If cross product is zero (shouldn't happen due to parallel check above, but for safety)
+        if not np.any(right_raw):
+             self.turtle.right = np.array([1, 0, 0])
+        else:
+             # Quantize/Normalize the result to stay on lattice
+             # Simple sign extraction works for 90-degree components,
+             # but for diagonals we need to preserve the non-zero integers.
+             # Since we want integer steps, we keep the raw cross product if it's small,
+             # or simplify it if it's a scaled version of a primitive direction.
+             self.turtle.right = self.turtle._quantize_vector(right_raw)
+
+        # 4. Recalculate Up Vector to ensure orthogonality
+        # Up = Right x Forward
+        up_raw = np.cross(self.turtle.right, self.turtle.forward)
+        self.turtle.up = self.turtle._quantize_vector(up_raw)
+
+        # Clear state stack
+        self.turtle.stack = []
+
+    @mced_block(
+        label="QTurtle: Move",
+        direction={'label': 'Direction' },
+        distance={'label': 'Distance', 'shadow': '<shadow type="math_number"><field name="NUM">1</field></shadow>'}
+    )
+    def turtle_move(self, direction: 'QDirection', distance: int):
+        self.turtle.move(distance, direction)
+
+    @mced_block(
+        label="QTurtle: Rotate 90",
+        axis={'label': 'Axis'},
+        steps={'label': 'Steps (90 deg)', 'shadow': '<shadow type="math_number"><field name="NUM">1</field></shadow>'}
+    )
+    def turtle_rotate(self, axis: 'Axis', steps: int):
+        self.turtle.rotate_90(axis, steps)
+
+    @mced_block(label="QTurtle: Push State")
+    def turtle_push(self):
+        self.turtle.push_state()
+
+    @mced_block(label="QTurtle: Pop State")
+    def turtle_pop(self):
+        self.turtle.pop_state()
+
+    @mced_block(label="QTurtle: Set Brush", shape={'label': 'Shape', 'check': 'Digital_Set'})
+    def turtle_set_brush(self, shape: DigitalSet):
+        self.turtle.set_brush(shape)
+
+    @mced_block(label="QTurtle: Capture Brush", shape={'label': 'Shape', 'check': 'Digital_Set'})
+    def turtle_capture_brush(self, shape: DigitalSet):
+        self.turtle.capture_brush(shape)
+
+    @mced_block(label="QTurtle: Stamp Brush", block_type={'label': 'Material'})
+    def turtle_stamp(self, block_type: 'Block'):
+        shape = self.turtle.stamp()
+        self._place_digital_set(shape, block_type)
+
+    @mced_block(
+        label="QTurtle: Extrude Brush",
+        length={'label': 'Length', 'shadow': '<shadow type="math_number"><field name="NUM">5</field></shadow>'},
+        direction={'label': 'Direction'},
+        block_type={'label': 'Material'}
+    )
+    def turtle_extrude(self, length: int, direction: 'QDirection', block_type: 'Block'):
+        shape = self.turtle.extrude(length,direction)
+        self._place_digital_set(shape, block_type)
+
+    @mced_block(
+        label="QTurtle: Position",
+        output_type="3DVector"
+    )
+    def turtle_position(self):
+        return Vec3(*self.turtle.pos)
+#
+# class MCActions(LSystemShapes, PlayerActions, TurtleShapes, TurtleActions, DigitalGeometry, WorldActions, PyncraftActions, EventActions, ServerActions, QTurtleActions):
+#     """
+#     Unified API for Blockly combining all action groups.
+#     """
+#     def __init__(self, mc_player_instance, delay_between_blocks=0.001):
+#         # Initialize all parent classes properly
+#         MCActionsBase.__init__(self, mc_player_instance, delay_between_blocks)
+#         TurtleActions.__init__(self, mc_player_instance, delay_between_blocks)
+#         QTurtleActions.__init__(self, mc_player_instance, delay_between_blocks)
+#         LSystemShapes.__init__(self, mc_player_instance)
+#         PyncraftActions.__init__(self, mc_player_instance, delay_between_blocks)
+#         EventActions.__init__(self, mc_player_instance, delay_between_blocks)
+#         ServerActions.__init__(self, mc_player_instance, delay_between_blocks)
+class MCActions(LSystemShapes, PlayerActions, TurtleShapes, DigitalGeometry, WorldActions, PyncraftActions, EventActions, ServerActions, QTurtleActions):
     """
     Unified API for Blockly combining all action groups.
     """
-    def __init__(self, mc_player_instance, delay_between_blocks=0.01):
+    def __init__(self, mc_player_instance, delay_between_blocks=0.001):
         # Initialize all parent classes properly
         MCActionsBase.__init__(self, mc_player_instance, delay_between_blocks)
-        TurtleActions.__init__(self, mc_player_instance, delay_between_blocks)
+        QTurtleActions.__init__(self, mc_player_instance, delay_between_blocks)
         LSystemShapes.__init__(self, mc_player_instance)
         PyncraftActions.__init__(self, mc_player_instance, delay_between_blocks)
         EventActions.__init__(self, mc_player_instance, delay_between_blocks)

@@ -1,5 +1,25 @@
 
 export function definePlayerActionsGenerators(pythonGenerator) {
+
+    pythonGenerator.forBlock['picker_direction'] = function(block, generator) {
+        const code = block.getFieldValue('VALUE');
+        return [`'${code}'`, generator.ORDER_ATOMIC];
+    };
+
+
+    pythonGenerator.forBlock['picker_axis'] = function(block, generator) {
+        const code = block.getFieldValue('VALUE');
+        return [`'${code}'`, generator.ORDER_ATOMIC];
+    };
+
+
+    pythonGenerator.forBlock['picker_compass'] = function(block, generator) {
+        const code = block.getFieldValue('VALUE');
+        return [`'${code}'`, generator.ORDER_ATOMIC];
+    };
+
+
+
 pythonGenerator.forBlock['player_actions_get_compass_direction'] = function(block, generator) {
     
     const code = `self.action_implementer.get_compass_direction()`;
@@ -18,6 +38,11 @@ pythonGenerator.forBlock['player_actions_get_direction'] = function(block, gener
 pythonGenerator.forBlock['player_actions_get_position'] = function(block, generator) {
     
     const code = `self.action_implementer.get_position()`;
+    return [code, generator.ORDER_FUNCTION_CALL];
+};
+pythonGenerator.forBlock['player_actions_get_q_compass_direction'] = function(block, generator) {
+    
+    const code = `self.action_implementer.get_q_compass_direction()`;
     return [code, generator.ORDER_FUNCTION_CALL];
 };
 pythonGenerator.forBlock['player_actions_get_tile_position'] = function(block, generator) {
@@ -40,6 +65,10 @@ pythonGenerator.forBlock['player_actions_send_title'] = function(block, generato
 pythonGenerator.forBlock['player_actions_set_compass_direction'] = function(block, generator) {
     const dir = generator.valueToCode(block, 'DIR', generator.ORDER_ATOMIC) || 'None';
     return `self.action_implementer.set_compass_direction(dir=${dir})\n`;
+};
+pythonGenerator.forBlock['player_actions_set_compass_q_direction'] = function(block, generator) {
+    const dir = generator.valueToCode(block, 'DIR', generator.ORDER_ATOMIC) || 'None';
+    return `self.action_implementer.set_compass_q_direction(dir=${dir})\n`;
 };
 pythonGenerator.forBlock['player_actions_set_direction'] = function(block, generator) {
     const direction = generator.valueToCode(block, 'DIRECTION', generator.ORDER_ATOMIC) || 'None';

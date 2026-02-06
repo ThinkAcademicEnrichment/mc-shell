@@ -530,31 +530,23 @@
     <block type="turtle_shapes_get_metric_ball" />
     <block type="picker_metric" />
   </category>
-  <category name="Turtle Actions" colour="#C7F32B">
-    <block type="turtle_actions_turtle_extrude" />
-    <block type="turtle_actions_turtle_move" />
-    <block type="turtle_actions_turtle_pop" />
-    <block type="turtle_actions_turtle_push" />
-    <block type="turtle_actions_turtle_reset" />
-    <block type="turtle_actions_turtle_rotate" />
-    <block type="turtle_actions_turtle_set_brush" />
-    <block type="turtle_actions_turtle_stamp" />
-    <block type="picker_direction" />
-    <block type="picker_axis" />
-    <block type="picker_compass" />
-  </category>
   <category name="Player Actions" colour="#3ECDE0">
     <block type="player_actions_get_compass_direction" />
     <block type="player_actions_get_compass_direction_by_name" />
     <block type="player_actions_get_direction" />
     <block type="player_actions_get_position" />
+    <block type="player_actions_get_q_compass_direction" />
     <block type="player_actions_get_tile_position" />
     <block type="player_actions_get_tile_position_by_name" />
     <block type="player_actions_send_title" />
     <block type="player_actions_set_compass_direction" />
+    <block type="player_actions_set_compass_q_direction" />
     <block type="player_actions_set_direction" />
     <block type="player_actions_set_position" />
     <block type="player_actions_wait_for_sword_strike" />
+    <block type="picker_direction" />
+    <block type="picker_axis" />
+    <block type="picker_compass" />
   </category>
   <category name="L System Shapes" colour="#75E538">
     <block type="l_system_shapes_define_rule" />
@@ -614,5 +606,20 @@
     <block type="picker_integergamerule" />
     <block type="picker_locatetype" />
     <block type="picker_poi" />
+  </category>
+  <category name="Q Turtle Actions" colour="#F3BA2B">
+    <block type="q_turtle_actions_reset" />
+    <block type="q_turtle_actions_turtle_capture_brush" />
+    <block type="q_turtle_actions_turtle_extrude" />
+    <block type="q_turtle_actions_turtle_move" />
+    <block type="q_turtle_actions_turtle_pop" />
+    <block type="q_turtle_actions_turtle_position" />
+    <block type="q_turtle_actions_turtle_push" />
+    <block type="q_turtle_actions_turtle_rotate" />
+    <block type="q_turtle_actions_turtle_set_brush" />
+    <block type="q_turtle_actions_turtle_stamp" />
+    <block type="picker_qdirection" />
+    <block type="picker_axis" />
+    <block type="picker_qcompass" />
   </category>
 </xml>
