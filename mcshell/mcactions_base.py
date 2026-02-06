@@ -1,17 +1,9 @@
 from mcshell.mcplayer import MCPlayer
 from mcshell.constants import *
-import time
-import numpy as np
-import pickle
-from typing import Optional
 
-# Advanced Digital Geometry and Turtle
 from mcshell.mcturtle import (
     DigitalTurtle,
     QTurtle,
-    generate_metric_ball,
-    generate_digital_plane_coordinates as generate_arithmetic_plane,
-    generate_linear_path,
     DigitalSet
 )
 
