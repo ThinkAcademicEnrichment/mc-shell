@@ -406,8 +406,9 @@ Blockly.Blocks['pyncraft_actions_spawn_entity'] = {
     init: function() {
         this.appendDummyInput().appendField("Spawn Entity");
         this.appendValueInput("POSITION").setCheck("3DVector").setAlign("RIGHT").appendField("At Position");
-        this.appendValueInput("ENTITY_ID").setCheck("Number").setAlign("RIGHT").appendField("Entity ID");
-        this.setOutput(true, "Number");
+        this.appendValueInput("ENTITY").setCheck("Entity").setAlign("RIGHT").appendField("Entity Type");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
         this.setColour(65);
         this.setTooltip("An auto-generated block for the 'Spawn Entity' action.");
         this.setInputsInline(false);
@@ -420,7 +421,11 @@ Blockly.Blocks['pyncraft_actions_spawn_entity'] = {
                     <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
                 </shadow>
         `));
-        this.getInput('ENTITY_ID').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="math_number"><field name="NUM">0</field></shadow>`));
+        this.getInput('ENTITY').connection.setShadowDom(Blockly.utils.xml.textToDom(`
+                <shadow type="minecraft_entity_picker_passive_mobs">
+                    <field name="ENTITY_ID">PIG</field>
+                </shadow>
+        `));
     }
 };
 }

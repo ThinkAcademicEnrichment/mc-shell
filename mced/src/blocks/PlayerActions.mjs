@@ -1,6 +1,64 @@
 import { MCED } from "../lib/constants.mjs";
 
 export function definePlayerActionsBlocks(Blockly) {
+
+    Blockly.Blocks['picker_direction'] = {
+        init: function() {
+            this.appendDummyInput()
+                .appendField("Direction")
+                .appendField(new Blockly.FieldDropdown([
+                ["Forward", "forward"],
+                ["Back", "back"],
+                ["Up", "up"],
+                ["Down", "down"],
+                ["Left", "left"],
+                ["Right", "right"]
+                ]), "VALUE");
+            this.setOutput(true, "Direction");
+            this.setColour(230);
+            this.setTooltip("Select a Direction.");
+        }
+    };
+
+
+    Blockly.Blocks['picker_axis'] = {
+        init: function() {
+            this.appendDummyInput()
+                .appendField("Axis")
+                .appendField(new Blockly.FieldDropdown([
+                ["Yaw (Y)", "y"],
+                ["Pitch (X)", "x"],
+                ["Roll (Z)", "z"]
+                ]), "VALUE");
+            this.setOutput(true, "Axis");
+            this.setColour(230);
+            this.setTooltip("Select a Axis.");
+        }
+    };
+
+
+    Blockly.Blocks['picker_compass'] = {
+        init: function() {
+            this.appendDummyInput()
+                .appendField("Compass")
+                .appendField(new Blockly.FieldDropdown([
+                ["North (-Z)", "N"],
+                ["South (+Z)", "S"],
+                ["East (+X)", "E"],
+                ["West (-X)", "W"],
+                ["North-East", "NE"],
+                ["North-West", "NW"],
+                ["South-East", "SE"],
+                ["South-West", "SW"]
+                ]), "VALUE");
+            this.setOutput(true, "Compass");
+            this.setColour(230);
+            this.setTooltip("Select a Compass.");
+        }
+    };
+
+
+
 Blockly.Blocks['player_actions_get_compass_direction'] = {
     init: function() {
         this.appendDummyInput().appendField("Get Player Compass Direction");
@@ -29,11 +87,11 @@ Blockly.Blocks['player_actions_get_compass_direction_by_name'] = {
 };
 Blockly.Blocks['player_actions_get_direction'] = {
     init: function() {
-        this.appendDummyInput().appendField("Get Direction");
+        this.appendDummyInput().appendField("Get Q Direction");
         
         this.setOutput(true, "3DVector");
         this.setColour(65);
-        this.setTooltip("An auto-generated block for the 'Get Direction' action.");
+        this.setTooltip("An auto-generated block for the 'Get Q Direction' action.");
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
@@ -47,6 +105,19 @@ Blockly.Blocks['player_actions_get_position'] = {
         this.setOutput(true, "3DVector");
         this.setColour(65);
         this.setTooltip("An auto-generated block for the 'Get Player Position' action.");
+        this.setInputsInline(false);
+
+        // Configure shadow blocks directly
+        
+    }
+};
+Blockly.Blocks['player_actions_get_q_compass_direction'] = {
+    init: function() {
+        this.appendDummyInput().appendField("Get Player QCompass Direction");
+        
+        this.setOutput(true, "QCompass");
+        this.setColour(65);
+        this.setTooltip("An auto-generated block for the 'Get Player QCompass Direction' action.");
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
@@ -111,6 +182,20 @@ Blockly.Blocks['player_actions_set_compass_direction'] = {
 
         // Configure shadow blocks directly
         this.getInput('DIR').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="picker_compass"><field name="VALUE">N</field></shadow>`));
+    }
+};
+Blockly.Blocks['player_actions_set_compass_q_direction'] = {
+    init: function() {
+        this.appendDummyInput().appendField("Set Player Q Compass Direction");
+        this.appendValueInput("DIR").setCheck("QCompass").setAlign("RIGHT").appendField("Q Direction");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(65);
+        this.setTooltip("An auto-generated block for the 'Set Player Q Compass Direction' action.");
+        this.setInputsInline(false);
+
+        // Configure shadow blocks directly
+        this.getInput('DIR').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="picker_qcompass"><field name="VALUE">N</field></shadow>`));
     }
 };
 Blockly.Blocks['player_actions_set_direction'] = {
