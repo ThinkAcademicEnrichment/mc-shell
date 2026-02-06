@@ -425,7 +425,7 @@ from typing import List, Set, Tuple
 def generate_digital_cube_coordinates(
     center: Tuple[float, float, float],
     side_length: float,
-    rotation_matrix: np.ndarray,
+    rotation_matrix: np.ndarray = np.eye(3),
     wall_thickness: float = 0.0
 ) -> List[Tuple[int, int, int]]:
     """
