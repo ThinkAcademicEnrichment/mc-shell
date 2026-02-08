@@ -8,7 +8,7 @@ from IPython.core.magic import Magics, magics_class, line_magic,needs_local_scop
 
 from rich.prompt import Prompt
 
-from mcshell.mcrepo import JsonFileRepository
+from mcshell.mcrepo import SQLiteRepository
 from mcshell.mcclient import MCClient
 from mcshell.mcserver import start_app_server,app_server_thread
 from mcshell.mcactions import *
@@ -923,10 +923,11 @@ class MCShell(Magics):
                 })
 
         minecraft_name = self._get_mc_name()
+        power_repo = SQLiteRepository(minecraft_name)
         print("Stopping any running application servers.")
         stop_app_server()
         print(f"Starting application server for authorized Minecraft player: {minecraft_name}")
-        start_app_server(self.server_data,minecraft_name,self.shell)
+        start_app_server(self.server_data,minecraft_name,self.shell,power_repo)
         return
 
     @line_magic

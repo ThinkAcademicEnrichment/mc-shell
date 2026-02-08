@@ -51,18 +51,13 @@ socketio = SocketIO(
 RUNNING_POWERS = {}
 
 # --- Server Control ---
-def start_app_server(server_data,mc_name,ipy_shell):
+def start_app_server(server_data,mc_name,ipy_shell,power_repo):
     """Starts the main Flask-SocketIO application server in a separate thread."""
     # --- Inject the AUTHORITATIVE data into the Flask app config ---
     # The Flask server will now start with the correct, non-spoofable identity.
     app.config['MCSHELL_SERVER_DATA'] = server_data
     app.config['MINECRAFT_PLAYER_NAME'] = mc_name
     app.config['IPYTHON_SHELL'] = ipy_shell
-
-    # --- Instantiate the chosen repository ---
-    # You can later make this configurable (e.g., via an environment variable)
-    # to switch between JsonFileRepository, SqliteRepository, etc.
-    power_repo = JsonFileRepository(mc_name)
     app.config['POWER_REPO'] = power_repo
 
 
