@@ -784,9 +784,7 @@ class MCShell(Magics):
 
             RUNNING_POWERS[execution_id] = {'thread': thread, 'cancel_event': cancel_event}
 
-            power_repo = JsonFileRepository(player_name)
-
-            if power_repo:
+            if RUNNING_POWERS:
                 print(f"--- Power '{metadata.get('function_name')}' metadata defined/updated. ---")
                 print(f"--- Started debug execution with ID: {execution_id} ---")
                 # ADD THIS LINE: A specific prefix for the frontend to find
