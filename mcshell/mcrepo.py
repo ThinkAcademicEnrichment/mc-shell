@@ -8,6 +8,9 @@ from typing import List, Dict, Any, Optional
 
 from mcshell.constants import MC_POWER_LIBRARY_DIR, MC_DATA_DIR
 
+# The identity used when authoring the Standard Library
+AUTHORING_PLAYER = "__system_author__"
+
 class PowerRepository(ABC):
     """Abstract base class defining the interface for storing and retrieving powers."""
     @abstractmethod
@@ -36,7 +39,6 @@ class SQLiteRepository(PowerRepository):
     def _init_db(self):
         MC_POWER_LIBRARY_DIR.mkdir(exist_ok=True, parents=True)
         with self._get_connection() as conn:
-            # Main Powers Table
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS powers (
                     power_id TEXT PRIMARY KEY,
@@ -55,14 +57,41 @@ class SQLiteRepository(PowerRepository):
                     updated_at TIMESTAMP
                 )
             """)
-            # Metadata Table for Versioning
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS metadata (
-                    key TEXT PRIMARY KEY,
-                    value TEXT
-                )
-            """)
+            conn.execute("CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value TEXT)")
             conn.commit()
+
+    def rename_category(self, old_name: str, new_name: str) -> int:
+        """
+        Renames a category across all powers.
+        Also handles sub-categories (e.g., renaming 'A' to 'B' turns 'A/C' into 'B/C').
+        Returns the number of affected powers.
+        """
+        with self._get_connection() as conn:
+            # 1. Update exact matches
+            cursor = conn.execute(
+                "UPDATE powers SET category = ? WHERE category = ?",
+                (new_name, old_name)
+            )
+            count = cursor.rowcount
+
+            # 2. Update sub-category branches (e.g., "Old/Sub" -> "New/Sub")
+            # We look for categories starting with "old_name/"
+            prefix = f"{old_name}/"
+            new_prefix = f"{new_name}/"
+
+            cursor = conn.execute(
+                "UPDATE powers SET category = ? || SUBSTR(category, ?) WHERE category LIKE ? ESCAPE '\\'",
+                (new_name, len(old_name) + 1, f"{old_name}/%")
+            )
+            count += cursor.rowcount
+
+            conn.commit()
+            return count
+
+    def list_categories(self) -> List[str]:
+        with self._get_connection() as conn:
+            cursor = conn.execute("SELECT DISTINCT category FROM powers ORDER BY category")
+            return [row[0] for row in cursor.fetchall() if row[0]]
 
     def _get_meta(self, key: str, default: Any = None) -> Any:
         with self._get_connection() as conn:
@@ -75,96 +104,45 @@ class SQLiteRepository(PowerRepository):
             conn.commit()
 
     def _check_for_updates(self):
-        """Checks if the bundled stdlib.json has a newer version than our database."""
         stdlib_path = MC_DATA_DIR.joinpath('powers/stdlib.json')
-        if not stdlib_path.exists():
-            return
-
+        if not stdlib_path.exists(): return
         try:
             with stdlib_path.open('r') as f:
-                package_data = json.load(f)
-                new_version = package_data.get('version', 0)
-                current_version = int(self._get_meta('stdlib_version', 0))
-
-                if new_version > current_version:
-                    print(f"Updating Standard Library from version {current_version} to {new_version}...")
-                    powers = package_data.get('powers', [])
-                    for power in powers:
-                        power['author'] = 'System'
-                        self.save_power(power)
-                    self._set_meta('stdlib_version', new_version)
-        except Exception as e:
-            print(f"Warning: Standard Library update failed: {e}")
-
-    def list_categories(self) -> List[str]:
-        """Returns a sorted list of unique categories currently in use."""
-        with self._get_connection() as conn:
-            cursor = conn.execute("SELECT DISTINCT category FROM powers WHERE category IS NOT NULL ORDER BY category")
-            # Filter out None and return as a flat list
-            return [row[0] for row in cursor.fetchall() if row[0]]
+                data = json.load(f)
+                new_v, curr_v = data.get('version', 0), int(self._get_meta('stdlib_version', 0))
+                if new_v > curr_v:
+                    for p in data.get('powers', []):
+                        p['author'] = 'System'
+                        self.save_power(p)
+                    self._set_meta('stdlib_version', new_v)
+        except Exception as e: print(f"Update failed: {e}")
 
     def save_power(self, power_data: Dict[str, Any]) -> str:
         power_id = power_data.get("power_id") or str(uuid.uuid4())
         now = datetime.datetime.now().isoformat()
-
-        # Serialization
-        params_json = json.dumps(power_data.get("parameters", []))
-        deps_json = json.dumps(power_data.get("dependencies", []))
-        # Support both objects and pre-serialized strings
+        params, deps = json.dumps(power_data.get("parameters", [])), json.dumps(power_data.get("dependencies", []))
         bj = power_data.get("blockly_json", {})
         blockly_json = json.dumps(bj) if not isinstance(bj, str) else bj
-
         with self._get_connection() as conn:
             conn.execute("""
-                INSERT INTO powers (
-                    power_id, name, description, category, function_name,
-                    parameters, dependencies, blockly_json, python_code,
-                    schema_version, author, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(power_id) DO UPDATE SET
-                    name=excluded.name,
-                    description=excluded.description,
-                    category=excluded.category,
-                    function_name=excluded.function_name,
-                    parameters=excluded.parameters,
-                    dependencies=excluded.dependencies,
-                    blockly_json=excluded.blockly_json,
-                    python_code=excluded.python_code,
-                    updated_at=excluded.updated_at,
-                    author=excluded.author -- Ensure 'System' tag persists on update
-            """, (
-                power_id,
-                power_data.get("name"),
-                power_data.get("description"),
-                power_data.get("category", "General"),
-                power_data.get("function_name"),
-                params_json,
-                deps_json,
-                blockly_json,
-                power_data.get("python_code"),
-                power_data.get("schema_version", "1.0"),
-                power_data.get("author", self.player_name),
-                power_data.get("created_at", now),
-                now
-            ))
+                INSERT INTO powers (power_id, name, description, category, function_name, parameters, dependencies, blockly_json, python_code, author, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(power_id) DO UPDATE SET name=excluded.name, description=excluded.description, category=excluded.category, parameters=excluded.parameters, dependencies=excluded.dependencies, blockly_json=excluded.blockly_json, python_code=excluded.python_code, updated_at=excluded.updated_at
+            """, (power_id, power_data.get("name"), power_data.get("description"), power_data.get("category", "General"), power_data.get("function_name"), params, deps, blockly_json, power_data.get("python_code"), power_data.get("author", self.player_name), power_data.get("created_at", now), now))
             conn.commit()
         return power_id
 
     def list_powers(self) -> List[Dict[str, Any]]:
         with self._get_connection() as conn:
-            cursor = conn.execute("SELECT power_id, name, description, category FROM powers ORDER BY category, name")
-            return [dict(row) for row in cursor.fetchall()]
+            return [dict(row) for row in conn.execute("SELECT power_id, name, description, category FROM powers ORDER BY category, name").fetchall()]
 
     def list_full_powers(self) -> List[Dict[str, Any]]:
         with self._get_connection() as conn:
-            cursor = conn.execute("SELECT * FROM powers")
-            rows = cursor.fetchall()
+            rows = conn.execute("SELECT * FROM powers").fetchall()
             powers = []
-            for row in rows:
-                p = dict(row)
-                p['parameters'] = json.loads(p['parameters'] or '[]')
-                p['dependencies'] = json.loads(p['dependencies'] or '[]')
-                p['blockly_json'] = json.loads(p['blockly_json'] or '{}')
+            for r in rows:
+                p = dict(r)
+                p['parameters'], p['dependencies'], p['blockly_json'] = json.loads(p['parameters'] or '[]'), json.loads(p['dependencies'] or '[]'), json.loads(p['blockly_json'] or '{}')
                 powers.append(p)
             return powers
 
@@ -173,9 +151,7 @@ class SQLiteRepository(PowerRepository):
             row = conn.execute("SELECT * FROM powers WHERE power_id = ?", (power_id,)).fetchone()
             if not row: return None
             p = dict(row)
-            p['parameters'] = json.loads(p['parameters'] or '[]')
-            p['dependencies'] = json.loads(p['dependencies'] or '[]')
-            p['blockly_json'] = json.loads(p['blockly_json'] or '{}')
+            p['parameters'], p['dependencies'], p['blockly_json'] = json.loads(p['parameters'] or '[]'), json.loads(p['dependencies'] or '[]'), json.loads(p['blockly_json'] or '{}')
             return p
 
     def delete_power(self, power_id: str) -> bool:
