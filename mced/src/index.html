@@ -1,157 +1,169 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>MC-ED Editor</title>
-    <link href="./editor.css" rel="stylesheet">
+    <head>
+        <meta charset="utf-8">
+        <title>MC-ED Editor</title>
 
-</head>
-<body x-data="{ isLibraryCollapsed: true, isCodeCollapsed: true, keyboardVisible: false }">
-<div :class="{ 'library-collapsed': isLibraryCollapsed, 'code-collapsed': isCodeCollapsed }" class="editor-layout">
-    <aside id="power-library-panel">
+        <link rel="stylesheet" href="./editor.css">
 
-        <div class="panel-header">
-            <h2 x-show="!isLibraryCollapsed">Power Library</h2>
-            <button @click="
-                                isLibraryCollapsed = !isLibraryCollapsed;
+    </head>
+    <body x-data="{ isLibraryCollapsed: true, isCodeCollapsed: true, keyboardVisible: false }">
+            <!-- Added static classes library-collapsed and code-collapsed to ensure correct initial state -->
+            <div class="editor-layout library-collapsed code-collapsed" :class="{ 'library-collapsed': isLibraryCollapsed, 'code-collapsed': isCodeCollapsed }">
+                <aside id="power-library-panel">
+
+                    <div class="panel-header">
+                        <h2 x-show="!isLibraryCollapsed">Power Library</h2>
+                            <button class="toggle-btn"
+                                @click="
+                                    isLibraryCollapsed = !isLibraryCollapsed;
+                                "
+                                title="Toggle Library Panel">
+                            <span x-text="isLibraryCollapsed ? '▶' : '◀'"></span>
+                        </button>
+                    </div>
+                    <div id="power-list"
+                         hx-get="/api/powers?view=editor"
+                         hx-trigger="load, library-changed from:window" hx-swap="innerHTML">
+
+                        <p style="padding: 0 8px; color: #888;">Loading powers...</p>
+                    </div>
+                </aside>
+
+                <main id="main-content-panel">
+                    <div id="controls">
+                        <button @click="isLibraryCollapsed = !isLibraryCollapsed">Toggle Library</button>
+                        <button id="executePowerButton">Run Power</button>
+                        <button id="cancelPowerButton">Cancel Power</button>
+                        <button @click="window.prepareAndOpenSaveModal()">Save Workspace</button>
+                        <button id="clearWorkspaceButton">Clear Workspace</button>
+                        <button @click="keyboardVisible = !keyboardVisible">Keyboard</button>
+                        <button @click="isCodeCollapsed = !isCodeCollapsed">Toggle Python</button>
+                    </div>
+                    <div id="blocklyDiv"></div>
+                </main>
+
+                <!-- Code Preview Panel: Preserving original structure for CSS compatibility -->
+                <aside id="code-preview-panel">
+                    <div class="panel-header code-header">
+                        <span>Python Code</span>
+                        <button class="toggle-btn" @click="
+                            isCodeCollapsed = !isCodeCollapsed;
                             "
-                    class="toggle-btn"
-                    title="Toggle Library Panel">
-                <span x-text="isLibraryCollapsed ? '▶' : '◀'"></span>
-            </button>
-        </div>
-        <div hx-get="/api/powers?view=editor"
-             hx-swap="innerHTML"
-             hx-trigger="load, library-changed from:window" id="power-list">
+                            title="Toggle Code Preview">
+                            <span x-text="isCodeCollapsed ? '◀' : '▶'"></span>
+                        </button>
+                    </div>
+                    <pre id="code-container" class="language-python" aria-live="polite"><code id="pythonCodeDisplay" class="language-python"># Python code will be generated here...</code></pre>
+                </aside>
 
-            <p style="padding: 0 8px; color: #888;">Loading powers...</p>
-        </div>
-    </aside>
+                <!-- Modal for saving a power -->
+                <div x-data="{ show: false, name: '', description: '', category: 'Workspaces', power_id: null, availableCategories: [] }"
+                     @open-save-modal.window="
+                        show = true;
+                        name = $event.detail.name;
+                        description = $event.detail.description;
+                        category = $event.detail.category;
+                        power_id = $event.detail.power_id || null;
+                        availableCategories = $event.detail.availableCategories || [];
+                     "
+                     x-show="show"
+                     class="modal-overlay">
+                    <div class="modal-content">
+                        <h3>Save Power</h3>
+                        <form id="savePowerForm" @submit.prevent="show = false">
+                            <input type="hidden" name="power_id" x-model="power_id">
 
-    <main id="main-content-panel">
-        <div id="controls">
-            <button @click="isLibraryCollapsed = !isLibraryCollapsed">Toggle Library</button>
-            <button id="executePowerButton">Run Power</button>
-            <button id="cancelPowerButton">Cancel Power</button>
-            <button @click="window.prepareAndOpenSaveModal()">Save Workspace</button>
-            <button id="clearWorkspaceButton">Clear Workspace</button>
-            <button @click="keyboardVisible = !keyboardVisible">Keyboard</button>
-            <button @click="isCodeCollapsed = !isCodeCollapsed">Toggle Python</button>
-        </div>
-        <div id="blocklyDiv"></div>
-    </main>
+                            <div class="form-group">
+                                <label for="powerName">Name:</label>
+                                <input type="text" id="powerName" name="name" x-model="name" required>
+                            </div>
 
-    <!-- REVERTED: Restoring original IDs and structure for CSS compatibility -->
-    <aside id="code-preview-panel">
-        <div class="panel-header code-header">
-            <span>Python Code</span>
-            <button @click="
-                        isCodeCollapsed = !isCodeCollapsed;
-                        " class="toggle-btn"
-                    title="Toggle Code Preview">
-                <span x-text="isCodeCollapsed ? '◀' : '▶'"></span>
-            </button>
-        </div>
-        <pre aria-live="polite" class="language-python" id="code-container"><code class="language-python"
-                                                                                  id="pythonCodeDisplay"># Python code will be generated here...</code></pre>
-    </aside>
+                            <div class="form-group">
+                                <label for="powerCategory">Category:</label>
+                                <!-- Focus logic ensures the full list shows even if text is pre-filled -->
+                                <input type="text"
+                                       id="powerCategory"
+                                       name="category"
+                                       x-model="category"
+                                       list="categoryList"
+                                       placeholder="e.g. My Powers/Castle Walls"
+                                       @focus="$el.select()"
+                                       autocomplete="off">
 
-    <!-- Modal for saving a power: Retaining functional Category logic -->
-    <div @open-save-modal.window="
-                    show = true;
-                    name = $event.detail.name;
-                    description = $event.detail.description;
-                    category = $event.detail.category;
-                    power_id = $event.detail.power_id || null;
-                    availableCategories = $event.detail.availableCategories || [];
-                 "
-         class="modal-overlay"
-         x-data="{ show: false, name: '', description: '', category: 'Workspaces', power_id: null, availableCategories: [] }"
-         x-show="show">
-        <div class="modal-content">
-            <h3>Save Power</h3>
-            <form @submit.prevent="show = false" id="savePowerForm">
-                <input name="power_id" type="hidden" x-model="power_id">
-                <div class="form-group">
-                    <label for="powerName">Name:</label>
-                    <input id="powerName" name="name" required type="text" x-model="name">
+                                <datalist id="categoryList">
+                                    <template x-for="cat in availableCategories" :key="cat">
+                                        <option :value="cat" x-text="cat"></option>
+                                    </template>
+                                </datalist>
+                                <small style="display: block; color: #666; margin-top: 4px;">Use / for sub-categories</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="powerDescription">Description:</label>
+                                <textarea id="powerDescription" name="description" x-model="description"></textarea>
+                            </div>
+
+                            <div class="modal-buttons">
+                                <button type="submit" id="confirmSaveButton">Save</button>
+                                <button type="button" @click="show = false">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="powerCategory">Category:</label>
-                    <input id="powerCategory" list="categoryList" name="category" placeholder="e.g. Powers/Geometry" type="text"
-                           x-model="category">
-                    <datalist id="categoryList">
-                        <template :key="cat" x-for="cat in availableCategories">
-                            <option :value="cat"></option>
-                        </template>
-                    </datalist>
-                    <small style="display: block; color: #666; margin-top: 4px;">Use / for sub-categories</small>
-                </div>
-                <div class="form-group">
-                    <label for="powerDescription">Description:</label>
-                    <textarea id="powerDescription" name="description" x-model="description"></textarea>
-                </div>
-                <div class="modal-buttons">
-                    <button id="confirmSaveButton" type="submit">Save</button>
-                    <button @click="show = false" type="button">Cancel</button>
-                </div>
-            </form>
-        </div>
-    </div>
 
-    <!-- Modal for confirming deletion of a power -->
-    <div @open-delete-confirm.window="
-                    show = true;
-                    powerId = $event.detail.powerId;
-                    powerName = $event.detail.powerName;
-                 "
-         class="modal-overlay"
-         x-data="{ show: false, powerId: null, powerName: '' }"
-         x-show="show">
-        <div class="modal-content">
-            <h3>Delete Power</h3>
-            <p>Are you sure you want to permanently delete the power: <strong x-text="powerName"></strong>?</p>
-            <p>This action cannot be undone.</p>
-            <div class="modal-buttons">
-                <button @click="window.handleDeletePower(powerId); show = false;"
-                        class="btn-danger">
-                    Confirm Deletion
-                </button>
-                <button @click="show = false">Cancel</button>
+                <!-- Modal for confirming deletion of a power -->
+                <div x-data="{ show: false, powerId: null, powerName: '' }"
+                     @open-delete-confirm.window="
+                        show = true;
+                        powerId = $event.detail.powerId;
+                        powerName = $event.detail.powerName;
+                     "
+                     x-show="show"
+                     class="modal-overlay">
+                    <div class="modal-content">
+                        <h3>Delete Power</h3>
+                        <p>Are you sure you want to permanently delete the power: <strong x-text="powerName"></strong>?</p>
+                        <p>This action cannot be undone.</p>
+                        <div class="modal-buttons">
+                            <button class="btn-danger"
+                                    @click="window.handleDeletePower(powerId); show = false;">
+                                Confirm Deletion
+                            </button>
+                            <button @click="show = false">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Simple Prompt Modal -->
+                <div x-data="{ show: false, message: '', defaultValue: '', callback: null, inputValue: '' }"
+                     @blockly-prompt.window="
+                        show = true;
+                        message = $event.detail.message;
+                        defaultValue = $event.detail.defaultValue;
+                        callback = $event.detail.onComplete;
+                        inputValue = $event.detail.defaultValue;
+                        $nextTick(() => { $refs.promptInput.focus(); });
+                     "
+                     x-show="show"
+                     class="modal-overlay"
+                     style="z-index: 35000;">
+                    <div class="modal-content">
+                        <p x-text="message"></p>
+                        <input type="text" x-ref="promptInput" x-model="inputValue" @keyup.enter="callback(inputValue); show = false;">
+                        <div class="modal-buttons">
+                            <button @click="callback(inputValue); show = false;">OK</button>
+                            <button @click="callback(null); show = false;">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
             </div>
+
+        <script type="module" src="./index.js"></script>
+        <div class="simple-keyboard"
+             x-show="keyboardVisible"
+             style="position: fixed; bottom: 0; left: 0; width: 100%; z-index: 20000; background: white;">
         </div>
-    </div>
-
-    <!-- Simple Prompt Modal -->
-    <div @blockly-prompt.window="
-                    show = true;
-                    message = $event.detail.message;
-                    defaultValue = $event.detail.defaultValue;
-                    callback = $event.detail.onComplete;
-                    inputValue = $event.detail.defaultValue;
-                    $nextTick(() => { $refs.promptInput.focus(); });
-                 "
-         class="modal-overlay"
-         style="z-index: 35000;"
-         x-data="{ show: false, message: '', defaultValue: '', callback: null, inputValue: '' }"
-         x-show="show">
-        <div class="modal-content">
-            <p x-text="message"></p>
-            <input @keyup.enter="callback(inputValue); show = false;" type="text" x-model="inputValue"
-                   x-ref="promptInput">
-            <div class="modal-buttons">
-                <button @click="callback(inputValue); show = false;">OK</button>
-                <button @click="callback(null); show = false;">Cancel</button>
-            </div>
-        </div>
-    </div>
-
-</div>
-
-<script src="./index.js" type="module"></script>
-<div class="simple-keyboard"
-     style="position: fixed; bottom: 0; left: 0; width: 100%; z-index: 20000; background: white;"
-     x-show="keyboardVisible">
-</div>
-</body>
+    </body>
 </html>
