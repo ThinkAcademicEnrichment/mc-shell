@@ -2,13 +2,11 @@ from mcshell.mcplayer import MCPlayer
 from mcshell.constants import *
 
 from mcshell.mcturtle import (
-    DigitalTurtle,
     QTurtle,
     DigitalSet
 )
 
 # Global turtle instance (needed by subclasses)
-_GLOBAL_TURTLE = DigitalTurtle()
 _GLOBAL_QTURTLE = QTurtle()
 
 class MCActionsBase:

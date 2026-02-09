@@ -6,7 +6,7 @@ import pickle
 from typing import Optional
 
 # Import the Base Action Class
-from mcshell.mcactions_base import MCActionsBase, Pickers, _GLOBAL_TURTLE, _GLOBAL_QTURTLE
+from mcshell.mcactions_base import MCActionsBase, Pickers, _GLOBAL_QTURTLE
 
 from mcshell.mcvoxel_original import (
     generate_digital_tetrahedron_coordinates,
@@ -21,11 +21,11 @@ from mcshell.mcvoxel_original import (
 
 # Advanced Digital Geometry and Turtle
 from mcshell.mcturtle import (
-    DigitalTurtle,
     generate_metric_ball,
     generate_digital_plane_coordinates as generate_arithmetic_plane,
     generate_linear_path,
-    DigitalSet
+    DigitalSet,
+    QTurtle,
 )
 
 # L-System Logic
@@ -82,86 +82,10 @@ class TurtleShapes(MCActionsBase):
     def get_line(self, p1: 'Vec3', p2: 'Vec3') -> DigitalSet:
         return generate_linear_path(p1.to_tuple(), p2.to_tuple())
 
-class TurtleActions(MCActionsBase):
-    def __init__(self, mc_player_instance, delay_between_blocks=0.01):
-        super().__init__(mc_player_instance, delay_between_blocks)
-        self.turtle = _GLOBAL_TURTLE
-
-    @mced_block(
-        label="Turtle: Reset to",
-        position={'label': 'Position'},
-        orientation={'label': 'Facing'}
-    )
-    def turtle_reset(self, position: 'Vec3', orientation: 'Compass' = 'N'):
-        if position:
-            x, y, z = position.x, position.y, position.z
-        else:
-            pos = self.mcplayer.position
-            x, y, z = pos.x, pos.y, pos.z
-        self.turtle.pos = np.array([int(x), int(y), int(z)], dtype=int)
-        self.turtle.up = np.array([0,1,0], dtype=int)
-        orientation = orientation.upper()
-        if orientation == 'N':
-            self.turtle.forward = np.array([0,0,-1], dtype=int)
-            self.turtle.right = np.array([1,0,0], dtype=int)
-        elif orientation == 'S':
-            self.turtle.forward = np.array([0,0,1], dtype=int)
-            self.turtle.right = np.array([-1,0,0], dtype=int)
-        elif orientation == 'E':
-            self.turtle.forward = np.array([1,0,0], dtype=int)
-            self.turtle.right = np.array([0,0,1], dtype=int)
-        elif orientation == 'W':
-            self.turtle.forward = np.array([-1,0,0], dtype=int)
-            self.turtle.right = np.array([0,0,-1], dtype=int)
-        self.turtle.stack = []
-
-    @mced_block(
-        label="Turtle: Move",
-        direction={'label': 'Direction' },
-        distance={'label': 'Distance', 'shadow': '<shadow type="math_number"><field name="NUM">1</field></shadow>'}
-    )
-    def turtle_move(self, direction: 'Direction', distance: int):
-        self.turtle.move(distance, direction)
-
-    @mced_block(
-        label="Turtle: Rotate 90",
-        axis={'label': 'Axis'},
-        steps={'label': 'Steps (90 deg)', 'shadow': '<shadow type="math_number"><field name="NUM">1</field></shadow>'}
-    )
-    def turtle_rotate(self, axis: 'Axis', steps: int):
-        self.turtle.rotate_90(axis, steps)
-
-    @mced_block(label="Turtle: Push State")
-    def turtle_push(self):
-        self.turtle.push_state()
-
-    @mced_block(label="Turtle: Pop State")
-    def turtle_pop(self):
-        self.turtle.pop_state()
-
-    @mced_block(label="Turtle: Set Brush", shape={'label': 'Shape', 'check': 'Digital_Set'})
-    def turtle_set_brush(self, shape: DigitalSet):
-        self.turtle.set_brush(shape)
-
-    @mced_block(label="Turtle: Stamp Brush", block_type={'label': 'Material'})
-    def turtle_stamp(self, block_type: 'Block'):
-        shape = self.turtle.stamp()
-        self._place_digital_set(shape, block_type)
-
-    @mced_block(
-        label="Turtle: Extrude Brush",
-        length={'label': 'Length', 'shadow': '<shadow type="math_number"><field name="NUM">5</field></shadow>'},
-        direction={'label': 'Direction'},
-        block_type={'label': 'Material'}
-    )
-    def turtle_extrude(self, length: int, direction: 'Direction', block_type: 'Block'):
-        shape = self.turtle.extrude(length,direction)
-        self._place_digital_set(shape, block_type)
-
 class LSystemShapes(MCActionsBase):
     def __init__(self, player):
         super().__init__(player, 0.01)
-        self.local_turtle = DigitalTurtle()
+        self.local_turtle = QTurtle()
 
     @mced_block(
         label="L-System: Define Rule",
@@ -407,7 +331,7 @@ class QTurtleActions(MCActionsBase):
         position={'label': 'Position'},
         orientation={'label': 'Facing'}
     )
-    def reset(self, position, heading_q_str:'QCompass'='N'):
+    def reset(self, position:'Vec3', heading_q_str:'QCompass'='N'):
         """
         Resets the turtle to a specific position and aligns its Forward vector
         with the specified Global Q-Direction (e.g., 'N', 'NE', 'SWU').
@@ -515,20 +439,7 @@ class QTurtleActions(MCActionsBase):
     )
     def turtle_position(self):
         return Vec3(*self.turtle.pos)
-#
-# class MCActions(LSystemShapes, PlayerActions, TurtleShapes, TurtleActions, DigitalGeometry, WorldActions, PyncraftActions, EventActions, ServerActions, QTurtleActions):
-#     """
-#     Unified API for Blockly combining all action groups.
-#     """
-#     def __init__(self, mc_player_instance, delay_between_blocks=0.001):
-#         # Initialize all parent classes properly
-#         MCActionsBase.__init__(self, mc_player_instance, delay_between_blocks)
-#         TurtleActions.__init__(self, mc_player_instance, delay_between_blocks)
-#         QTurtleActions.__init__(self, mc_player_instance, delay_between_blocks)
-#         LSystemShapes.__init__(self, mc_player_instance)
-#         PyncraftActions.__init__(self, mc_player_instance, delay_between_blocks)
-#         EventActions.__init__(self, mc_player_instance, delay_between_blocks)
-#         ServerActions.__init__(self, mc_player_instance, delay_between_blocks)
+
 class MCActions(LSystemShapes, PlayerActions, TurtleShapes, DigitalGeometry, WorldActions, PyncraftActions, EventActions, ServerActions, QTurtleActions):
     """
     Unified API for Blockly combining all action groups.

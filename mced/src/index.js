@@ -1,1301 +1,283 @@
 import Alpine from 'alpinejs';
-import 'htmx.org'; // Imports for its side effect of initializing on the window
-import 'htmx-ext-json-enc'; // Imports the extension
+import 'htmx.org';
+import 'htmx-ext-json-enc';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-python';
 import 'prismjs/themes/prism-okaidia.css';
+import Keyboard from 'simple-keyboard';
+import 'simple-keyboard/build/css/index.css';
 
 import * as Blockly from 'blockly';
 import { pythonGenerator } from 'blockly/python';
 
 import { initializeHtmxListeners } from './lib/htmx_listeners.js';
-
-import { defineMineCraftConstants, MCED } from "./lib/constants.mjs";
+import { defineMineCraftConstants } from "./lib/constants.mjs";
 import { defineMineCraftBlocklyUtils } from "./lib/utils.mjs";
-
-// --- NEW: Registry Imports ---
-// These two files now manage all your blocks and generators automatically.
 import { registerAllBlocks } from "./blocks/registry.mjs";
 import { registerAllGenerators } from "./generators/python/registry.mjs";
 
-// --- Global Setup ---
+import * as PowerManager from './lib/power_manager.js';
 
-// Make Alpine globally available BEFORE it starts.
-// This is necessary for the x-data attributes in the HTML to find it.
-window.Alpine = Alpine;
+/**
+ * --- Application State ---
+ */
+let workspace;
+let lastExecutedPowerId = null;
+let currentKeyboardInput = null;
+let keyboardInstance = null;
 
-// Define the structure for a completely empty workspace
+const AUTOSAVE_KEY = 'mcEdWorkspaceAutosave';
 const BLANK_WORKSPACE_JSON = {
     "blocks": { "languageVersion": 0, "blocks": [] },
     "variables": []
 };
 
-// Use a constant for the localStorage key to avoid typos
-const AUTOSAVE_KEY = 'mcEdWorkspaceAutosave';
-// ------------------------------------------------------------------------------
-import Keyboard from 'simple-keyboard';
-import 'simple-keyboard/build/css/index.css';
-// ------------------------------------------------------------------------------
+window.Alpine = Alpine;
 
-// A module-scoped variable to hold the main workspace instance
-let workspace;
-
-// Add this helper function somewhere accessible, e.g., near the top of index.js
 /**
- * Escapes characters in a string that have a special meaning in regular expressions.
- * @param {string} str The string to escape.
- * @returns {string} The escaped string.
+ * --- Utilities ---
  */
-function escapeRegExp(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+function debounce(func, timeout = 500) {
+    let timer;
+    return (...args) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => { func.apply(this, args); }, timeout);
+    };
+}
+
+function stripAnsi(str) {
+    const ansiRegex = /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g;
+    return str.replace(ansiRegex, '');
 }
 
 /**
- * Inspects the workspace to determine the type of artifact being saved
- * and pre-fills the Save Modal accordingly.
- * * Logic:
- * 1. If a Function Definition is found, we assume it's a "Functional Power".
- * - Name/Desc are extracted from the block.
- * - Category defaults to 'Powers'.
- * 2. If NO Function Definition is found, we assume it's a "Workspace Snapshot".
- * - Name is left empty (user must name their script).
- * - Category defaults to 'Workspaces'.
+ * --- Global Bridge (for HTML events) ---
  */
-function prepareAndOpenSaveModal() {
-    let powerName = '';
-    let powerDescription = '';
-    let category = 'Workspaces'; // Default to generic workspace
 
-    const topBlocks = workspace.getTopBlocks(false);
-
-    // Check for top-level function definition
-    const funcDefBlock = topBlocks.find(b =>
-        b.type === 'procedures_defnoreturn' || b.type === 'procedures_defreturn'
-    );
-
-    if (funcDefBlock) {
-        // CASE: Functional Power
-        // Use properties from the function definition block
-        powerName = funcDefBlock.getFieldValue('NAME');
-        powerDescription = funcDefBlock.getCommentText() || '';
-        category = 'Powers'; // Enforce Powers category for defined functions
-    } else {
-        // CASE: Workspace Script / Snapshot
-        // No function definition found. We treat this as an arbitrary workspace save.
-        // We leave the name empty for the user to specify.
-        // Category remains 'Workspaces'.
-    }
-
-    // Dispatch event to open the modal with pre-filled data
-    window.dispatchEvent(new CustomEvent('open-save-modal', {
-        detail: {
-            name: powerName,
-            description: powerDescription,
-            category: category
-        }
-    }));
-}
-
-
-// Attach the function to the window object to make it globally accessible from HTML
-window.prepareAndOpenSaveModal = prepareAndOpenSaveModal;
-
-
-async function handleDeletePower(powerId) {
-    if (!powerId) return;
-
-    console.log(`Sending request to delete power: ${powerId}`);
+/**
+ * Updated for Step 3: Async metadata extraction.
+ * Fetches predicted name/category AND available categories for the dropdown.
+ */
+window.prepareAndOpenSaveModal = async () => {
     try {
-        const response = await fetch(`/api/power/${powerId}`, {
-            method: 'DELETE',
-        });
-
-        // The htmx part of the response now handles the refresh.
-        // We just need to check if the call was successful.
-        if (response.ok) {
-            console.log("Delete request successful. The server will trigger a library refresh.");
-            // No need to manually remove the element from the DOM!
-            // The HX-Trigger header from the server will cause the #power-list to reload.
-            window.dispatchEvent(new CustomEvent('library-changed', { bubbles: true }));
-        } else {
-            const errorText = await response.text();
-            console.error('Error deleting power:', response.status, errorText);
-            alert(`Failed to delete power: ${errorText}`);
-        }
+        // We await the metadata because it now fetches categories from the SQLite DB
+        const detail = await PowerManager.getPowerMetadata(workspace);
+        window.dispatchEvent(new CustomEvent('open-save-modal', { detail }));
     } catch (error) {
-        console.error('Network error while deleting power:', error);
-        alert('Network error. Could not delete power.');
+        console.error("Failed to prepare save modal:", error);
+        // Fallback with empty defaults if the database query fails
+        window.dispatchEvent(new CustomEvent('open-save-modal', {
+            detail: { name: '', description: '', category: 'Workspaces', availableCategories: [] }
+        }));
     }
+};
+
+window.handleDeletePower = async (powerId) => {
+    if (await PowerManager.deletePower(powerId)) {
+        window.dispatchEvent(new CustomEvent('library-changed', { bubbles: true }));
+    }
+};
+
+/**
+ * --- Workspace Persistence ---
+ */
+function autosaveWorkspace() {
+    if (!workspace) return;
+    try {
+        const json = Blockly.serialization.workspaces.save(workspace);
+        localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(json));
+    } catch (e) { console.error('Autosave failed:', e); }
 }
 
-window.handleDeletePower = handleDeletePower;
-
-
-
-// --- Main Application Logic ---
-async function init() {
-    Blockly.dialog.setPrompt((message, defaultValue, callback) => {
-        window.isBlocklyPromptOpen = true;
-
-        // 1. Preemptively blur the active element to satisfy the FocusManager
-        if (document.activeElement) {
-            document.activeElement.blur();
+function loadAutosavedWorkspace() {
+    try {
+        const saved = localStorage.getItem(AUTOSAVE_KEY);
+        if (saved) {
+            const json = JSON.parse(saved);
+            if (json?.blocks) return json;
         }
+    } catch (e) { console.error('Load failed:', e); }
+    return null;
+}
 
-        window.dispatchEvent(new CustomEvent('blockly-prompt', {
-            detail: {
-                message,
-                defaultValue,
-                onComplete: (value) => {
-                    window.isBlocklyPromptOpen = false;
-                    callback(value);
-                    // Return focus once the modal is gone
-                    workspace.markFocused();
-                }
-            }
-        }));
-    });
-    // Blockly.dialog.setPrompt((message, defaultValue, callback) => {
-    //     // Set a flag that the flyout override can see
-    //     window.isBlocklyPromptOpen = true;
-    //
-    //     window.dispatchEvent(new CustomEvent('blockly-prompt', {
-    //         detail: {
-    //             message,
-    //             defaultValue,
-    //             onComplete: (value) => {
-    //                 // Reset flag
-    //                 window.isBlocklyPromptOpen = false;
-    //
-    //                 // Execute Blockly's callback with the user's input
-    //                 callback(value);
-    //
-    //                 // Tell the FocusManager exactly where to go now
-    //                 workspace.markFocused();
-    //             }
-    //         }
-    //     }));
-    // });
-    // Override the default Blockly prompt
-    // Blockly.dialog.setPrompt((message, defaultValue, callback) => {
-    //     console.log("Custom Blockly prompt triggered");
-    //     window.dispatchEvent(new CustomEvent('blockly-prompt', {
-    //         detail: { message, defaultValue, callback }
-    //     }));
-    // });
-    //
-    // // Optionally override Alert and Confirm as well for a consistent UI
-    // Blockly.dialog.setAlert((message, callback) => {
-    //     alert(message); // You can replace these with Alpine modals too
-    //     callback();
-    // });
-    //
-    // Blockly.dialog.setConfirm((message, callback) => {
-    //     callback(confirm(message));
-    // });
-
-    // 1. Variable to track the last executed power ID
-    let lastExecutedPowerId = null;
-
-    /**
-     * Sends a request to the backend to cancel the currently running power.
-     */
-    async function handleCancelPower() {
-        if (!lastExecutedPowerId) {
-            console.log("No power is currently tracked as running.");
-            // We can still send the command without an ID if the backend
-            // supports cancelling the "latest" power.
-        }
-
-        console.log(`Requesting cancellation for power ID: ${lastExecutedPowerId}`);
-
-        // Call your existing magic command API
-        const output = await executeIPythonCommand('%mc_cancel_power', lastExecutedPowerId || '');
-
-        if (output) {
-            console.log("Cancel Output:", output);
-        }
-    }
-
-    // 1. A more robust focus tracker
-    let currentInput = null;
-
-    document.addEventListener('focusin', (e) => {
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-            currentInput = e.target;
-            console.log("Keyboard target switched to:", currentInput);
-
-            if (keyboardInstance) {
-                keyboardInstance.setInput(currentInput.value);
-            }
-        }
-    });
-
-
-    const keyboardInstance = new Keyboard({
+/**
+ * --- UI & Input ---
+ */
+function setupKeyboard() {
+    keyboardInstance = new Keyboard({
         onChange: input => {
-            if (currentInput) {
-                currentInput.value = input;
-                // Trigger input event for Alpine.js/Blockly reactivity
-                currentInput.dispatchEvent(new Event('input', { bubbles: true }));
+            if (currentKeyboardInput) {
+                currentKeyboardInput.value = input;
+                currentKeyboardInput.dispatchEvent(new Event('input', { bubbles: true }));
             }
         },
         onKeyPress: button => {
-        // 1. Handle Manual Toggles
-        if (button === "{shift}" || button === "{lock}") {
-          const currentLayout = keyboardInstance.options.layoutName;
-          const nextLayout = currentLayout === "default" ? "shift" : "default";
-          keyboardInstance.setOptions({ layoutName: nextLayout });
-        }
-        else if (button === "{numpad}") {
-          keyboardInstance.setOptions({ layoutName: "numpad" });
-        }
-        else if (button === "{abc}") {
-          keyboardInstance.setOptions({ layoutName: "default" });
-        }
-        // 2. NON-STICKY SHIFT: If a standard key is pressed while in shift mode,
-        // reset the layout to default automatically.
-        else if (keyboardInstance.options.layoutName === "shift" && !button.includes("{")) {
-          keyboardInstance.setOptions({ layoutName: "default" });
-        }
-      },
-      layout: {
-        'default': [
-          '1 2 3 4 5 6 7 8 9 0 - {bksp}',
-          'q w e r t y u i o p [ ]',
-          'a s d f g h j k l ; \'',
-          '{shift} z x c v b n m , . /',
-          '{numpad} {space}' // Added numpad toggle button
-        ],
-        'shift': [
-          '! @ # $ % ^ & * ( ) _ {bksp}',
-          'Q W E R T Y U I O P { }',
-          'A S D F G H J K L : "',
-          '{shift} Z X C V B N M < > ?',
-          '{numpad} {space}' // Keep toggle accessible in shift mode
-        ],
-        'numpad': [
-          '1 2 3',
-          '4 5 6',
-          '7 8 9',
-          '{abc} 0 . {bksp}' // Added ABC toggle to go back
-        ]
-      },
-      display: {
-        '{shift}': 'Shift',
-        '{bksp}': '⌫',
-        '{space}': 'Space',
-        '{numpad}': '123', // Label for the numpad toggle
-        '{abc}': 'ABC'      // Label to switch back to text
-      },
-      preventMouseDownDefault: true
-    });
-
-    /**
-     * Sends a command and its arguments to the Flask server's IPython endpoint.
-     * @param {string} command The magic command to run (e.g., '%mc_create_script').
-     * @param {string} commandArguments The string of arguments for the command.
-     * @returns {Promise<string|null>} The output from the command or null on error.
-    */
-    async function executeIPythonCommand(command, commandArguments) {
-        const apiEndpoint = '/api/ipython_magic'; // We can use a relative path thanks to the proxy
-        const requestData = { command: command, arguments: commandArguments };
-
-        try {
-            const response = await fetch(apiEndpoint, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(requestData)
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            if (data.error) {
-                console.error("IPython Magic Error:", data.error);
-                alert(`IPython Command Error: ${data.error}`);
-                return null;
-            } else {
-                console.log("IPython Magic Output:", data.output);
-                return data.output;
-            }
-
-        } catch (error) {
-            console.error("Fetch error calling IPython API:", error);
-            alert("Error communicating with IPython process.");
-            return null;
-        }
-    }
-
-    /**
-    * Handles opening a file picker and loading a workspace from a JSON file.
-    */
-    async function handleLoadPowerFromFile() {
-        if (!workspace) {
-            alert("Workspace is not ready yet.");
-            return;
-        }
-
-        // Modern browsers support the File System Access API
-        if (window.showOpenFilePicker) {
-            try {
-                // 1. Show the native "Open File" dialog
-                const [fileHandle] = await window.showOpenFilePicker({
-                    types: [{
-                        description: 'Blockly Workspace Files',
-                        accept: { 'application/json': ['.json'] },
-                    }],
-                    multiple: false,
-                });
-
-                // 2. Get the file content
-                const file = await fileHandle.getFile();
-                const jsonText = await file.text();
-                const loadedJson = JSON.parse(jsonText);
-
-                // 3. Load the content into Blockly
-                workspace.clear(); // Clear the existing blocks
-                Blockly.serialization.workspaces.load(loadedJson, workspace);
-                console.log(`Successfully loaded power from: ${file.name}`);
-
-            } catch (error) {
-                // This error is commonly thrown if the user clicks "Cancel" in the file dialog.
-                if (error.name === 'AbortError') {
-                    console.log('User cancelled the file open dialog.');
-                } else {
-                    console.error('Error opening or loading file:', error);
-                    alert('An error occurred while trying to load the file.');
-                }
-            }
-        } else {
-            // Fallback for older browsers
-            console.warn('File System Access API not supported. Using legacy file input.');
-            const inputElement = document.createElement('input');
-            inputElement.type = 'file';
-            inputElement.accept = '.json,application/json';
-
-            inputElement.onchange = async (event) => {
-                const file = event.target.files[0];
-                if (file) {
-                    try {
-                        const jsonText = await file.text();
-                        const loadedJson = JSON.parse(jsonText);
-
-                        workspace.clear();
-                        Blockly.serialization.workspaces.load(loadedJson, workspace);
-                        console.log(`Successfully loaded power from: ${file.name}`);
-                    } catch (e) {
-                        console.error('Error parsing or loading file:', e);
-                        alert('Error loading workspace: The selected file is not valid JSON.');
-                    }
-                }
-            };
-            inputElement.click();
-        }
-    }
-
-    /**
-     * Saves the current Blockly workspace state to the browser's localStorage.
-     */
-    function autosaveWorkspace() {
-        if (!workspace) {
-            return; // Do nothing if the workspace isn't initialized yet
-        }
-        try {
-            // Serialize the workspace to a JSON object
-            const workspaceJson = Blockly.serialization.workspaces.save(workspace);
-            // Convert the object to a string to store it
-            const jsonText = JSON.stringify(workspaceJson);
-            // Save it to localStorage
-            localStorage.setItem(AUTOSAVE_KEY, jsonText);
-            console.log('Workspace autosaved to localStorage.');
-        } catch (e) {
-            console.error('Error during autosave:', e);
-        }
-    }
-
-
-    /**
-     * Attempts to load a workspace from localStorage.
-     * If no valid autosave is found, it returns the provided default JSON.
-     * @param {object} defaultJson The default workspace JSON to use as a fallback.
-     * @return {object} The workspace JSON to load.
-     */
-    function loadAutosavedWorkspace(defaultJson) {
-        try {
-            const savedJsonText = localStorage.getItem(AUTOSAVE_KEY);
-            if (savedJsonText) {
-                const loadedJson = JSON.parse(savedJsonText);
-                // Basic validation to make sure we're loading a real workspace
-                if (loadedJson && loadedJson.blocks) {
-                    console.log('Found and loaded workspace from localStorage.');
-                    return loadedJson;
-                }
-            }
-        } catch (e) {
-            console.error('Error loading autosaved workspace:', e);
-            // If there's an error, we'll fall back to the default
-        }
-        // If no valid autosave was found, return the default
-        console.log('No valid autosave found, loading default workspace.');
-        return defaultJson;
-    }
-
-    // TODO: these helpers can be defined externally and attached to window to make available here
-    /**
-     * A helper function that takes a function and returns a new version of it
-     * that will only run after a specified delay of inactivity.
-     * @param {Function} func The function to debounce.
-     * @param {number} timeout The delay in milliseconds.
-     * @return {Function} The new debounced function.
-     */
-    function debounce(func, timeout = 500) {
-        let timer;
-        return (...args) => {
-            clearTimeout(timer);
-            timer = setTimeout(() => { func.apply(this, args); }, timeout);
-        };
-    }
-
-    /**
-     * Gathers data from the editor modal and the Blockly workspace,
-     * then POSTs the complete "Power Object" to the server.
-     *
-     * UPDATED LOGIC:
-     * 1. Functional Power: If a function definition is found, we attempt strict introspection
-     * (requiring a call block to define types). This maintains the rigorous "Power" standard.
-     * 2. Script Power: If NO function definition is found, we save the workspace as-is
-     * without requiring parameters. This allows saving arbitrary scripts/snippets.
-     */
-    async function handleSavePower() {
-        console.log("Handling save power...");
-
-        // 1. Get metadata from the modal form
-        const formElement = document.getElementById('savePowerForm');
-        if (!formElement) return;
-        const formData = new FormData(formElement);
-        const formDataObject = Object.fromEntries(formData.entries());
-
-        if (!formDataObject.name) {
-            alert("Please enter a name for your power.");
-            return;
-        }
-
-        // 2. Initialize data objects
-        const blocklyJson = Blockly.serialization.workspaces.save(workspace);
-        let powerParameters = [];
-        let powerFunctionName = null;
-        let codeToSave = null;
-        let dependencies = [];
-
-        // 3. Find the function definition block
-        const topBlocks = workspace.getTopBlocks(true);
-        const funcDefBlock = topBlocks.find(b =>
-            b.type === 'procedures_defnoreturn' || b.type === 'procedures_defreturn'
-        );
-
-        if (funcDefBlock) {
-            // --- FUNCTIONAL POWER MODE ---
-            // A function definition exists, so we attempt to enforce the strict Power contract.
-            powerFunctionName = funcDefBlock.getFieldValue('NAME');
-            console.log(`Found functional power definition: '${powerFunctionName}'.`);
-
-            // Construct Python code for the function
-            const funcNameForCode = pythonGenerator.nameDB_.getName(powerFunctionName, MCED.BlocklyNameTypes.PROCEDURE);
-            const argNames = funcDefBlock.getVars();
-            const argsForDef = argNames.map(name => pythonGenerator.nameDB_.getName(name, MCED.BlocklyNameTypes.VARIABLE));
-
-            let funcBody = pythonGenerator.statementToCode(funcDefBlock, 'STACK') || (pythonGenerator.INDENT + 'pass\n');
-
-            if (funcDefBlock.type === 'procedures_defreturn') {
-                const returnValue = pythonGenerator.valueToCode(funcDefBlock, 'RETURN', pythonGenerator.ORDER_NONE) || 'None';
-                funcBody += pythonGenerator.INDENT + 'return ' + returnValue + '\n';
-            }
-
-            codeToSave = `def ${funcNameForCode}(self, ${argsForDef.join(', ')}):\n${funcBody}`;
-
-            // --- DEPENDENCY ANALYSIS ---
-            const allChildBlocks = funcDefBlock.getDescendants(false);
-            for (const childBlock of allChildBlocks) {
-                if (childBlock.type === 'procedures_callnoreturn' || childBlock.type === 'procedures_callreturn') {
-                    const calledFunctionName = childBlock.getFieldValue('NAME');
-                    // Avoid self-dependency
-                    if (calledFunctionName && calledFunctionName !== powerFunctionName && !dependencies.includes(calledFunctionName)) {
-                        dependencies.push(calledFunctionName);
-                    }
-                }
-            }
-
-            // --- STRICT PARAMETER INTROSPECTION ---
-            // We only enforce the Call Block requirement if there are arguments to define.
-            if (argNames.length > 0) {
-                const funcCallBlock = topBlocks.find(b =>
-                    (b.type === 'procedures_callnoreturn' || b.type === 'procedures_callreturn') &&
-                    b.getFieldValue('NAME') === powerFunctionName
-                );
-
-                if (!funcCallBlock) {
-                    alert(`Save Error: To save the function '${powerFunctionName}' as a reusable Power, you must place a "call ${powerFunctionName}" block on the workspace to define its parameter types.`);
-                    return;
-                }
-
-                for (let i = 0; i < argNames.length; i++) {
-                    const argName = argNames[i];
-                    let extractedType = null;
-
-                    const input = funcCallBlock.getInput('ARG' + i);
-                    if (!input || !input.connection || !input.connection.targetBlock()) {
-                        alert(`Save Error for function '${powerFunctionName}': The parameter '${argName}' must have a block connected to it to define its type.`);
-                        return;
-                    }
-
-                    const connectedBlock = input.connection.targetBlock();
-                    const outputConnection = connectedBlock.outputConnection;
-
-                    if (outputConnection && outputConnection.getCheck()) {
-                        const checks = outputConnection.getCheck();
-                        if (checks && checks.length > 0) {
-                            extractedType = checks[0];
-                        }
-                    }
-
-                    if (!extractedType) {
-                         alert(`Save Error for function '${powerFunctionName}': Could not determine the type for parameter '${argName}'. Please ensure the connected block has an output type.`);
-                         return;
-                    }
-
-                    powerParameters.push({
-                        name: argName,
-                        type: extractedType,
-                        default: 0
-                    });
-                }
-            }
-
-        } else {
-            // --- SCRIPT POWER MODE ---
-            // No function definition found. We save this as a "Script" (Arbitrary Workspace).
-            // We default to a category if not provided, usually "Workspaces".
-            console.log("No function definition found. Saving as a 'Script Power'.");
-
-            // For scripts, we save the entire workspace code, not just a function def.
-            codeToSave = pythonGenerator.workspaceToCode(workspace);
-
-            // Scripts have no formal parameters or function name (unless implicitly defined in code)
-            powerFunctionName = null;
-            powerParameters = [];
-
-            // Ensure it goes to the correct category if the user didn't override it
-            if (!formDataObject.category || formDataObject.category.trim() === "") {
-                formDataObject.category = "Workspaces";
-            }
-        }
-
-        // 4. Assemble and POST the final Power Object
-        const powerDataObject = {
-            name: formDataObject.name,
-            description: formDataObject.description,
-            category: formDataObject.category || "Workspaces", // Default for scripts
-            power_id: formDataObject.power_id || null,
-            function_name: powerFunctionName,
-            parameters: powerParameters,
-            blockly_json: blocklyJson,
-            python_code: codeToSave,
-            dependencies: dependencies
-        };
-
-        console.log("Sending final power data to server:", powerDataObject);
-
-        try {
-            const response = await fetch('/api/powers', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(powerDataObject),
-            });
-
-            if (response.ok) {
-                alert(`Saved "${formDataObject.name}" successfully!`);
-                // Close modal if needed, or dispatch event
-                const modal = document.getElementById('savePowerModal');
-                if (modal) {
-                     // Assuming Bootstrap or similar logic to close, or just hide
-                     // For now, dispatch event for UI refresh
-                }
-                window.dispatchEvent(new CustomEvent('library-changed'));
-            } else {
-                alert(`Failed to save: ${await response.text()}`);
-            }
-        } catch (error) {
-            console.error('Network error while saving:', error);
-            alert('Network error. Could not save.');
-        }
-    }
-    // --- Define all custom elements in the correct order ---
-    // Utilities and custom fields must be defined first.
-    defineMineCraftBlocklyUtils(Blockly);
-    // Constants populates Blockly.Msg and MCED.Defaults used by other blocks.
-    defineMineCraftConstants(Blockly);
-
-    // Register All Blocks
-    // This function calls all the 'define...' functions found in src/blocks/
-    registerAllBlocks(Blockly);
-
-    // 4. Register All Generators
-    // This function calls all the 'define...' functions found in src/generators/python/
-    registerAllGenerators(pythonGenerator);
-
-    // --- Determine the initial workspace to load ---
-    // It will prioritize localStorage, then workspace.json, then a blank slate.
-    // (This re-uses the fetch logic from our previous discussion)
-    let initialWorkspaceJson = loadAutosavedWorkspace(null); // Try localStorage first
-
-
-    if (!initialWorkspaceJson) {
-        try {
-            const response = await fetch('./workspace.json'); // Path relative to index.html
-            if (response.ok) {
-                initialWorkspaceJson = await response.json();
-            } else {
-                initialWorkspaceJson = BLANK_WORKSPACE_JSON;
-            }
-        } catch (e) {
-            initialWorkspaceJson = BLANK_WORKSPACE_JSON;
-        }
-    }
-
-    // --- ADD THIS LINE FOR DEBUGGING ---
-    console.log("Workspace will be initialized with this JSON:", initialWorkspaceJson);
-    // For a more readable, indented view, you can use JSON.stringify:
-    // console.log("Workspace will be initialized with this JSON:", JSON.stringify(initialWorkspaceJson, null, 2));
-    // ------
-
-    // --- 3. Define the complete Toolbox ---
-
-    // 1. Create a URL object pointing to your static asset.
-    //    `import.meta.url` is a standard way to get the current module's location.
-    //    Parcel understands this and will correctly process 'toolbox.xml'.
-    const toolboxUrl = new URL('./toolbox.xml', import.meta.url);
-
-    // 2. Fetch the toolbox from the URL provided by Parcel.
-    let toolboxXml;
-    try {
-        const response = await fetch(toolboxUrl); // Use the URL object directly
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        toolboxXml= await response.text();
-    } catch (error) {
-        console.error("Could not load toolbox.xml. Using empty toolbox.", error);
-        toolboxXml= '<xml></xml>'; // Provide a safe fallback
-    }
-
-    // --- 4. Inject Blockly into the page ---
-    // For now, we start with a blank workspace.
-    // Later, this could load from an autosave or a default file.
-    workspace = Blockly.inject('blocklyDiv', {
-        toolbox: toolboxXml,
-        trashcan: {
-            // You can set vertical and horizontal positions
-            position: {
-              vertical: 'top',
-              horizontal: 'right'
+            const layouts = { "{shift}": "shift", "{lock}": "shift", "{numpad}": "numpad", "{abc}": "default" };
+            if (layouts[button]) {
+                keyboardInstance.setOptions({ layoutName: layouts[button] });
+            } else if (keyboardInstance.options.layoutName === "shift" && !button.includes("{")) {
+                keyboardInstance.setOptions({ layoutName: "default" });
             }
         },
-        grid: {
-            spacing: 26,
-            length: 3,
-            colour: '#ccc',
-            snap: true
+        layout: {
+            'default': ['1 2 3 4 5 6 7 8 9 0 - {bksp}', 'q w e r t y u i o p [ ]', 'a s d f g h j k l ; \'', '{shift} z x c v b n m , . /', '{numpad} {space}'],
+            'shift': ['! @ # $ % ^ & * ( ) _ {bksp}', 'Q W E R T Y U I O P { }', 'A S D F G H J K L : "', '{shift} Z X C V B N M < > ?', '{numpad} {space}'],
+            'numpad': ['1 2 3', '4 5 6', '7 8 9', '{abc} 0 . {bksp}']
         },
-        zoom: {
-            controls: true,
-            wheel: true,
-            startScale: 1.0,
-            maxScale: 3,
-            minScale: 0.3,
-            scaleSpeed: 1.2
-        },
-        move: {
-            scrollbars: true,
-            drag: true,
-            wheel: false // Usually false if you have zoom on wheel
-        }
+        display: { '{shift}': 'Shift', '{bksp}': '⌫', '{space}': 'Space', '{numpad}': '123', '{abc}': 'ABC' },
+        preventMouseDownDefault: true
     });
 
-    // 1. Get the flyout instance
-    const flyout = workspace.getFlyout();
-
-    // 2. Override the auto-hide behavior
-    // We preserve the original function in case we need to call it manually
-    const originalHide = flyout.hide;
-
-    // flyout.hide = function() {
-    //   // By doing nothing here, the flyout stays open when you drag a block!
-    //   console.log("Flyout tried to hide, but we're staying open.");
-    // };
-    flyout.hide = function() {
-        // If we are currently showing a prompt, ALLOW the hide.
-        // This cleans up the internal focus state so the console doesn't crash.
-        if (window.isBlocklyPromptOpen) {
-            originalHide.call(this);
-            return;
-        }
-
-        // Otherwise, stay open for Oscar's dragging
-        console.log("Flyout kept open for dragging.");
-    };
-    // 3. Optional: Close it only when clicking the workspace background
-    workspace.addChangeListener((event) => {
-      if (event.type === Blockly.Events.CLICK && !event.blockId) {
-        // If they click the empty workspace, then we actually hide it
-        originalHide.call(flyout);
-      }
-    });
-
-    workspace.addChangeListener((event) => {
-      if (event.type === Blockly.Events.VAR_CREATE || event.type === Blockly.Events.VAR_RENAME) {
-        const toolbox = workspace.getToolbox();
-        if (toolbox) {
-          // Small delay ensures the workspace has regained focus from the prompt
-          setTimeout(() => {
-            const item = toolbox.getPreviouslySelectedItem();
-            if (item) {
-              toolbox.setSelectedItem(item);
-            }
-          }, 50);
-        }
-      }
-    });
-
-    initializeHtmxListeners();
-
-    // 2. Now that the workspace exists, programmatically load the JSON data.
-    //    This is more reliable as it happens after the initial render.
-    if (initialWorkspaceJson && initialWorkspaceJson.blocks) {
-        try {
-            // No need to clear, as the workspace is fresh. But if this logic were
-            // used in a "Load" function, workspace.clear() would come first.
-            Blockly.serialization.workspaces.load(initialWorkspaceJson, workspace);
-            console.log("Successfully loaded initial workspace from JSON data.");
-        } catch (e) {
-            console.error("Error loading workspace JSON data:", e);
-            // In case of error, the user is left with a blank workspace.
-        }
-    }
-
-    // --- 3. Set up the autosave triggers ---
-    console.log("Setting up autosave listeners.");
-    // Save when the user is about to leave or reload the page
-    window.addEventListener('beforeunload', autosaveWorkspace);
-
-
-    // --- 4. (IMPROVEMENT) Also save periodically after changes ---
-    const debouncedAutosave = debounce(autosaveWorkspace, 1000); // Wait 1 second after changes
-    workspace.addChangeListener((event) => {
-        if (event.isUiEvent) return; // Don't save on clicks, scrolls, etc.
-        debouncedAutosave();
-    });
-
-    // // --- 5. Update the "Clear Workspace" button ---
-    const clearWorkspaceButton = document.getElementById('clearWorkspaceButton');
-
-    if (clearWorkspaceButton) {
-        clearWorkspaceButton.addEventListener('click', () => {
-            if (confirm("Are you sure you want to clear the workspace? This cannot be undone.")) {
-                workspace.clear();
-                // Crucially, remove the autosaved data as well
-                localStorage.removeItem(AUTOSAVE_KEY);
-                console.log("Workspace and autosave data cleared.");
-            }
-        });
-    }
-    // --- LIVE GENERATION & HIGHLIGHTING LOGIC ---
-
-    // Get a reference to the <code> element where code will be displayed
-    const codeDisplayElement = document.getElementById('pythonCodeDisplay');
-
-    // Create a debounced version of our update function
-    const debouncedCodeUpdate = debounce(() => {
-        if (!workspace || !pythonGenerator) return; // Safety check
-
-        // Generate the Python code from the current workspace
-        const code = pythonGenerator.workspaceToCode(workspace);
-
-        if (codeDisplayElement) {
-            // Update the text content of the <code> element
-            codeDisplayElement.textContent = code;
-
-            // Tell Prism to re-highlight the element
-            // window.Prism is correct because Prism attaches itself to the global window object
-            if (window.Prism) {
-                Prism.highlightElement(codeDisplayElement);
-            }
+    document.addEventListener('focusin', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+            currentKeyboardInput = e.target;
+            keyboardInstance.setInput(currentKeyboardInput.value);
         }
     });
-
-    // Add a listener to the workspace.
-    workspace.addChangeListener((event) => {
-        // Don't re-render for UI events like selecting a block or scrolling
-        if (event.isUiEvent) {
-            return;
-        }
-        debouncedCodeUpdate();
-    });
-
-
-    // Trigger an initial generation to populate the view on load
-    debouncedCodeUpdate();
-
-    // --- Wire up the "Save to Library" button inside the modal ---
-    const confirmSaveButton = document.getElementById('confirmSaveButton');
-    if (confirmSaveButton) {
-        confirmSaveButton.addEventListener('click', handleSavePower);
-    }
-
-    // Attach the load function to the new button
-    const loadButton = document.getElementById('loadPowerFromFileButton');
-    if (loadButton) {
-        loadButton.addEventListener('click', handleLoadPowerFromFile);
-    }
-
-
-    /**
-     * The definitive payload builder for the "Execute (Debug)" button.
-     * It inspects the workspace to determine if it's a single "functional power"
-     * or a general "script power". It then extracts the correct code, parameter
-     * types (from the test harness), and debug values.
-     * * @param {Blockly.Workspace} workspace The Blockly workspace instance.
-     * @returns {object|null} An object containing the payload for the server, or null if the
-     * required blocks for a debug run aren't found.
-     */
-    // function buildDebugPayload(workspace) {
-    //     // We MUST initialize the generator to clear the state from any previous run.
-    //     pythonGenerator.init(workspace);
-    //
-    //     const topBlocks = workspace.getTopBlocks(true);
-    //
-    //     // --- Check if the workspace represents a "Functional Power" ---
-    //     // A functional power has a function definition and a corresponding call block.
-    //     const funcDefBlock = topBlocks.find(b =>
-    //         b.type === 'procedures_defnoreturn' || b.type === 'procedures_defreturn'
-    //     );
-    //
-    //     if (funcDefBlock) {
-    //         const functionName = funcDefBlock.getFieldValue('NAME');
-    //
-    //         // The "Debug-to-Define" pattern requires a corresponding call block to exist.
-    //         const funcCallBlock = topBlocks.find(b =>
-    //             (b.type === 'procedures_callnoreturn' || b.type === 'procedures_callreturn') &&
-    //             b.getFieldValue('NAME') === functionName
-    //         );
-    //
-    //         if (!funcCallBlock) {
-    //             alert(`Debug Error: To test the function '${functionName}', you must have a corresponding "call ${functionName}" block on the workspace with its arguments connected.`);
-    //             return null;
-    //         }
-    //
-    //         console.log(`Building debug payload for functional power: '${functionName}'`);
-    //
-    //         // --- Assemble the Payload for a Functional Power ---
-    //
-    //         // 1. Get the pure Python code for ONLY the function definition.
-    //         //    This part was failing before. We manually construct it now.
-    //         const funcNameForCode = pythonGenerator.nameDB_.getName(functionName, MCED.BlocklyNameTypes.PROCEDURE);
-    //         const argNames = funcDefBlock.getVars();
-    //         const argsForDef = argNames.map(name => pythonGenerator.nameDB_.getName(name, MCED.BlocklyNameTypes.VARIABLE));
-    //         let funcBody = pythonGenerator.statementToCode(funcDefBlock, 'STACK') || (pythonGenerator.INDENT + 'pass\n');
-    //         if (funcDefBlock.type === 'procedures_defreturn') {
-    //             const returnValue = pythonGenerator.valueToCode(funcDefBlock, 'RETURN', pythonGenerator.ORDER_NONE) || 'None';
-    //             funcBody += pythonGenerator.INDENT + 'return ' + returnValue + '\n';
-    //         }
-    //         const pureFunctionCode = `def ${funcNameForCode}(self, ${argsForDef.join(', ')}):\n${funcBody}`;
-    //
-    //         // 2. Extract parameter metadata (name AND type) from the call block's connections.
-    //         const parameters = argNames.map((argName, index) => {
-    //             let inferredType = 'String'; // Default type
-    //             const inputConnection = funcCallBlock.getInput('ARG' + index);
-    //             if (inputConnection?.connection?.targetBlock()) {
-    //                 const connectedBlock = inputConnection.connection.targetBlock();
-    //                 const outputConnection = connectedBlock.outputConnection;
-    //                 if (outputConnection?.getCheck()) {
-    //                     const checks = outputConnection.getCheck();
-    //                     if (checks?.length > 0) {
-    //                         inferredType = checks[0];
-    //                     }
-    //                 }
-    //             }
-    //             return { name: argName, type: inferredType };
-    //         });
-    //
-    //         // 3. Generate the full script FOR EXECUTION. workspaceToCode will now work
-    //         //    because our procedure call generator is fixed to use valueToCode.
-    //         const fullScriptForExecution = pythonGenerator.workspaceToCode(workspace);
-    //
-    //         return {
-    //             code: fullScriptForExecution, // The full script to run now
-    //             isFunctionalPower: true,
-    //             // The metadata to be saved if the user clicks "Save" later
-    //             metadata: {
-    //                 function_name: functionName,
-    //                 parameters: parameters,
-    //                 python_code: pureFunctionCode // The pure function definition for the library
-    //             }
-    //         };
-    //
-    //     } else {
-    //         // --- Case 2: This is a "Script Power" (no function definition) ---
-    //         console.log("Building debug payload for a simple script power.");
-    //
-    //         const fullScriptForExecution = pythonGenerator.workspaceToCode(workspace);
-    //
-    //         return {
-    //             code: fullScriptForExecution,
-    //             isFunctionalPower: false,
-    //             metadata: { // No specific function metadata for scripts
-    //                 function_name: null,
-    //                 parameters: [],
-    //                 python_code: fullScriptForExecution // For scripts, the whole thing is saved
-    //             }
-    //         };
-    //     }
-    // }
-    /**
-     * The definitive payload builder for the "Execute (Debug)" button.
-     * It inspects the workspace to determine if it's a single "functional power"
-     * or a general "script power".
-     * * LOGIC:
-     * 1. If the workspace contains any top-level "script blocks" (blocks that are
-     * NOT function definitions), we treat it as a SCRIPT. This allows users to
-     * load a function from the library and write a script that calls it,
-     * without triggering the "Functional Power" test harness.
-     * 2. If the workspace contains ONLY function definitions, we treat it as a
-     * FUNCTIONAL POWER and extract the function name for the test harness.
-     * * @param {Blockly.Workspace} workspace The Blockly workspace instance.
-     * @returns {object|null} An object containing the payload for the server, or null.
-     */
-    function buildDebugPayload(workspace) {
-        const topBlocks = workspace.getTopBlocks(false);
-        if (topBlocks.length === 0) return null;
-
-        // 1. Identify Blocks types
-        // Standard Blockly procedure definition types
-        const definitionTypes = ['procedures_defnoreturn', 'procedures_defreturn'];
-
-        // Filter for blocks that act as script entry points (statements, calls, loops, etc.)
-        const scriptBlocks = topBlocks.filter(b =>
-            !definitionTypes.includes(b.type) && b.isEnabled()
-        );
-
-        // Filter for function definitions
-        const definitionBlocks = topBlocks.filter(b =>
-            definitionTypes.includes(b.type) && b.isEnabled()
-        );
-
-        // 2. Determine Mode
-        // If ANY script blocks exist, we execute as a Script.
-        const isScriptMode = scriptBlocks.length > 0;
-
-        if (isScriptMode) {
-            // --- SCRIPT MODE ---
-            // Generate code for the entire workspace.
-            // The generator automatically includes function definitions found in the workspace.
-            const code = pythonGenerator.workspaceToCode(workspace);
-
-            return {
-                type: 'script',
-                code: code
-            };
-        } else if (definitionBlocks.length > 0) {
-            // --- FUNCTIONAL MODE ---
-            // Only definitions exist. We assume the user is defining/editing a Power
-            // and wants to test the primary function.
-
-            // We select the first definition as the target.
-            const targetBlock = definitionBlocks[0];
-            const funcName = targetBlock.getFieldValue('NAME');
-
-            const code = pythonGenerator.workspaceToCode(workspace);
-
-            return {
-                type: 'functional',
-                code: code,
-                function_name: funcName
-            };
-        }
-
-        // Fallback if no valid blocks found
-        return null;
-    }
-    // --- Wire up the "Execute (Debug)" Button ---
-    /**
-     * Removes ANSI escape codes (used for terminal colors) from a string.
-     * @param {string} str The string to clean.
-     * @returns {string} The cleaned string.
-     */
-    function stripAnsi(str) {
-        // This regex targets the standard escape sequences used by terminal libraries like 'rich'
-        const ansiRegex = /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g;
-        return str.replace(ansiRegex, '');
-    }
-
-    const executeButton = document.getElementById('executePowerButton');
-    if (executeButton) {
-        executeButton.addEventListener('click', async () => {
-            const payload = buildDebugPayload(workspace);
-            if (!payload) return;
-
-            const command = '%mc_debug_and_define';
-            const output = await executeIPythonCommand(command, JSON.stringify(payload));
-
-            if (output) {
-                // 1. Strip the color codes from the entire output
-                const cleanOutput = stripAnsi(output);
-                console.log("Cleaned Output for parsing:", cleanOutput);
-
-                // 2. Use a simple regex on the clean text
-                const idMatch = cleanOutput.match(/MCED_EXECUTION_ID:(\S+)/);
-
-                if (idMatch && idMatch[1]) {
-                    lastExecutedPowerId = idMatch[1];
-                    console.log(`Tracking Power ID for cancellation: ${lastExecutedPowerId}`);
-                }
-            }
-        });
-    }
-
-    // 3. New Cancel Button Listener
-    const cancelBtn = document.getElementById('cancelPowerButton');
-    if (cancelBtn) {
-        cancelBtn.addEventListener('click', async () => {
-            // Fallback to empty string so the backend prints usage instead of crashing
-            const idToCancel = lastExecutedPowerId || '';
-
-            console.log(`Requesting cancel for ID: ${idToCancel}`);
-            await executeIPythonCommand('%mc_cancel_power', idToCancel);
-
-            // Clear the ID after a cancellation attempt
-            lastExecutedPowerId = null;
-        });
-    }
-    // const executeButton = document.getElementById('executePowerButton');
-    // if (executeButton) {
-    //     executeButton.addEventListener('click', async () => {
-    //         console.log("Execute (Debug) button clicked.");
-    //
-    //         // 1. Build the complete payload using our new helper function
-    //         const payload = buildDebugPayload(workspace);
-    //
-    //         // If payload is null, it means the workspace wasn't set up correctly for debugging.
-    //         if (!payload) {
-    //             return;
-    //         }
-    //
-    //         // For display, show the full script that will be executed
-    //         const codeDisplay = document.getElementById('pythonCodeDisplay');
-    //         if (codeDisplay) {
-    //             codeDisplay.textContent = payload.code;
-    //             if(window.Prism) Prism.highlightElement(codeDisplay);
-    //         }
-    //
-    //         // 2. Define the new magic command and prepare the arguments
-    //         const command = '%mc_debug_and_define';
-    //
-    //         // The argument is the full payload object, stringified as JSON
-    //         const output = await executeIPythonCommand(command, JSON.stringify(payload));
-    //
-    //         if (output) {
-    //             console.log("Debug Output:\n\n" + output);
-    //         }
-    //     });
-    // }
-
-
-    document.body.addEventListener('loadPower', function(event) {
-        if (!event.detail || !event.detail.powerData || !event.detail.powerData.blockly_json) {
-            alert('Error: Could not load power. Data is missing.');
-            return;
-        }
-
-        const powerData = event.detail.powerData;
-        const mode = event.detail.mode;
-
-        console.log(`Received power to load: '${powerData.name}' in '${mode}' mode.`);
-
-        try {
-            if (mode === 'replace') {
-                if (workspace.getAllBlocks(false).length > 0) {
-                    if (!confirm(`This will replace your current workspace with the power '${powerData.name}'. Are you sure?`)) {
-                        return;
-                    }
-                }
-                Blockly.serialization.workspaces.load(powerData.blockly_json, workspace);
-                console.log("Workspace replaced successfully.");
-
-            } else { // mode === 'add'
-
-                console.log("Appending power to workspace...");
-                const incomingJson = powerData.blockly_json;
-
-                // 1. Manually create/merge variables and create an ID remap dictionary.
-                const variableMap = workspace.getVariableMap();
-                const idRemap = {};
-                if (incomingJson.variables) {
-                    for (const newVar of incomingJson.variables) {
-                        const existingVar = variableMap.getVariable(newVar.name);
-                        if (existingVar && existingVar.getId() !== newVar.id) {
-                            idRemap[newVar.id] = existingVar.getId();
-                        } else if (!existingVar) {
-                            workspace.createVariable(newVar.name, newVar.type, newVar.id);
-                        }
-                    }
-                }
-
-                // 2. If remappings are needed, stringify, replace all IDs, and parse back.
-                let blocksToAppend = incomingJson.blocks;
-                if (Object.keys(idRemap).length > 0 && blocksToAppend) {
-                    let blockJsonString = JSON.stringify(blocksToAppend);
-                    for (const oldId in idRemap) {
-                        const newId = idRemap[oldId];
-                        const searchRegExp = new RegExp(`"${escapeRegExp(oldId)}"`, 'g');
-                        blockJsonString = blockJsonString.replace(searchRegExp, `"${newId}"`);
-                    }
-                    blocksToAppend = JSON.parse(blockJsonString);
-                }
-
-                // 3. Now, iterate through the top-level blocks and append them one by one.
-                if (blocksToAppend && Array.isArray(blocksToAppend.blocks)) {
-                    Blockly.Events.disable();
-                    try {
-                        const topBlocksJson = blocksToAppend.blocks;
-                        for (const blockJson of topBlocksJson) {
-                            if (blockJson.type === 'procedures_defnoreturn' || blockJson.type === 'procedures_defreturn') {
-                                blockJson.collapsed = true;
-                            }
-                            // This is the key: calling .append for each individual block object.
-                            Blockly.serialization.blocks.append(blockJson, workspace);
-                        }
-                        console.log(`Appended ${topBlocksJson.length} new block stack(s).`);
-                    } finally {
-                        Blockly.Events.enable();
-                    }
-
-                    // Clean up the layout to position the new blocks neatly.
-                    if (workspace.getTopBlocks(false).length > 0) {
-                         workspace.render();
-                         workspace.cleanUp();
-                    }
-                }
-            }
-
-            autosaveWorkspace();
-
-        } catch (e) {
-            console.error("Error deserializing or loading workspace:", e);
-            alert("Could not load the power. The file may be corrupted.");
-        }
-    });
-
-    // --- Logic to handle resizing Blockly when panels collapse ---
-
-    // Create a debounced resize function
-    const debouncedResize = debounce(() => {
-        console.log("Resizing Blockly canvas...");
-        // This is the official Blockly API to notify it of a resize.
-        window.dispatchEvent(new Event('resize'));
-        // Blockly.svgResize(workspace);
-    }, 100); // A short debounce is fine here
-
-    // Find the toggle buttons
-    const libraryToggleBtn = document.querySelector('#power-library-panel .toggle-btn');
-    const codeToggleBtn = document.querySelector('#code-preview-panel .toggle-btn');
-
-
-    // When either toggle button is clicked, call the resize function
-    if (libraryToggleBtn) {
-        libraryToggleBtn.addEventListener('click', debouncedResize);
-    }
-    if (codeToggleBtn) {
-        codeToggleBtn.addEventListener('click', debouncedResize);
-    }
-
-
-    // --- NEW: A dedicated function to trigger a Blockly resize ---
-    const triggerBlocklyResize = debounce(() => {
-        if (workspace) {
-            console.log("Triggering Blockly resize...");
-            // This is the official Blockly API to notify it of a container size change.
-            Blockly.svgResize(workspace);
-        }
-    }, 100); // A 100ms debounce is plenty
-
-    // --- Update the existing window resize listener to use the new helper ---
-    window.addEventListener('resize', triggerBlocklyResize);
-
-    window.triggerBlocklyResize = triggerBlocklyResize;
-
-    // ------------------------------------------------------------------------------
-    const mainLayout = document.querySelector('.editor-layout');
-
-    // Listen for the end of the width transition on side panels
-    mainLayout.addEventListener('transitionend', (e) => {
-        if (e.propertyName === 'width') {
-            window.triggerBlocklyResize(); // Use your existing helper
-
-            const widgetDiv = Blockly.WidgetDiv.getDiv();
-            const blocklyInputObserver = new MutationObserver(() => {
-                const blocklyInput = widgetDiv.querySelector('input');
-                if (blocklyInput) {
-                }
-    });
-
-    // // 2. Sync the keyboard whenever a Blockly editor opens
-    // const widgetDiv = Blockly.WidgetDiv.getDiv();
-    // const syncObserver = new MutationObserver(() => {
-    //     const activeInput = widgetDiv.querySelector('input');
-    //     if (activeInput && keyboardInstance) {
-    //         keyboardInstance.setInput(activeInput.value);
-    //     }
-    // });
-    // syncObserver.observe(widgetDiv, { childList: true });
-activeElement = blocklyInput;
-            keyboardInstance.setInput(activeElement.value);
-        }
-    });
-
-    blocklyInputObserver.observe(widgetDiv, { childList: true });
-    // --- TEMPORARY DEBUGGING LISTENER ---
-    // Add this anywhere inside the init() function.
-    document.body.addEventListener('library-changed', (event) => {
-        // If this message appears, the dispatch is working!
-        console.log("Event 'library-changed' was successfully dispatched!");
-
-        // This will show you the data that was sent with the event.
-        // It should contain the powerId and powerName.
-        console.log("Event Detail (data passed with dispatch):", event.detail);
-
-        // You can use an alert for unmissable confirmation during testing.
-        // alert(`Delete event dispatched for power name: ${event.detail.powerName}`);
-    });
-    // --- END OF DEBUGGING LISTENER ---
-
-    // Ensure sidebars are physically collapsed and Blockly is resized for portrait mode
-    if (window.triggerBlocklyResize) {
-        window.triggerBlocklyResize();
-    }
 }
 
-// --- Main Execution ---
-// This listener waits for the entire HTML document to be parsed and ready.
+/**
+ * --- Main Initialization ---
+ */
+async function init() {
+    // 1. Blockly Setup
+    Blockly.dialog.setPrompt((message, defaultValue, callback) => {
+        window.isBlocklyPromptOpen = true;
+        if (document.activeElement) document.activeElement.blur();
+        window.dispatchEvent(new CustomEvent('blockly-prompt', {
+            detail: { message, defaultValue, onComplete: (val) => {
+                window.isBlocklyPromptOpen = false;
+                callback(val);
+                workspace.markFocused();
+            }}
+        }));
+    });
+
+    const toolboxUrl = new URL('./toolbox.xml', import.meta.url);
+    const toolboxXml = await fetch(toolboxUrl).then(r => r.text()).catch(() => '<xml></xml>');
+
+    workspace = Blockly.inject('blocklyDiv', {
+        toolbox: toolboxXml,
+        trashcan: { position: { vertical: 'top', horizontal: 'right' } },
+        grid: { spacing: 26, length: 3, colour: '#ccc', snap: true },
+        zoom: { controls: true, wheel: true, startScale: 1.0, maxScale: 3, minScale: 0.3, scaleSpeed: 1.2 },
+        move: { scrollbars: true, drag: true, wheel: false }
+    });
+
+    const flyout = workspace.getFlyout();
+    const originalHide = flyout.hide;
+    flyout.hide = function() { if (window.isBlocklyPromptOpen) originalHide.call(this); };
+
+    workspace.addChangeListener((event) => {
+        if (event.type === Blockly.Events.CLICK && !event.blockId) originalHide.call(flyout);
+    });
+
+    // 2. Load Content
+    defineMineCraftBlocklyUtils(Blockly);
+    defineMineCraftConstants(Blockly);
+    registerAllBlocks(Blockly);
+    registerAllGenerators(pythonGenerator);
+
+    const initialJson = loadAutosavedWorkspace() || await fetch('./workspace.json').then(r => r.json()).catch(() => BLANK_WORKSPACE_JSON);
+    Blockly.serialization.workspaces.load(initialJson, workspace);
+
+    // 3. Orchestration
+    setupKeyboard();
+    initializeHtmxListeners();
+    window.addEventListener('beforeunload', autosaveWorkspace);
+
+    const debouncedAutosave = debounce(autosaveWorkspace, 1000);
+    const debouncedCodeUpdate = debounce(() => {
+        const display = document.getElementById('pythonCodeDisplay');
+        if (display) {
+            display.textContent = pythonGenerator.workspaceToCode(workspace);
+            if (window.Prism) Prism.highlightElement(display);
+        }
+    });
+
+    workspace.addChangeListener((e) => {
+        if (!e.isUiEvent) { debouncedAutosave(); debouncedCodeUpdate(); }
+    });
+
+    // 4. Button Wiring (Delegating to PowerManager)
+    document.getElementById('confirmSaveButton')?.addEventListener('click', async () => {
+        const form = document.getElementById('savePowerForm');
+        if (!form) return;
+        const formData = Object.fromEntries(new FormData(form).entries());
+        try {
+            if (await PowerManager.savePower(workspace, formData)) {
+                window.dispatchEvent(new CustomEvent('library-changed'));
+                alert(`Saved "${formData.name}" successfully!`);
+            }
+        } catch (e) { alert(e.message); }
+    });
+
+    document.getElementById('executePowerButton')?.addEventListener('click', async () => {
+        const payload = PowerManager.buildDebugPayload(workspace);
+        if (!payload) return;
+        const out = await PowerManager.executeIPythonCommand('%mc_debug_and_define', JSON.stringify(payload));
+        if (out) {
+            const match = stripAnsi(out).match(/MCED_EXECUTION_ID:(\S+)/);
+            if (match) lastExecutedPowerId = match[1];
+        }
+    });
+
+    document.getElementById('cancelPowerButton')?.addEventListener('click', async () => {
+        if (lastExecutedPowerId) {
+            await PowerManager.executeIPythonCommand('%mc_cancel_power', lastExecutedPowerId);
+            lastExecutedPowerId = null;
+        }
+    });
+
+    document.getElementById('clearWorkspaceButton')?.addEventListener('click', () => {
+        if (confirm("Clear workspace?")) {
+            workspace.clear();
+            localStorage.removeItem(AUTOSAVE_KEY);
+        }
+    });
+
+    // 5. Layout Resizing
+    const triggerResize = debounce(() => { if (workspace) Blockly.svgResize(workspace); }, 100);
+    window.addEventListener('resize', triggerResize);
+    document.querySelector('.editor-layout')?.addEventListener('transitionend', (e) => {
+        if (e.propertyName === 'width') triggerResize();
+    });
+
+    const widgetDiv = Blockly.WidgetDiv.getDiv();
+    new MutationObserver(() => {
+        const input = widgetDiv.querySelector('input');
+        if (input && keyboardInstance) {
+            currentKeyboardInput = input;
+            keyboardInstance.setInput(input.value);
+        }
+    }).observe(widgetDiv, { childList: true });
+
+    // 6. External Load Event
+    document.body.addEventListener('loadPower', (e) => {
+        const { powerData, mode } = e.detail;
+        if (mode === 'replace') {
+            workspace.clear();
+            Blockly.serialization.workspaces.load(powerData.blockly_json, workspace);
+        } else {
+            Blockly.Events.disable();
+            try {
+                if (powerData.blockly_json.blocks?.blocks) {
+                    powerData.blockly_json.blocks.blocks.forEach(b => {
+                        if (b.type.startsWith('procedures_def')) b.collapsed = true;
+                        Blockly.serialization.blocks.append(b, workspace);
+                    });
+                    workspace.cleanUp();
+                }
+            } finally { Blockly.Events.enable(); }
+        }
+        autosaveWorkspace();
+    });
+
+    triggerResize();
+    debouncedCodeUpdate();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOM fully loaded and parsed.");
-
-    // 1. NOW that the DOM is ready, start Alpine.
-    //    It will scan the document and find all x-data attributes.
     Alpine.start();
-    console.log("Alpine.js started.");
-
-    // 2. Then, run our application's main initialization logic.
     init();
 });

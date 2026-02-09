@@ -190,7 +190,7 @@ def generate_digital_plane_coordinates(normal, point_on_plane, outer_rect_dims):
                         coords.add((x, y, z))
     return DigitalSet(coords)
 
-class DigitalTurtle:
+class QTurtle:
     def __init__(self, start_pos=(0,0,0)):
         self.pos = np.array(start_pos, dtype=int)
         self.right   = np.array([1, 0, 0], dtype=int)
@@ -203,10 +203,6 @@ class DigitalTurtle:
 
     def set_scale_factor(self, factor):
         self.scale_factor = float(factor)
-
-    def set_brush(self, digital_set):
-        if isinstance(digital_set, DigitalSet):
-            self.brush = digital_set
 
     def move(self, distance: int, direction='forward'):
         vec = np.array([0,0,0], dtype=int)
@@ -250,28 +246,6 @@ class DigitalTurtle:
             world_voxels.append((int(final_pos[0]), int(final_pos[1]), int(final_pos[2])))
         return DigitalSet(world_voxels)
 
-    def extrude(self, distance: int, direction: str = 'forward'):
-        vec = np.array([0,0,0], dtype=int)
-        d = direction.lower()
-        if d == 'forward': vec = self.forward
-        elif d == 'back':  vec = -self.forward
-        elif d == 'up':    vec = self.up
-        elif d == 'down':  vec = -self.up
-        elif d == 'right': vec = self.right
-        elif d == 'left':  vec = -self.right
-
-        start_pos, move_vec = self.pos.copy(), vec * int(distance)
-        path = generate_linear_path((0,0,0), tuple(move_vec))
-        world_voxels = set()
-        for px, py, pz in path:
-            current_turtle_pos = start_pos + np.array([px, py, pz])
-            for bx, by, bz in self.brush:
-                brush_offset = (bx * self.right) + (by * self.up) + (bz * self.forward)
-                final_pos = current_turtle_pos + brush_offset
-                world_voxels.add((int(final_pos[0]), int(final_pos[1]), int(final_pos[2])))
-        self.pos += move_vec
-        return DigitalSet(world_voxels)
-
     def push_state(self):
         self.stack.append((self.pos.copy(), self.forward.copy(), self.up.copy(), self.right.copy(), self.scale))
 
@@ -299,25 +273,6 @@ class DigitalTurtle:
             return self.extrude(scaled_step)
         return None
 
-class QTurtle(DigitalTurtle):
-    QDirections = [
-        ("North (-Z)", "N"), ("South (+Z)", "S"), ("East (+X)", "E"), ("West (-X)", "W"),
-        ("Up (+Y)", "U"), ("Down (-Y)", "D"), ("North-East", "NE"), ("North-West", "NW"),
-        ("South-East", "SE"), ("South-West", "SW"), ("North-Up", "NU"), ("North-Down", "ND"),
-        ("South-Up", "SU"), ("South-Down", "SD"), ("East-Up", "EU"), ("East-Down", "ED"),
-        ("West-Up", "WU"), ("West-Down", "WD"), ("North-East-Up", "NEU"), ("North-East-Down", "NED"),
-        ("North-West-Up", "NWU"), ("North-West-Down", "NWD"), ("South-East-Up", "SEU"), ("South-East-Down", "SED"),
-        ("South-West-Up", "SWU"), ("South-West-Down", "SWD")
-    ]
-
-    TurtleDirections = [
-        ("Forward", "F"), ("Back", "B"), ("Right", "R"), ("Left", "L"), ("Up", "U"), ("Down", "D"),
-        ("Forward-Right", "FR"), ("Forward-Left", "FL"), ("Back-Right", "BR"), ("Back-Left", "BL"),
-        ("Forward-Up", "FU"), ("Forward-Down", "FD"), ("Back-Up", "BU"), ("Back-Down", "BD"),
-        ("Right-Up", "RU"), ("Right-Down", "RD"), ("Left-Up", "LU"), ("Left-Down", "LD"),
-        ("Forward-Right-Up", "FRU"), ("Forward-Right-Down", "FRD"), ("Forward-Left-Up", "FLU"), ("Forward-Left-Down", "FLD"),
-        ("Back-Right-Up", "BRU"), ("Back-Right-Down", "BRD"), ("Back-Left-Up", "BLU"), ("Back-Left-Down", "BLD")
-    ]
 
     def reset(self, position, heading_q_str='N'):
         self.pos = np.array(position, dtype=int)

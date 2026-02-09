@@ -8,7 +8,8 @@
 
     </head>
     <body x-data="{ isLibraryCollapsed: true, isCodeCollapsed: true, keyboardVisible: false }">
-            <div class="editor-layout" :class="{ 'library-collapsed': isLibraryCollapsed, 'code-collapsed': isCodeCollapsed }">
+            <!-- Added static classes library-collapsed and code-collapsed to ensure correct initial state -->
+            <div class="editor-layout library-collapsed code-collapsed" :class="{ 'library-collapsed': isLibraryCollapsed, 'code-collapsed': isCodeCollapsed }">
                 <aside id="power-library-panel">
 
                     <div class="panel-header">
@@ -32,24 +33,17 @@
                 <main id="main-content-panel">
                     <div id="controls">
                         <button @click="isLibraryCollapsed = !isLibraryCollapsed">Toggle Library</button>
-                        <button @click="isCodeCollapsed = !isCodeCollapsed">Toggle Code</button>
-
-                        <button id="savePowerAsButton" @click="prepareAndOpenSaveModal()">Save/Update Power...</button>
-                        <button id="loadPowerFromFileButton">Load from File...</button>
-
-                        <button id="executePowerButton">Execute (Debug)</button>
-                        <button id="cancelPowerButton" style="background-color: #d9534f; color: white;">Cancel Power</button>
+                        <button id="executePowerButton">Run Power</button>
+                        <button id="cancelPowerButton">Cancel Power</button>
+                        <button @click="window.prepareAndOpenSaveModal()">Save Workspace</button>
                         <button id="clearWorkspaceButton">Clear Workspace</button>
-                        <button
-                            class="control-button"
-                            @click="keyboardVisible = !keyboardVisible"
-                            :class="keyboardVisible ? 'btn-active' : ''">
-                            <i class="fas fa-keyboard"></i> Toggle Keyboard
-                        </button>
+                        <button @click="keyboardVisible = !keyboardVisible">Keyboard</button>
+                        <button @click="isCodeCollapsed = !isCodeCollapsed">Toggle Python</button>
                     </div>
                     <div id="blocklyDiv"></div>
                 </main>
 
+                <!-- Code Preview Panel: Preserving original structure for CSS compatibility -->
                 <aside id="code-preview-panel">
                     <div class="panel-header code-header">
                         <span>Python Code</span>
@@ -63,106 +57,100 @@
                     <pre id="code-container" class="language-python" aria-live="polite"><code id="pythonCodeDisplay" class="language-python"># Python code will be generated here...</code></pre>
                 </aside>
 
-        </div>
-
-        <template x-teleport="body">
-
-            <!--                     @open-save-modal.window="isOpen = true"-->
-            <div>
-                <div x-data="{ isOpen: false }"
+                <!-- Modal for saving a power -->
+                <div x-data="{ show: false, name: '', description: '', category: 'Workspaces', power_id: null, availableCategories: [] }"
                      @open-save-modal.window="
-                        isOpen = true;
-                        // This logic now correctly pre-fills the form with data from the event
-                        $nextTick(() => {
-                            document.getElementById('powerName').value = $event.detail.name || '';
-                            document.getElementById('powerDescription').value = $event.detail.description || '';
-                            document.getElementById('powerCategory').value = $event.detail.category || '';
-                        });
-                    "
-                     @library-changed.window="isOpen = false"
-                     @keydown.escape.window="isOpen = false"
-                     class="modal-root">
+                        show = true;
+                        name = $event.detail.name;
+                        description = $event.detail.description;
+                        category = $event.detail.category;
+                        power_id = $event.detail.power_id || null;
+                        availableCategories = $event.detail.availableCategories || [];
+                     "
+                     x-show="show"
+                     class="modal-overlay">
+                    <div class="modal-content">
+                        <h3>Save Power</h3>
+                        <form id="savePowerForm" @submit.prevent="show = false">
+                            <input type="hidden" name="power_id" x-model="power_id">
 
-                    <div x-show="isOpen" x-cloak class="modal-overlay" @click="isOpen = false"></div>
-                    <div x-show="isOpen" x-cloak class="modal-content" x-transition>
-                        <form id="savePowerForm">
-                            <h3>Save Power</h3>
-                            <p>Enter the details for your new power.</p>
                             <div class="form-group">
-                                <label for="powerName">Power Name</label>
-                                <input type="text" id="powerName" name="name" placeholder="e.g., Build Tower">
+                                <label for="powerName">Name:</label>
+                                <input type="text" id="powerName" name="name" x-model="name" required>
                             </div>
+
                             <div class="form-group">
-                                <label for="powerDescription">Description</label>
-                                <textarea id="powerDescription" name="description" rows="3" placeholder="e.g., Creates a 10-block high cobblestone tower."></textarea>
+                                <label for="powerCategory">Category:</label>
+                                <!-- Focus logic ensures the full list shows even if text is pre-filled -->
+                                <input type="text"
+                                       id="powerCategory"
+                                       name="category"
+                                       x-model="category"
+                                       list="categoryList"
+                                       placeholder="e.g. My Powers/Castle Walls"
+                                       @focus="$el.select()"
+                                       autocomplete="off">
+
+                                <datalist id="categoryList">
+                                    <template x-for="cat in availableCategories" :key="cat">
+                                        <option :value="cat" x-text="cat"></option>
+                                    </template>
+                                </datalist>
+                                <small style="display: block; color: #666; margin-top: 4px;">Use / for sub-categories</small>
                             </div>
+
                             <div class="form-group">
-                                <label for="powerCategory">Category</label>
-                                <input type="text" id="powerCategory" name="category" placeholder="e.g., Construction, Utility">
+                                <label for="powerDescription">Description:</label>
+                                <textarea id="powerDescription" name="description" x-model="description"></textarea>
+                            </div>
+
+                            <div class="modal-buttons">
+                                <button type="submit" id="confirmSaveButton">Save</button>
+                                <button type="button" @click="show = false">Cancel</button>
                             </div>
                         </form>
-                        <div class="modal-actions">
-                            <button class="btn-secondary" @click="isOpen = false">Cancel</button>
-                            <button class="btn-primary" id="confirmSaveButton">Save to Library</button>
-                        </div>
                     </div>
                 </div>
 
-                <div x-data="{
-                        isOpen: false,
-                        powerIdToDelete: null,
-                        powerNameToDelete: ''
-                     }"
+                <!-- Modal for confirming deletion of a power -->
+                <div x-data="{ show: false, powerId: null, powerName: '' }"
                      @open-delete-confirm.window="
-                        isOpen = true;
-                        powerIdToDelete = $event.detail.powerId;
-                        powerNameToDelete = $event.detail.powerName;
+                        show = true;
+                        powerId = $event.detail.powerId;
+                        powerName = $event.detail.powerName;
                      "
-                     @keydown.escape.window="isOpen = false"
-                     class="modal-root">
-
-                    <div x-show="isOpen" x-cloak class="modal-overlay" @click="isOpen = false"></div>
-
-                    <div x-show="isOpen" x-cloak class="modal-content" x-transition>
+                     x-show="show"
+                     class="modal-overlay">
+                    <div class="modal-content">
                         <h3>Delete Power</h3>
-                        <p>Are you sure you want to permanently delete the power: <strong x-text="powerNameToDelete"></strong>?</p>
+                        <p>Are you sure you want to permanently delete the power: <strong x-text="powerName"></strong>?</p>
                         <p>This action cannot be undone.</p>
-
-                        <div class="modal-actions">
-                            <button class="btn-secondary" @click="isOpen = false">Cancel</button>
-
-                            <button class="btn-primary btn-danger"
-                                    id="confirmDeleteButton"
-                                    @click="window.handleDeletePower(powerIdToDelete); isOpen = false;">
+                        <div class="modal-buttons">
+                            <button class="btn-danger"
+                                    @click="window.handleDeletePower(powerId); show = false;">
                                 Confirm Deletion
                             </button>
+                            <button @click="show = false">Cancel</button>
                         </div>
                     </div>
                 </div>
 
-                <div x-data="{
-                        show: false,
-                        message: '',
-                        defaultValue: '',
-                        callback: null,
-                        inputValue: ''
-                     }"
+                <!-- Simple Prompt Modal -->
+                <div x-data="{ show: false, message: '', defaultValue: '', callback: null, inputValue: '' }"
                      @blockly-prompt.window="
                         show = true;
                         message = $event.detail.message;
                         defaultValue = $event.detail.defaultValue;
-                        /* Change this line to use onComplete */
                         callback = $event.detail.onComplete;
-                        /* callback = $event.detail.callback; */
                         inputValue = $event.detail.defaultValue;
-                        // Use nextTick to wait for the modal to be visible before focusing
                         $nextTick(() => { $refs.promptInput.focus(); });
                      "
                      x-show="show"
                      class="modal-overlay"
-                     style="z-index: 35000;"> <div class="modal-content">
+                     style="z-index: 35000;">
+                    <div class="modal-content">
                         <p x-text="message"></p>
-                        <input type="text" x-model="inputValue" @keyup.enter="callback(inputValue); show = false;">
+                        <input type="text" x-ref="promptInput" x-model="inputValue" @keyup.enter="callback(inputValue); show = false;">
                         <div class="modal-buttons">
                             <button @click="callback(inputValue); show = false;">OK</button>
                             <button @click="callback(null); show = false;">Cancel</button>
@@ -171,7 +159,6 @@
                 </div>
 
             </div>
-        </template>
 
         <script type="module" src="./index.js"></script>
         <div class="simple-keyboard"

@@ -215,3 +215,12 @@ def delete_power_by_id(power_id):
     except Exception as e:
         print(f"Error deleting power {power_id}: {e}")
         return jsonify({"error": "An internal error occurred during deletion."}), 500
+
+@powers_bp.route('/powers/categories', methods=['GET'])
+def get_categories():
+    # Ensure you are accessing the repository instance assigned during mc_start_app
+    from flask import current_app
+    repo = current_app.config.get('REPO')
+    if not repo:
+        return jsonify(["Powers", "Workspaces"])
+    return jsonify(repo.list_categories())

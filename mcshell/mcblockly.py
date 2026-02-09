@@ -521,7 +521,6 @@ def generate_mcactions_blocks():
     # 2. Defer imports to runtime
     from mcshell.mcactions import (
         DigitalGeometry,
-        TurtleActions,
         QTurtleActions,
         TurtleShapes,
         PlayerActions,
@@ -559,10 +558,8 @@ def generate_mcactions_blocks():
         'Block': "Block",
         'DigitalSet': "Digital_Set",
         'Metric': 'Metric',
-        'Direction': 'Direction',
         'QDirection': 'QDirection',
         'Axis': 'Axis',
-        'Compass': 'Compass',
         'QCompass': 'QCompass',
         'Time': 'Time',
         'Weather': 'Weather',
@@ -603,10 +600,8 @@ def generate_mcactions_blocks():
                     <field name="VALUE">euclidean</field>
                 </shadow>
         ''',
-        Direction =  '<shadow type="picker_direction"><field name="VALUE">forward</field></shadow>',
         QDirection =  '<shadow type="picker_qdirection"><field name="VALUE">forward</field></shadow>',
         Axis =  '<shadow type="picker_axis"><field name="VALUE">y</field></shadow>',
-        Compass = '<shadow type="picker_compass"><field name="VALUE">N</field></shadow>',
         QCompass = '<shadow type="picker_qcompass"><field name="VALUE">N</field></shadow>',
         Time = '<shadow type="picker_time"><field name="VALUE">day</field></shadow>',
         Weather = '<shadow type="picker_weather"><field name="VALUE">clear</field></shadow>',
@@ -658,8 +653,7 @@ def generate_mcactions_blocks():
         return js_acc, py_acc, xml_acc
 
     turtleshapes_extras = get_extras(["Metric"])
-    # turtleactions_extras = get_extras(["Direction", "Axis", "Compass"])
-    playeractions_extras = get_extras(["Direction", "Axis", "Compass"])
+    playeractions_extras = get_extras(["QDirection", "Axis", "QCompass"])
     qturtleactions_extras = get_extras(["QDirection","Axis","QCompass"])
     serveractions_extras = get_extras(
         ["Time","Weather","Difficulty","Gamemode","GameRule","IntegerGameRule","LocateType","Structure","Biome","Poi"])
@@ -667,7 +661,6 @@ def generate_mcactions_blocks():
     classes_to_generate = [
         (DigitalGeometry, "DigitalGeometry", None, None, None, "#364EE7"),
         (TurtleShapes, "TurtleShapes", turtleshapes_extras[0], turtleshapes_extras[1], turtleshapes_extras[2], "#F3BA2B"),
-        # (TurtleActions, "TurtleActions", turtleactions_extras[0], turtleactions_extras[1], turtleactions_extras[2], "#C7F32B"),
         (QTurtleActions, "QTurtleActions", qturtleactions_extras[0], qturtleactions_extras[1], qturtleactions_extras[2], "#F3BA2B"),
         (PlayerActions, "PlayerActions", playeractions_extras[0], playeractions_extras[1], playeractions_extras[2], "#3ECDE0"),
         (EventActions, "EventActions", None, None, None, "#FCBA03"),
