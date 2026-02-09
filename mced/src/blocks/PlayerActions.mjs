@@ -2,21 +2,41 @@ import { MCED } from "../lib/constants.mjs";
 
 export function definePlayerActionsBlocks(Blockly) {
 
-    Blockly.Blocks['picker_direction'] = {
+    Blockly.Blocks['picker_qdirection'] = {
         init: function() {
             this.appendDummyInput()
-                .appendField("Direction")
+                .appendField("Qdirection")
                 .appendField(new Blockly.FieldDropdown([
-                ["Forward", "forward"],
-                ["Back", "back"],
-                ["Up", "up"],
-                ["Down", "down"],
-                ["Left", "left"],
-                ["Right", "right"]
+                ["Forward", "F"],
+                ["Back", "B"],
+                ["Right", "R"],
+                ["Left", "L"],
+                ["Up", "U"],
+                ["Down", "D"],
+                ["Forward-Right", "FR"],
+                ["Forward-Left", "FL"],
+                ["Back-Right", "BR"],
+                ["Back-Left", "BL"],
+                ["Forward-Up", "FU"],
+                ["Forward-Down", "FD"],
+                ["Back-Up", "BU"],
+                ["Back-Down", "BD"],
+                ["Right-Up", "RU"],
+                ["Right-Down", "RD"],
+                ["Left-Up", "LU"],
+                ["Left-Down", "LD"],
+                ["Forward-Right-Up", "FRU"],
+                ["Forward-Right-Down", "FRD"],
+                ["Forward-Left-Up", "FLU"],
+                ["Forward-Left-Down", "FLD"],
+                ["Back-Right-Up", "BRU"],
+                ["Back-Right-Down", "BRD"],
+                ["Back-Left-Up", "BLU"],
+                ["Back-Left-Down", "BLD"]
                 ]), "VALUE");
-            this.setOutput(true, "Direction");
+            this.setOutput(true, "QDirection");
             this.setColour(230);
-            this.setTooltip("Select a Direction.");
+            this.setTooltip("Select a Qdirection.");
         }
     };
 
@@ -37,23 +57,41 @@ export function definePlayerActionsBlocks(Blockly) {
     };
 
 
-    Blockly.Blocks['picker_compass'] = {
+    Blockly.Blocks['picker_qcompass'] = {
         init: function() {
             this.appendDummyInput()
-                .appendField("Compass")
+                .appendField("Qcompass")
                 .appendField(new Blockly.FieldDropdown([
                 ["North (-Z)", "N"],
                 ["South (+Z)", "S"],
                 ["East (+X)", "E"],
                 ["West (-X)", "W"],
+                ["Up (+Y)", "U"],
+                ["Down (-Y)", "D"],
                 ["North-East", "NE"],
                 ["North-West", "NW"],
                 ["South-East", "SE"],
-                ["South-West", "SW"]
+                ["South-West", "SW"],
+                ["North-Up", "NU"],
+                ["North-Down", "ND"],
+                ["South-Up", "SU"],
+                ["South-Down", "SD"],
+                ["East-Up", "EU"],
+                ["East-Down", "ED"],
+                ["West-Up", "WU"],
+                ["West-Down", "WD"],
+                ["North-East-Up", "NEU"],
+                ["North-East-Down", "NED"],
+                ["North-West-Up", "NWU"],
+                ["North-West-Down", "NWD"],
+                ["South-East-Up", "SEU"],
+                ["South-East-Down", "SED"],
+                ["South-West-Up", "SWU"],
+                ["South-West-Down", "SWD"]
                 ]), "VALUE");
-            this.setOutput(true, "Compass");
+            this.setOutput(true, "QCompass");
             this.setColour(230);
-            this.setTooltip("Select a Compass.");
+            this.setTooltip("Select a Qcompass.");
         }
     };
 
@@ -173,7 +211,7 @@ Blockly.Blocks['player_actions_send_title'] = {
 Blockly.Blocks['player_actions_set_compass_direction'] = {
     init: function() {
         this.appendDummyInput().appendField("Set Player Compass Direction");
-        this.appendValueInput("DIR").setCheck("Compass").setAlign("RIGHT").appendField("Direction");
+        this.appendValueInput("DIR").setCheck(null).setAlign("RIGHT").appendField("Direction");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(65);
@@ -181,7 +219,7 @@ Blockly.Blocks['player_actions_set_compass_direction'] = {
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('DIR').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="picker_compass"><field name="VALUE">N</field></shadow>`));
+        
     }
 };
 Blockly.Blocks['player_actions_set_compass_q_direction'] = {

@@ -1,7 +1,7 @@
 
 export function definePlayerActionsGenerators(pythonGenerator) {
 
-    pythonGenerator.forBlock['picker_direction'] = function(block, generator) {
+    pythonGenerator.forBlock['picker_qdirection'] = function(block, generator) {
         const code = block.getFieldValue('VALUE');
         return [`'${code}'`, generator.ORDER_ATOMIC];
     };
@@ -13,7 +13,7 @@ export function definePlayerActionsGenerators(pythonGenerator) {
     };
 
 
-    pythonGenerator.forBlock['picker_compass'] = function(block, generator) {
+    pythonGenerator.forBlock['picker_qcompass'] = function(block, generator) {
         const code = block.getFieldValue('VALUE');
         return [`'${code}'`, generator.ORDER_ATOMIC];
     };

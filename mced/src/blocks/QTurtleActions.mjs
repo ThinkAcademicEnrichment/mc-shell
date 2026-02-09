@@ -100,7 +100,7 @@ export function defineQTurtleActionsBlocks(Blockly) {
 Blockly.Blocks['q_turtle_actions_reset'] = {
     init: function() {
         this.appendDummyInput().appendField("QTurtle: Reset to");
-        this.appendValueInput("POSITION").setCheck(null).setAlign("RIGHT").appendField("Position");
+        this.appendValueInput("POSITION").setCheck("3DVector").setAlign("RIGHT").appendField("Position");
         this.appendValueInput("HEADING_Q_STR").setCheck("QCompass").setAlign("RIGHT").appendField("Heading Q Str");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
@@ -109,6 +109,13 @@ Blockly.Blocks['q_turtle_actions_reset'] = {
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
+        this.getInput('POSITION').connection.setShadowDom(Blockly.utils.xml.textToDom(`
+                 <shadow type="minecraft_vector_3d">
+                    <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+                    <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+                    <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
+                </shadow>
+        `));
         this.getInput('HEADING_Q_STR').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="picker_qcompass"><field name="VALUE">N</field></shadow>`));
     }
 };

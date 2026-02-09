@@ -406,34 +406,4 @@
         <block type="minecraft_vector_dot_product"></block>
         <block type="minecraft_matrix_vector_multiply"></block>
     </category>
-<!--    <category name="Position" colour="#0099CC">-->
-<!--        <block type="minecraft_position_player"></block>-->
-<!--        <block type="minecraft_position_player_tile"></block>-->
-<!--        <block type="minecraft_position_get_direction"></block>-->
-<!--        <block type="minecraft_position_here"></block>-->
-<!--        <block type="minecraft_position_get_compass_direction"></block>-->
-<!--    </category>-->
-<!--    <category name="Digital Geometry" colour="#4a90e2">-->
-<!--        <block type="minecraft_action_create_digital_line"></block>-->
-<!--        <block type="minecraft_action_create_digital_tube"></block>-->
-<!--        <block type="minecraft_action_create_digital_ball"></block>-->
-<!--        <block type="minecraft_action_create_digital_cube"></block>-->
-<!--        <block type="minecraft_action_create_digital_plane"></block>-->
-<!--        <block type="minecraft_action_create_digital_disc"></block>-->
-<!--        <block type="minecraft_action_create_digital_sphere"></block>-->
-<!--        <block type="minecraft_action_create_digital_tetrahedron"></block>-->
-<!--    </category>-->
-<!--    <sep></sep>-->
-    <!--    Generated with update_app() -->
-<!--    <category name="Materials"></category>-->
-<!--    <category name="Entities"></category>-->
-<!--    <category name="World Actions" colour="#4C97FF">-->
-<!--        <block type="minecraft_action_set_block"></block>-->
-<!--        <block type="minecraft_action_set_blocks"></block>-->
-<!--        <block type="minecraft_action_spawn_entity"></block>-->
-<!--        <block type="minecraft_action_get_block"></block>-->
-<!--        <block type="minecraft_action_get_height"></block>-->
-<!--        <block type="minecraft_action_post_to_chat"></block>-->
-<!--        <block type="minecraft_action_create_explosion"></block>-->
-<!--      </category>-->
 </xml>
