@@ -8,6 +8,7 @@ from IPython.core.magic import Magics, magics_class, line_magic,needs_local_scop
 
 from rich.prompt import Prompt
 
+from mcshell.constants import *
 from mcshell.mcrepo import SQLiteRepository
 from mcshell.mcclient import MCClient
 from mcshell.mcserver import start_app_server,app_server_thread
@@ -998,44 +999,76 @@ class MCShell(Magics):
         except requests.exceptions.RequestException as e:
             print(f"Error: Could not connect to the other player's application server. {e}")
 
+
     @line_magic
     def mc_stdlib(self, line):
         """
         Management magic for the Minecraft Shell Standard Library.
         Usage:
-            %mc_stdlib list [player_id]      - List available powers in a library.
-            %mc_stdlib export [player_id]    - Interactively select powers to export to stdlib.json.
-            %mc_stdlib remove                - Interactively select powers to remove from stdlib.json.
-            %mc_stdlib import [json_path]    - Import powers from a legacy JSON file into current library.
-            %mc_stdlib sync                  - Force a sync of the current player's stdlib.
+            %mc_stdlib list [player_id]             - List available powers in a library.
+            %mc_stdlib list-stdlib                  - List powers available in the Standard Library bundle.
+            %mc_stdlib rename-category <old> <new>  - Rename a category in your library.
+            %mc_stdlib export [player_id]           - Export powers to stdlib.json.
+            %mc_stdlib remove                       - Remove powers from stdlib.json.
+            %mc_stdlib sync                         - Merge missing Standard Library powers into your library.
         """
-        args = line.split()
+        # Using shlex.split to handle quoted strings with spaces
+        try:
+            args = shlex.split(line)
+        except ValueError as e:
+            print(f"Error parsing command line: {e}")
+            return
+
         if not args:
-            print("Usage: %mc_stdlib [list|export|remove|import|sync]")
+            print("Usage: %mc_stdlib [list|list-stdlib|rename-category|export|remove|sync]")
             return
 
         command = args[0]
-        from mcshell.constants import MC_DATA_DIR, MC_POWER_LIBRARY_DIR
+        from mcshell.constants import MC_DATA_DIR
 
-        # Determine the target player whose library we are inspecting/exporting from
-        target_player = args[1] if len(args) > 1 and command not in ["import", "remove"] else self.mc_name
-        if not target_player and command in ["list", "export"]:
-            target_player = self._get_mc_name()
+        if command == "rename-category":
+            if len(args) < 3:
+                print("Usage: %mc_stdlib rename-category <old_name> <new_name>")
+                return
+            old_name, new_name = args[1], args[2]
+            player = self.mc_name or self._get_mc_name()
+            repo = SQLiteRepository(player)
 
-        if command == "list":
+            # Now correctly handles categories with spaces when quoted
+            count = repo.rename_category(old_name, new_name)
+            print(f"Renamed {count} powers from '{old_name}' to '{new_name}'.")
+            print("Refresh the editor to see changes.")
+
+        elif command == "list":
+            target_player = args[1] if len(args) > 1 else (self.mc_name or self._get_mc_name())
             repo = SQLiteRepository(target_player)
             powers = repo.list_powers()
             if not powers:
-                print(f"No powers found in {target_player}'s library.")
+                print(f"No powers found for {target_player}.")
                 return
-
             print(f"\nPowers in {target_player}'s library:")
             for i, p in enumerate(powers):
                 print(f" [{i}] {p['name']} ({p.get('category', 'General')})")
 
+        elif command == "list-stdlib":
+            target_path = MC_DATA_DIR.joinpath('powers/stdlib.json')
+            if not target_path.exists():
+                print("Standard Library file not found.")
+                return
+            try:
+                with target_path.open('r') as f:
+                    data = json.load(f)
+                    powers = data.get('powers', [])
+                    print(f"\nStandard Library Bundle (v{data.get('version', '?')}):")
+                    for i, p in enumerate(powers):
+                        print(f" [{i}] {p['name']} ({p.get('category', 'General')})")
+            except Exception as e:
+                print(f"Error reading stdlib: {e}")
+
         elif command == "export":
+            target_player = args[1] if len(args) > 1 else (self.mc_name or self._get_mc_name())
             repo = SQLiteRepository(target_player)
-            powers = repo.list_powers()
+            powers = repo.list_full_powers()
             if not powers:
                 print(f"No powers found in {target_player}'s library.")
                 return
@@ -1058,40 +1091,32 @@ class MCShell(Magics):
             powers_to_export = []
             for idx in selected_indices:
                 if 0 <= idx < len(powers):
-                    full_p = repo.get_full_power(powers[idx]['power_id'])
-                    if full_p:
-                        # Sanitize for standard library
-                        full_p['author'] = 'System'
-                        powers_to_export.append(full_p)
+                    full_p = powers[idx]
+                    full_p['author'] = 'System'
+                    powers_to_export.append(full_p)
 
             if not powers_to_export:
                 print("No valid powers selected for export.")
                 return
 
             target_path = MC_DATA_DIR.joinpath('powers/stdlib.json')
-
-            # Version and current data management
             current_version = 0
             existing_powers = []
+
             if target_path.exists():
                 try:
                     with target_path.open('r') as f:
                         data = json.load(f)
                         current_version = data.get('version', 0)
                         existing_powers = data.get('powers', [])
-                except Exception:
-                    pass
+                except Exception: pass
 
-            # Index existing powers by ID for deduplication/updates
             stdlib_map = {p['power_id']: p for p in existing_powers}
             for p in powers_to_export:
                 stdlib_map[p['power_id']] = p
 
             new_version = current_version + 1
-            export_data = {
-                "version": new_version,
-                "powers": list(stdlib_map.values())
-            }
+            export_data = {"version": new_version, "powers": list(stdlib_map.values())}
 
             with target_path.open('w') as f:
                 json.dump(export_data, f, indent=4)
@@ -1130,56 +1155,48 @@ class MCShell(Magics):
                 return
 
             new_powers = [p for i, p in enumerate(powers) if i not in indices_to_remove]
-            removed_count = len(powers) - len(new_powers)
-
-            if removed_count == 0:
+            if len(new_powers) == len(powers):
                 print("No powers removed.")
                 return
 
             new_version = current_version + 1
-            export_data = {
-                "version": new_version,
-                "powers": new_powers
-            }
+            export_data = {"version": new_version, "powers": new_powers}
 
             with target_path.open('w') as f:
                 json.dump(export_data, f, indent=4)
 
-            print(f"Successfully removed {removed_count} powers.")
+            print(f"Successfully removed {len(powers) - len(new_powers)} powers.")
             print(f"Standard Library now contains {len(new_powers)} powers (v{new_version}).")
-
-        elif command == "import":
-            # Determine path: use provided arg or default to user's legacy json
-            current_player = self.mc_name or self._get_mc_name()
-            path_str = args[1] if len(args) > 1 else str(MC_POWER_LIBRARY_DIR.joinpath(f"{current_player}.json"))
-            path = Path(path_str).expanduser()
-
-            if not path.exists():
-                print(f"Error: Legacy file not found at {path}")
-                return
-
-            try:
-                with path.open('r') as f:
-                    legacy_data = json.load(f)
-                    # Support legacy formats: dictionary {id: data} or list [data]
-                    powers_to_import = legacy_data.values() if isinstance(legacy_data, dict) else legacy_data
-
-                    repo = SQLiteRepository(current_player)
-                    count = 0
-                    for p_data in powers_to_import:
-                        # SQLiteRepository.save_power handles metadata/serialization
-                        repo.save_power(p_data)
-                        count += 1
-                    print(f"Successfully imported {count} powers from {path} into your library.")
-                    print("You can now use '%mc_stdlib list' or '%mc_stdlib export' to manage them.")
-            except Exception as e:
-                print(f"Error importing legacy powers: {e}")
 
         elif command == "sync":
             player = self.mc_name or self._get_mc_name()
             repo = SQLiteRepository(player)
-            repo._check_for_updates()
-            print(f"Standard library synchronized for {player}.")
+
+            target_path = MC_DATA_DIR.joinpath('powers/stdlib.json')
+            if not target_path.exists():
+                print("Error: Standard library file not found.")
+                return
+
+            try:
+                with target_path.open('r') as f:
+                    data = json.load(f)
+                    std_powers = data.get('powers', [])
+
+                # Get current library to prevent overwriting user modifications
+                current_power_ids = {p['power_id'] for p in repo.list_powers()}
+
+                added = 0
+                for p in std_powers:
+                    if p['power_id'] not in current_power_ids:
+                        p['author'] = 'System'
+                        repo.save_power(p)
+                        added += 1
+
+                print(f"Merge Complete: Added {added} new powers from Standard Library.")
+                if added > 0:
+                    print("Refresh the editor to see the new additions.")
+            except Exception as e:
+                print(f"Sync failed: {e}")
 
 def sync_datapack_library():
     """
