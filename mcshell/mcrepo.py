@@ -96,6 +96,13 @@ class SQLiteRepository(PowerRepository):
         except Exception as e:
             print(f"Warning: Standard Library update failed: {e}")
 
+    def list_categories(self) -> List[str]:
+        """Returns a sorted list of unique categories currently in use."""
+        with self._get_connection() as conn:
+            cursor = conn.execute("SELECT DISTINCT category FROM powers WHERE category IS NOT NULL ORDER BY category")
+            # Filter out None and return as a flat list
+            return [row[0] for row in cursor.fetchall() if row[0]]
+
     def save_power(self, power_data: Dict[str, Any]) -> str:
         power_id = power_data.get("power_id") or str(uuid.uuid4())
         now = datetime.datetime.now().isoformat()
