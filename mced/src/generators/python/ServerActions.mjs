@@ -43,6 +43,18 @@ export function defineServerActionsGenerators(pythonGenerator) {
     };
 
 
+    pythonGenerator.forBlock['picker_structure'] = function(block, generator) {
+        const code = block.getFieldValue('VALUE');
+        return [`'${code}'`, generator.ORDER_ATOMIC];
+    };
+
+
+    pythonGenerator.forBlock['picker_biome'] = function(block, generator) {
+        const code = block.getFieldValue('VALUE');
+        return [`'${code}'`, generator.ORDER_ATOMIC];
+    };
+
+
     pythonGenerator.forBlock['picker_poi'] = function(block, generator) {
         const code = block.getFieldValue('VALUE');
         return [`'${code}'`, generator.ORDER_ATOMIC];

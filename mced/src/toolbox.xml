@@ -605,6 +605,8 @@
     <block type="picker_gamerule" />
     <block type="picker_integergamerule" />
     <block type="picker_locatetype" />
+    <block type="picker_structure" />
+    <block type="picker_biome" />
     <block type="picker_poi" />
   </category>
   <category name="Q Turtle Actions" colour="#F3BA2B">
