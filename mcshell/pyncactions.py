@@ -2,7 +2,10 @@ from mcshell.mcplayer import MCPlayer
 # Use new file for base class import
 from mcshell.mcactions_base import MCActionsBase
 from blockapily import mced_block
+from mcshell.Vec3 import Vec3
 from typing import Optional
+
+# TODO: note we must wrap pyncraft api output with our Vec3
 
 class PyncraftActions(MCActionsBase):
     """
@@ -66,7 +69,7 @@ class PyncraftActions(MCActionsBase):
     )
     def get_position_by_name(self, player_name: str = "SELF"):
         """Returns the 3D vector position of the specified player."""
-        return self._get_player_by_name(player_name).pc.player.getPos()
+        return Vec3(*self._get_player_by_name(player_name).pc.player.getPos())
 
     @mced_block(
         label="Get Tile Position for [player]",
@@ -75,7 +78,7 @@ class PyncraftActions(MCActionsBase):
     )
     def get_tile_position_by_name(self, player_name: str = "SELF"):
         """Returns the integer tile position of the specified player."""
-        return self._get_player_by_name(player_name).pc.player.getTilePos()
+        return Vec3(*self._get_player_by_name(player_name).pc.player.getTilePos())
 
     @mced_block(
         label="Set Position for [player]",
@@ -121,7 +124,7 @@ class PyncraftActions(MCActionsBase):
     )
     def get_direction_by_name(self, player_name: str = "SELF"):
         """Returns the direction vector the player is facing."""
-        return self._get_player_by_name(player_name).pc.player.getDirection()
+        return Vec3(*self._get_player_by_name(player_name).pc.player.getDirection())
 
     @mced_block(
         label="Send Title to [player]",
