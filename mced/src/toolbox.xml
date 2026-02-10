@@ -413,107 +413,168 @@
     <block type="minecraft_entity_picker_miscellaneous_entities" />
     <block type="minecraft_entity_picker_passive_mobs" />
     <block type="minecraft_entity_picker_projectiles" />
-    <block type="minecraft_entity_picker_utility_and_special" />
+    <block type="minecraft_entity_picker_utility" />
   </category>
   <category name="Materials" colour="#777777">
-    <block type="minecraft_material_banner">
+    <block type="minecraft_material_wood_button">
+      <value name="WOOD">
+        <shadow type="minecraft_wood_type_picker">
+          <field name="WOOD_TYPE">OAK</field>
+        </shadow>
+      </value>
+    </block>
+    <block type="minecraft_material_wood_door">
+      <value name="WOOD">
+        <shadow type="minecraft_wood_type_picker">
+          <field name="WOOD_TYPE">OAK</field>
+        </shadow>
+      </value>
+    </block>
+    <block type="minecraft_material_wood_fence">
+      <value name="WOOD">
+        <shadow type="minecraft_wood_type_picker">
+          <field name="WOOD_TYPE">OAK</field>
+        </shadow>
+      </value>
+    </block>
+    <block type="minecraft_material_wood_fence_gate">
+      <value name="WOOD">
+        <shadow type="minecraft_wood_type_picker">
+          <field name="WOOD_TYPE">OAK</field>
+        </shadow>
+      </value>
+    </block>
+    <block type="minecraft_material_wood_planks">
+      <value name="WOOD">
+        <shadow type="minecraft_wood_type_picker">
+          <field name="WOOD_TYPE">OAK</field>
+        </shadow>
+      </value>
+    </block>
+    <block type="minecraft_material_wood_pressure_plate">
+      <value name="WOOD">
+        <shadow type="minecraft_wood_type_picker">
+          <field name="WOOD_TYPE">OAK</field>
+        </shadow>
+      </value>
+    </block>
+    <block type="minecraft_material_wood_slab">
+      <value name="WOOD">
+        <shadow type="minecraft_wood_type_picker">
+          <field name="WOOD_TYPE">OAK</field>
+        </shadow>
+      </value>
+    </block>
+    <block type="minecraft_material_wood_stairs">
+      <value name="WOOD">
+        <shadow type="minecraft_wood_type_picker">
+          <field name="WOOD_TYPE">OAK</field>
+        </shadow>
+      </value>
+    </block>
+    <block type="minecraft_material_wood_trapdoor">
+      <value name="WOOD">
+        <shadow type="minecraft_wood_type_picker">
+          <field name="WOOD_TYPE">OAK</field>
+        </shadow>
+      </value>
+    </block>
+    <block type="minecraft_material_wood_log">
+      <value name="WOOD">
+        <shadow type="minecraft_wood_type_picker">
+          <field name="WOOD_TYPE">OAK</field>
+        </shadow>
+      </value>
+    </block>
+    <block type="minecraft_material_wood_wood">
+      <value name="WOOD">
+        <shadow type="minecraft_wood_type_picker">
+          <field name="WOOD_TYPE">OAK</field>
+        </shadow>
+      </value>
+    </block>
+    <block type="minecraft_material_colour_wool">
       <value name="COLOUR">
         <shadow type="minecraft_coloured_block_picker">
           <field name="MINECRAFT_COLOUR_ID">WHITE</field>
         </shadow>
       </value>
     </block>
-    <block type="minecraft_material_bed">
+    <block type="minecraft_material_colour_terracotta">
       <value name="COLOUR">
         <shadow type="minecraft_coloured_block_picker">
           <field name="MINECRAFT_COLOUR_ID">WHITE</field>
         </shadow>
       </value>
     </block>
-    <block type="minecraft_material_candle">
+    <block type="minecraft_material_colour_stained_glass">
       <value name="COLOUR">
         <shadow type="minecraft_coloured_block_picker">
           <field name="MINECRAFT_COLOUR_ID">WHITE</field>
         </shadow>
       </value>
     </block>
-    <block type="minecraft_material_carpet">
+    <block type="minecraft_material_colour_stained_glass_pane">
       <value name="COLOUR">
         <shadow type="minecraft_coloured_block_picker">
           <field name="MINECRAFT_COLOUR_ID">WHITE</field>
         </shadow>
       </value>
     </block>
-    <block type="minecraft_material_concrete">
+    <block type="minecraft_material_colour_concrete">
       <value name="COLOUR">
         <shadow type="minecraft_coloured_block_picker">
           <field name="MINECRAFT_COLOUR_ID">WHITE</field>
         </shadow>
       </value>
     </block>
-    <block type="minecraft_material_concrete_powder">
+    <block type="minecraft_material_colour_concrete_powder">
       <value name="COLOUR">
         <shadow type="minecraft_coloured_block_picker">
           <field name="MINECRAFT_COLOUR_ID">WHITE</field>
         </shadow>
       </value>
     </block>
-    <block type="minecraft_material_glazed_terracotta">
+    <block type="minecraft_material_colour_candle">
       <value name="COLOUR">
         <shadow type="minecraft_coloured_block_picker">
           <field name="MINECRAFT_COLOUR_ID">WHITE</field>
         </shadow>
       </value>
     </block>
-    <block type="minecraft_material_shulker_box">
+    <block type="minecraft_material_colour_shulker_box">
       <value name="COLOUR">
         <shadow type="minecraft_coloured_block_picker">
           <field name="MINECRAFT_COLOUR_ID">WHITE</field>
         </shadow>
       </value>
     </block>
-    <block type="minecraft_material_stained_glass">
+    <block type="minecraft_material_colour_carpet">
       <value name="COLOUR">
         <shadow type="minecraft_coloured_block_picker">
           <field name="MINECRAFT_COLOUR_ID">WHITE</field>
         </shadow>
       </value>
     </block>
-    <block type="minecraft_material_stained_glass_pane">
+    <block type="minecraft_material_colour_glazed_terracotta">
       <value name="COLOUR">
         <shadow type="minecraft_coloured_block_picker">
           <field name="MINECRAFT_COLOUR_ID">WHITE</field>
         </shadow>
       </value>
     </block>
-    <block type="minecraft_material_terracotta">
-      <value name="COLOUR">
-        <shadow type="minecraft_coloured_block_picker">
-          <field name="MINECRAFT_COLOUR_ID">WHITE</field>
-        </shadow>
-      </value>
-    </block>
-    <block type="minecraft_material_wool">
-      <value name="COLOUR">
-        <shadow type="minecraft_coloured_block_picker">
-          <field name="MINECRAFT_COLOUR_ID">WHITE</field>
-        </shadow>
-      </value>
-    </block>
-    <block type="minecraft_picker_doors" />
-    <block type="minecraft_picker_fences" />
-    <block type="minecraft_picker_gates" />
+    <block type="minecraft_picker_copper_variants" />
+    <block type="minecraft_picker_flowers" />
+    <block type="minecraft_picker_functional_storage" />
     <block type="minecraft_picker_glass" />
+    <block type="minecraft_picker_lighting" />
+    <block type="minecraft_picker_nature" />
     <block type="minecraft_picker_ores" />
     <block type="minecraft_picker_redstone_components" />
     <block type="minecraft_picker_slabs" />
     <block type="minecraft_picker_stairs" />
     <block type="minecraft_picker_stone_bricks" />
-    <block type="minecraft_picker_trapdoors" />
     <block type="minecraft_picker_walls" />
-    <block type="minecraft_picker_wood_full" />
-    <block type="minecraft_picker_wood_logs" />
-    <block type="minecraft_picker_wood_planks" />
     <block type="minecraft_picker_world" />
     <sep />
     <block type="minecraft_picker_miscellaneous" />
@@ -623,5 +684,70 @@
     <block type="picker_qdirection" />
     <block type="picker_axis" />
     <block type="picker_qcompass" />
+  </category>
+  <category name="Items" colour="#5ba58c">
+    <block type="minecraft_item_wood_boat">
+      <value name="WOOD">
+        <shadow type="minecraft_wood_type_picker">
+          <field name="WOOD_TYPE">OAK</field>
+        </shadow>
+      </value>
+    </block>
+    <block type="minecraft_item_wood_chest_boat">
+      <value name="WOOD">
+        <shadow type="minecraft_wood_type_picker">
+          <field name="WOOD_TYPE">OAK</field>
+        </shadow>
+      </value>
+    </block>
+    <block type="minecraft_item_wood_sign">
+      <value name="WOOD">
+        <shadow type="minecraft_wood_type_picker">
+          <field name="WOOD_TYPE">OAK</field>
+        </shadow>
+      </value>
+    </block>
+    <block type="minecraft_item_wood_hanging_sign">
+      <value name="WOOD">
+        <shadow type="minecraft_wood_type_picker">
+          <field name="WOOD_TYPE">OAK</field>
+        </shadow>
+      </value>
+    </block>
+    <block type="minecraft_item_wood_sapling">
+      <value name="WOOD">
+        <shadow type="minecraft_wood_type_picker">
+          <field name="WOOD_TYPE">OAK</field>
+        </shadow>
+      </value>
+    </block>
+    <block type="minecraft_item_wood_shelf">
+      <value name="WOOD">
+        <shadow type="minecraft_wood_type_picker">
+          <field name="WOOD_TYPE">OAK</field>
+        </shadow>
+      </value>
+    </block>
+    <block type="minecraft_item_colour_bed">
+      <value name="COLOUR">
+        <shadow type="minecraft_coloured_block_picker">
+          <field name="MINECRAFT_COLOUR_ID">WHITE</field>
+        </shadow>
+      </value>
+    </block>
+    <block type="minecraft_item_colour_banner">
+      <value name="COLOUR">
+        <shadow type="minecraft_coloured_block_picker">
+          <field name="MINECRAFT_COLOUR_ID">WHITE</field>
+        </shadow>
+      </value>
+    </block>
+    <block type="minecraft_item_colour_bundle">
+      <value name="COLOUR">
+        <shadow type="minecraft_coloured_block_picker">
+          <field name="MINECRAFT_COLOUR_ID">WHITE</field>
+        </shadow>
+      </value>
+    </block>
   </category>
 </xml>
