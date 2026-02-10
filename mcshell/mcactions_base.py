@@ -192,7 +192,7 @@ class Pickers:
     ]
 
     # Structures (Minecraft 1.19+)
-    Structures = [
+    Structure = [
         ("Ancient City", "ancient_city"),
         ("Bastion Remnant", "bastion_remnant"),
         ("Buried Treasure", "buried_treasure"),
@@ -216,7 +216,7 @@ class Pickers:
     ]
 
     # Biomes (Common selection)
-    Biomes = [
+    Biome = [
         ("Badlands", "badlands"),
         ("Bamboo Jungle", "bamboo_jungle"),
         ("Beach", "beach"),
