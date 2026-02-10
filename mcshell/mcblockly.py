@@ -6,6 +6,22 @@ def make_picker_group(materials,reg_exp):
     _matches = list(filter(lambda x: x is not None, map(lambda x:re.match(reg_exp,x),set(materials))))
     return [_m.group() for _m in _matches]
 
+# Define the patterns for wood-based materials
+WOOD_BASE_RULES = {
+    'BOAT': re.compile(r"^(OAK|SPRUCE|BIRCH|JUNGLE|ACACIA|DARK_OAK|MANGROVE|CHERRY|PALE_OAK|BAMBOO)_BOAT$"),
+    'CHEST_BOAT': re.compile(r"^(OAK|SPRUCE|BIRCH|JUNGLE|ACACIA|DARK_OAK|MANGROVE|CHERRY|PALE_OAK|BAMBOO)_CHEST_BOAT$"),
+    'BUTTON': re.compile(r"^(OAK|SPRUCE|BIRCH|JUNGLE|ACACIA|DARK_OAK|MANGROVE|CHERRY|PALE_OAK|BAMBOO|CRIMSON|WARPED)_BUTTON$"),
+    'DOOR': re.compile(r"^(OAK|SPRUCE|BIRCH|JUNGLE|ACACIA|DARK_OAK|MANGROVE|CHERRY|PALE_OAK|BAMBOO|CRIMSON|WARPED)_DOOR$"),
+    'FENCE': re.compile(r"^(OAK|SPRUCE|BIRCH|JUNGLE|ACACIA|DARK_OAK|MANGROVE|CHERRY|PALE_OAK|BAMBOO|CRIMSON|WARPED)_FENCE$"),
+    'PLANKS': re.compile(r"^(OAK|SPRUCE|BIRCH|JUNGLE|ACACIA|DARK_OAK|MANGROVE|CHERRY|PALE_OAK|BAMBOO|CRIMSON|WARPED)_PLANKS$"),
+    'SLAB': re.compile(r"^(OAK|SPRUCE|BIRCH|JUNGLE|ACACIA|DARK_OAK|MANGROVE|CHERRY|PALE_OAK|BAMBOO|CRIMSON|WARPED)_SLAB$"),
+    'STAIRS': re.compile(r"^(OAK|SPRUCE|BIRCH|JUNGLE|ACACIA|DARK_OAK|MANGROVE|CHERRY|PALE_OAK|BAMBOO|CRIMSON|WARPED)_STAIRS$"),
+    'TRAPDOOR': re.compile(r"^(OAK|SPRUCE|BIRCH|JUNGLE|ACACIA|DARK_OAK|MANGROVE|CHERRY|PALE_OAK|BAMBOO|CRIMSON|WARPED)_TRAPDOOR$"),
+    # Generic "Log" and "Wood" bases to be handled by the smart generator
+    'LOG': re.compile(r"^(OAK|SPRUCE|BIRCH|JUNGLE|ACACIA|DARK_OAK|MANGROVE|CHERRY|PALE_OAK)_LOG$|^(CRIMSON|WARPED)_STEM$|^BAMBOO_BLOCK$"),
+    'WOOD': re.compile(r"^(OAK|SPRUCE|BIRCH|JUNGLE|ACACIA|DARK_OAK|MANGROVE|CHERRY|PALE_OAK)_WOOD$|^(CRIMSON|WARPED)_HYPHAE$")
+}
+
 # Define the patterns and groups for categorization
 # This is the primary place to configure how materials are grouped
 COLORABLE_BASE_RULES = {
@@ -35,9 +51,9 @@ COLORABLE_BASE_RULES = {
 MATERIAL_PICKER_GROUPS = {
     "world": ["AIR", "STONE", "GRANITE", "DIORITE", "ANDESITE", "DEEPSLATE", "CALCITE", "TUFF", "DIRT", "COARSE_DIRT", "ROOTED_DIRT", "GRASS_BLOCK", "PODZOL", "MYCELIUM", "DIRT_PATH", "SAND", "RED_SAND", "GRAVEL", "CLAY", "ICE", "PACKED_ICE", "BLUE_ICE", "SNOW", "SNOW_BLOCK", "WATER", "LAVA", "BEDROCK", "OBSIDIAN", "CRYING_OBSIDIAN", "MAGMA_BLOCK"],
     "ores": ["COAL_ORE", "DEEPSLATE_COAL_ORE", "IRON_ORE", "DEEPSLATE_IRON_ORE", "COPPER_ORE", "DEEPSLATE_COPPER_ORE", "GOLD_ORE", "DEEPSLATE_GOLD_ORE", "REDSTONE_ORE", "DEEPSLATE_REDSTONE_ORE", "EMERALD_ORE", "DEEPSLATE_EMERALD_ORE", "LAPIS_ORE", "DEEPSLATE_LAPIS_ORE", "DIAMOND_ORE", "DEEPSLATE_DIAMOND_ORE", "NETHER_GOLD_ORE", "NETHER_QUARTZ_ORE", "ANCIENT_DEBRIS"],
-    "wood_planks": ["OAK_PLANKS", "SPRUCE_PLANKS", "BIRCH_PLANKS", "JUNGLE_PLANKS", "ACACIA_PLANKS", "DARK_OAK_PLANKS", "MANGROVE_PLANKS", "CHERRY_PLANKS", "BAMBOO_PLANKS", "CRIMSON_PLANKS", "WARPED_PLANKS", "BAMBOO_MOSAIC"],
-    "wood_logs": ["OAK_LOG", "SPRUCE_LOG", "BIRCH_LOG", "JUNGLE_LOG", "ACACIA_LOG", "DARK_OAK_LOG", "MANGROVE_LOG", "CHERRY_LOG", "CRIMSON_STEM", "WARPED_STEM", "STRIPPED_OAK_LOG", "STRIPPED_SPRUCE_LOG", "STRIPPED_BIRCH_LOG", "STRIPPED_JUNGLE_LOG", "STRIPPED_ACACIA_LOG", "STRIPPED_DARK_OAK_LOG", "STRIPPED_MANGROVE_LOG", "STRIPPED_CHERRY_LOG", "STRIPPED_CRIMSON_STEM", "STRIPPED_WARPED_STEM"],
-    "wood_full": ["OAK_WOOD", "SPRUCE_WOOD", "BIRCH_WOOD", "JUNGLE_WOOD", "ACACIA_WOOD", "DARK_OAK_WOOD", "MANGROVE_WOOD", "CHERRY_WOOD", "CRIMSON_HYPHAE", "WARPED_HYPHAE", "STRIPPED_OAK_WOOD", "STRIPPED_SPRUCE_WOOD", "STRIPPED_BIRCH_WOOD", "STRIPPED_JUNGLE_WOOD", "STRIPPED_ACACIA_WOOD", "STRIPPED_DARK_OAK_WOOD", "STRIPPED_MANGROVE_WOOD", "STRIPPED_CHERRY_WOOD", "STRIPPED_CRIMSON_HYPHAE", "STRIPPED_WARPED_HYPHAE", "BAMBOO_BLOCK", "STRIPPED_BAMBOO_BLOCK"],
+    # "wood_planks": ["OAK_PLANKS", "SPRUCE_PLANKS", "BIRCH_PLANKS", "JUNGLE_PLANKS", "ACACIA_PLANKS", "DARK_OAK_PLANKS", "MANGROVE_PLANKS", "CHERRY_PLANKS", "BAMBOO_PLANKS", "CRIMSON_PLANKS", "WARPED_PLANKS", "BAMBOO_MOSAIC"],
+    # "wood_logs": ["OAK_LOG", "SPRUCE_LOG", "BIRCH_LOG", "JUNGLE_LOG", "ACACIA_LOG", "DARK_OAK_LOG", "MANGROVE_LOG", "CHERRY_LOG", "CRIMSON_STEM", "WARPED_STEM", "STRIPPED_OAK_LOG", "STRIPPED_SPRUCE_LOG", "STRIPPED_BIRCH_LOG", "STRIPPED_JUNGLE_LOG", "STRIPPED_ACACIA_LOG", "STRIPPED_DARK_OAK_LOG", "STRIPPED_MANGROVE_LOG", "STRIPPED_CHERRY_LOG", "STRIPPED_CRIMSON_STEM", "STRIPPED_WARPED_STEM"],
+    # "wood_full": ["OAK_WOOD", "SPRUCE_WOOD", "BIRCH_WOOD", "JUNGLE_WOOD", "ACACIA_WOOD", "DARK_OAK_WOOD", "MANGROVE_WOOD", "CHERRY_WOOD", "CRIMSON_HYPHAE", "WARPED_HYPHAE", "STRIPPED_OAK_WOOD", "STRIPPED_SPRUCE_WOOD", "STRIPPED_BIRCH_WOOD", "STRIPPED_JUNGLE_WOOD", "STRIPPED_ACACIA_WOOD", "STRIPPED_DARK_OAK_WOOD", "STRIPPED_MANGROVE_WOOD", "STRIPPED_CHERRY_WOOD", "STRIPPED_CRIMSON_HYPHAE", "STRIPPED_WARPED_HYPHAE", "BAMBOO_BLOCK", "STRIPPED_BAMBOO_BLOCK"],
     "stone_bricks": ["BRICKS", "STONE_BRICKS", "MUD_BRICKS", "DEEPSLATE_BRICKS", "DEEPSLATE_TILES", "NETHER_BRICKS", "RED_NETHER_BRICKS", "POLISHED_BLACKSTONE_BRICKS", "END_STONE_BRICKS", "QUARTZ_BRICKS", "CHISELED_STONE_BRICKS", "CRACKED_STONE_BRICKS", "MOSSY_STONE_BRICKS", "CHISELED_NETHER_BRICKS", "CRACKED_NETHER_BRICKS", "CHISELED_POLISHED_BLACKSTONE", "CRACKED_POLISHED_BLACKSTONE_BRICKS", "CHISELED_DEEPSLATE", "CRACKED_DEEPSLATE_BRICKS", "CRACKED_DEEPSLATE_TILES", "CHISELED_TUFF_BRICKS"],
     "glass": ["GLASS", "GLASS_PANE", "TINTED_GLASS"],
     "redstone_components": ["REDSTONE_WIRE", "REDSTONE_BLOCK", "REDSTONE_TORCH", "REPEATER", "COMPARATOR", "PISTON", "STICKY_PISTON", "SLIME_BLOCK", "HONEY_BLOCK", "OBSERVER", "DROPPER", "DISPENSER", "HOPPER", "LECTERN", "LEVER", "DAYLIGHT_DETECTOR", "TRIPWIRE_HOOK", "TARGET", "NOTE_BLOCK", "RAIL", "POWERED_RAIL", "DETECTOR_RAIL", "ACTIVATOR_RAIL", "REDSTONE_LAMP"],
@@ -84,8 +100,13 @@ MATERIAL_PICKER_GROUPS = {
         "NETHERRACK", "SOUL_SAND", "SOUL_SOIL", "GLOWSTONE", "BASALT", "BLACKSTONE",
         "GILDED_BLACKSTONE", "POLISHED_BLACKSTONE", "NETHER_BRICKS", "RED_NETHER_BRICKS",
         "MAGMA_BLOCK", "WARPED_NYLIUM", "CRIMSON_NYLIUM"
-    ]
-    # Add more groups as needed (stairs, slabs, fences, doors, etc.)
+    ],
+
+    "wood_types": [
+    "OAK", "SPRUCE", "BIRCH", "JUNGLE", "ACACIA", "DARK_OAK",
+    "MANGROVE", "CHERRY", "PALE_OAK", "BAMBOO", "CRIMSON", "WARPED"
+]
+
 }
 
 def ensure_toolbox():
@@ -124,6 +145,11 @@ def process_materials():
     MATERIAL_PICKER_GROUPS['trapdoors'] = make_picker_group(all_materials, r".*_TRAPDOOR$")
     MATERIAL_PICKER_GROUPS['walls'] = make_picker_group(all_materials, r".*_WALL$")
 
+    # Update MATERIAL_PICKER_GROUPS to include the wood type options
+    MATERIAL_PICKER_GROUPS['wood_types'] = [
+        "OAK", "SPRUCE", "BIRCH", "JUNGLE", "ACACIA", "DARK_OAK",
+        "MANGROVE", "CHERRY", "PALE_OAK", "BAMBOO", "CRIMSON", "WARPED"
+]
     colorable_bases = {}  # e.g., {'WOOL': ['WHITE_WOOL', 'BLUE_WOOL', ...]}
     picker_data = {}      # e.g., {'ores': ['COAL_ORE', 'IRON_ORE', ...]}
     processed_materials = set()
@@ -363,16 +389,15 @@ _newline.join(toolbox_xml_categories)
         print(f"Failed to generate entity Blockly files: {e}")
         raise
 
+
 def generate_material_blocks():
     """
-    A precise Python translation of the original generate_material_blocks.mjs.
-    This version correctly generates the toolbox.xml with a single category
-    and proper shadow blocks.
+    Revised generation logic to ensure Wood Pickers mirror Colour Pickers
+    and handle the "OAK" validation error.
     """
     try:
-        # --- 1. Set up paths ---
+        # --- Paths ---
         materials_data_dir = MC_DATA_DIR / 'materials'
-
         colourables_path = materials_data_dir / 'colourables.json'
         pickers_path = materials_data_dir / 'pickers.json'
         singles_path = materials_data_dir / 'singles.json'
@@ -381,7 +406,7 @@ def generate_material_blocks():
         output_python_dir = MC_APP_SRC_DIR / 'generators' / 'python'
         output_toolbox_path = MC_APP_SRC_DIR / 'toolbox.xml'
 
-        # --- 2. Load all data files ---
+        # --- Load Data ---
         with open(colourables_path, 'r', encoding='utf-8') as f:
             colourables_data = json.load(f)
         with open(pickers_path, 'r', encoding='utf-8') as f:
@@ -389,22 +414,68 @@ def generate_material_blocks():
         with open(singles_path, 'r', encoding='utf-8') as f:
             singles_data = json.load(f)
 
-        # --- 3. Initialize outputs ---
         block_defs_list = []
         python_gen_list = []
-        toolbox_xml_blocks = [] # List to hold all <block> and <sep> entries
-        default_colour = 160
-        picker_colour = 180
-        misc_colour = 200
+        toolbox_xml_blocks = []
 
-        # --- 4. Process data and generate code ---
+        # --- 1. WOOD TYPE PICKER (Mirroring minecraft_coloured_block_picker) ---
+        # We use the explicit list here to prevent "OAK" missing errors if pickers.json is stale
+        wood_types = ["OAK", "SPRUCE", "BIRCH", "JUNGLE", "ACACIA", "DARK_OAK",
+                      "MANGROVE", "CHERRY", "PALE_OAK", "BAMBOO", "CRIMSON", "WARPED"]
 
-        # A. Process Colourable Blocks (e.g., "BANNER")
+        wood_options = ',\n'.join([f'                ["{_generate_blockly_name(w)}", "{w}"]' for w in wood_types])
+
+        block_defs_list.append(f"""
+    Blockly.Blocks['minecraft_wood_type_picker'] = {{
+        init: function() {{
+            this.appendDummyInput()
+                .appendField("wood type")
+                .appendField(new Blockly.FieldDropdown([
+{wood_options}
+                ]), "WOOD_TYPE");
+            this.setOutput(true, "MinecraftWood");
+            this.setColour(120);
+        }}
+    }};""")
+
+        python_gen_list.append(f"""
+    pythonGenerator.forBlock['minecraft_wood_type_picker'] = function(block, generator) {{
+        return [`'${{block.getFieldValue('WOOD_TYPE')}}'`, generator.ORDER_ATOMIC];
+    }};""")
+
+        # --- 2. WOOD BASE BLOCKS (Mirroring Colorable Logic) ---
+        for base_name in WOOD_BASE_RULES:
+            block_type = f"minecraft_material_wood_{base_name.lower()}"
+            toolbox_xml_blocks.append(f"""    <block type="{block_type}">
+      <value name="WOOD">
+        <shadow type="minecraft_wood_type_picker">
+          <field name="WOOD_TYPE">OAK</field>
+        </shadow>
+      </value>
+    </block>""")
+
+            block_defs_list.append(f"""
+    Blockly.Blocks['{block_type}'] = {{
+      init: function() {{
+        this.appendValueInput("WOOD")
+            .setCheck("MinecraftWood")
+            .appendField("{_generate_blockly_name(base_name)} of type");
+        this.setOutput(true, "Block");
+        this.setColour(120);
+        MCED.BlocklyUtils.configureShadow(this, "WOOD");
+      }}
+    }};""")
+
+            python_gen_list.append(f"""
+    pythonGenerator.forBlock['{block_type}'] = function(block, generator) {{
+      const wood = generator.valueToCode(block, 'WOOD', generator.ORDER_ATOMIC) || "'OAK'";
+      const code = _combine_wood_and_material(wood, '{base_name}');
+      return [code, generator.ORDER_ATOMIC];
+    }};""")
+
+        # --- 3. EXISTING COLORABLE BLOCKS ---
         for name in colourables_data:
             block_type = f"minecraft_material_{name.lower()}"
-            tooltip = f"A {_generate_blockly_name(name)} block that can be colored."
-
-            # CORRECTED TOOLBOX LOGIC: Add a block with a shadow definition
             toolbox_xml_blocks.append(f"""    <block type="{block_type}">
       <value name="COLOUR">
         <shadow type="minecraft_coloured_block_picker">
@@ -418,26 +489,22 @@ def generate_material_blocks():
       init: function() {{
         this.appendValueInput("COLOUR")
             .setCheck("MinecraftColour")
-            .setAlign(Blockly.ALIGN_RIGHT)
             .appendField("{name} with color");
         this.setOutput(true, "Block");
-        this.setColour({default_colour});
-        this.setTooltip("{tooltip}");
-        MCED.Defaults.values['{block_type}'] = {{
-          COLOUR: {{ shadow: '<shadow type="minecraft_coloured_block_picker"><field name="MINECRAFT_COLOUR_ID">WHITE</field></shadow>' }}
-        }};
+        this.setColour(160);
         MCED.BlocklyUtils.configureShadow(this, "COLOUR");
       }}
     }};""")
             python_gen_list.append(f"""
     pythonGenerator.forBlock['{block_type}'] = function(block, generator) {{
       const colour = generator.valueToCode(block, 'COLOUR', generator.ORDER_ATOMIC) || "'WHITE'";
-      const code = _combine_colour_and_material(`'${{colour}}'`, '{name}');
+      const code = _combine_colour_and_material(colour, '{name}');
       return [code, generator.ORDER_ATOMIC];
     }};""")
 
-        # B. Process Picker Blocks (e.g., "walls")
+        # --- 4. PICKER BLOCKS (Removing wood_types from standard pickers to avoid duplicates) ---
         for name, materials in pickers_data.items():
+            if name == "wood_types": continue # Handled by custom wood picker
             block_type = f"minecraft_picker_{name.lower()}"
             toolbox_xml_blocks.append(f'    <block type="{block_type}"></block>')
             dropdown_options = ',\n'.join([f'                ["{_generate_blockly_name(mat)}", "{mat}"]' for mat in materials])
@@ -447,20 +514,18 @@ def generate_material_blocks():
             this.appendDummyInput()
                 .appendField("{_generate_blockly_name(name)}")
                 .appendField(new Blockly.FieldDropdown([
-    {dropdown_options}
+{dropdown_options}
                 ]), "MATERIAL_ID");
             this.setOutput(true, "Block");
-            this.setColour({picker_colour});
-            this.setTooltip("Select a {_generate_blockly_name(name)} material.");
+            this.setColour(180);
         }}
     }};""")
             python_gen_list.append(f"""
     pythonGenerator.forBlock['{block_type}'] = function(block, generator) {{
-      const material_id = block.getFieldValue('MATERIAL_ID');
-      return [`'${{material_id}}'`, generator.ORDER_ATOMIC];
+      return [`'${{block.getFieldValue('MATERIAL_ID')}}'`, generator.ORDER_ATOMIC];
     }};""")
 
-        # C. Process Single Blocks into one "Miscellaneous" Picker
+        # --- 5. MISCELLANEOUS PICKER ---
         if singles_data:
             block_type = "minecraft_picker_miscellaneous"
             toolbox_xml_blocks.append('    <sep></sep>')
@@ -472,49 +537,54 @@ def generate_material_blocks():
             this.appendDummyInput()
                 .appendField("Misc. Block/Item")
                 .appendField(new Blockly.FieldDropdown([
-    {dropdown_options}
+{dropdown_options}
                 ]), "MATERIAL_ID");
             this.setOutput(true, "Block");
-            this.setColour({misc_colour});
-            this.setTooltip("Select a miscellaneous Minecraft block or item.");
+            this.setColour(200);
         }}
     }};""")
             python_gen_list.append(f"""
     pythonGenerator.forBlock['{block_type}'] = function(block, generator) {{
-      const material_id = block.getFieldValue('MATERIAL_ID');
-      return [`'${{material_id}}'`, generator.ORDER_ATOMIC];
+      return [`'${{block.getFieldValue('MATERIAL_ID')}}'`, generator.ORDER_ATOMIC];
     }};""")
 
-        # --- 5. Assemble and write final output files ---
-            block_defs_output = 'import { MCED } from "../lib/constants.mjs";\n\n' + \
+        # --- 6. ASSEMBLE FILES ---
+        block_defs_output = 'import { MCED } from "../lib/constants.mjs";\n\n' + \
                             "export function defineMineCraftMaterialBlocks(Blockly) {\n" + \
                             "\n".join(block_defs_list) + "\n}\n"
+
         python_helper = """
 function _combine_colour_and_material(colour, material) {
     const cleanColour = colour.replace(/['"]/g, '');
     return `'${cleanColour}_${material}'`;
+}
+
+function _combine_wood_and_material(wood, base) {
+    const w = wood.replace(/['"]/g, '');
+    let suffix = base;
+    
+    if (w === 'BAMBOO') {
+        if (base === 'LOG' || base === 'WOOD') suffix = 'BLOCK';
+    } else if (w === 'CRIMSON' || w === 'WARPED') {
+        if (base === 'LOG') suffix = 'STEM';
+        else if (base === 'WOOD') suffix = 'HYPHAE';
+    }
+    
+    return `'${w}_${suffix}'`;
 }"""
         python_gen_output = "import { pythonGenerator } from 'blockly/python';\n" + \
                             python_helper + \
                             "\n\nexport function defineMineCraftMaterialGenerators(pythonGenerator) {\n" + \
                             "\n".join(python_gen_list) + "\n}\n"
 
-        # CORRECTED TOOLBOX ASSEMBLY: Create a single category containing all blocks
-        toolbox_xml_output = f"""<category name="Materials" colour="#777777">
-{''.join(toolbox_xml_blocks)}
-</category>"""
+        toolbox_xml_output = f"""<category name="Materials" colour="#777777">\n{''.join(toolbox_xml_blocks)}\n</category>"""
 
-        # --- 6. Write to files ---
+        # --- 7. Write Files ---
         output_blocks_dir.mkdir(parents=True, exist_ok=True)
         output_python_dir.mkdir(parents=True, exist_ok=True)
-
         (output_blocks_dir / 'materials.mjs').write_text(block_defs_output, 'utf-8')
-        print("Successfully generated blocks/materials.mjs")
         (output_python_dir / 'materials.mjs').write_text(python_gen_output, 'utf-8')
-        print("Successfully generated python/materials.mjs")
-
         BlocklyGenerator.update_toolbox(toolbox_xml_output, output_toolbox_path)
-        print(f"Successfully updated {output_toolbox_path}")
 
     except Exception as e:
         print(f"Failed to generate material Blockly files: {e}")
