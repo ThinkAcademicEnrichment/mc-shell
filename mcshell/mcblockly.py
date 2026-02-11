@@ -7,6 +7,9 @@ import pickle
 import pathlib
 import inspect
 
+# Path for persisting overrides between generation phases
+MC_OVERRIDES_DATA_PATH = MC_DATA_DIR / 'materials' / 'entity_overrides.json'
+
 def make_picker_group(materials, reg_exp):
     """Filters a list of materials based on a regex and returns sorted matches."""
     _matches = list(filter(lambda x: x is not None, map(lambda x: re.match(reg_exp, x), set(materials))))
@@ -31,18 +34,17 @@ WOOD_BLOCK_RULES = {
     'WOOD': re.compile(r"^(OAK|SPRUCE|BIRCH|JUNGLE|ACACIA|DARK_OAK|MANGROVE|CHERRY|PALE_OAK)_WOOD$|^(CRIMSON|WARPED)_HYPHAE$")
 }
 
-# Wood-based Items (Inventory items / Non-standard placeables)
+# Wood-based Items (Usually Inventory, but can be Entities or Blocks)
 WOOD_ITEM_RULES = {
     'BOAT': re.compile(r"^(OAK|SPRUCE|BIRCH|JUNGLE|ACACIA|DARK_OAK|MANGROVE|CHERRY|PALE_OAK|BAMBOO)_BOAT$"),
     'CHEST_BOAT': re.compile(r"^(OAK|SPRUCE|BIRCH|JUNGLE|ACACIA|DARK_OAK|MANGROVE|CHERRY|PALE_OAK|BAMBOO)_CHEST_BOAT$"),
-    # Updated to capture (WALL_)? variants to prevent them appearing in Miscellaneous
     'SIGN': re.compile(r"^(OAK|SPRUCE|BIRCH|JUNGLE|ACACIA|DARK_OAK|MANGROVE|CHERRY|PALE_OAK|BAMBOO|CRIMSON|WARPED)_(WALL_)?SIGN$"),
     'HANGING_SIGN': re.compile(r"^(OAK|SPRUCE|BIRCH|JUNGLE|ACACIA|DARK_OAK|MANGROVE|CHERRY|PALE_OAK|BAMBOO|CRIMSON|WARPED)_(WALL_)?HANGING_SIGN$"),
     'SAPLING': re.compile(r"^(OAK|SPRUCE|BIRCH|JUNGLE|ACACIA|DARK_OAK|MANGROVE|CHERRY|PALE_OAK|BAMBOO|CRIMSON|WARPED)_SAPLING$"),
     'SHELF': re.compile(r"^(OAK|SPRUCE|BIRCH|JUNGLE|ACACIA|DARK_OAK|MANGROVE|CHERRY|PALE_OAK|BAMBOO|CRIMSON|WARPED)_SHELF$"),
 }
 
-# Colorable Blocks (Structural/Decor)
+# Colorable rules - Use (WALL_)? to catch variants to avoid Miscellaneous leakage
 COLORABLE_BLOCK_RULES = {
     'WOOL': re.compile(r"^(WHITE|ORANGE|MAGENTA|LIGHT_BLUE|YELLOW|LIME|PINK|GRAY|LIGHT_GRAY|CYAN|PURPLE|BLUE|BROWN|GREEN|RED|BLACK)_WOOL$"),
     'TERRACOTTA': re.compile(r"^(WHITE|ORANGE|MAGENTA|LIGHT_BLUE|YELLOW|LIME|PINK|GRAY|LIGHT_GRAY|CYAN|PURPLE|BLUE|BROWN|GREEN|RED|BLACK|LIGHT|LEGACY)_TERRACOTTA$"),
@@ -56,11 +58,22 @@ COLORABLE_BLOCK_RULES = {
     'GLAZED_TERRACOTTA': re.compile(r"^(WHITE|ORANGE|MAGENTA|LIGHT_BLUE|YELLOW|LIME|PINK|GRAY|LIGHT_GRAY|CYAN|PURPLE|BLUE|BROWN|GREEN|RED|BLACK)_GLAZED_TERRACOTTA$"),
 }
 
-# Colorable Items (Inventory/Utility)
 COLORABLE_ITEM_RULES = {
     'BED': re.compile(r"^(WHITE|ORANGE|MAGENTA|LIGHT_BLUE|YELLOW|LIME|PINK|GRAY|LIGHT_GRAY|CYAN|PURPLE|BLUE|BROWN|GREEN|RED|BLACK)_BED$"),
     'BANNER': re.compile(r"^(WHITE|ORANGE|MAGENTA|LIGHT_BLUE|YELLOW|LIME|PINK|GRAY|LIGHT_GRAY|CYAN|PURPLE|BLUE|BROWN|GREEN|RED|BLACK)_(WALL_)?BANNER$"),
     'BUNDLE': re.compile(r"^(WHITE|ORANGE|MAGENTA|LIGHT_BLUE|YELLOW|LIME|PINK|GRAY|LIGHT_GRAY|CYAN|PURPLE|BLUE|BROWN|GREEN|RED|BLACK)_BUNDLE$"),
+}
+
+# Mapping items that appear in Item rules but should behave as Entity or Block types
+SEMANTIC_OUTPUT_TYPES = {
+    'BOAT': 'Entity',
+    'CHEST_BOAT': 'Entity',
+    'SIGN': 'Block',
+    'HANGING_SIGN': 'Block',
+    'SAPLING': 'Block',
+    'SHELF': 'Block',
+    'BED': 'Block',
+    'BANNER': 'Block'
 }
 
 MATERIAL_PICKER_GROUPS = {
@@ -109,7 +122,6 @@ def process_materials():
 
     all_materials = {m for m in _raw_materials_list if m and not m.startswith("LEGACY_")}
 
-    # Define dynamic groups
     MATERIAL_PICKER_GROUPS['stairs'] = make_picker_group(all_materials, r".*_STAIRS$")
     MATERIAL_PICKER_GROUPS['slabs'] = make_picker_group(all_materials, r".*_SLAB$")
     MATERIAL_PICKER_GROUPS['walls'] = make_picker_group(all_materials, r".*_WALL$")
@@ -118,13 +130,11 @@ def process_materials():
     picker_data = {}
     processed_materials = set()
 
-    # Consolidate all colorable rules for processing
     ALL_COLORABLE_RULES = {**COLORABLE_BLOCK_RULES, **COLORABLE_ITEM_RULES}
     for base, pattern in ALL_COLORABLE_RULES.items():
         colorable_bases[base] = [m for m in all_materials if pattern.match(m)]
         processed_materials.update(colorable_bases[base])
 
-    # Wood processing
     for rule_set in [WOOD_BLOCK_RULES, WOOD_ITEM_RULES]:
         for base, pattern in rule_set.items():
             matches = [m for m in all_materials if pattern.match(m)]
@@ -156,10 +166,12 @@ def generate_material_blocks():
 
         block_defs = []
         python_gens = []
-        material_toolbox_xml = []
-        item_toolbox_xml = []
 
-        # 1. WOOD TYPE PICKER (Shadow block)
+        # Local category buffers
+        material_xml = []
+        item_xml = []
+        entity_overrides = []
+
         wood_types = MATERIAL_PICKER_GROUPS['wood_types']
         wood_options = ',\n'.join([f'                ["{_generate_blockly_name(w)}", "{w}"]' for w in wood_types])
         block_defs.append(f"""
@@ -174,19 +186,17 @@ def generate_material_blocks():
     }};""")
         python_gens.append("    pythonGenerator.forBlock['minecraft_wood_type_picker'] = (block) => [`'${block.getFieldValue('WOOD_TYPE')}'`, pythonGenerator.ORDER_ATOMIC];")
 
-        # 2. WOOD BLOCKS & ITEMS
-        def _add_wood_logic(base_name, target_xml, output_type):
-            prefix = "material" if output_type == "Block" else "item"
+        def _get_target_category_list(base_name, default_type):
+            semantic_type = SEMANTIC_OUTPUT_TYPES.get(base_name, default_type)
+            if semantic_type == 'Entity': return 'Entity', entity_overrides
+            if semantic_type == 'Block': return 'Block', material_xml
+            return 'Item', item_xml
+
+        def _add_wood_logic(base_name, default_type):
+            output_type, target_list = _get_target_category_list(base_name, default_type)
+            prefix = "material" if default_type == "Block" else "item"
             block_type = f"minecraft_{prefix}_wood_{base_name.lower()}"
-
-            target_xml.append(f"""    <block type="{block_type}">
-      <value name="WOOD">
-        <shadow type="minecraft_wood_type_picker">
-          <field name="WOOD_TYPE">OAK</field>
-        </shadow>
-      </value>
-    </block>""")
-
+            target_list.append(f'    <block type="{block_type}"><value name="WOOD"><shadow type="minecraft_wood_type_picker"><field name="WOOD_TYPE">OAK</field></shadow></value></block>')
             block_defs.append(f"""
     Blockly.Blocks['{block_type}'] = {{
       init: function() {{
@@ -198,22 +208,14 @@ def generate_material_blocks():
     }};""")
             python_gens.append(f"    pythonGenerator.forBlock['{block_type}'] = (block, generator) => [_combine_wood_and_material(generator.valueToCode(block, 'WOOD', pythonGenerator.ORDER_ATOMIC) || \"'OAK'\", '{base_name}'), pythonGenerator.ORDER_ATOMIC];")
 
-        for b in WOOD_BLOCK_RULES: _add_wood_logic(b, material_toolbox_xml, "Block")
-        for b in WOOD_ITEM_RULES: _add_wood_logic(b, item_toolbox_xml, "Item")
+        for b in WOOD_BLOCK_RULES: _add_wood_logic(b, "Block")
+        for b in WOOD_ITEM_RULES: _add_wood_logic(b, "Item")
 
-        # 3. COLOUR BLOCKS & ITEMS
-        def _add_colour_logic(base_name, target_xml, output_type):
-            prefix = "material" if output_type == "Block" else "item"
+        def _add_colour_logic(base_name, default_type):
+            output_type, target_list = _get_target_category_list(base_name, default_type)
+            prefix = "material" if default_type == "Block" else "item"
             block_type = f"minecraft_{prefix}_colour_{base_name.lower()}"
-
-            target_xml.append(f"""    <block type="{block_type}">
-      <value name="COLOUR">
-        <shadow type="minecraft_coloured_block_picker">
-          <field name="MINECRAFT_COLOUR_ID">WHITE</field>
-        </shadow>
-      </value>
-    </block>""")
-
+            target_list.append(f'    <block type="{block_type}"><value name="COLOUR"><shadow type="minecraft_coloured_block_picker"><field name="MINECRAFT_COLOUR_ID">WHITE</field></shadow></value></block>')
             block_defs.append(f"""
     Blockly.Blocks['{block_type}'] = {{
       init: function() {{
@@ -225,40 +227,27 @@ def generate_material_blocks():
     }};""")
             python_gens.append(f"    pythonGenerator.forBlock['{block_type}'] = (block, generator) => [_combine_colour_and_material(generator.valueToCode(block, 'COLOUR', pythonGenerator.ORDER_ATOMIC) || \"'WHITE'\", '{base_name}'), pythonGenerator.ORDER_ATOMIC];")
 
-        for b in COLORABLE_BLOCK_RULES: _add_colour_logic(b, material_toolbox_xml, "Block")
-        for b in COLORABLE_ITEM_RULES: _add_colour_logic(b, item_toolbox_xml, "Item")
+        for b in COLORABLE_BLOCK_RULES: _add_colour_logic(b, "Block")
+        for b in COLORABLE_ITEM_RULES: _add_colour_logic(b, "Item")
 
-        # 4. STANDARD PICKER BLOCKS
         for name, materials in pickers_data.items():
             if name == "wood_types": continue
             block_type = f"minecraft_picker_{name.lower()}"
-            material_toolbox_xml.append(f'    <block type="{block_type}"></block>')
+            material_xml.append(f'    <block type="{block_type}"></block>')
             dropdown_options = ',\n'.join([f'                ["{_generate_blockly_name(mat)}", "{mat}"]' for mat in materials])
-            block_defs.append(f"""
-    Blockly.Blocks['{block_type}'] = {{
-        init: function() {{
-            this.appendDummyInput().appendField("{_generate_blockly_name(name)}").appendField(new Blockly.FieldDropdown([{dropdown_options}]), "MATERIAL_ID");
-            this.setOutput(true, "Block");
-            this.setColour(180);
-        }}
-    }};""")
+            block_defs.append(f"    Blockly.Blocks['{block_type}'] = {{ init: function() {{ this.appendDummyInput().appendField('{_generate_blockly_name(name)}').appendField(new Blockly.FieldDropdown([{dropdown_options}]), 'MATERIAL_ID'); this.setOutput(true, 'Block'); this.setColour(180); }} }};")
             python_gens.append(f"    pythonGenerator.forBlock['{block_type}'] = (block) => [`'${{block.getFieldValue('MATERIAL_ID')}}'`, pythonGenerator.ORDER_ATOMIC];")
 
-        # 5. MISC PICKER
         if singles_data:
-            material_toolbox_xml.append('    <sep></sep><block type="minecraft_picker_miscellaneous"></block>')
+            material_xml.append('    <sep></sep><block type="minecraft_picker_miscellaneous"></block>')
             dropdown_options = ',\n'.join([f'                ["{_generate_blockly_name(mat)}", "{mat}"]' for mat in singles_data])
-            block_defs.append(f"""
-    Blockly.Blocks['minecraft_picker_miscellaneous'] = {{
-        init: function() {{
-            this.appendDummyInput().appendField("Misc. Block/Item").appendField(new Blockly.FieldDropdown([{dropdown_options}]), "MATERIAL_ID");
-            this.setOutput(true, "Block");
-            this.setColour(200);
-        }}
-    }};""")
+            block_defs.append(f"    Blockly.Blocks['minecraft_picker_miscellaneous'] = {{ init: function() {{ this.appendDummyInput().appendField('Misc. Block/Item').appendField(new Blockly.FieldDropdown([{dropdown_options}]), 'MATERIAL_ID'); this.setOutput(true, 'Block'); this.setColour(200); }} }};")
             python_gens.append("    pythonGenerator.forBlock['minecraft_picker_miscellaneous'] = (block) => [`'${block.getFieldValue('MATERIAL_ID')}'`, pythonGenerator.ORDER_ATOMIC];")
 
-        # ASSEMBLE FILES
+        # PERSIST overrides to disk to ensure they survive build context boundaries
+        with open(MC_OVERRIDES_DATA_PATH, 'w', encoding='utf-8') as f:
+            json.dump(entity_overrides, f, indent=4)
+
         block_defs_output = 'import { MCED } from "../lib/constants.mjs";\n\n' + \
                             "export function defineMineCraftMaterialBlocks(Blockly) {\n" + \
                             "\n".join(block_defs) + "\n}\n"
@@ -282,19 +271,18 @@ function _combine_wood_and_material(wood, base) {
                             "\nexport function defineMineCraftMaterialGenerators(pythonGenerator) {\n" + \
                             "\n".join(python_gens) + "\n}\n"
 
-        material_cat = f'<category name="Materials" colour="#777777">\n{"".join(material_toolbox_xml)}\n</category>'
-        item_cat = f'<category name="Items" colour="#5ba58c">\n{"".join(item_toolbox_xml)}\n</category>'
-
         output_blocks_dir.mkdir(parents=True, exist_ok=True)
         output_python_dir.mkdir(parents=True, exist_ok=True)
         (output_blocks_dir / 'materials.mjs').write_text(block_defs_output, 'utf-8')
         (output_python_dir / 'materials.mjs').write_text(python_gen_output, 'utf-8')
 
-        BlocklyGenerator.update_toolbox(material_cat, output_toolbox_path)
-        BlocklyGenerator.update_toolbox(item_cat, output_toolbox_path)
+        class Dummy: pass
+        dummy_gen = BlocklyGenerator(Dummy, {}, {}, category_colour="#000")
+        dummy_gen.update_toolbox(f'<category name="Materials" colour="#777777">\n{"".join(material_xml)}\n</category>', output_toolbox_path)
+        dummy_gen.update_toolbox(f'<category name="Items" colour="#5ba58c">\n{"".join(item_xml)}\n</category>', output_toolbox_path)
 
     except Exception as e:
-        print(f"Failed to generate material Blockly files: {e}")
+        print(f"Failed to generate material blocks: {e}")
         raise
 
 # =========================================================================
@@ -310,7 +298,6 @@ ENTITY_PICKER_GROUPS = {
 }
 
 def process_entities():
-    """Reads the full entity list and categorizes them into picker groups."""
     try:
         _raw_entity_id_map = pickle.load(MC_ENTITY_ID_MAP_PATH.open('rb'))
     except FileNotFoundError:
@@ -332,7 +319,6 @@ def process_entities():
         json.dump(picker_data, f, indent=4, sort_keys=True)
 
 def generate_entity_blocks():
-    """Generates Blockly code for entity pickers."""
     try:
         with open(MC_ENTITY_PICKERS_PATH, 'r', encoding='utf-8') as f: pickers_data = json.load(f)
         output_blocks_dir = MC_APP_SRC_DIR / 'blocks'
@@ -347,28 +333,29 @@ def generate_entity_blocks():
         for name, entities in pickers_data.items():
             block_type = f"minecraft_entity_picker_{name.lower()}"
             dropdown_options = ',\n'.join([f'          ["{_generate_blockly_name(e)}", "{e}"]' for e in entities])
-
-            block_defs.append(f"""
-    Blockly.Blocks['{block_type}'] = {{
-      init: function() {{
-        this.appendDummyInput().appendField("{_generate_blockly_name(name)}").appendField(new Blockly.FieldDropdown([{dropdown_options}]), "ENTITY_ID");
-        this.setOutput(true, "Entity");
-        this.setColour("{default_colour}");
-      }}
-    }};""")
+            block_defs.append(f"    Blockly.Blocks['{block_type}'] = {{ init: function() {{ this.appendDummyInput().appendField('{_generate_blockly_name(name)}').appendField(new Blockly.FieldDropdown([{dropdown_options}]), 'ENTITY_ID'); this.setOutput(true, 'Entity'); this.setColour('{default_colour}'); }} }};")
             python_gens.append(f"    pythonGenerator.forBlock['{block_type}'] = (block) => [`'${{block.getFieldValue('ENTITY_ID')}}'`, pythonGenerator.ORDER_ATOMIC];")
             toolbox_xml.append(f'  <block type="{block_type}"></block>')
+
+        # Load redirected items (Boats, etc.) from disk and inject into the Entities category
+        if MC_OVERRIDES_DATA_PATH.exists():
+            with open(MC_OVERRIDES_DATA_PATH, 'r', encoding='utf-8') as f:
+                overrides = json.load(f)
+                if overrides:
+                    toolbox_xml.append("\n".join(overrides))
 
         (output_blocks_dir / 'entities.mjs').write_text("export function defineMineCraftEntityBlocks(Blockly) {\n" + "\n".join(block_defs) + "\n}\n", 'utf-8')
         (output_python_dir / 'entities.mjs').write_text("export function defineMineCraftEntityGenerators(pythonGenerator) {\n" + "\n".join(python_gens) + "\n}\n", 'utf-8')
 
-        BlocklyGenerator.update_toolbox(f'<category name="Entities" colour="{default_colour}">\n' + "\n".join(toolbox_xml) + '\n</category>', output_toolbox_path)
+        class Dummy: pass
+        dummy_gen = BlocklyGenerator(Dummy, {}, {}, category_colour=default_colour)
+        dummy_gen.update_toolbox(f'<category name="Entities" colour="{default_colour}">\n' + "\n".join(toolbox_xml) + '\n</category>', output_toolbox_path)
 
     except Exception as e:
         print(f"Failed to generate entity blocks: {e}")
 
 # =========================================================================
-# 5. MC ACTIONS GENERATION (API Wrapper)
+# 5. MC ACTIONS GENERATION (API Wrapper - DO NOT MODIFY SECTION)
 # =========================================================================
 
 def _generate_picker_block_js(block_type, label, options_list, colour, tooltip, output_type='String' ):
@@ -414,7 +401,7 @@ def generate_mcactions_blocks():
     # Configure Shadows for BlocklyGenerator
     type_map = {'Vec3': "3DVector", 'Matrix3': "3DMatrix", 'Block': "Block", 'DigitalSet': "Digital_Set", 'Metric': 'Metric', 'QDirection': 'QDirection', 'Axis': 'Axis', 'QCompass': 'QCompass', 'Time': 'Time', 'Weather': 'Weather', 'Difficulty': 'Difficulty', 'Gamemode': 'Gamemode', 'GameRule': 'GameRule', 'LocateType': 'LocateType', 'Structure': 'Structure', 'Biome': 'Biome', 'Poi': 'Poi', 'Entity': 'Entity'}
     shadow_map = dict(
-        Vec3='<shadow type="minecraft_vector_3d"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow>',
+        Vec3='<shadow type="minecraft_vector_3d"><value name="X"><shadow type="math_number"><field name=\"NUM\">0</field></shadow></value><value name=\"Y\"><shadow type=\"math_number\"><field name=\"NUM\">0</field></shadow></value><value name=\"Z\"><shadow type=\"math_number\"><field name=\"NUM\">0</field></shadow></value></shadow>',
         Block='<shadow type="minecraft_picker_world"><field name="MATERIAL_ID">STONE</field></shadow>',
         Entity='<shadow type="minecraft_entity_picker_passive_mobs"><field name="ENTITY_ID">PIG</field></shadow>',
         Matrix3='<shadow type="minecraft_matrix_3d_euler"></shadow>',
