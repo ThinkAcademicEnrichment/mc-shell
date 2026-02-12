@@ -30,13 +30,7 @@ Blockly.Blocks['turtle_shapes_get_arithmetic_plane'] = {
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('NORMAL').connection.setShadowDom(Blockly.utils.xml.textToDom(`
-                 <shadow type="minecraft_vector_3d">
-                    <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                    <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                    <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                </shadow>
-        `));
+        this.getInput('NORMAL').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="minecraft_vector_3d"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow>`));
         this.getInput('SIDE_LENGTH').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="math_number"><field name="NUM">0</field></shadow>`));
     }
 };
@@ -51,20 +45,8 @@ Blockly.Blocks['turtle_shapes_get_line'] = {
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('P1').connection.setShadowDom(Blockly.utils.xml.textToDom(`
-                 <shadow type="minecraft_vector_3d">
-                    <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                    <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                    <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                </shadow>
-        `));
-        this.getInput('P2').connection.setShadowDom(Blockly.utils.xml.textToDom(`
-                 <shadow type="minecraft_vector_3d">
-                    <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                    <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                    <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                </shadow>
-        `));
+        this.getInput('P1').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="minecraft_vector_3d"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow>`));
+        this.getInput('P2').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="minecraft_vector_3d"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow>`));
     }
 };
 Blockly.Blocks['turtle_shapes_get_metric_ball'] = {
@@ -79,11 +61,7 @@ Blockly.Blocks['turtle_shapes_get_metric_ball'] = {
 
         // Configure shadow blocks directly
         this.getInput('RADIUS').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="math_number"><field name="NUM">0</field></shadow>`));
-        this.getInput('METRIC').connection.setShadowDom(Blockly.utils.xml.textToDom(`
-                <shadow type="picker_metric">
-                    <field name="VALUE">euclidean</field>
-                </shadow>
-        `));
+        this.getInput('METRIC').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="picker_metric"><field name="VALUE">euclidean</field></shadow>`));
     }
 };
 }

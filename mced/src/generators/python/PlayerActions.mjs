@@ -63,19 +63,19 @@ pythonGenerator.forBlock['player_actions_send_title'] = function(block, generato
     return `self.action_implementer.send_title(title=${title}, subtitle=${subtitle}, stay=${stay}, player_name=${player_name})\n`;
 };
 pythonGenerator.forBlock['player_actions_set_compass_direction'] = function(block, generator) {
-    const dir = generator.valueToCode(block, 'DIR', generator.ORDER_ATOMIC) || 'None';
+    const dir = generator.valueToCode(block, 'DIR', generator.ORDER_ATOMIC) || None;
     return `self.action_implementer.set_compass_direction(dir=${dir})\n`;
 };
 pythonGenerator.forBlock['player_actions_set_compass_q_direction'] = function(block, generator) {
-    const dir = generator.valueToCode(block, 'DIR', generator.ORDER_ATOMIC) || 'None';
+    const dir = generator.valueToCode(block, 'DIR', generator.ORDER_ATOMIC) || None;
     return `self.action_implementer.set_compass_q_direction(dir=${dir})\n`;
 };
 pythonGenerator.forBlock['player_actions_set_direction'] = function(block, generator) {
-    const direction = generator.valueToCode(block, 'DIRECTION', generator.ORDER_ATOMIC) || 'None';
+    const direction = generator.valueToCode(block, 'DIRECTION', generator.ORDER_ATOMIC) || None;
     return `self.action_implementer.set_direction(direction=${direction})\n`;
 };
 pythonGenerator.forBlock['player_actions_set_position'] = function(block, generator) {
-    const pos = generator.valueToCode(block, 'POS', generator.ORDER_ATOMIC) || 'None';
+    const pos = generator.valueToCode(block, 'POS', generator.ORDER_ATOMIC) || None;
     return `self.action_implementer.set_position(pos=${pos})\n`;
 };
 pythonGenerator.forBlock['player_actions_wait_for_sword_strike'] = function(block, generator) {

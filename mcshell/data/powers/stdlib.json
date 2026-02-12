@@ -1,5 +1,5 @@
 {
-    "version": 31,
+    "version": 32,
     "powers": [
         {
             "power_id": "98123852-9c47-414d-ac05-3489fd86c840",
@@ -8514,6 +8514,947 @@
             "author": "System",
             "created_at": "2026-02-09T13:48:56.730398",
             "updated_at": "2026-02-09T13:58:46.189941"
+        },
+        {
+            "power_id": "4365ff30-9268-468b-bffd-830b06317c9b",
+            "name": "eulerCone",
+            "description": "Describe this function...",
+            "category": "Powers",
+            "function_name": "eulerCone",
+            "parameters": [
+                {
+                    "name": "materials",
+                    "type": "Array",
+                    "default": 0
+                },
+                {
+                    "name": "yaw_angle",
+                    "type": "Number",
+                    "default": 0
+                },
+                {
+                    "name": "pitch_angle",
+                    "type": "Number",
+                    "default": 0
+                },
+                {
+                    "name": "roll_angle",
+                    "type": "Number",
+                    "default": 0
+                },
+                {
+                    "name": "length",
+                    "type": "Number",
+                    "default": 0
+                },
+                {
+                    "name": "initial_direction",
+                    "type": "3DVector",
+                    "default": 0
+                },
+                {
+                    "name": "center_point",
+                    "type": "3DVector",
+                    "default": 0
+                },
+                {
+                    "name": "iterations",
+                    "type": "Number",
+                    "default": 0
+                }
+            ],
+            "dependencies": [],
+            "blockly_json": {
+                "blocks": {
+                    "languageVersion": 0,
+                    "blocks": [
+                        {
+                            "type": "procedures_defnoreturn",
+                            "id": "w,q=WJJ!LSUB?$6F[r_r",
+                            "x": -143,
+                            "y": -689,
+                            "extraState": {
+                                "params": [
+                                    {
+                                        "name": "materials",
+                                        "id": "lE)-*iF-)W*_ob_NoX~7"
+                                    },
+                                    {
+                                        "name": "yaw_angle",
+                                        "id": "d]7k%:*ef8!.[XHmOged"
+                                    },
+                                    {
+                                        "name": "pitch_angle",
+                                        "id": "s?,RtomB],A?UT|otA`9"
+                                    },
+                                    {
+                                        "name": "roll_angle",
+                                        "id": ".ejIp:f6U}ppt.?Q3xz/"
+                                    },
+                                    {
+                                        "name": "length",
+                                        "id": "lg+$ISh{TJ1Xy/_%gHWG"
+                                    },
+                                    {
+                                        "name": "initial_direction",
+                                        "id": "KFDbi~cInHdBjcNaZEF|"
+                                    },
+                                    {
+                                        "name": "center_point",
+                                        "id": "?FJ1:eIJj6F7@$B4X?~K"
+                                    },
+                                    {
+                                        "name": "iterations",
+                                        "id": "n?6(J/x$Qx|b(mrE;`WT"
+                                    }
+                                ]
+                            },
+                            "icons": {
+                                "comment": {
+                                    "text": "Describe this function...",
+                                    "pinned": false,
+                                    "height": 80,
+                                    "width": 160
+                                }
+                            },
+                            "fields": {
+                                "NAME": "eulerCone"
+                            },
+                            "inputs": {
+                                "STACK": {
+                                    "block": {
+                                        "type": "variables_set",
+                                        "id": "JT1Se8%$,6K[qGA5]9AJ",
+                                        "fields": {
+                                            "VAR": {
+                                                "id": "%/D1Z]!:|Jz.xrXsod@M"
+                                            }
+                                        },
+                                        "inputs": {
+                                            "VALUE": {
+                                                "block": {
+                                                    "type": "minecraft_vector_scalar_multiply",
+                                                    "id": "@/voFtF6c@#_v*FOa-4t",
+                                                    "inputs": {
+                                                        "A": {
+                                                            "block": {
+                                                                "type": "variables_get",
+                                                                "id": "Lds+;OSy=*Ant5HI{|yg",
+                                                                "fields": {
+                                                                    "VAR": {
+                                                                        "id": "KFDbi~cInHdBjcNaZEF|"
+                                                                    }
+                                                                }
+                                                            }
+                                                        },
+                                                        "B": {
+                                                            "shadow": {
+                                                                "type": "math_number",
+                                                                "id": "GsA{)w-#QuRj_ie`nU:W",
+                                                                "fields": {
+                                                                    "NUM": 1
+                                                                }
+                                                            },
+                                                            "block": {
+                                                                "type": "variables_get",
+                                                                "id": "wS/)m;ZJmB$B@UGv[h$(",
+                                                                "fields": {
+                                                                    "VAR": {
+                                                                        "id": "lg+$ISh{TJ1Xy/_%gHWG"
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "next": {
+                                            "block": {
+                                                "type": "digital_geometry_create_digital_line",
+                                                "id": "i=%o{AXXzF5;}8,rH|MI",
+                                                "inputs": {
+                                                    "POINT1": {
+                                                        "shadow": {
+                                                            "type": "minecraft_vector_3d",
+                                                            "id": "{VjW_A]`gF5tc{){~Z$a",
+                                                            "inputs": {
+                                                                "X": {
+                                                                    "shadow": {
+                                                                        "type": "math_number",
+                                                                        "id": "#Qu[3H]UcUxNC;mU`/Xo",
+                                                                        "fields": {
+                                                                            "NUM": 0
+                                                                        }
+                                                                    }
+                                                                },
+                                                                "Y": {
+                                                                    "shadow": {
+                                                                        "type": "math_number",
+                                                                        "id": "9_DhSrA~#yDuHr$afNI?",
+                                                                        "fields": {
+                                                                            "NUM": 0
+                                                                        }
+                                                                    }
+                                                                },
+                                                                "Z": {
+                                                                    "shadow": {
+                                                                        "type": "math_number",
+                                                                        "id": "vSe^|2tA!_DXV9eW6?z5",
+                                                                        "fields": {
+                                                                            "NUM": 0
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        },
+                                                        "block": {
+                                                            "type": "variables_get",
+                                                            "id": "Q{8p+XC_%Jp#R}0k};:|",
+                                                            "fields": {
+                                                                "VAR": {
+                                                                    "id": "?FJ1:eIJj6F7@$B4X?~K"
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    "POINT2": {
+                                                        "shadow": {
+                                                            "type": "minecraft_vector_3d",
+                                                            "id": "3/:{C?OLOTdLM6j2%1.E",
+                                                            "inputs": {
+                                                                "X": {
+                                                                    "shadow": {
+                                                                        "type": "math_number",
+                                                                        "id": "s2@MxsA=gsZE0v5t2Yo;",
+                                                                        "fields": {
+                                                                            "NUM": 0
+                                                                        }
+                                                                    }
+                                                                },
+                                                                "Y": {
+                                                                    "shadow": {
+                                                                        "type": "math_number",
+                                                                        "id": "-i-m-.-S5LW{Vlt=t0vG",
+                                                                        "fields": {
+                                                                            "NUM": 0
+                                                                        }
+                                                                    }
+                                                                },
+                                                                "Z": {
+                                                                    "shadow": {
+                                                                        "type": "math_number",
+                                                                        "id": "UYvlJ{F7hjX`sh[5g7q2",
+                                                                        "fields": {
+                                                                            "NUM": 0
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        },
+                                                        "block": {
+                                                            "type": "minecraft_vector_binary_op",
+                                                            "id": "A5}Y{~YY1{-fSB)3Qh~I",
+                                                            "fields": {
+                                                                "OP": "ADD"
+                                                            },
+                                                            "inputs": {
+                                                                "A": {
+                                                                    "block": {
+                                                                        "type": "variables_get",
+                                                                        "id": "|!615%KLxJK)Nvg}Sr6X",
+                                                                        "fields": {
+                                                                            "VAR": {
+                                                                                "id": "?FJ1:eIJj6F7@$B4X?~K"
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                },
+                                                                "B": {
+                                                                    "block": {
+                                                                        "type": "variables_get",
+                                                                        "id": "hY5o0C0smRrG}!,czPEQ",
+                                                                        "fields": {
+                                                                            "VAR": {
+                                                                                "id": "%/D1Z]!:|Jz.xrXsod@M"
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    "BLOCK_TYPE": {
+                                                        "shadow": {
+                                                            "type": "minecraft_picker_world",
+                                                            "id": "eCA:yvmrx3-6XtNFpeRB",
+                                                            "fields": {
+                                                                "MATERIAL_ID": "OBSIDIAN"
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                "next": {
+                                                    "block": {
+                                                        "type": "controls_for",
+                                                        "id": "@vLJo0b*r|wEiLu]1sXS",
+                                                        "fields": {
+                                                            "VAR": {
+                                                                "id": "!gX(y%~iMy{cR:F;7#m)"
+                                                            }
+                                                        },
+                                                        "inputs": {
+                                                            "FROM": {
+                                                                "shadow": {
+                                                                    "type": "math_number",
+                                                                    "id": "[yZ/v.]h#yNn/nfH?brE",
+                                                                    "fields": {
+                                                                        "NUM": 0
+                                                                    }
+                                                                }
+                                                            },
+                                                            "TO": {
+                                                                "shadow": {
+                                                                    "type": "math_number",
+                                                                    "id": "5uzxbnbq=oE+.g9xthN[",
+                                                                    "fields": {
+                                                                        "NUM": 1999
+                                                                    }
+                                                                },
+                                                                "block": {
+                                                                    "type": "variables_get",
+                                                                    "id": "p;c!YD{1yiDnod3UcMrI",
+                                                                    "fields": {
+                                                                        "VAR": {
+                                                                            "id": "n?6(J/x$Qx|b(mrE;`WT"
+                                                                        }
+                                                                    }
+                                                                }
+                                                            },
+                                                            "BY": {
+                                                                "shadow": {
+                                                                    "type": "math_number",
+                                                                    "id": "{at$qtWpRp3~KOC}a+Gr",
+                                                                    "fields": {
+                                                                        "NUM": 1
+                                                                    }
+                                                                }
+                                                            },
+                                                            "DO": {
+                                                                "block": {
+                                                                    "type": "variables_set",
+                                                                    "id": "F/uVGP6(M0K4AF1$9q3/",
+                                                                    "fields": {
+                                                                        "VAR": {
+                                                                            "id": "@ZA$E/4:1D]q[+:g~am-"
+                                                                        }
+                                                                    },
+                                                                    "inputs": {
+                                                                        "VALUE": {
+                                                                            "block": {
+                                                                                "type": "lists_getIndex",
+                                                                                "id": "ayD)_wt]-cBwb?lE7b0r",
+                                                                                "fields": {
+                                                                                    "MODE": "GET",
+                                                                                    "WHERE": "FROM_START"
+                                                                                },
+                                                                                "inputs": {
+                                                                                    "VALUE": {
+                                                                                        "block": {
+                                                                                            "type": "variables_get",
+                                                                                            "id": "eZPu2Y8g~X+9?%,4y1u+",
+                                                                                            "fields": {
+                                                                                                "VAR": {
+                                                                                                    "id": "lE)-*iF-)W*_ob_NoX~7"
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                    },
+                                                                                    "AT": {
+                                                                                        "block": {
+                                                                                            "type": "math_modulo",
+                                                                                            "id": "(64!DfvkHLwv1iey{0$B",
+                                                                                            "inputs": {
+                                                                                                "DIVIDEND": {
+                                                                                                    "shadow": {
+                                                                                                        "type": "math_number",
+                                                                                                        "id": "5*f{OX6w)}HP$Mn2iRIY",
+                                                                                                        "fields": {
+                                                                                                            "NUM": 64
+                                                                                                        }
+                                                                                                    },
+                                                                                                    "block": {
+                                                                                                        "type": "variables_get",
+                                                                                                        "id": "h*@@_B1(O?3s$NWE:8Ku",
+                                                                                                        "fields": {
+                                                                                                            "VAR": {
+                                                                                                                "id": "!gX(y%~iMy{cR:F;7#m)"
+                                                                                                            }
+                                                                                                        }
+                                                                                                    }
+                                                                                                },
+                                                                                                "DIVISOR": {
+                                                                                                    "shadow": {
+                                                                                                        "type": "math_number",
+                                                                                                        "id": "*2~DOdH6hSO.LksYG!VA",
+                                                                                                        "fields": {
+                                                                                                            "NUM": 4
+                                                                                                        }
+                                                                                                    },
+                                                                                                    "block": {
+                                                                                                        "type": "lists_length",
+                                                                                                        "id": "9urbF}*;zBoEVySWm5cb",
+                                                                                                        "inputs": {
+                                                                                                            "VALUE": {
+                                                                                                                "block": {
+                                                                                                                    "type": "variables_get",
+                                                                                                                    "id": "[]gzN[uN:(P{0#1TG)%s",
+                                                                                                                    "fields": {
+                                                                                                                        "VAR": {
+                                                                                                                            "id": "lE)-*iF-)W*_ob_NoX~7"
+                                                                                                                        }
+                                                                                                                    }
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+                                                                                                    }
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    "next": {
+                                                                        "block": {
+                                                                            "type": "variables_set",
+                                                                            "id": "KVwiH=/$7ov!=PNApma}",
+                                                                            "fields": {
+                                                                                "VAR": {
+                                                                                    "id": "%/D1Z]!:|Jz.xrXsod@M"
+                                                                                }
+                                                                            },
+                                                                            "inputs": {
+                                                                                "VALUE": {
+                                                                                    "block": {
+                                                                                        "type": "minecraft_matrix_vector_multiply",
+                                                                                        "id": "/SQ(UT,(u)pxPR#=Ll+P",
+                                                                                        "inputs": {
+                                                                                            "B": {
+                                                                                                "block": {
+                                                                                                    "type": "variables_get",
+                                                                                                    "id": ";p7}ZousV[fR/mwaFZ-_",
+                                                                                                    "fields": {
+                                                                                                        "VAR": {
+                                                                                                            "id": "%/D1Z]!:|Jz.xrXsod@M"
+                                                                                                        }
+                                                                                                    }
+                                                                                                }
+                                                                                            },
+                                                                                            "A": {
+                                                                                                "shadow": {
+                                                                                                    "type": "minecraft_matrix_3d_euler",
+                                                                                                    "id": "nMQ/U4-e`,m(.pAL`$GE",
+                                                                                                    "inputs": {
+                                                                                                        "YAW": {
+                                                                                                            "shadow": {
+                                                                                                                "type": "math_number",
+                                                                                                                "id": ".~R}5:w[P4849oIC?!ve",
+                                                                                                                "fields": {
+                                                                                                                    "NUM": 0
+                                                                                                                }
+                                                                                                            }
+                                                                                                        },
+                                                                                                        "PITCH": {
+                                                                                                            "shadow": {
+                                                                                                                "type": "math_number",
+                                                                                                                "id": "6%-IgTsxU#?zT^V)A1EZ",
+                                                                                                                "fields": {
+                                                                                                                    "NUM": 45
+                                                                                                                }
+                                                                                                            }
+                                                                                                        },
+                                                                                                        "ROLL": {
+                                                                                                            "shadow": {
+                                                                                                                "type": "math_number",
+                                                                                                                "id": "2{1KmZ{do/,{6YD|heqX",
+                                                                                                                "fields": {
+                                                                                                                    "NUM": 0
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+                                                                                                    }
+                                                                                                },
+                                                                                                "block": {
+                                                                                                    "type": "minecraft_matrix_3d_euler",
+                                                                                                    "id": "o_jR,B~lkSAuhE$S%lYk",
+                                                                                                    "inputs": {
+                                                                                                        "YAW": {
+                                                                                                            "shadow": {
+                                                                                                                "type": "math_number",
+                                                                                                                "id": "WGVA/5XKJ1+YkD/rU;^u",
+                                                                                                                "fields": {
+                                                                                                                    "NUM": 7
+                                                                                                                }
+                                                                                                            },
+                                                                                                            "block": {
+                                                                                                                "type": "variables_get",
+                                                                                                                "id": "eo`2,ajZnt`j{k_bLDEO",
+                                                                                                                "fields": {
+                                                                                                                    "VAR": {
+                                                                                                                        "id": "d]7k%:*ef8!.[XHmOged"
+                                                                                                                    }
+                                                                                                                }
+                                                                                                            }
+                                                                                                        },
+                                                                                                        "PITCH": {
+                                                                                                            "shadow": {
+                                                                                                                "type": "math_number",
+                                                                                                                "id": "x=0CfF(x@|/ntp#hPx8b",
+                                                                                                                "fields": {
+                                                                                                                    "NUM": 17
+                                                                                                                }
+                                                                                                            },
+                                                                                                            "block": {
+                                                                                                                "type": "variables_get",
+                                                                                                                "id": "6VFoZN-KXp6N}?q-{Sn#",
+                                                                                                                "fields": {
+                                                                                                                    "VAR": {
+                                                                                                                        "id": "s?,RtomB],A?UT|otA`9"
+                                                                                                                    }
+                                                                                                                }
+                                                                                                            }
+                                                                                                        },
+                                                                                                        "ROLL": {
+                                                                                                            "shadow": {
+                                                                                                                "type": "math_number",
+                                                                                                                "id": ":``$`6z|[dFL;EtIi$.d",
+                                                                                                                "fields": {
+                                                                                                                    "NUM": 11
+                                                                                                                }
+                                                                                                            },
+                                                                                                            "block": {
+                                                                                                                "type": "variables_get",
+                                                                                                                "id": "EFjM]Z`;zxUS,)Tj3pc~",
+                                                                                                                "fields": {
+                                                                                                                    "VAR": {
+                                                                                                                        "id": ".ejIp:f6U}ppt.?Q3xz/"
+                                                                                                                    }
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+                                                                                                    }
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            },
+                                                                            "next": {
+                                                                                "block": {
+                                                                                    "type": "digital_geometry_create_digital_line",
+                                                                                    "id": "2t62OmZ4wM%=+=Ko,UGm",
+                                                                                    "inputs": {
+                                                                                        "POINT1": {
+                                                                                            "shadow": {
+                                                                                                "type": "minecraft_vector_3d",
+                                                                                                "id": "{VjW_A]`gF5tc{){~Z$a",
+                                                                                                "inputs": {
+                                                                                                    "X": {
+                                                                                                        "shadow": {
+                                                                                                            "type": "math_number",
+                                                                                                            "id": "#Qu[3H]UcUxNC;mU`/Xo",
+                                                                                                            "fields": {
+                                                                                                                "NUM": 0
+                                                                                                            }
+                                                                                                        }
+                                                                                                    },
+                                                                                                    "Y": {
+                                                                                                        "shadow": {
+                                                                                                            "type": "math_number",
+                                                                                                            "id": "9_DhSrA~#yDuHr$afNI?",
+                                                                                                            "fields": {
+                                                                                                                "NUM": 0
+                                                                                                            }
+                                                                                                        }
+                                                                                                    },
+                                                                                                    "Z": {
+                                                                                                        "shadow": {
+                                                                                                            "type": "math_number",
+                                                                                                            "id": "vSe^|2tA!_DXV9eW6?z5",
+                                                                                                            "fields": {
+                                                                                                                "NUM": 0
+                                                                                                            }
+                                                                                                        }
+                                                                                                    }
+                                                                                                }
+                                                                                            },
+                                                                                            "block": {
+                                                                                                "type": "variables_get",
+                                                                                                "id": "ZnDA%kq?5yx}mAOqarD1",
+                                                                                                "fields": {
+                                                                                                    "VAR": {
+                                                                                                        "id": "?FJ1:eIJj6F7@$B4X?~K"
+                                                                                                    }
+                                                                                                }
+                                                                                            }
+                                                                                        },
+                                                                                        "POINT2": {
+                                                                                            "shadow": {
+                                                                                                "type": "minecraft_vector_3d",
+                                                                                                "id": "3/:{C?OLOTdLM6j2%1.E",
+                                                                                                "inputs": {
+                                                                                                    "X": {
+                                                                                                        "shadow": {
+                                                                                                            "type": "math_number",
+                                                                                                            "id": "s2@MxsA=gsZE0v5t2Yo;",
+                                                                                                            "fields": {
+                                                                                                                "NUM": 0
+                                                                                                            }
+                                                                                                        }
+                                                                                                    },
+                                                                                                    "Y": {
+                                                                                                        "shadow": {
+                                                                                                            "type": "math_number",
+                                                                                                            "id": "-i-m-.-S5LW{Vlt=t0vG",
+                                                                                                            "fields": {
+                                                                                                                "NUM": 0
+                                                                                                            }
+                                                                                                        }
+                                                                                                    },
+                                                                                                    "Z": {
+                                                                                                        "shadow": {
+                                                                                                            "type": "math_number",
+                                                                                                            "id": "UYvlJ{F7hjX`sh[5g7q2",
+                                                                                                            "fields": {
+                                                                                                                "NUM": 0
+                                                                                                            }
+                                                                                                        }
+                                                                                                    }
+                                                                                                }
+                                                                                            },
+                                                                                            "block": {
+                                                                                                "type": "minecraft_vector_binary_op",
+                                                                                                "id": "$Ag`tO/?9jCyWl(L2v5g",
+                                                                                                "fields": {
+                                                                                                    "OP": "ADD"
+                                                                                                },
+                                                                                                "inputs": {
+                                                                                                    "A": {
+                                                                                                        "block": {
+                                                                                                            "type": "variables_get",
+                                                                                                            "id": ".kVM^.i6nP4XwSLHzZrp",
+                                                                                                            "fields": {
+                                                                                                                "VAR": {
+                                                                                                                    "id": "?FJ1:eIJj6F7@$B4X?~K"
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+                                                                                                    },
+                                                                                                    "B": {
+                                                                                                        "block": {
+                                                                                                            "type": "variables_get",
+                                                                                                            "id": "O1hYvz4z_THtZt,wk]2q",
+                                                                                                            "fields": {
+                                                                                                                "VAR": {
+                                                                                                                    "id": "%/D1Z]!:|Jz.xrXsod@M"
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+                                                                                                    }
+                                                                                                }
+                                                                                            }
+                                                                                        },
+                                                                                        "BLOCK_TYPE": {
+                                                                                            "shadow": {
+                                                                                                "type": "minecraft_picker_world",
+                                                                                                "id": "(EkM@TGzfec]M%O_+bON",
+                                                                                                "fields": {
+                                                                                                    "MATERIAL_ID": "SNOW_BLOCK"
+                                                                                                }
+                                                                                            },
+                                                                                            "block": {
+                                                                                                "type": "variables_get",
+                                                                                                "id": "AR_0IJ2Tqm5c+9cA-TEu",
+                                                                                                "fields": {
+                                                                                                    "VAR": {
+                                                                                                        "id": "@ZA$E/4:1D]q[+:g~am-"
+                                                                                                    }
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "type": "procedures_callnoreturn",
+                            "id": "V.`I9tF$vaJ7Dq3Mj3N_",
+                            "x": 247,
+                            "y": 39,
+                            "extraState": {
+                                "name": "eulerCone",
+                                "params": [
+                                    "materials",
+                                    "yaw_angle",
+                                    "pitch_angle",
+                                    "roll_angle",
+                                    "length",
+                                    "initial_direction",
+                                    "center_point",
+                                    "iterations"
+                                ]
+                            },
+                            "inputs": {
+                                "ARG0": {
+                                    "block": {
+                                        "type": "lists_create_with",
+                                        "id": "l_zw@j.6Yo*;G+q0wRlf",
+                                        "extraState": {
+                                            "itemCount": 3
+                                        },
+                                        "inputs": {
+                                            "ADD0": {
+                                                "block": {
+                                                    "type": "minecraft_material_wood_wood",
+                                                    "id": "rJ,[[}$ul@a;@^L16Y`/",
+                                                    "inputs": {
+                                                        "WOOD": {
+                                                            "shadow": {
+                                                                "type": "minecraft_wood_type_picker",
+                                                                "id": "sa2mR9^)vJdMomCIlh}7",
+                                                                "fields": {
+                                                                    "WOOD_TYPE": "OAK"
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            "ADD1": {
+                                                "block": {
+                                                    "type": "minecraft_material_wood_wood",
+                                                    "id": "`Q7#ygJY-lz@WYo6|O,0",
+                                                    "inputs": {
+                                                        "WOOD": {
+                                                            "shadow": {
+                                                                "type": "minecraft_wood_type_picker",
+                                                                "id": "2:,RERyerI_5~iCERvD*",
+                                                                "fields": {
+                                                                    "WOOD_TYPE": "ACACIA"
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            "ADD2": {
+                                                "block": {
+                                                    "type": "minecraft_material_wood_wood",
+                                                    "id": "Wg^tTU(y~z?{T!nDCXQz",
+                                                    "inputs": {
+                                                        "WOOD": {
+                                                            "shadow": {
+                                                                "type": "minecraft_wood_type_picker",
+                                                                "id": "Of8d;I*z*yN!^l9OC,Y:",
+                                                                "fields": {
+                                                                    "WOOD_TYPE": "BAMBOO"
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "ARG1": {
+                                    "block": {
+                                        "type": "math_number",
+                                        "id": "Vw21X6l7sjO?kEskFNT/",
+                                        "fields": {
+                                            "NUM": 33
+                                        }
+                                    }
+                                },
+                                "ARG2": {
+                                    "block": {
+                                        "type": "math_number",
+                                        "id": "uF`dBe@KVjmt*HE1QD3x",
+                                        "fields": {
+                                            "NUM": 45
+                                        }
+                                    }
+                                },
+                                "ARG3": {
+                                    "block": {
+                                        "type": "math_number",
+                                        "id": "j1-pLX!laamkO5xUT|~X",
+                                        "fields": {
+                                            "NUM": 33
+                                        }
+                                    }
+                                },
+                                "ARG4": {
+                                    "block": {
+                                        "type": "math_number",
+                                        "id": "K:fbljeO}_m_Ik]MSg~2",
+                                        "fields": {
+                                            "NUM": 10
+                                        }
+                                    }
+                                },
+                                "ARG5": {
+                                    "block": {
+                                        "type": "player_actions_get_direction",
+                                        "id": "45A/6]mipxfcuYYPhTcN"
+                                    }
+                                },
+                                "ARG6": {
+                                    "block": {
+                                        "type": "player_actions_get_position",
+                                        "id": ".Bac6ffZtc,GS=*S,/hS"
+                                    }
+                                },
+                                "ARG7": {
+                                    "block": {
+                                        "type": "math_number",
+                                        "id": "wo^g=oIm+IPAd[]!tt4x",
+                                        "fields": {
+                                            "NUM": 10
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                "variables": [
+                    {
+                        "name": "x",
+                        "id": "p_%Z7^86n92_n]nD?NI~"
+                    },
+                    {
+                        "name": "dir",
+                        "id": "O=g^GX@oH{1m$R@nN{8}"
+                    },
+                    {
+                        "name": "i",
+                        "id": "!gX(y%~iMy{cR:F;7#m)"
+                    },
+                    {
+                        "name": "ground_level",
+                        "id": "WbY745JF+qjB!-T!u4Q^"
+                    },
+                    {
+                        "name": "line_len",
+                        "id": "rbv1{%t^jnRP](uke?e~"
+                    },
+                    {
+                        "name": "survey_point",
+                        "id": "|L?%}[T2p9C{6Tl|lFM{"
+                    },
+                    {
+                        "name": "end_point",
+                        "id": "%/D1Z]!:|Jz.xrXsod@M"
+                    },
+                    {
+                        "name": "material",
+                        "id": "@ZA$E/4:1D]q[+:g~am-"
+                    },
+                    {
+                        "name": "materials",
+                        "id": "lE)-*iF-)W*_ob_NoX~7"
+                    },
+                    {
+                        "name": "list",
+                        "id": "!g9E0785E:sOYJAbCH{^"
+                    },
+                    {
+                        "name": "y",
+                        "id": "/:+zjSU,?8}c`do4bc8["
+                    },
+                    {
+                        "name": "z",
+                        "id": "s?a0o9ECtEQ,FZVA/)kJ"
+                    },
+                    {
+                        "name": "materials_",
+                        "id": "ilcvopJzeI:IIu1s=jBz"
+                    },
+                    {
+                        "name": "yaw",
+                        "id": "#[oo9rRq8f8-]8G}p*Ry"
+                    },
+                    {
+                        "name": "pitch",
+                        "id": "P5)nNi_GKq~h}ec4q/BO"
+                    },
+                    {
+                        "name": "roll",
+                        "id": "+v7I0~Ct8NrwhQ.$:yx0"
+                    },
+                    {
+                        "name": "yaw_angle",
+                        "id": "d]7k%:*ef8!.[XHmOged"
+                    },
+                    {
+                        "name": "pitch_angle",
+                        "id": "s?,RtomB],A?UT|otA`9"
+                    },
+                    {
+                        "name": "roll_angle",
+                        "id": ".ejIp:f6U}ppt.?Q3xz/"
+                    },
+                    {
+                        "name": "length",
+                        "id": "lg+$ISh{TJ1Xy/_%gHWG"
+                    },
+                    {
+                        "name": "initial_direction",
+                        "id": "KFDbi~cInHdBjcNaZEF|"
+                    },
+                    {
+                        "name": "lengt",
+                        "id": "NO7NdDm-0QNo`D.qnr0$"
+                    },
+                    {
+                        "name": "l",
+                        "id": "Z|8@6pdR}@Mt#3P~.8d."
+                    },
+                    {
+                        "name": "center_point",
+                        "id": "?FJ1:eIJj6F7@$B4X?~K"
+                    },
+                    {
+                        "name": "start_point",
+                        "id": "1*KE_ntSu3jQZE%=:Jn{"
+                    },
+                    {
+                        "name": "iterations",
+                        "id": "n?6(J/x$Qx|b(mrE;`WT"
+                    }
+                ]
+            },
+            "python_code": "def eulerCone(self, materials, yaw_angle, pitch_angle, roll_angle, length, initial_direction, center_point, iterations):\n    end_point = initial_direction * length\n    self.action_implementer.create_digital_line(point1=center_point, point2=(center_point + end_point), block_type='OBSIDIAN')\n    for i in range(int(0), int(iterations) + (1 if int(0) <= int(iterations) else -1), int(1)):\n        if self.cancel_event and self.cancel_event.is_set(): break\n        eventlet.sleep(0)\n        material = materials[int(i % len(materials) - 1)]\n        end_point = Matrix3.from_euler_angles(yaw_degrees=yaw_angle, pitch_degrees=pitch_angle, roll_degrees=roll_angle) @ end_point\n        self.action_implementer.create_digital_line(point1=center_point, point2=(center_point + end_point), block_type=material)\n",
+            "schema_version": "1.0",
+            "engine_version": null,
+            "author": "System",
+            "created_at": "2026-02-12T13:51:57.859177",
+            "updated_at": "2026-02-12T13:51:57.859177"
         }
     ]
 }
