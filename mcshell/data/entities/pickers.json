@@ -37,14 +37,25 @@
         "TNT_MINECART"
     ],
     "miscellaneous_entities": [
+        "AREA_EFFECT_CLOUD",
+        "DRAGON_FIREBALL",
         "ENDER_DRAGON",
         "EVOKER_FANGS",
+        "EYE_OF_ENDER",
         "GIANT",
         "IRON_GOLEM",
+        "ITEM",
+        "LEASH_KNOT",
         "LLAMA",
+        "LLAMA_SPIT",
+        "SHULKER_BULLET",
         "SKELETON_HORSE",
+        "SMALL_FIREBALL",
         "SNOW_GOLEM",
+        "SPECTRAL_ARROW",
+        "SPLASH_POTION",
         "TNT",
+        "WITHER_SKULL",
         "ZOMBIE_HORSE"
     ],
     "passive_mobs": [
@@ -67,30 +78,19 @@
     ],
     "projectiles": [
         "ARROW",
-        "DRAGON_FIREBALL",
         "EGG",
         "ENDER_PEARL",
         "EXPERIENCE_BOTTLE",
         "FIREBALL",
         "FIREWORK_ROCKET",
-        "LLAMA_SPIT",
-        "SHULKER_BULLET",
-        "SMALL_FIREBALL",
-        "SNOWBALL",
-        "SPECTRAL_ARROW",
-        "SPLASH_POTION",
-        "WITHER_SKULL"
+        "SNOWBALL"
     ],
-    "utility_and_special": [
-        "AREA_EFFECT_CLOUD",
+    "utility": [
         "ARMOR_STAND",
         "END_CRYSTAL",
         "EXPERIENCE_ORB",
-        "EYE_OF_ENDER",
         "FALLING_BLOCK",
-        "ITEM",
         "ITEM_FRAME",
-        "LEASH_KNOT",
         "PAINTING"
     ]
 }

@@ -109,13 +109,7 @@ Blockly.Blocks['q_turtle_actions_reset'] = {
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('POSITION').connection.setShadowDom(Blockly.utils.xml.textToDom(`
-                 <shadow type="minecraft_vector_3d">
-                    <value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                    <value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                    <value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-                </shadow>
-        `));
+        this.getInput('POSITION').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="minecraft_vector_3d"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow>`));
         this.getInput('HEADING_Q_STR').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="picker_qcompass"><field name="VALUE">N</field></shadow>`));
     }
 };
@@ -148,11 +142,7 @@ Blockly.Blocks['q_turtle_actions_turtle_extrude'] = {
         // Configure shadow blocks directly
         this.getInput('LENGTH').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="math_number"><field name="NUM">0</field></shadow>`));
         this.getInput('DIRECTION').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="picker_qdirection"><field name="VALUE">forward</field></shadow>`));
-        this.getInput('BLOCK_TYPE').connection.setShadowDom(Blockly.utils.xml.textToDom(`
-                <shadow type="minecraft_picker_world">
-                    <field name="MATERIAL_ID">STONE</field>
-                </shadow>
-        `));
+        this.getInput('BLOCK_TYPE').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="minecraft_picker_world"><field name="MATERIAL_ID">STONE</field></shadow>`));
     }
 };
 Blockly.Blocks['q_turtle_actions_turtle_move'] = {
@@ -253,11 +243,7 @@ Blockly.Blocks['q_turtle_actions_turtle_stamp'] = {
         this.setInputsInline(false);
 
         // Configure shadow blocks directly
-        this.getInput('BLOCK_TYPE').connection.setShadowDom(Blockly.utils.xml.textToDom(`
-                <shadow type="minecraft_picker_world">
-                    <field name="MATERIAL_ID">STONE</field>
-                </shadow>
-        `));
+        this.getInput('BLOCK_TYPE').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="minecraft_picker_world"><field name="MATERIAL_ID">STONE</field></shadow>`));
     }
 };
 }
