@@ -1,0 +1,4 @@
+[
+    "    <block type=\"minecraft_item_wood_boat\"><value name=\"WOOD\"><shadow type=\"minecraft_wood_type_picker\"><field name=\"WOOD_TYPE\">OAK</field></shadow></value></block>",
+    "    <block type=\"minecraft_item_wood_chest_boat\"><value name=\"WOOD\"><shadow type=\"minecraft_wood_type_picker\"><field name=\"WOOD_TYPE\">OAK</field></shadow></value></block>"
+]
