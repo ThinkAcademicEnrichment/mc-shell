@@ -1,24 +1,35 @@
 /**
  * Python generator for the Thread block.
- * Generates a nested function definition and starts a threading.Thread.
+ * Generates a nested function (closure) inside the main execution context
+ * and starts it as a daemon thread.
  */
-import { pythonGenerator } from 'blockly/python';
 
-pythonGenerator.forBlock['threading_thread'] = function(block) {
-  const threadName = block.getFieldValue('THREAD_NAME').replace(/\W/g, '_');
-  const branch = pythonGenerator.statementToCode(block, 'STACK');
+export function defineThreadsGenerators(pythonGenerator) {
+    pythonGenerator.forBlock['threading_thread'] = function(block) {
+        // Sanitize the thread name to be a valid python identifier
+        const threadNameInput = block.getFieldValue('THREAD_NAME');
+        // Use block ID to guarantee uniqueness even if user reuses "task1"
+        const safeThreadName = threadNameInput.replace(/\W/g, '_');
+        const funcName = `thread_${safeThreadName}_${block.id.replace(/\W/g, '_')}`;
 
-  // Create a unique function name to avoid collisions in the workspace
-  const funcName = pythonGenerator.provideFunction_(
-    `thread_${threadName}`,
-    ['def ' + pythonGenerator.FUNCTION_NAME_PLACEHOLDER_ + '():',
-     branch || '  pass']
-  );
+        // Get the inner code. If empty, use 'pass' to avoid syntax errors.
+        // statementToCode adds correct indentation for the body relative to this block.
+        let branch = pythonGenerator.statementToCode(block, 'STACK');
+        if (!branch) {
+            branch = pythonGenerator.INDENT + 'pass\n';
+        }
 
-  // The generated code to spawn the thread.
-  // We use daemon=True so the thread dies when the main program stops.
-  // Since this is defined inside run_program(self), funcName has access to 'self'.
-  const code = `threading.Thread(target=${funcName}, daemon=True).start()\n`;
+        // We explicitly construct a local function definition.
+        // This function will be defined INSIDE the run_program method scope (closure),
+        // allowing it to capture 'self' automatically.
+        // We assume 'threading' is imported in the file header.
 
-  return code;
-};
+        const code = `
+def ${funcName}():
+${branch}
+
+threading.Thread(target=${funcName}, daemon=True).start()
+`;
+        return code;
+    };
+}

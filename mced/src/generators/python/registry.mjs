@@ -9,6 +9,7 @@ import { definePlayerActionsGenerators } from "./PlayerActions.mjs";
 import { definePyncraftActionsGenerators } from "./PyncraftActions.mjs";
 import { defineQTurtleActionsGenerators } from "./QTurtleActions.mjs";
 import { defineServerActionsGenerators } from "./ServerActions.mjs";
+import { defineThreadsGenerators } from "./Threads.mjs";
 import { defineTurtleShapesGenerators } from "./TurtleShapes.mjs";
 import { defineWorldActionsGenerators } from "./WorldActions.mjs";
 import { defineMineCraftEntityGenerators } from "./entities.mjs";
@@ -23,6 +24,7 @@ export function registerAllGenerators(pythonGenerator) {
     definePyncraftActionsGenerators(pythonGenerator);
     defineQTurtleActionsGenerators(pythonGenerator);
     defineServerActionsGenerators(pythonGenerator);
+    defineThreadsGenerators(pythonGenerator);
     defineTurtleShapesGenerators(pythonGenerator);
     defineWorldActionsGenerators(pythonGenerator);
     defineMineCraftEntityGenerators(pythonGenerator);
