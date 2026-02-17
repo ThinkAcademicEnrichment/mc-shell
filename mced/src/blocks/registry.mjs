@@ -9,6 +9,7 @@ import { definePlayerActionsBlocks } from "./PlayerActions.mjs";
 import { definePyncraftActionsBlocks } from "./PyncraftActions.mjs";
 import { defineQTurtleActionsBlocks } from "./QTurtleActions.mjs";
 import { defineServerActionsBlocks } from "./ServerActions.mjs";
+import { defineThreadsBlocks } from "./Threads.mjs";
 import { defineTurtleShapesBlocks } from "./TurtleShapes.mjs";
 import { defineWorldActionsBlocks } from "./WorldActions.mjs";
 import { defineMineCraftEntityBlocks } from "./entities.mjs";
@@ -23,6 +24,7 @@ export function registerAllBlocks(Blockly) {
     definePyncraftActionsBlocks(Blockly);
     defineQTurtleActionsBlocks(Blockly);
     defineServerActionsBlocks(Blockly);
+    defineThreadsBlocks(Blockly);
     defineTurtleShapesBlocks(Blockly);
     defineWorldActionsBlocks(Blockly);
     defineMineCraftEntityBlocks(Blockly);

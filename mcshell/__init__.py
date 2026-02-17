@@ -120,23 +120,53 @@ class MCShell(Magics):
         server_jars_dir.mkdir(exist_ok=True)
 
         # Prompt for a password
+        # try:
+        #     password = getpass.getpass(prompt=f"Create a password for world '{world_name}': ")
+        #     if not password:
+        #         print("Password cannot be empty.")
+        #         return
+        # except (EOFError, KeyboardInterrupt):
+        #     print("\nWorld creation cancelled.")
+        #     return
+
+        # Prompt for a password
         try:
-            password = getpass.getpass(prompt=f"Create a password for world '{world_name}': ")
+            password = getpass.getpass(prompt=f"Create a password for world '{world_name}' (leave empty for random): ")
             if not password:
-                print("Password cannot be empty.")
-                return
+                # Generate a simple mnemonic password
+                adjectives = ["brave", "swift", "calm", "bright", "bold", "cool", "fast"]
+                nouns = ["creeper", "steve", "zombie", "pickaxe", "torch", "diamond", "sword"]
+                num = random.randint(10, 99)
+                password = f"{random.choice(adjectives)}-{random.choice(nouns)}-{num}"
+
+                # Print in a parseable format for test frameworks
+                print(f"MNEMONIC_PASSWORD: {password}")
+
         except (EOFError, KeyboardInterrupt):
             print("\nWorld creation cancelled.")
             return
 
-
         self.server_data = {"host": '127.0.0.1','port':MC_SERVER_PORT, "rcon_port": MC_RCON_PORT, "password": password, "fj_port":FJ_PLUGIN_PORT} # Port can be dynamic if needed
+
         print("Input the ports for the server, rcon and plugin. These only need to be changed if you are running more than one mc-shell!")
-        self.server_data.update({
-            'port': int(Prompt.ask('Server Port:', default=str(self.server_data['port']))),
-            'rcon_port': int(Prompt.ask('RCon Port:', default=str(self.server_data['rcon_port']))),
-            'fj_port': int(Prompt.ask('Plugin Port:', default=str(self.server_data['fj_port']))),
-        })
+        try:
+            # Capturing strings first ensures we don't crash on int('')
+            resp_port = Prompt.ask('Server Port:', default=str(self.server_data['port']))
+            resp_rcon = Prompt.ask('RCON Port:', default=str(self.server_data['rcon_port']))
+            resp_fj   = Prompt.ask('FruitJuice Port:', default=str(self.server_data['fj_port']))
+
+            # Robust casting logic
+            ports = {
+                'port': int(resp_port) if resp_port else self.server_data['port'],
+                'rcon_port': int(resp_rcon) if resp_rcon else self.server_data['rcon_port'],
+                'fj_port': int(resp_fj) if resp_fj else self.server_data['fj_port']
+            }
+        except (EOFError, KeyboardInterrupt):
+            print("\nWorld creation cancelled.")
+            return
+        except ValueError as e:
+            print(f"Error: Invalid port number provided. {e}")
+            return
 
         creds_path = world_dir / '.mc_creds.json'
 
