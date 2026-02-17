@@ -344,6 +344,11 @@
         <block type="minecraft_coloured_block_picker"></block>
     </category>
     <sep></sep>
+    <category name="Threads" colour="#5C81A6">
+        <block type="threading_thread">
+            <field name="THREAD_NAME">my_task</field>
+        </block>
+    </category>
     <category name="Vector Math" colour="180">
         <block type="minecraft_vector_3d">
             <value name="X">
@@ -406,4 +411,5 @@
         <block type="minecraft_vector_dot_product"></block>
         <block type="minecraft_matrix_vector_multiply"></block>
     </category>
+
 </xml>
