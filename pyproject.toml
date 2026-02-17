@@ -53,6 +53,7 @@ aio-mc-rcon = "*"
 # We now use blockapily.BlockGenerator !
 blockapily = "*"
 voxelmap = "^5.1.1"
+pytest = "^9.0.2"
 
 [tool.poetry.scripts]
 # This defines the console script entry point, replacing 'entry_points'.
