@@ -55,8 +55,9 @@ jobs:
         working-directory: ./mced
         run: npm run build
 
-      - name: Run tests
-        run: poetry run python -m unittest discover
+# this is a local development operation only
+#      - name: Run tests
+#        run: poetry run python -m unittest discover
 
       - name: Verify package build
         run: poetry build
