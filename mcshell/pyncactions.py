@@ -24,7 +24,7 @@ class PyncraftActions(MCActionsBase):
     )
     def get_health_by_name(self, player_name: str = "SELF") -> float:
         """Returns the health of the specified player."""
-        return self._get_player_by_name(player_name).pc.player.getHealth()
+        return float(self._get_player_by_name(player_name).pc.player.getHealth())
 
     @mced_block(
         label="Get Food Level for [player]",
@@ -33,7 +33,7 @@ class PyncraftActions(MCActionsBase):
     )
     def get_food_level_by_name(self, player_name: str = "SELF") -> int:
         """Returns the food level of the specified player."""
-        return self._get_player_by_name(player_name).pc.player.getFoodLevel()
+        return int(self._get_player_by_name(player_name).pc.player.getFoodLevel())
 
     @mced_block(
         label="Get Pitch for [player]",
@@ -42,7 +42,7 @@ class PyncraftActions(MCActionsBase):
     )
     def get_pitch_by_name(self, player_name: str = "SELF") -> float:
         """Returns the pitch (vertical rotation) of the specified player."""
-        return self._get_player_by_name(player_name).pc.player.getPitch()
+        return float(self._get_player_by_name(player_name).pc.player.getPitch())
 
     @mced_block(
         label="Get Yaw for [player]",
@@ -51,7 +51,7 @@ class PyncraftActions(MCActionsBase):
     )
     def get_yaw_by_name(self, player_name: str = "SELF") -> float:
         """Returns the yaw (horizontal rotation) of the specified player."""
-        return self._get_player_by_name(player_name).pc.player.getYaw()
+        return float(self._get_player_by_name(player_name).pc.player.getYaw())
 
     @mced_block(
         label="Get Rotation for [player]",
@@ -60,7 +60,7 @@ class PyncraftActions(MCActionsBase):
     )
     def get_rotation_by_name(self, player_name: str = "SELF") -> float:
         """Returns the rotation of the specified player."""
-        return self._get_player_by_name(player_name).pc.player.getRotation()
+        return float(self._get_player_by_name(player_name).pc.player.getRotation())
 
     @mced_block(
         label="Get Position for [player]",
@@ -193,7 +193,7 @@ class PyncraftActions(MCActionsBase):
     )
     def get_player_entity_ids(self) -> list:
         """Returns a list of entity IDs for all connected players."""
-        return self.mcplayer.pc.getPlayerEntityIds()
+        return list(self.mcplayer.pc.getPlayerEntityIds())
 
     @mced_block(
         label="Get Player Entity ID",
@@ -202,7 +202,7 @@ class PyncraftActions(MCActionsBase):
     )
     def get_player_entity_id(self, name: str) -> int:
         """Returns the entity ID of the named player."""
-        return self.mcplayer.pc.getPlayerEntityId(name)
+        return int(self.mcplayer.pc.getPlayerEntityId(name))
 
     @mced_block(
         label="Spawn Entity",
