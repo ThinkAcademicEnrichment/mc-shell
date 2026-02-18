@@ -849,10 +849,13 @@ class MCShell(Magics):
             print("Currently running powers:", list(RUNNING_POWERS.keys()))
             return
 
-        power_to_cancel = RUNNING_POWERS.get(execution_id)
-        if power_to_cancel and execution_id in RUNNING_POWERS:
+        # Lookup the execution metadata in the global registry
+        power_metadata = RUNNING_POWERS.get(execution_id)
+
+        if power_metadata:
             print(f"Sending cancellation signal to power: {execution_id}")
-            power_to_cancel['cancel_event'].set()
+            # Corrected Key: Simply 'cancel_event'
+            power_metadata['cancel_event'].set()
         else:
             print(f"Error: No running power found with ID: {execution_id}")
 
