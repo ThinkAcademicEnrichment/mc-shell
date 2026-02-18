@@ -633,6 +633,7 @@
     <block type="minecraft_picker_ores" />
     <block type="minecraft_picker_redstone_components" />
     <block type="minecraft_picker_slabs" />
+    <block type="minecraft_picker_spawning" />
     <block type="minecraft_picker_stairs" />
     <block type="minecraft_picker_stone_bricks" />
     <block type="minecraft_picker_walls" />
@@ -641,6 +642,31 @@
     <block type="minecraft_picker_miscellaneous" />
   </category>
   <category name="Items" colour="#5ba58c">
+    <block type="minecraft_item_spawn_egg">
+      <value name="TYPE">
+        <shadow type="minecraft_spawn_egg_picker" />
+      </value>
+    </block>
+    <block type="minecraft_item_music_disc">
+      <value name="TYPE">
+        <shadow type="minecraft_music_disc_picker" />
+      </value>
+    </block>
+    <block type="minecraft_item_pottery_sherd">
+      <value name="TYPE">
+        <shadow type="minecraft_pottery_sherd_picker" />
+      </value>
+    </block>
+    <block type="minecraft_item_dye">
+      <value name="TYPE">
+        <shadow type="minecraft_dye_picker" />
+      </value>
+    </block>
+    <block type="minecraft_item_smithing_template">
+      <value name="TYPE">
+        <shadow type="minecraft_smithing_template_picker" />
+      </value>
+    </block>
     <block type="minecraft_item_colour_bundle">
       <value name="COLOUR">
         <shadow type="minecraft_coloured_block_picker">
