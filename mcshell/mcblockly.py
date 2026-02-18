@@ -90,7 +90,7 @@ SEMANTIC_OUTPUT_TYPES = {
 
 MATERIAL_PICKER_GROUPS = {
     "world": ["AIR", "STONE", "GRANITE", "DIORITE", "ANDESITE", "DEEPSLATE", "CALCITE", "TUFF", "DIRT", "COARSE_DIRT", "ROOTED_DIRT", "GRASS_BLOCK", "PODZOL", "MYCELIUM", "DIRT_PATH", "SAND", "RED_SAND", "GRAVEL", "CLAY", "ICE", "PACKED_ICE", "BLUE_ICE", "SNOW", "SNOW_BLOCK", "WATER", "LAVA", "BEDROCK", "OBSIDIAN", "CRYING_OBSIDIAN", "MAGMA_BLOCK"],
-    "ores": ["COAL_ORE", "DEEPSLATE_COAL_ORE", "IRON_ORE", "DEEPSLATE_IRON_ORE", "COPPER_ORE", "DEEPSLATE_COPPER_ORE", "GOLD_ORE", "DEEPSLATE_GOLD_ORE", "REDSTONE_ORE", "DEEPSLATE_REDSTONE_ORE", "EMERALD_ORE", "DEEPSLATE_EMERALD_ORE", "LAPIS_ORE", "DEEPSLATE_LAPIS_ORE", "DIAMOND_ORE", "DEEPSLATE_DIAMOND_ORE", "NETHER_GOLD_ORE", "NETHER_QUARTZ_ORE", "ANCIENT_DEBRIS"],
+    "ores": ["COAL_ORE", "DEEPSLATE_COAL_ORE", "IRON_ORE", "DEEPSLATE_IRON_ORE", "COPPER_ORE", "DEEPSLATE_COPPER_ORE", "GOLD_ORE", "DEEPSLATE_GOLD_ORE", "REDSTONE_ORE", "DEEPSLATE_REDSTONE_ORE", "EMERALD_ORE", "DEEPSLATE_REDSTONE_ORE", "EMERALD_ORE", "DEEPSLATE_EMERALD_ORE", "LAPIS_ORE", "DEEPSLATE_LAPIS_ORE", "DIAMOND_ORE", "DEEPSLATE_DIAMOND_ORE", "NETHER_GOLD_ORE", "NETHER_QUARTZ_ORE", "ANCIENT_DEBRIS"],
     "stone_bricks": ["BRICKS", "STONE_BRICKS", "MUD_BRICKS", "DEEPSLATE_BRICKS", "DEEPSLATE_TILES", "NETHER_BRICKS", "RED_NETHER_BRICKS", "POLISHED_BLACKSTONE_BRICKS", "END_STONE_BRICKS", "QUARTZ_BRICKS", "CHISELED_STONE_BRICKS", "CRACKED_STONE_BRICKS", "MOSSY_STONE_BRICKS", "CHISELED_NETHER_BRICKS", "CRACKED_NETHER_BRICKS", "CHISELED_POLISHED_BLACKSTONE", "CRACKED_POLISHED_BLACKSTONE_BRICKS", "CHISELED_DEEPSLATE", "CRACKED_DEEPSLATE_BRICKS", "CRACKED_DEEPSLATE_TILES", "CHISELED_TUFF_BRICKS"],
     "glass": ["GLASS", "GLASS_PANE", "TINTED_GLASS"],
     "redstone_components": ["REDSTONE_WIRE", "REDSTONE_BLOCK", "REDSTONE_TORCH", "REPEATER", "COMPARATOR", "PISTON", "STICKY_PISTON", "SLIME_BLOCK", "HONEY_BLOCK", "OBSERVER", "DROPPER", "DISPENSER", "HOPPER", "LECTERN", "LEVER", "DAYLIGHT_DETECTOR", "TRIPWIRE_HOOK", "TARGET", "NOTE_BLOCK", "RAIL", "POWERED_RAIL", "DETECTOR_RAIL", "ACTIVATOR_RAIL", "REDSTONE_LAMP"],
@@ -189,7 +189,6 @@ def generate_material_blocks():
         block_defs, python_gens, material_xml, item_xml, entity_overrides = [], [], [], [], []
 
         # 1. SPECIALIZED PICKERS & BLOCKS (Spawn Eggs, Discs, Sherds, Dyes)
-        # We use a placeholder {} to handle both prefix and suffix behavior correctly
         def _add_picker_logic(group_key, block_label, id_template, colour):
             types = pickers_data.get(f"{group_key.lower()}_types", [])
             options = ',\n'.join([f'["{_generate_blockly_name(t)}", "{t}"]' for t in types])
@@ -201,21 +200,19 @@ def generate_material_blocks():
 
             block_defs.append(f"    Blockly.Blocks['{base_block}'] = {{ init: function() {{ this.appendValueInput('TYPE').setCheck('{group_key.title()}Type').appendField('{block_label}'); this.setOutput(true, 'Item'); this.setColour({colour}); MCED.BlocklyUtils.configureShadow(this, 'TYPE'); }} }};")
 
-            # Use string concatenation for the generator logic to avoid complex f-string escaping
-            val_js_expr = "(generator.valueToCode(block, 'TYPE', pythonGenerator.ORDER_ATOMIC) || \"'ZOMBIE'\").replace(/['\\\"]/g, '')"
+            # Use string formatting to avoid complex f-string escaping for the JS logic
+            js_logic = "(generator.valueToCode(block, 'TYPE', pythonGenerator.ORDER_ATOMIC) || \"'ZOMBIE'\").replace(/['\\\\\\\"]/g, '')"
             if "{}" in id_template:
-                parts = id_template.split("{}")
-                prefix = parts[0]
-                suffix = parts[1]
+                p, s = id_template.split("{}")
             else:
-                prefix, suffix = "", id_template
+                p, s = "", id_template
 
-            gen_line = "    pythonGenerator.forBlock['" + base_block + "'] = (block, generator) => [`'" + prefix + "${" + val_js_expr + "}" + suffix + "'`, pythonGenerator.ORDER_ATOMIC];"
+            # Construction: (block, generator) => [`'PREFIX${logic}SUFFIX'`, pythonGenerator.ORDER_ATOMIC]
+            gen_line = "    pythonGenerator.forBlock['" + base_block + "'] = (block, generator) => [`'" + p + "${" + js_logic + "}" + s + "'`, pythonGenerator.ORDER_ATOMIC];"
             python_gens.append(gen_line)
 
             item_xml.append(f'<block type="{base_block}"><value name="TYPE"><shadow type="{picker_type}"></shadow></value></block>')
 
-        # Fixed MUSIC_DISC template to prefix 'MUSIC_DISC_' correctly
         _add_picker_logic('SPAWN_EGG', 'Spawn Egg for', '{}_SPAWN_EGG', 100)
         _add_picker_logic('MUSIC_DISC', 'Music Disc', 'MUSIC_DISC_{}', 230)
         _add_picker_logic('POTTERY_SHERD', 'Pottery Sherd', '{}_POTTERY_SHERD', 150)
@@ -250,7 +247,7 @@ def generate_material_blocks():
             prefix = "material" if default_type == "Block" else "item"
             block_type = f"minecraft_{prefix}_colour_{base_name.lower()}"
             target.append(f'<block type="{block_type}"><value name="COLOUR"><shadow type="minecraft_coloured_block_picker"><field name="MINECRAFT_COLOUR_ID">WHITE</field></shadow></value></block>')
-            # Fixed NameError: 'output_type' -> 'out'
+            # Fixed NameError: Changed 'output_type' to 'out'
             block_defs.append(f"    Blockly.Blocks['{block_type}'] = {{ init: function() {{ this.appendValueInput('COLOUR').setCheck('MinecraftColour').appendField('{_generate_blockly_name(base_name)} with color'); this.setOutput(true, '{out}'); this.setColour({160 if out == 'Block' else 140}); MCED.BlocklyUtils.configureShadow(this, 'COLOUR'); }} }};")
             python_gens.append(f"    pythonGenerator.forBlock['{block_type}'] = (block, generator) => [_combine_colour_and_material(generator.valueToCode(block, 'COLOUR', pythonGenerator.ORDER_ATOMIC) || \"'WHITE'\", '{base_name}'), pythonGenerator.ORDER_ATOMIC];")
 
@@ -278,7 +275,19 @@ def generate_material_blocks():
 
         # Output logic
         block_defs_output = 'import { MCED } from "../lib/constants.mjs";\n\nexport function defineMineCraftMaterialBlocks(Blockly) {\n' + "\n".join(block_defs) + "\n}\n"
-        python_helper = "function _combine_wood_and_material(wood,base){const w=wood.replace(/['\"]/g,'');let s=base;if(w==='BAMBOO'&&(base==='LOG'||base==='WOOD'))s='BLOCK';else if((w==='CRIMSON'||w==='WARPED')&&base==='LOG')s='STEM';else if((w==='CRIMSON'||w==='WARPED')&&base==='WOOD')s='HYPHAE';return `${w}_${s}`;}\nfunction _combine_colour_and_material(c,m){return `${c.replace(/['\"]/g,'')}_${m}`;}"
+
+        # JS Helpers return single-quoted strings for Python
+        python_helper = """function _combine_wood_and_material(wood, base) {
+    const w = wood.replace(/['\"]/g, '');
+    let s = base;
+    if (w === 'BAMBOO' && (base === 'LOG' || base === 'WOOD')) s = 'BLOCK';
+    else if ((w === 'CRIMSON' || w === 'WARPED') && base === 'LOG') s = 'STEM';
+    else if ((w === 'CRIMSON' || w === 'WARPED') && base === 'WOOD') s = 'HYPHAE';
+    return "'" + w + "_" + s + "'";
+}
+function _combine_colour_and_material(c, m) {
+    return "'" + c.replace(/['\"]/g, '') + "_" + m + "'";
+}"""
         python_gen_output = "import { pythonGenerator } from 'blockly/python';\n" + python_helper + "\nexport function defineMineCraftMaterialGenerators(pythonGenerator) {\n" + "\n".join(python_gens) + "\n}\n"
 
         (output_blocks_dir / 'materials.mjs').write_text(block_defs_output, 'utf-8')
@@ -325,7 +334,7 @@ def process_entities():
 def generate_entity_blocks():
     """Generates Blockly code for entity pickers and injects overrides."""
     try:
-        with open(MC_ENTITY_PICKERS_PATH, 'r', encoding='utf-8') as f: pickers_data = json.load(f)
+        with open(MC_ENTITY_PICKERS_PATH, 'r') as f: pickers_data = json.load(f)
         output_blocks_dir = MC_APP_SRC_DIR / 'blocks'
         output_python_dir = MC_APP_SRC_DIR / 'generators' / 'python'
         output_toolbox_path = MC_APP_SRC_DIR / 'toolbox.xml'
@@ -458,8 +467,13 @@ def generate_mcactions_blocks():
         if extra_js: final_js = extra_js + "\n\n" + final_js
         if extra_py: final_py = extra_py + "\n\n" + final_py
         final_xml = _insert_block_xml_into_category(toolbox_cat, extra_xml) if extra_xml else toolbox_cat
-        (output_dir / f"{filename_base}.mjs").write_text(f'import {{ MCED }} from "../lib/constants.mjs";\n\nexport function define{filename_base}Blocks(Blockly) {{\n{final_js}\n}}', encoding='utf-8')
-        (gen_output_dir / f"{filename_base}.mjs").write_text(f'\nexport function define{filename_base}Generators(pythonGenerator) {{\n{final_py}\n}}', encoding='utf-8')
+
+        # Using multi-line string content and write_text to ensure actual newlines are written to files
+        js_src = "import { MCED } from \"../lib/constants.mjs\";\n\nexport function define" + filename_base + "Blocks(Blockly) {\n" + final_js + "\n}"
+        py_src = "\nexport function define" + filename_base + "Generators(pythonGenerator) {\n" + final_py + "\n}"
+
+        (output_dir / f"{filename_base}.mjs").write_text(js_src, encoding='utf-8')
+        (gen_output_dir / f"{filename_base}.mjs").write_text(py_src, encoding='utf-8')
         generator.update_toolbox(final_xml, output_toolbox_path)
 
 if __name__ == "__main__":
