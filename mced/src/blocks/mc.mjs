@@ -99,15 +99,15 @@ export function defineMineCraftBlocks(Blockly) {
             this.appendValueInput("YAW")
                 .setCheck("Number")
                 .setAlign('RIGHT')
-                .appendField("Yaw (Z, degrees)");
+                .appendField("Yaw (Y, degrees)");
             this.appendValueInput("PITCH")
                 .setCheck("Number")
                 .setAlign('RIGHT')
-                .appendField("Pitch (Y, degrees)");
+                .appendField("Pitch (X, degrees)");
             this.appendValueInput("ROLL")
                 .setCheck("Number")
                 .setAlign('RIGHT')
-                .appendField("Roll (X, degrees)");
+                .appendField("Roll (Z, degrees)");
             this.setOutput(true, "3DMatrix");
             this.setColour(210);
             this.setTooltip("Define a 3x3 rotation matrix from Euler angles (yaw, pitch, roll).");
