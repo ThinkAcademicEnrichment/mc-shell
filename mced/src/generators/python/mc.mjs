@@ -18,6 +18,7 @@ export function defineMineCraftGenerators(pythonGenerator) {
         if (previousInit) {
             previousInit.call(this, workspace);
         }
+        pythonGenerator.methods_ = {};
         // Reset the flag that tracks if any thread blocks were used in this workspace
         pythonGenerator.hasThreads = false;
     };
