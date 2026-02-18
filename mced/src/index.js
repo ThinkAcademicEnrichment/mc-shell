@@ -219,10 +219,22 @@ async function init() {
     window.addEventListener('beforeunload', autosaveWorkspace);
 
     const debouncedAutosave = debounce(autosaveWorkspace, 1000);
+
+    // const debouncedCodeUpdate = debounce(() => {
+    //     const display = document.getElementById('pythonCodeDisplay');
+    //     if (display) {
+    //         display.textContent = pythonGenerator.workspaceToCode(workspace);
+    //         if (window.Prism) Prism.highlightElement(display);
+    //     }
+    // });
     const debouncedCodeUpdate = debounce(() => {
         const display = document.getElementById('pythonCodeDisplay');
         if (display) {
+            // Issue #4 Fix: Enable schematic mode for the display only
+            pythonGenerator.isSchematic = true;
             display.textContent = pythonGenerator.workspaceToCode(workspace);
+            pythonGenerator.isSchematic = false; // Reset to ensure full code for execution
+
             if (window.Prism) Prism.highlightElement(display);
         }
     });
