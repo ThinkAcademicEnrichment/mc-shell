@@ -55,17 +55,49 @@ function stripAnsi(str) {
  */
 
 /**
- * Updated for Step 3: Async metadata extraction.
- * Fetches predicted name/category AND available categories for the dropdown.
+ * Updated for Issue #3: Metadata extraction with expanded-block priority.
+ * This ensures the save modal pre-populates with the name of the power currently being
+ * edited, even if dependency powers (which are collapsed) exist in the workspace.
  */
 window.prepareAndOpenSaveModal = async () => {
     try {
-        // We await the metadata because it now fetches categories from the SQLite DB
-        const detail = await PowerManager.getPowerMetadata(workspace);
+        if (!workspace) return;
+
+        const topBlocks = workspace.getTopBlocks(false);
+
+        // Issue #3 Fix: Prioritize expanded function blocks over collapsed dependencies.
+        const funcDefBlock = topBlocks.find(b =>
+            (b.type === 'procedures_defnoreturn' || b.type === 'procedures_defreturn') && !b.isCollapsed()
+        ) || topBlocks.find(b =>
+            b.type === 'procedures_defnoreturn' || b.type === 'procedures_defreturn'
+        );
+
+        let name = '';
+        let description = '';
+        let category = 'Workspaces';
+
+        if (funcDefBlock) {
+            name = funcDefBlock.getFieldValue('NAME');
+            description = funcDefBlock.getCommentText() || '';
+
+            // Heuristic for sub-categorization based on blocks present in workspace
+            const blockTypes = workspace.getAllBlocks(false).map(b => b.type);
+            if (blockTypes.some(t => t.includes('DigitalGeometry'))) {
+                category = 'Powers/Geometry';
+            } else if (blockTypes.some(t => t.includes('PlayerActions'))) {
+                category = 'Powers/Player';
+            } else {
+                category = 'Powers';
+            }
+        }
+
+        // Fetch available categories from the SQLite database for the dropdown
+        const availableCategories = await PowerManager.getExistingCategories();
+
+        const detail = { name, description, category, availableCategories };
         window.dispatchEvent(new CustomEvent('open-save-modal', { detail }));
     } catch (error) {
         console.error("Failed to prepare save modal:", error);
-        // Fallback with empty defaults if the database query fails
         window.dispatchEvent(new CustomEvent('open-save-modal', {
             detail: { name: '', description: '', category: 'Workspaces', availableCategories: [] }
         }));
@@ -121,7 +153,7 @@ function setupKeyboard() {
         },
         layout: {
             'default': ['1 2 3 4 5 6 7 8 9 0 - {bksp}', 'q w e r t y u i o p [ ]', 'a s d f g h j k l ; \'', '{shift} z x c v b n m , . /', '{numpad} {space}'],
-            'shift': ['! @ # $ % ^ & * ( ) _ {bksp}', 'Q W E R T Y U I O P { }', 'A S D F G H J K L : "', '{shift} Z X C V B N M < > ?', '{numpad} {space}'],
+            'shift': ['! @ # $ % ^ & * ( ) _ {bksp}', 'Q W E R T Y U I O P { }', 'A S D F G H J K L : "', '{shift} Z X C V B n m < > ?', '{numpad} {space}'],
             'numpad': ['1 2 3', '4 5 6', '7 8 9', '{abc} 0 . {bksp}']
         },
         display: { '{shift}': 'Shift', '{bksp}': '⌫', '{space}': 'Space', '{numpad}': '123', '{abc}': 'ABC' },
