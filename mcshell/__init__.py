@@ -543,53 +543,69 @@ class MCShell(Magics):
     #                 _rcon_commands.update({_cmd.replace('-','_'): _sub_cmd_data})
     #         self.rcon_commands = _rcon_commands
     #     return self.rcon_commands
+
     @property
     def commands(self):
         """
-        Registry builder. Relies on MCClient for ANSI stripping.
+        Builds a unique, deduplicated command and subcommand registry.
+        Deduplicates sub-items like gamerules (e.g., 'spawn_mobs' vs 'minecraft:spawn_mobs').
         """
         if not self.rcon_commands:
             _rcon_commands = {}
             try:
-                _help_text = self._help() # Already stripped by MCClient.run
+                _help_text = self._help() # Stripped by MCClient
             except:
                 return {}
 
             if not _help_text:
                 return {}
 
-            # Prioritize clean names and unique namespaces
-            seen_base = set()
+            seen_base_cmds = set()
             _help_data = list(filter(None, _help_text.split('/')))
 
             for entry in _help_data:
                 parts = entry.split()
-                if not parts or parts[0] in ('?', 'bukkit:?'): continue
+                if not parts or parts[0] in ('?', 'bukkit:?'):
+                    continue
 
                 raw_cmd = parts[0]
                 base_cmd = raw_cmd.split(':')[-1]
 
-                if base_cmd in seen_base: continue
-                seen_base.add(base_cmd)
+                if base_cmd in seen_base_cmds:
+                    continue
 
+                seen_base_cmds.add(base_cmd)
                 clean_key = raw_cmd.replace('-', '_')
 
                 try:
-                    _cmd_help = self._help(raw_cmd) # Already stripped
+                    _cmd_help = self._help(raw_cmd) # Stripped by MCClient
                     _help_lines = list(map(lambda x: x.split()[1:], _cmd_help.split('/')))
 
                     _sub_cmd_data = {}
+                    seen_sub_items = set() # Track subcommands/gamerules specifically
+
                     for line_args in _help_lines:
-                        if not line_args: continue
-                        if not line_args[0].startswith(('<', '[', '(')):
-                            _sub_cmd_data.update({line_args[0]: line_args[1:]})
+                        if not line_args:
+                            continue
+
+                        arg0 = line_args[0]
+                        # If it's a literal (not a placeholder like <target>)
+                        if not arg0.startswith(('<', '[', '(')):
+                            # Deduplicate sub-item (e.g., minecraft:spawn_mobs -> spawn_mobs)
+                            clean_sub = arg0.split(':')[-1]
+                            if clean_sub not in seen_sub_items:
+                                _sub_cmd_data.update({clean_sub: line_args[1:]})
+                                seen_sub_items.add(clean_sub)
                         else:
+                            # Catch-all for commands that take direct syntax arguments
                             _sub_cmd_data.update({' ': line_args})
 
                     _rcon_commands.update({clean_key: _sub_cmd_data})
                 except:
                     continue
+
             self.rcon_commands = _rcon_commands
+
         return self.rcon_commands
 
     @line_magic
@@ -671,36 +687,32 @@ class MCShell(Magics):
 
     def _complete_mc_help(self, ipyshell, event):
         """
-        Fixed completer for %mc_help that supports deep completion
-        for subcommands and gamerules.
+        Provides deep, deduplicated completion for %mc_help.
+        Supports: %mc_help gamerule <TAB> -> clean list of rules.
         """
-        ipyshell.user_ns.update(dict(rcon_event=event))
         text_to_complete = event.symbol
         parts = event.line.split()
 
-        # Extract the command name and normalize it
+        # Extract and normalize the command name
         command = None
         if len(parts) >= 2:
             command = parts[1].replace('-', '_')
-            if 'minecraft:' in command:
-                command = command.split(':')[1]
+            if ':' in command:
+                command = command.split(':')[-1]
 
         arg_matches = []
 
-        # Case 1: Completing the base command (e.g., %mc_help gam[TAB])
+        # Case 1: Completing the base command
         if len(parts) == 1 or (len(parts) == 2 and text_to_complete != ''):
             arg_matches = [c for c in self.commands.keys() if c.startswith(text_to_complete)]
 
-        # Case 2: Showing/Completing sub-items (e.g., %mc_help gamerule [TAB])
+        # Case 2: Showing/Completing sub-items (like gamerules)
         elif len(parts) >= 2 and command in self.commands:
             sub_map = self.commands[command]
-            # Get literal sub-keys (like gamerule names or 'get'/'merge' for data)
             sub_keys = [k for k in sub_map.keys() if k != ' ']
 
-            # If cursor is at a space after the command
             if len(parts) == 2 and text_to_complete == '':
                 arg_matches = sub_keys
-            # If partially typing a sub-item
             elif len(parts) == 3 and text_to_complete != '':
                 arg_matches = [k for k in sub_keys if k.startswith(text_to_complete)]
 
