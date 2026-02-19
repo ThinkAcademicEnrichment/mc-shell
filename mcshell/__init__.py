@@ -511,36 +511,84 @@ class MCShell(Magics):
     def _data(self, *args):
         return self._send('data',*args)
 
+    # @property
+    # def commands(self):
+    #     _rcon_commands = {}
+    #     if not self.rcon_commands:
+    #         try:
+    #             _help_text = self._help()
+    #         except:
+    #             return _rcon_commands
+    #
+    #         _help_data = list(filter(lambda x: x != '', map(lambda x: x.split(' '), _help_text.split('/'))))[1:]
+    #         for _help_datum in _help_data:
+    #             _cmd = _help_datum[0]
+    #             if 'minecraft:' in _cmd:
+    #                 _cmd = _cmd.split(':')[1]
+    #             try:
+    #                 _cmd_data = self._help(_cmd)
+    #             except:
+    #                 return
+    #             if not _cmd_data:
+    #                 # found a shortcut command like xp -> experience
+    #                 continue
+    #             _cmd_data = list(map(lambda x:x.split()[1:],_cmd_data.split('/')))
+    #             _sub_cmd_data = {}
+    #             for _sub_cmd_datum in _cmd_data[1:]:
+    #                 if not _sub_cmd_datum[0][0]  in ('<','[','('):
+    #                     _sub_cmd_data.update({_sub_cmd_datum[0]: _sub_cmd_datum[1:]})
+    #                 else:
+    #                     # TODO what about commands without sub-commands?
+    #                     _sub_cmd_data.update({' ': _sub_cmd_datum})
+    #                 _rcon_commands.update({_cmd.replace('-','_'): _sub_cmd_data})
+    #         self.rcon_commands = _rcon_commands
+    #     return self.rcon_commands
     @property
     def commands(self):
-        _rcon_commands = {}
+        """
+        Registry builder. Relies on MCClient for ANSI stripping.
+        """
         if not self.rcon_commands:
+            _rcon_commands = {}
             try:
-                _help_text = self._help()
+                _help_text = self._help() # Already stripped by MCClient.run
             except:
-                return _rcon_commands
+                return {}
 
-            _help_data = list(filter(lambda x: x != '', map(lambda x: x.split(' '), _help_text.split('/'))))[1:]
-            for _help_datum in _help_data:
-                _cmd = _help_datum[0]
-                if 'minecraft:' in _cmd:
-                    _cmd = _cmd.split(':')[1]
+            if not _help_text:
+                return {}
+
+            # Prioritize clean names and unique namespaces
+            seen_base = set()
+            _help_data = list(filter(None, _help_text.split('/')))
+
+            for entry in _help_data:
+                parts = entry.split()
+                if not parts or parts[0] in ('?', 'bukkit:?'): continue
+
+                raw_cmd = parts[0]
+                base_cmd = raw_cmd.split(':')[-1]
+
+                if base_cmd in seen_base: continue
+                seen_base.add(base_cmd)
+
+                clean_key = raw_cmd.replace('-', '_')
+
                 try:
-                    _cmd_data = self._help(_cmd)
+                    _cmd_help = self._help(raw_cmd) # Already stripped
+                    _help_lines = list(map(lambda x: x.split()[1:], _cmd_help.split('/')))
+
+                    _sub_cmd_data = {}
+                    for line_args in _help_lines:
+                        if not line_args: continue
+                        if not line_args[0].startswith(('<', '[', '(')):
+                            _sub_cmd_data.update({line_args[0]: line_args[1:]})
+                        else:
+                            _sub_cmd_data.update({' ': line_args})
+
+                    _rcon_commands.update({clean_key: _sub_cmd_data})
                 except:
-                    return
-                if not _cmd_data:
-                    # found a shortcut command like xp -> experience
                     continue
-                _cmd_data = list(map(lambda x:x.split()[1:],_cmd_data.split('/')))
-                _sub_cmd_data = {}
-                for _sub_cmd_datum in _cmd_data[1:]:
-                    if not _sub_cmd_datum[0][0]  in ('<','[','('):
-                        _sub_cmd_data.update({_sub_cmd_datum[0]: _sub_cmd_datum[1:]})
-                    else:
-                        # TODO what about commands without sub-commands?
-                        _sub_cmd_data.update({' ': _sub_cmd_datum})
-                    _rcon_commands.update({_cmd.replace('-','_'): _sub_cmd_data})
             self.rcon_commands = _rcon_commands
         return self.rcon_commands
 
@@ -571,92 +619,92 @@ class MCShell(Magics):
 
     @line_magic
     def mc_help(self, line):
-        '''
-        %mc_help [COMMAND]
-        '''
+        """
+        Sorted, deduplicated help menu.
+        Prevents 'minecraft:' clutter and gamerule text-walls.
+        """
         _cmd = []
-        _doc_line = ''
-        _doc_url = ''
-        _doc_code_lines = ''
-
         if line:
             _line_parts = line.split()
-            # Clean name for documentation lookup
-            clean_name = _line_parts[0].split(':')[-1] if ':' in _line_parts[0] else _line_parts[0]
-            _doc_line, _doc_url, _doc_code_lines = self.mc_cmd_docs.get(clean_name, ('', '', ''))
-            _cmd += [' '.join(_line_parts)]
+            # Lookup docs by clean name (e.g., 'enchant' even if user types 'minecraft:enchant')
+            clean_name = _line_parts[0].split(':')[-1]
+            _doc_data = self.mc_cmd_docs.get(clean_name, (None, None, None))
 
-            if _doc_line and _doc_url:
-                print(_doc_line)
-                print(_doc_url)
-                print()
+            if _doc_data[0]:
+                print(f"{_doc_data[0]}\n{_doc_data[1]}\n")
 
-        if _doc_code_lines:
-            for _doc_code_line in _doc_code_lines:
-                print(_doc_code_line)
-        else:
-            # Use mctools to get non-truncated response
-            _raw_help = self._help(*_cmd)
-            if not _raw_help:
-                print("No help available!")
+            if _doc_data[2]:
+                for d_line in _doc_data[2]: print(d_line)
                 return
 
-            _help_text = _raw_help
+            _cmd += [' '.join(_line_parts)]
 
-            # Processing variables to handle duplication
-            unique_commands = set()
-            output_lines = []
+        _raw_help = self._help(*_cmd)
+        if not _raw_help:
+            print("No help available!")
+            return
 
-            # Split help into individual lines/commands
-            _raw_lines = filter(None, _help_text.split('/'))
+        _help_text = _raw_help
 
-            for line in _raw_lines:
-                parts = line.split()
-                if not parts: continue
+        seen_base = set()
+        output = []
 
-                raw_cmd = parts[0]
+        for entry in filter(None, _help_text.split('/')):
+            parts = entry.split()
+            if not parts or parts[0] in ('?', 'bukkit:?'): continue
 
-                # --- Filtering Logic ---
-                # 1. Skip the spurious '?' command
-                if raw_cmd in ('?', 'bukkit:?'):
-                    continue
+            raw_cmd = parts[0]
+            base_name = raw_cmd.split(':')[-1]
 
-                # 2. Handle 'gamerule' specifically to avoid the massive text wall
-                if raw_cmd.endswith('gamerule') and len(line) > 200:
-                    line = f"{raw_cmd} <rule> [<value>]"
+            if base_name in seen_base: continue
+            seen_base.add(base_name)
 
-                # 3. Deduplication Logic:
-                # If we see 'enchant' and then 'minecraft:enchant', we only keep one.
-                # We prioritize showing the specific namespace if it's NOT 'minecraft'
-                base_cmd = raw_cmd.split(':')[-1]
+            # Truncate the massive gamerule ruleset for the general list
+            if base_name == "gamerule" and len(entry) > 200:
+                entry = f"{raw_cmd} <rule> [<value>]"
 
-                if base_cmd in unique_commands:
-                    continue
+            output.append(entry.replace('-', '_'))
 
-                unique_commands.add(base_cmd)
-
-                # Fix hyphens for the shell but keep the namespace prefix
-                parts[0] = parts[0].replace('-', '_')
-                output_lines.append(" ".join(parts))
-
-            # Sort and print
-            for out in sorted(output_lines):
-                print(out)
+        # Sort alphabetically for easy scanning
+        for line in sorted(output):
+            print(line)
 
     def _complete_mc_help(self, ipyshell, event):
+        """
+        Fixed completer for %mc_help that supports deep completion
+        for subcommands and gamerules.
+        """
         ipyshell.user_ns.update(dict(rcon_event=event))
-        text = event.symbol
+        text_to_complete = event.symbol
         parts = event.line.split()
-        ipyshell.user_ns.update(dict(rcon_event=event))
 
-        arg_matches= []
-        if len(parts) == 1: # showing commands
-            arg_matches = [c for c in self.commands.keys()]
-            ipyshell.user_ns.update({'rcon_matches':arg_matches})
-        elif len(parts) == 2 and text != '':  # completing commands
-            arg_matches = [c for c in self.commands.keys() if c.startswith(text)]
-            ipyshell.user_ns.update({'rcon_matches':arg_matches})
+        # Extract the command name and normalize it
+        command = None
+        if len(parts) >= 2:
+            command = parts[1].replace('-', '_')
+            if 'minecraft:' in command:
+                command = command.split(':')[1]
 
+        arg_matches = []
+
+        # Case 1: Completing the base command (e.g., %mc_help gam[TAB])
+        if len(parts) == 1 or (len(parts) == 2 and text_to_complete != ''):
+            arg_matches = [c for c in self.commands.keys() if c.startswith(text_to_complete)]
+
+        # Case 2: Showing/Completing sub-items (e.g., %mc_help gamerule [TAB])
+        elif len(parts) >= 2 and command in self.commands:
+            sub_map = self.commands[command]
+            # Get literal sub-keys (like gamerule names or 'get'/'merge' for data)
+            sub_keys = [k for k in sub_map.keys() if k != ' ']
+
+            # If cursor is at a space after the command
+            if len(parts) == 2 and text_to_complete == '':
+                arg_matches = sub_keys
+            # If partially typing a sub-item
+            elif len(parts) == 3 and text_to_complete != '':
+                arg_matches = [k for k in sub_keys if k.startswith(text_to_complete)]
+
+        ipyshell.user_ns.update({'rcon_matches': arg_matches})
         return arg_matches
 
     @line_magic
