@@ -202,3 +202,15 @@ class ServerActions(MCActionsBase):
     def server_execute_command(self, command: str):
         """Executes a custom command string."""
         self._run_command(command)
+
+    @mced_block(
+        label="Apply [effect] to [target] for [seconds]s (Level [amplifier])",
+        effect={'label': 'Effect'},
+        target={'label': 'Target', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'},
+        seconds={'label': 'Duration', 'shadow': 'math_number'},
+        amplifier={'label': 'Level', 'shadow': 'math_number'}
+    )
+    def server_apply_effect(self, effect: 'Effect', target: str = "SELF", seconds: int = 30, amplifier: int = 1):
+        """Applies a status effect to a target."""
+        target_name = self.mcplayer.name if target.upper() == "SELF" else target
+        self._run_command(f"effect give {target_name} {effect} {seconds} {amplifier}")
