@@ -1,5 +1,4 @@
 from mcshell.mcplayer import MCPlayer
-# Use new file for base class import
 from mcshell.mcactions_base import MCActionsBase
 from blockapily import mced_block
 from mcshell.Vec3 import Vec3
@@ -19,8 +18,7 @@ class PyncraftActions(MCActionsBase):
 
     @mced_block(
         label="Get Health for [player]",
-        player_name={'label': 'Player', 'shadow': 'text'},
-        output_type="Number"
+        player_name={'label': 'Player', 'shadow': 'text'}
     )
     def get_health_by_name(self, player_name: str = "SELF") -> float:
         """Returns the health of the specified player."""
@@ -28,205 +26,89 @@ class PyncraftActions(MCActionsBase):
 
     @mced_block(
         label="Get Food Level for [player]",
-        player_name={'label': 'Player', 'shadow': 'text'},
-        output_type="Number"
+        player_name={'label': 'Player', 'shadow': 'text'}
     )
     def get_food_level_by_name(self, player_name: str = "SELF") -> int:
         """Returns the food level of the specified player."""
         return int(self._get_player_by_name(player_name).pc.player.getFoodLevel())
 
     @mced_block(
-        label="Get Pitch for [player]",
-        player_name={'label': 'Player', 'shadow': 'text'},
-        output_type="Number"
-    )
-    def get_pitch_by_name(self, player_name: str = "SELF") -> float:
-        """Returns the pitch (vertical rotation) of the specified player."""
-        return float(self._get_player_by_name(player_name).pc.player.getPitch())
-
-    @mced_block(
-        label="Get Yaw for [player]",
-        player_name={'label': 'Player', 'shadow': 'text'},
-        output_type="Number"
-    )
-    def get_yaw_by_name(self, player_name: str = "SELF") -> float:
-        """Returns the yaw (horizontal rotation) of the specified player."""
-        return float(self._get_player_by_name(player_name).pc.player.getYaw())
-
-    @mced_block(
-        label="Get Rotation for [player]",
-        player_name={'label': 'Player', 'shadow': 'text'},
-        output_type="Number"
-    )
-    def get_rotation_by_name(self, player_name: str = "SELF") -> float:
-        """Returns the rotation of the specified player."""
-        return float(self._get_player_by_name(player_name).pc.player.getRotation())
-
-    @mced_block(
         label="Get Position for [player]",
-        player_name={'label': 'Player', 'shadow': 'text'},
-        output_type="3DVector"
-    )
-    def get_position_by_name(self, player_name: str = "SELF"):
-        """Returns the 3D vector position of the specified player."""
-        return Vec3(*self._get_player_by_name(player_name).pc.player.getPos())
-
-    @mced_block(
-        label="Get Tile Position for [player]",
-        player_name={'label': 'Player', 'shadow': 'text'},
-        output_type="3DVector"
-    )
-    def get_tile_position_by_name(self, player_name: str = "SELF"):
-        """Returns the integer tile position of the specified player."""
-        return Vec3(*self._get_player_by_name(player_name).pc.player.getTilePos())
-
-    @mced_block(
-        label="Set Position for [player]",
-        position={'label': 'To Position'},
         player_name={'label': 'Player', 'shadow': 'text'}
     )
-    def set_position_by_name(self, position: 'Vec3', player_name: str = "SELF"):
-        """Sets the position of the specified player."""
-        self._get_player_by_name(player_name).pc.player.setPos(position.x, position.y, position.z)
+    def get_position_by_name(self, player_name: str = "SELF") -> 'Vec3':
+        """Gets the position of the specified player."""
+        pos = self._get_player_by_name(player_name).pc.player.getPos()
+        return Vec3(pos.x, pos.y, pos.z)
+
+    # --- Blocks (CmdBlocks) ---
 
     @mced_block(
-        label="Set Tile Position for [player]",
-        position={'label': 'To Tile Position'},
-        player_name={'label': 'Player', 'shadow': 'text'}
+        label="Get Block at [position]",
+        position={'label': 'Position'}
     )
-    def set_tile_position_by_name(self, position: 'Vec3', player_name: str = "SELF"):
-        """Sets the tile position of the specified player."""
-        self._get_player_by_name(player_name).pc.player.setTilePos(int(position.x), int(position.y), int(position.z))
+    def get_block(self, position: 'Vec3') -> 'Block':
+        """Returns the Block ID at the specified position."""
+        return self.mcplayer.pc.getBlock(int(position.x), int(position.y), int(position.z))
 
     @mced_block(
-        label="Set Rotation for [player]",
-        yaw={'label': 'Yaw', 'shadow': '<shadow type="math_number"><field name="NUM">0</field></shadow>'},
-        pitch={'label': 'Pitch', 'shadow': '<shadow type="math_number"><field name="NUM">0</field></shadow>'},
-        player_name={'label': 'Player', 'shadow': 'text'}
+        label="Get Block with Data at [position]",
+        position={'label': 'Position'}
     )
-    def set_rotation_by_name(self, yaw: float, pitch: float, player_name: str = "SELF"):
-        """Sets the rotation (yaw and pitch) of the specified player."""
-        self._get_player_by_name(player_name).pc.player.setRotation(yaw, pitch)
+    def get_block_with_data(self, position: 'Vec3') -> 'Block':
+        """Returns the Block ID with its blockstate data at the specified position."""
+        return self.mcplayer.pc.getBlockWithData(int(position.x), int(position.y), int(position.z))
 
     @mced_block(
-        label="Set Direction for [player]",
-        direction={'label': 'Direction Vector'},
-        player_name={'label': 'Player', 'shadow': 'text'}
-    )
-    def set_direction_by_name(self, direction: 'Vec3', player_name: str = "SELF"):
-        """Sets the direction the player is facing."""
-        self._get_player_by_name(player_name).pc.player.setDirection(direction.x, direction.y, direction.z)
-
-    @mced_block(
-        label="Get Direction for [player]",
-        player_name={'label': 'Player', 'shadow': 'text'},
-        output_type="3DVector"
-    )
-    def get_direction_by_name(self, player_name: str = "SELF"):
-        """Returns the direction vector the player is facing."""
-        return Vec3(*self._get_player_by_name(player_name).pc.player.getDirection())
-
-    @mced_block(
-        label="Send Title to [player]",
-        title={'label': 'Title', 'shadow': 'text'},
-        subtitle={'label': 'Subtitle', 'shadow': 'text'},
-        stay={'label': 'Stay (Ticks)', 'shadow': '<shadow type="math_number"><field name="NUM">70</field></shadow>'},
-        player_name={'label': 'Player', 'shadow': 'text'}
-    )
-    def send_title_by_name(self, title: str = "", subtitle: str = "", stay: int = 70, player_name: str = "SELF"):
-        """Sends a title and subtitle to the specified player's screen."""
-        self._get_player_by_name(player_name).pc.player.sendTitle(title=title, subTitle=subtitle, stay=stay)
-
-    # --- World Manipulation (Minecraft Class) ---
-
-    @mced_block(
-        label="Set Block",
-        position={'label': 'At Position'},
-        block_type={'label': 'Block Type'}
+        label="Set Block [block_type] at [position]",
+        position={'label': 'Position'},
+        block_type={'label': 'Block', 'shadow': 'minecraft_block_picker'}
     )
     def set_block(self, position: 'Vec3', block_type: 'Block'):
         """Sets a block at the specified position."""
         self.mcplayer.pc.setBlock(int(position.x), int(position.y), int(position.z), block_type)
 
     @mced_block(
-        label="Set Blocks",
-        p1={'label': 'Position 1'},
-        p2={'label': 'Position 2'},
-        block_type={'label': 'Block Type'}
+        label="Set Blocks [block_type] from [pos1] to [pos2]",
+        pos1={'label': 'From Position'},
+        pos2={'label': 'To Position'},
+        block_type={'label': 'Block', 'shadow': 'minecraft_block_picker'}
     )
-    def set_blocks(self, p1: 'Vec3', p2: 'Vec3', block_type: 'Block'):
-        """Sets a cuboid of blocks defined by two corners."""
-        self.mcplayer.pc.setBlocks(int(p1.x), int(p1.y), int(p1.z), int(p2.x), int(p2.y), int(p2.z), block_type)
+    def set_blocks(self, pos1: 'Vec3', pos2: 'Vec3', block_type: 'Block'):
+        """Fills a cuboid area with the specified block."""
+        self.mcplayer.pc.setBlocks(int(pos1.x), int(pos1.y), int(pos1.z),
+                                   int(pos2.x), int(pos2.y), int(pos2.z), block_type)
 
     @mced_block(
-        label="Get Block",
-        position={'label': 'At Position'},
-        output_type="String"
+        label="Get Highest Block Y at X: [x] Z: [z]",
+        x={'label': 'X', 'shadow': 'math_number'},
+        z={'label': 'Z', 'shadow': 'math_number'}
     )
-    def get_block(self, position: 'Vec3') -> str:
-        """Returns the block type at the specified position."""
-        return str(self.mcplayer.pc.getBlock(int(position.x), int(position.y), int(position.z)))
+    def get_highest_block_y(self, x: float, z: float) -> int:
+        """Gets the Y coordinate of the highest solid block at X, Z."""
+        return int(self.mcplayer.pc.getHeight(int(x), int(z)))
+
+    # --- Entities (CmdEntity) ---
 
     @mced_block(
-        label="Get Block With Data",
-        position={'label': 'At Position'},
-        output_type="String"
+        label="Spawn [entity_id] at [position]",
+        position={'label': 'Position'},
+        entity_id={'label': 'Entity', 'shadow': 'minecraft_entity_picker_passive_mobs'}
     )
-    def get_block_with_data(self, position: 'Vec3') -> str:
-        """Returns the block type and data at the specified position."""
-        # Returns Block object, converting to string representation
-        return str(self.mcplayer.pc.getBlockWithData(int(position.x), int(position.y), int(position.z)))
+    def spawn_entity(self, position: 'Vec3', entity_id: 'Entity') -> int:
+        """Spawns an entity at a given position and returns its unique ID."""
+        return int(self.mcplayer.pc.spawnEntity(int(position.x), int(position.y), int(position.z), entity_id))
 
     @mced_block(
-        label="Get Height",
-        x={'label': 'X', 'shadow': '<shadow type="math_number"><field name="NUM">0</field></shadow>'},
-        z={'label': 'Z', 'shadow': '<shadow type="math_number"><field name="NUM">0</field></shadow>'},
-        output_type="Number"
+        label="Get Entities in [radius] block radius from [position]",
+        position={'label': 'Position'},
+        radius={'label': 'Radius', 'shadow': 'math_number'}
     )
-    def get_height(self, x: int, z: int) -> int:
-        """Returns the height of the world (y-coordinate) at the given x and z coordinates."""
-        return int(self.mcplayer.pc.getHeight(x, z))
+    def get_entities_in_radius(self, position: 'Vec3', radius: float) -> 'Array':
+        """Returns a list of entity IDs within a radius of a position."""
+        return self.mcplayer.pc.getEntitiesInRadius(int(position.x), int(position.y), int(position.z), int(radius))
 
-    @mced_block(
-        label="Get Player Entity IDs",
-        output_type="Array"
-    )
-    def get_player_entity_ids(self) -> list:
-        """Returns a list of entity IDs for all connected players."""
-        return list(self.mcplayer.pc.getPlayerEntityIds())
-
-    @mced_block(
-        label="Get Player Entity ID",
-        name={'label': 'Player Name', 'shadow': 'text'},
-        output_type="Number"
-    )
-    def get_player_entity_id(self, name: str) -> int:
-        """Returns the entity ID of the named player."""
-        return int(self.mcplayer.pc.getPlayerEntityId(name))
-
-    @mced_block(
-        label="Spawn Entity",
-        entity={'label': 'Entity Type'},
-        position={'label': 'At Position'}
-    )
-    def spawn_entity(self, position: 'Vec3', entity: 'Entity'):
-        """
-        Blockly action to spawn a Minecraft entity.
-        """
-        entity_id_int = self._get_entity_id_from_bukkit_name(entity)
-        if entity_id_int is None:
-            print(f"Warning: Could not find a numerical ID for entity type '{entity}'. Cannot spawn.")
-            return
-        self.mcplayer.pc.spawnEntity(position.x, position.y + 1, position.z, entity_id_int)
-
-    @mced_block(
-        label="Create Explosion",
-        position={'label': 'At Position'},
-        power={'label': 'Power', 'shadow': '<shadow type="math_number"><field name="NUM">4</field></shadow>'}
-    )
-    def create_explosion(self, position: 'Vec3', power: int = 4):
-        """Creates an explosion at the specified position."""
-        self.mcplayer.pc.createExplosion(int(position.x), int(position.y), int(position.z), power)
+    # --- Game Data & Miscellaneous ---
 
     @mced_block(
         label="Set Sign Text",
@@ -235,28 +117,11 @@ class PyncraftActions(MCActionsBase):
         line2={'label': 'Line 2', 'shadow': 'text'},
         line3={'label': 'Line 3', 'shadow': 'text'},
         line4={'label': 'Line 4', 'shadow': 'text'},
-        sign_type={'label': 'Sign Material (e.g. OAK)', 'shadow': 'text'},
+        sign_type={'label': 'Sign Material', 'shadow': 'minecraft_log_picker'},
         direction={'label': 'Direction (0-15)', 'shadow': '<shadow type="math_number"><field name="NUM">0</field></shadow>'}
     )
-    def set_sign(self, position: 'Vec3', sign_type: str = "OAK", direction: int = 0,
+    def set_sign(self, position: 'Vec3', sign_type: 'Block' = "OAK_SIGN", direction: int = 0,
                  line1: str = "", line2: str = "", line3: str = "", line4: str = ""):
         """Sets the text and type of a sign at the specified position."""
         self.mcplayer.pc.setSign(int(position.x), int(position.y), int(position.z),
                                  sign_type, direction, line1, line2, line3, line4)
-
-    # TODO: what would it take to support this in FruitJuice?
-    # @mced_block(
-    #     label="Save Checkpoint",
-    #     tooltip="Saves the current state of the world as a checkpoint."
-    # )
-    # def save_checkpoint(self):
-    #     """Saves a checkpoint of the world."""
-    #     self.mcplayer.pc.saveCheckpoint()
-    #
-    # @mced_block(
-    #     label="Restore Checkpoint",
-    #     tooltip="Restores the world to the last saved checkpoint."
-    # )
-    # def restore_checkpoint(self):
-    #     """Restores the world to the last checkpoint."""
-    #     self.mcplayer.pc.restoreCheckpoint()

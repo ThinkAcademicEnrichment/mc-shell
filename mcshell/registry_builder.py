@@ -14,6 +14,12 @@ try:
 except ImportError:
     HAS_SERVER_ACTIONS = False
 
+try:
+    from mcshell.pyncactions import PyncraftActions
+    HAS_PYNCRAFT_ACTIONS = True
+except ImportError:
+    HAS_PYNCRAFT_ACTIONS = False
+
 class RegistryBuilder:
     """
     Orchestrates the generation of Minecraft-specific Blockly blocks
@@ -53,13 +59,19 @@ class RegistryBuilder:
             'Vec3': 'Vec3',
             'Matrix3': 'Matrix3',
             'Effect': 'Effect',
-            'TitleAction': 'TitleAction'
+            'TitleAction': 'TitleAction',
+            'Block': 'Block',
+            'Item': 'Item',
+            'Entity': 'Entity'
         }
 
         self.SHADOW_MAP = {
             'math_number': '<shadow type="math_number"><field name="NUM">1</field></shadow>',
             'text': '<shadow type="text"><field name="TEXT"></field></shadow>',
-            'minecraft_picker_world': '<shadow type="mc_item_picker_general"></shadow>',
+            'minecraft_item_picker': '<shadow type="mc_item_picker_world"></shadow>',
+            'minecraft_block_picker': '<shadow type="mc_block_picker_world"></shadow>',
+            # Compound Shadow: A Log block that internally has a Wood Type picker shadow
+            'minecraft_log_picker': '<shadow type="mc_block_log"><value name="VARIANT"><shadow type="picker_wood_types"></shadow></value></shadow>',
             'minecraft_entity_picker_passive_mobs': '<shadow type="mc_entity_picker_passive_mobs"></shadow>',
             'picker_effect': '<shadow type="picker_effect"><field name="VALUE">speed</field></shadow>',
             'picker_titleaction': '<shadow type="picker_titleaction"><field name="VALUE">title</field></shadow>'
@@ -68,6 +80,8 @@ class RegistryBuilder:
         self.ACTION_CLASSES = []
         if HAS_SERVER_ACTIONS:
             self.ACTION_CLASSES.append((ServerActions, "ServerActions", "#252E28"))
+        if HAS_PYNCRAFT_ACTIONS:
+            self.ACTION_CLASSES.append((PyncraftActions, "PyncraftActions", "#335522"))
 
         # --- Action Specific Pickers ---
         self.EFFECTS = [
@@ -135,6 +149,20 @@ class RegistryBuilder:
             }
         }
 
+        self.MATERIAL_PICKER_GROUPS = {
+            "world": ["AIR", "STONE", "GRANITE", "DIORITE", "ANDESITE", "DEEPSLATE", "CALCITE", "TUFF", "DIRT", "COARSE_DIRT", "ROOTED_DIRT", "GRASS_BLOCK", "PODZOL", "MYCELIUM", "DIRT_PATH", "SAND", "RED_SAND", "GRAVEL", "CLAY", "ICE", "PACKED_ICE", "BLUE_ICE", "SNOW", "SNOW_BLOCK", "WATER", "LAVA", "BEDROCK", "OBSIDIAN", "CRYING_OBSIDIAN", "MAGMA_BLOCK"],
+            "ores": ["COAL_ORE", "DEEPSLATE_COAL_ORE", "IRON_ORE", "DEEPSLATE_IRON_ORE", "COPPER_ORE", "DEEPSLATE_COPPER_ORE", "GOLD_ORE", "DEEPSLATE_GOLD_ORE", "REDSTONE_ORE", "DEEPSLATE_REDSTONE_ORE", "EMERALD_ORE", "DEEPSLATE_REDSTONE_ORE", "EMERALD_ORE", "DEEPSLATE_EMERALD_ORE", "LAPIS_ORE", "DEEPSLATE_LAPIS_ORE", "DIAMOND_ORE", "DEEPSLATE_DIAMOND_ORE", "NETHER_GOLD_ORE", "NETHER_QUARTZ_ORE", "ANCIENT_DEBRIS"],
+            "stone_bricks": ["BRICKS", "STONE_BRICKS", "MUD_BRICKS", "DEEPSLATE_BRICKS", "DEEPSLATE_TILES", "NETHER_BRICKS", "RED_NETHER_BRICKS", "POLISHED_BLACKSTONE_BRICKS", "END_STONE_BRICKS", "QUARTZ_BRICKS", "CHISELED_STONE_BRICKS", "CRACKED_STONE_BRICKS", "MOSSY_STONE_BRICKS", "CHISELED_NETHER_BRICKS", "CRACKED_NETHER_BRICKS", "CHISELED_POLISHED_BLACKSTONE", "CRACKED_POLISHED_BLACKSTONE_BRICKS", "CHISELED_DEEPSLATE", "CRACKED_DEEPSLATE_BRICKS", "CRACKED_DEEPSLATE_TILES", "CHISELED_TUFF_BRICKS"],
+            "glass": ["GLASS", "GLASS_PANE", "TINTED_GLASS"],
+            "redstone_components": ["REDSTONE_WIRE", "REDSTONE_BLOCK", "REDSTONE_TORCH", "REPEATER", "COMPARATOR", "PISTON", "STICKY_PISTON", "SLIME_BLOCK", "HONEY_BLOCK", "OBSERVER", "DROPPER", "DISPENSER", "HOPPER", "LECTERN", "LEVER", "DAYLIGHT_DETECTOR", "TRIPWIRE_HOOK", "TARGET", "NOTE_BLOCK", "RAIL", "POWERED_RAIL", "DETECTOR_RAIL", "ACTIVATOR_RAIL", "REDSTONE_LAMP"],
+            "lighting": ["TORCH", "SOUL_TORCH", "LANTERN", "SOUL_LANTERN", "GLOWSTONE", "SEA_LANTERN", "OCHRE_FROGLIGHT", "PEARLESCENT_FROGLIGHT", "VERDANT_FROGLIGHT", "COPPER_LANTERN", "SHROOMLIGHT", "JACK_O_LANTERN", "BEACON", "END_ROD"],
+            "copper_variants": ["COPPER_BLOCK", "EXPOSED_COPPER", "WEATHERED_COPPER", "OXIDIZED_COPPER", "CUT_COPPER", "CHISELED_COPPER", "COPPER_GRATE", "COPPER_BULB"],
+            "nature": ["OAK_LEAVES", "SPRUCE_LEAVES", "BIRCH_LEAVES", "JUNGLE_LEAVES", "ACACIA_LEAVES", "DARK_OAK_LEAVES", "MANGROVE_LEAVES", "CHERRY_LEAVES", "AZALEA_LEAVES", "MOSS_BLOCK", "VINE", "CAVE_VINES", "TWISTING_VINES", "WEEPING_VINES"],
+            "flowers": ["DANDELION", "POPPY", "BLUE_ORCHID", "ALLIUM", "AZURE_BLUET", "RED_TULIP", "ORANGE_TULIP", "WHITE_TULIP", "PINK_TULIP", "OXEYE_DAISY", "CORNFLOWER", "LILY_OF_THE_VALLEY", "WITHER_ROSE", "SUNFLOWER", "LILAC", "ROSE_BUSH", "PEONY"],
+            "functional_storage": ["CHEST", "TRAPPED_CHEST", "BARREL", "ENDER_CHEST", "CRAFTER", "FURNACE", "BLAST_FURNACE", "SMOKER"],
+            "spawning": ["SPAWNER", "TRIAL_SPAWNER", "FROGSPAWN", "RESPAWN_ANCHOR"]
+        }
+
         self.ENTITY_GROUPS = {
             "passive_mobs": ["ALLAY", "ARMADILLO", "AXOLOTL", "BAT", "CAMEL", "CAT", "CHICKEN", "COD", "COW", "DONKEY", "FOX", "FROG", "GLOW_SQUID", "HORSE", "MOOSHROOM", "MULE", "OCELOT", "PANDA", "PARROT", "PIG", "POLAR_BEAR", "PUFFERFISH", "RABBIT", "SALMON", "SHEEP", "SNIFFER", "SQUID", "STRIDER", "TADPOLE", "TROPICAL_FISH", "TURTLE", "VILLAGER", "WANDERING_TRADER", "WOLF"],
             "hostile_mobs": ["BLAZE", "BOGGED", "BREEZE", "CAVE_SPIDER", "CREAKING", "CREEPER", "DROWNED", "ELDER_GUARDIAN", "ENDERMAN", "ENDERMITE", "EVOKER", "GHAST", "GUARDIAN", "HOGLIN", "HUSK", "ILLUSIONER", "MAGMA_CUBE", "PHANTOM", "PIGLIN", "PIGLIN_BRUTE", "PILLAGER", "RAVAGER", "SHULKER", "SILVERFISH", "SKELETON", "SLIME", "SPIDER", "STRAY", "VEX", "VINDICATOR", "WARDEN", "WITCH", "WITHER", "WITHER_SKELETON", "ZOGLIN", "ZOMBIE", "ZOMBIE_VILLAGER", "ZOMBIFIED_PIGLIN"],
@@ -179,6 +207,8 @@ class RegistryBuilder:
 
         blocks = [k for k, v in self.materials_data.items() if v.get('is_block')]
         templates, consumed = self._classify_variants(blocks)
+
+        # 1. Parameterized Templates (Wood Planks, Colored Wool)
         for template, info in templates.items():
             block_type = f"mc_block_{template.lower().replace('{}_', '').replace(' ', '_')}"
             res = BlocklyGenerator.generate_parameterized_block(
@@ -188,6 +218,21 @@ class RegistryBuilder:
             )
             js_defs.append(res['js']); py_gens.append(res['py']); xml_snippets.append(res['xml'])
 
+        # 2. Material Picker Groups (Ores, Glass, etc)
+        for group_name, members in self.MATERIAL_PICKER_GROUPS.items():
+            valid_members = [m for m in members if m in blocks]
+            if not valid_members: continue
+
+            block_type = f"mc_block_picker_{group_name.lower()}"
+            res = BlocklyGenerator.generate_picker(
+                block_type=block_type, label=self._normalize_name(group_name),
+                options=[(self._normalize_name(m), m) for m in valid_members],
+                output_type="Block", colour=self.COLORS["Picker"]
+            )
+            js_defs.append(res['js']); py_gens.append(res['py']); xml_snippets.append(res['xml'])
+            consumed.update(valid_members) # Crucial: Removes them from "Other Blocks"
+
+        # 3. Everything Else (General)
         remaining = sorted(list(set(blocks) - consumed))
         if remaining:
             picker_res = BlocklyGenerator.generate_picker(
@@ -208,8 +253,9 @@ class RegistryBuilder:
         js_defs.append(base['js']); py_gens.append(base['py'])
 
         items = [k for k, v in self.materials_data.items() if v.get('is_item')]
-
         templates, consumed = self._classify_variants(items)
+
+        # 1. Parameterized Templates (Wood Doors, Colored Beds)
         for template, info in templates.items():
             block_type = f"mc_item_{template.lower().replace('{}_', '').replace(' ', '_')}"
             res = BlocklyGenerator.generate_parameterized_block(
@@ -219,6 +265,21 @@ class RegistryBuilder:
             )
             js_defs.append(res['js']); py_gens.append(res['py']); xml_snippets.append(res['xml'])
 
+        # 2. Material Picker Groups (Ores, Nature, etc)
+        for group_name, members in self.MATERIAL_PICKER_GROUPS.items():
+            valid_members = [m for m in members if m in items]
+            if not valid_members: continue
+
+            block_type = f"mc_item_picker_{group_name.lower()}"
+            res = BlocklyGenerator.generate_picker(
+                block_type=block_type, label=self._normalize_name(group_name),
+                options=[(self._normalize_name(m), m) for m in valid_members],
+                output_type="Item", colour=self.COLORS["Picker"]
+            )
+            js_defs.append(res['js']); py_gens.append(res['py']); xml_snippets.append(res['xml'])
+            consumed.update(valid_members)
+
+        # 3. Everything Else (General)
         remaining = sorted(list(set(items) - consumed))
         if remaining:
             picker_res = BlocklyGenerator.generate_picker(
@@ -272,8 +333,6 @@ class RegistryBuilder:
 
             blocks_js, generators_py, category_xml = generator.generate()
 
-            # Inject the action pickers into the very first action file generated
-            # to ensure they are available in the workspace without duplicating code heavily
             js_out = action_pickers_js + [blocks_js] if i == 0 else [blocks_js]
             py_out = action_pickers_py + [generators_py] if i == 0 else [generators_py]
 
@@ -292,7 +351,10 @@ class RegistryBuilder:
         for picker_info in self.ACTION_PICKERS:
             xml_snippets.append(f'<block type="{picker_info["id"]}"></block>')
 
-        # Inject the new category into toolbox.xml
+        # Add Material Group Pickers (As Blocks, since they output blocks)
+        for group_name in self.MATERIAL_PICKER_GROUPS.keys():
+            xml_snippets.append(f'<block type="mc_block_picker_{group_name.lower()}"></block>')
+
         BlocklyGenerator.update_toolbox(
             f'<category name="Pickers" colour="{self.COLORS["Picker"]}">{"".join(xml_snippets)}</category>',
             self.toolbox_path
