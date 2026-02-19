@@ -568,22 +568,67 @@ class MCShell(Magics):
         _mcc = self._get_client()
         pprint(self.server_data)
 
+    # @line_magic
+    # def mc_help(self,line):
+    #     '''
+    #     %mc_help [COMMAND]
+    #     '''
+    #
+    #     _cmd = []
+    #     _doc_line = ''
+    #     _doc_url = ''
+    #     _doc_code_lines = ''
+    #     if line:
+    #         _line_parts = line.split()
+    #         if 'minecraft:' in _line_parts[0]:
+    #             _line_parts[0] = _line_parts[0].split(':')[1]
+    #         _doc_line,_doc_url,_doc_code_lines = self.mc_cmd_docs.get(_line_parts[0],('','',''))
+    #         _line_parts[0] = _line_parts[0].replace('_', '-')
+    #         _cmd += [' '.join(_line_parts)]
+    #
+    #         if _doc_line and _doc_url:
+    #             print(_doc_line)
+    #             print(_doc_url)
+    #             print()
+    #
+    #     if _doc_code_lines:
+    #         for _doc_code_line in _doc_code_lines:
+    #             print(_doc_code_line)
+    #     else:
+    #         _help_text = self._help(*_cmd)
+    #         if not _help_text:
+    #             print("No help available!")
+    #             return
+    #         for _help_line in _help_text.split('/')[1:]:
+    #             _help_parts = _help_line.split()
+    #             _help_parts[0] = _help_parts[0].replace('-','_')
+    #             print(f'{" ".join(_help_parts)}')
+
+    def _strip_ansi(self, text):
+        """Removes ANSI escape sequences (colors/formatting) from a string."""
+        if not text:
+            return text
+        # Pattern matches \x1b[ followed by parameters and ending in a letter (usually 'm')
+        ansi_escape = re.compile(r'\x1b\[[0-9;]*[a-zA-Z]')
+        return ansi_escape.sub('', text)
+
     @line_magic
-    def mc_help(self,line):
+    def mc_help(self, line):
         '''
         %mc_help [COMMAND]
         '''
-
         _cmd = []
         _doc_line = ''
         _doc_url = ''
         _doc_code_lines = ''
+
         if line:
             _line_parts = line.split()
-            if 'minecraft:' in _line_parts[0]:
-                _line_parts[0] = _line_parts[0].split(':')[1]
-            _doc_line,_doc_url,_doc_code_lines = self.mc_cmd_docs.get(_line_parts[0],('','',''))
-            _line_parts[0] = _line_parts[0].replace('_', '-')
+            # Look up documentation using the clean name if it exists
+            clean_name = _line_parts[0].split(':')[-1] if ':' in _line_parts[0] else _line_parts[0]
+            _doc_line, _doc_url, _doc_code_lines = self.mc_cmd_docs.get(clean_name, ('', '', ''))
+
+            # Keep the original user input for the RCON command
             _cmd += [' '.join(_line_parts)]
 
             if _doc_line and _doc_url:
@@ -599,9 +644,16 @@ class MCShell(Magics):
             if not _help_text:
                 print("No help available!")
                 return
-            for _help_line in _help_text.split('/')[1:]:
+
+            # Iterate through the split responses (Minecraft help usually starts with '/')
+            for _help_line in _help_text.split('/'):
+                if not _help_line.strip():
+                    continue
+
                 _help_parts = _help_line.split()
-                _help_parts[0] = _help_parts[0].replace('-','_')
+                # PRESERVE NAMESPACE: We keep _help_parts[0] exactly as the server sent it,
+                # only performing the shell-friendly underscore replacement.
+                _help_parts[0] = _help_parts[0].replace('-', '_')
                 print(f'{" ".join(_help_parts)}')
 
     def _complete_mc_help(self, ipyshell, event):
@@ -642,8 +694,14 @@ class MCShell(Magics):
         print('-' * 100)
         if _arg_list[0] == 'help':
             _responses = response.split('/')
-            for _response in _responses:
-                print('\t' + _response)
+            for _resp in _responses:
+                if _resp.strip():
+                    # Keep namespaces, just fix hyphens
+                    _parts = _resp.split()
+                    _parts[0] = _parts[0].replace('-', '_')
+                    print('\t' + ' '.join(_parts))
+            # for _response in _responses:
+            #     print('\t' + _response)
         elif response.split()[0] == 'Unknown':
             print("[red]Error in usage:[/]")
             self.mc_help(line)
