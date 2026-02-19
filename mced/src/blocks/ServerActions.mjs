@@ -288,7 +288,71 @@ export function defineServerActionsBlocks(Blockly) {
     };
 
 
+    Blockly.Blocks['picker_effect'] = {
+        init: function() {
+            this.appendDummyInput()
+                .appendField("Effect")
+                .appendField(new Blockly.FieldDropdown([
+                ["Speed", "speed"],
+                ["Slowness", "slowness"],
+                ["Haste", "haste"],
+                ["Strength", "strength"],
+                ["Instant Health", "instant_health"],
+                ["Instant Damage", "instant_damage"],
+                ["Jump Boost", "jump_boost"],
+                ["Regeneration", "regeneration"],
+                ["Resistance", "resistance"],
+                ["Fire Resistance", "fire_resistance"],
+                ["Water Breathing", "water_breathing"],
+                ["Invisibility", "invisibility"],
+                ["Blindness", "blindness"],
+                ["Night Vision", "night_vision"],
+                ["Hunger", "hunger"],
+                ["Weakness", "weakness"],
+                ["Poison", "poison"],
+                ["Wither", "wither"],
+                ["Health Boost", "health_boost"],
+                ["Absorption", "absorption"],
+                ["Saturation", "saturation"],
+                ["Glowing", "glowing"],
+                ["Levitation", "levitation"],
+                ["Luck", "luck"],
+                ["Unluck", "unluck"],
+                ["Slow Falling", "slow_falling"],
+                ["Conduit Power", "conduit_power"],
+                ["Dolphins Grace", "dolphins_grace"],
+                ["Bad Omen", "bad_omen"],
+                ["Hero of the Village", "hero_of_the_village"],
+                ["Darkness", "darkness"]
+                ]), "VALUE");
+            this.setOutput(true, "Effect");
+            this.setColour(230);
+            this.setTooltip("Select a Effect.");
+        }
+    };
 
+
+
+Blockly.Blocks['server_actions_server_apply_effect'] = {
+    init: function() {
+        this.appendDummyInput().appendField("Apply [effect] to [target] for [seconds]s (Level [amplifier])");
+        this.appendValueInput("EFFECT").setCheck("Effect").setAlign("RIGHT").appendField("Effect");
+        this.appendValueInput("TARGET").setCheck("String").setAlign("RIGHT").appendField("Target");
+        this.appendValueInput("SECONDS").setCheck("Number").setAlign("RIGHT").appendField("Duration");
+        this.appendValueInput("AMPLIFIER").setCheck("Number").setAlign("RIGHT").appendField("Level");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(65);
+        this.setTooltip("An auto-generated block for the 'Apply [effect] to [target] for [seconds]s (Level [amplifier])' action.");
+        this.setInputsInline(false);
+
+        // Configure shadow blocks directly
+        this.getInput('EFFECT').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="picker_effect"><field name="VALUE">speed</field></shadow>`));
+        this.getInput('TARGET').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT">SELF</field></shadow>`));
+        this.getInput('SECONDS').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="math_number"><field name="NUM">30</field></shadow>`));
+        this.getInput('AMPLIFIER').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="math_number"><field name="NUM">1</field></shadow>`));
+    }
+};
 Blockly.Blocks['server_actions_server_clear_inventory'] = {
     init: function() {
         this.appendDummyInput().appendField("Clear Inventory of [target]");

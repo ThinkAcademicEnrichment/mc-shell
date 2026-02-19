@@ -61,7 +61,20 @@ export function defineServerActionsGenerators(pythonGenerator) {
     };
 
 
+    pythonGenerator.forBlock['picker_effect'] = function(block, generator) {
+        const code = block.getFieldValue('VALUE');
+        return [`'${code}'`, generator.ORDER_ATOMIC];
+    };
 
+
+
+pythonGenerator.forBlock['server_actions_server_apply_effect'] = function(block, generator) {
+    const effect = generator.valueToCode(block, 'EFFECT', generator.ORDER_ATOMIC) || None;
+    const target = generator.valueToCode(block, 'TARGET', generator.ORDER_ATOMIC) || 'SELF';
+    const seconds = generator.valueToCode(block, 'SECONDS', generator.ORDER_ATOMIC) || 30;
+    const amplifier = generator.valueToCode(block, 'AMPLIFIER', generator.ORDER_ATOMIC) || 1;
+    return `self.action_implementer.server_apply_effect(effect=${effect}, target=${target}, seconds=${seconds}, amplifier=${amplifier})\n`;
+};
 pythonGenerator.forBlock['server_actions_server_clear_inventory'] = function(block, generator) {
     const target = generator.valueToCode(block, 'TARGET', generator.ORDER_ATOMIC) || 'SELF';
     return `self.action_implementer.server_clear_inventory(target=${target})\n`;

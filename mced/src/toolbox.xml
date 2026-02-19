@@ -761,6 +761,7 @@
     <block type="world_actions_set_block" />
   </category>
   <category name="Server Actions" colour="#252E28">
+    <block type="server_actions_server_apply_effect" />
     <block type="server_actions_server_clear_inventory" />
     <block type="server_actions_server_execute_command" />
     <block type="server_actions_server_locate" />
@@ -780,5 +781,6 @@
     <block type="picker_structure" />
     <block type="picker_biome" />
     <block type="picker_poi" />
+    <block type="picker_effect" />
   </category>
 </xml>
