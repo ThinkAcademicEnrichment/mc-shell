@@ -3,32 +3,21 @@ from mcshell.constants import Vec3
 from blockapily import mced_block
 import time
 import re
+import json
 from typing import Union
 
 class ServerActions(MCActionsBase):
     """
-    Blocks for controlling server state, game rules, and global settings.
-    Exposes commands like /time, /weather, /gamemode, and /gamerule.
+    Blocks for controlling server state, game rules, and mini-game management.
     """
     def __init__(self, mc_player_instance, delay_between_blocks=0):
         super().__init__(mc_player_instance, delay_between_blocks)
 
     def _run_command(self, cmd: str) -> str:
-        """
-        Helper to execute a raw server command using the MCClient's run method.
-        This handles authentication and the RCON connection properly.
-
-        Args:
-            cmd (str): The full command string (e.g., "time set day").
-
-        Returns:
-            str: The response from the server, or None if failed.
-        """
-        # 1. Clean the command string
+        """Helper to execute a raw server command using the MCClient's run method."""
         if cmd.startswith("/"):
             cmd = cmd[1:]
 
-        # 2. Normalize command syntax
         parts = cmd.split(' ', 1)
         verb = parts[0].replace('_', '-')
         if len(parts) > 1:
@@ -39,148 +28,97 @@ class ServerActions(MCActionsBase):
         print(f"Sending Server Command: {cmd}")
 
         try:
-            # 3. Execute via RCON
             response = self.mcplayer.run(cmd)
-
-            # 4. Handle Response
             if response:
                 print(f"Server Response: {response}")
-                return response
-
+            return response
         except Exception as e:
-            # 5. Error Handling
-            print(f"Error executing command '{cmd}': {e}")
-            pass
+            print(f"Failed to execute command '{cmd}': {e}")
+            return None
 
-        if self.delay_between_blocks > 0:
-            time.sleep(self.delay_between_blocks)
-
-        return ""
-
-
-    # --- Stage 1: Basic World Control ---
+    # -------------------------------------------------------------
+    # CORE SERVER & WORLD COMMANDS
+    # -------------------------------------------------------------
 
     @mced_block(
         label="Set Time to [time]",
-        time_option={'label': 'Time'}
+        time={'label': 'Time', 'shadow': 'math_number'}
     )
-    def server_set_time(self, time_option: 'Time'):
-        """Sets the world time."""
-        self._run_command(f"time set {time_option}")
+    def server_time_set(self, time: int):
+        """Sets the server time."""
+        self._run_command(f"time set {time}")
 
     @mced_block(
         label="Set Weather to [weather]",
-        weather_option={'label': 'Weather'}
+        weather={'label': 'Weather', 'shadow': '<shadow type="text"><field name="TEXT">clear</field></shadow>'}
     )
-    def server_set_weather(self, weather_option: 'Weather'):
-        """Sets the world weather."""
-        self._run_command(f"weather {weather_option}")
+    def server_weather_set(self, weather: str):
+        """Sets the server weather (clear, rain, thunder)."""
+        self._run_command(f"weather {weather}")
 
     @mced_block(
-        label="Set Difficulty to [difficulty]",
-        difficulty_option={'label': 'Difficulty'}
-    )
-    def server_set_difficulty(self, difficulty_option: 'Difficulty'):
-        """Sets the game difficulty."""
-        self._run_command(f"difficulty {difficulty_option}")
-
-    @mced_block(
-        label="Set Gamemode [mode] for [target]",
-        mode={'label': 'Mode'},
+        label="Set Gamemode to [gamemode] for [target]",
+        gamemode={'label': 'Gamemode', 'shadow': '<shadow type="text"><field name="TEXT">creative</field></shadow>'},
         target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'}
     )
-    def server_set_gamemode(self, mode: 'Gamemode', target: str = "SELF"):
-        """
-        Sets the gamemode for a specific player.
-        """
-        if not target or target.strip().upper() == "SELF":
-            target_name = self.mcplayer.name
-        else:
-            target_name = target
-
-        self._run_command(f"gamemode {mode} {target_name}")
-
-    # --- Stage 2: Game Rules ---
+    def server_gamemode_set(self, gamemode: str, target: str = "SELF"):
+        """Changes a player's gamemode."""
+        target_name = self.mcplayer.name if target.upper() == "SELF" else target
+        self._run_command(f"gamemode {gamemode} {target_name}")
 
     @mced_block(
-        label="Set Game Rule [rule] to [value]",
-        rule={'label': 'Rule'},
-        value={'label': 'Enabled', 'shadow': '<shadow type="logic_boolean"><field name="BOOL">TRUE</field></shadow>'}
+        label="Set Gamerule [rule] to [value]",
+        rule={'label': 'GameRule', 'shadow': 'text'},
+        value={'label': 'Value', 'shadow': 'text'}
     )
-    def server_set_gamerule(self, rule: 'GameRule', value: bool):
-        """Sets a boolean game rule."""
-        str_value = "true" if value else "false"
-        self._run_command(f"gamerule {rule} {str_value}")
-
-    @mced_block(
-        label="Set Integer Game Rule [rule] to [value]",
-        rule={'label': 'Rule'},
-        value={'label': 'Value'}
-    )
-    def server_set_integer_gamerule(self, rule: 'IntegerGameRule', value: int):
-        """Sets a boolean game rule."""
+    def server_gamerule_set(self, rule: str, value: Union[bool, int, str]):
+        """Modifies a server game rule."""
         self._run_command(f"gamerule {rule} {value}")
 
-    # --- Stage 3: Advanced Utility ---
-
     @mced_block(
-        label="Locate [type] [target]",
-        locate_type={'label': 'Type'},
-        target={'label': 'Structure/Biome/POI', 'shadow': 'text'},
-        output_type="3DVector",
-        tooltip="Finds coordinates of nearest structure/biome/poi. Returns a Vec3."
+        label="Locate Structure [structure]",
+        structure={'label': 'Structure', 'shadow': '<shadow type="text"><field name="TEXT">village</field></shadow>'}
     )
-    def server_locate(self, locate_type: 'LocateType', target: Union['Structure','Biome','Poi']) -> Vec3:
-        """
-        Locates a structure, biome, or POI and returns its coordinates.
-        Example response: "The nearest minecraft:mason is at [-389, ~, 268] (132 blocks away)"
-        Failure response: 'Could not find a biome of type "minecraft:warped_forest" within reasonable distance'
-        """
-        # Execute command
-        response = self._run_command(f"locate {locate_type} {target}")
-
-        if not response:
-            print("Locate failed: No response from server.")
-            # Return current position as fallback to prevent crashes, but warn user.
-            return self.mcplayer.position
-
-        # Check for failure message
-        if "Could not find" in response:
-            print(f"Locate failed: {response}")
-            # Return current position as fallback
-            return self.mcplayer.position
-
-        # Parse output using regex to find [x, y, z] pattern
-        # Matches numbers or '~' inside square brackets: [-389, ~, 268]
-        match = re.search(r'\[(.*?)\]', response)
-
-        if match:
-            # Extract content inside brackets: "-389, ~, 268"
-            coords_str = match.group(1)
-            # Split by comma
-            parts = [p.strip() for p in coords_str.split(',')]
-
-            if len(parts) >= 3:
+    def server_locate_structure(self, structure: str) -> Vec3:
+        """Locates a structure and returns its coordinates."""
+        response = self._run_command(f"locate structure {structure}")
+        if response:
+            match = re.search(r'\[(-?\d+),? (-?\d+|~),? (-?\d+)\]', response)
+            if match:
                 try:
-                    # Parse X
+                    parts = match.groups()
                     x = float(parts[0])
-
-                    # Parse Y (Handle tilde '~')
-                    if parts[1] == '~':
-                        # Use player's current Y if unknown, or default to world surface
-                        y = self.mcplayer.position.y
-                    else:
-                        y = float(parts[1])
-
-                    # Parse Z
+                    y = self.mcplayer.position.y if parts[1] == '~' else float(parts[1])
                     z = float(parts[2])
-
                     return Vec3(x, y, z)
                 except ValueError:
-                    print(f"Locate failed: Could not parse coordinates from '{coords_str}'")
+                    print(f"Locate failed: Could not parse coordinates")
 
-        print(f"Locate failed: Could not find coordinate pattern in response '{response}'")
+        print(f"Locate failed.")
         return self.mcplayer.position
+
+    @mced_block(
+        label="Execute Command",
+        command={'label': 'Command', 'shadow': 'text'}
+    )
+    def server_execute_command(self, command: str):
+        """Executes a custom command string."""
+        self._run_command(command)
+
+    # -------------------------------------------------------------
+    # PLAYER INVENTORY & MINI-GAME MANAGEMENT
+    # -------------------------------------------------------------
+
+    @mced_block(
+        label="Give [count] [item] to [target]",
+        item={'label': 'Item', 'shadow': 'minecraft_picker_world'},
+        count={'label': 'Count', 'shadow': 'math_number'},
+        target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'}
+    )
+    def server_give_item(self, item: 'Item', count: int = 1, target: str = "SELF"):
+        """Gives an item to a player."""
+        target_name = self.mcplayer.name if target.upper() == "SELF" else target
+        self._run_command(f"give {target_name} {item} {count}")
 
     @mced_block(
         label="Clear Inventory of [target]",
@@ -188,25 +126,32 @@ class ServerActions(MCActionsBase):
     )
     def server_clear_inventory(self, target: str = "SELF"):
         """Clears items from a player's inventory."""
-        if not target or target.strip().upper() == "SELF":
-            target_name = self.mcplayer.name
-        else:
-            target_name = target
+        target_name = self.mcplayer.name if target.upper() == "SELF" else target
         self._run_command(f"clear {target_name}")
 
     @mced_block(
-        label="Execute Command",
-        command={'label': 'Command', 'shadow': 'text'},
-        tooltip="Executes any arbitrary server command."
+        label="Summon [entity] at [pos]",
+        entity={'label': 'Entity', 'shadow': 'minecraft_entity_picker_passive_mobs'},
+        pos={'label': 'Position'}
     )
-    def server_execute_command(self, command: str):
-        """Executes a custom command string."""
-        self._run_command(command)
+    def server_summon(self, entity: 'Entity', pos: Vec3):
+        """Summons an entity at a specific location."""
+        self._run_command(f"summon {entity} {pos.x} {pos.y} {pos.z}")
+
+    @mced_block(
+        label="Teleport [target] to [pos]",
+        target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'},
+        pos={'label': 'Position'}
+    )
+    def server_teleport(self, pos: Vec3, target: str = "SELF"):
+        """Teleports a player or entity to a location."""
+        target_name = self.mcplayer.name if target.upper() == "SELF" else target
+        self._run_command(f"tp {target_name} {pos.x} {pos.y} {pos.z}")
 
     @mced_block(
         label="Apply [effect] to [target] for [seconds]s (Level [amplifier])",
-        effect={'label': 'Effect'},
-        target={'label': 'Target', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'},
+        effect={'label': 'Effect', 'shadow': 'picker_effect'},
+        target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'},
         seconds={'label': 'Duration', 'shadow': 'math_number'},
         amplifier={'label': 'Level', 'shadow': 'math_number'}
     )
@@ -214,3 +159,25 @@ class ServerActions(MCActionsBase):
         """Applies a status effect to a target."""
         target_name = self.mcplayer.name if target.upper() == "SELF" else target
         self._run_command(f"effect give {target_name} {effect} {seconds} {amplifier}")
+
+    @mced_block(
+        label="Show Title [text] as [action] for [target]",
+        text={'label': 'Message', 'shadow': 'text'},
+        action={'label': 'Display Location', 'shadow': 'picker_titleaction'},
+        target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">@a</field></shadow>'}
+    )
+    def server_show_title(self, text: str, action: 'TitleAction', target: str = "@a"):
+        """Displays large text on the player's screen."""
+        # Using json dumps to ensure safely escaped strings for Minecraft's JSON text component
+        json_text = json.dumps({"text": str(text)})
+        self._run_command(f"title {target} {action} {json_text}")
+
+    @mced_block(
+        label="Damage [target] by [amount]",
+        target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'},
+        amount={'label': 'Amount', 'shadow': 'math_number'}
+    )
+    def server_damage(self, amount: float, target: str = "SELF"):
+        """Deals damage to a target."""
+        target_name = self.mcplayer.name if target.upper() == "SELF" else target
+        self._run_command(f"damage {target_name} {amount}")
