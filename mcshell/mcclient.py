@@ -129,9 +129,9 @@ class MCClient:
         return _fixed_string
 
     def _strip_ansi(self, text):
-        """Removes ANSI escape sequences (colors/formatting) from a string."""
+        """Removes all ANSI escape sequences to provide clean text output."""
         if not text:
-            return text
-        # Pattern matches \x1b[ followed by parameters and ending in a letter (usually 'm')
-        ansi_escape = re.compile(r'\x1b\[[0-9;]*[a-zA-Z]')
-        return ansi_escape.sub('', text)
+            return ""
+        # Matches ESC[ followed by formatting codes and ending with a letter
+        ansi_regex = re.compile(r'\x1b\[[0-9;]*[a-zA-Z]')
+        return ansi_regex.sub('', text).strip()

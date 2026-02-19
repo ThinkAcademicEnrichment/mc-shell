@@ -568,49 +568,6 @@ class MCShell(Magics):
         _mcc = self._get_client()
         pprint(self.server_data)
 
-    # @line_magic
-    # def mc_help(self,line):
-    #     '''
-    #     %mc_help [COMMAND]
-    #     '''
-    #
-    #     _cmd = []
-    #     _doc_line = ''
-    #     _doc_url = ''
-    #     _doc_code_lines = ''
-    #     if line:
-    #         _line_parts = line.split()
-    #         if 'minecraft:' in _line_parts[0]:
-    #             _line_parts[0] = _line_parts[0].split(':')[1]
-    #         _doc_line,_doc_url,_doc_code_lines = self.mc_cmd_docs.get(_line_parts[0],('','',''))
-    #         _line_parts[0] = _line_parts[0].replace('_', '-')
-    #         _cmd += [' '.join(_line_parts)]
-    #
-    #         if _doc_line and _doc_url:
-    #             print(_doc_line)
-    #             print(_doc_url)
-    #             print()
-    #
-    #     if _doc_code_lines:
-    #         for _doc_code_line in _doc_code_lines:
-    #             print(_doc_code_line)
-    #     else:
-    #         _help_text = self._help(*_cmd)
-    #         if not _help_text:
-    #             print("No help available!")
-    #             return
-    #         for _help_line in _help_text.split('/')[1:]:
-    #             _help_parts = _help_line.split()
-    #             _help_parts[0] = _help_parts[0].replace('-','_')
-    #             print(f'{" ".join(_help_parts)}')
-
-    def _strip_ansi(self, text):
-        """Removes ANSI escape sequences (colors/formatting) from a string."""
-        if not text:
-            return text
-        # Pattern matches \x1b[ followed by parameters and ending in a letter (usually 'm')
-        ansi_escape = re.compile(r'\x1b\[[0-9;]*[a-zA-Z]')
-        return ansi_escape.sub('', text)
 
     @line_magic
     def mc_help(self, line):
@@ -624,11 +581,9 @@ class MCShell(Magics):
 
         if line:
             _line_parts = line.split()
-            # Look up documentation using the clean name if it exists
+            # Clean name for documentation lookup
             clean_name = _line_parts[0].split(':')[-1] if ':' in _line_parts[0] else _line_parts[0]
             _doc_line, _doc_url, _doc_code_lines = self.mc_cmd_docs.get(clean_name, ('', '', ''))
-
-            # Keep the original user input for the RCON command
             _cmd += [' '.join(_line_parts)]
 
             if _doc_line and _doc_url:
@@ -640,21 +595,53 @@ class MCShell(Magics):
             for _doc_code_line in _doc_code_lines:
                 print(_doc_code_line)
         else:
-            _help_text = self._help(*_cmd)
-            if not _help_text:
+            # Use mctools to get non-truncated response
+            _raw_help = self._help(*_cmd)
+            if not _raw_help:
                 print("No help available!")
                 return
 
-            # Iterate through the split responses (Minecraft help usually starts with '/')
-            for _help_line in _help_text.split('/'):
-                if not _help_line.strip():
+            _help_text = _raw_help
+
+            # Processing variables to handle duplication
+            unique_commands = set()
+            output_lines = []
+
+            # Split help into individual lines/commands
+            _raw_lines = filter(None, _help_text.split('/'))
+
+            for line in _raw_lines:
+                parts = line.split()
+                if not parts: continue
+
+                raw_cmd = parts[0]
+
+                # --- Filtering Logic ---
+                # 1. Skip the spurious '?' command
+                if raw_cmd in ('?', 'bukkit:?'):
                     continue
 
-                _help_parts = _help_line.split()
-                # PRESERVE NAMESPACE: We keep _help_parts[0] exactly as the server sent it,
-                # only performing the shell-friendly underscore replacement.
-                _help_parts[0] = _help_parts[0].replace('-', '_')
-                print(f'{" ".join(_help_parts)}')
+                # 2. Handle 'gamerule' specifically to avoid the massive text wall
+                if raw_cmd.endswith('gamerule') and len(line) > 200:
+                    line = f"{raw_cmd} <rule> [<value>]"
+
+                # 3. Deduplication Logic:
+                # If we see 'enchant' and then 'minecraft:enchant', we only keep one.
+                # We prioritize showing the specific namespace if it's NOT 'minecraft'
+                base_cmd = raw_cmd.split(':')[-1]
+
+                if base_cmd in unique_commands:
+                    continue
+
+                unique_commands.add(base_cmd)
+
+                # Fix hyphens for the shell but keep the namespace prefix
+                parts[0] = parts[0].replace('-', '_')
+                output_lines.append(" ".join(parts))
+
+            # Sort and print
+            for out in sorted(output_lines):
+                print(out)
 
     def _complete_mc_help(self, ipyshell, event):
         ipyshell.user_ns.update(dict(rcon_event=event))
