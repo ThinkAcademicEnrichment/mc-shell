@@ -52,6 +52,7 @@ class MCShell(Magics):
 
         self.active_paper_server: Optional[PaperServerManager ,None ] = None
 
+
     def _complete_world_command(self, ipyshell, event):
         ipyshell.user_ns.update(dict(rcon_event=event))
         text = event.symbol
@@ -494,7 +495,7 @@ class MCShell(Magics):
         except ConnectionRefusedError as e:
             print("[red bold]Unable to send command. Is the server running?[/]")
             pprint(self.server_data)
-        except (WrongPassword, IncorrectPasswordError) as e:
+        except RCONAuthenticationError as e:
             print("[red bold]The password is wrong. Use %mc_login reset[/]")
 
     def _get_client(self):
@@ -506,7 +507,7 @@ class MCShell(Magics):
     def _help(self, *args):
         return self._send('help', *args)
     def _run(self, *args):
-        return self._send('run',*args)
+        return  self._send('run',*args)
     def _data(self, *args):
         return self._send('data',*args)
 
