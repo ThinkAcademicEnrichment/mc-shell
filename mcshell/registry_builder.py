@@ -9,14 +9,15 @@ from blockapily import BlocklyGenerator
 
 # Import Action Classes
 try:
-    from mcshell.serveractions import ServerActions
-    from mcshell.pyncraftcactions import PyncraftActions
+    # from mcshell.serveractions import ServerActions
+    # from mcshell.pyncraftcactions import PyncraftActions
     from mcshell.playeractions import PlayerActions
+    # from mcshell.qturtleactions import QTurtleActions
     # from mcshell.mcactions import (
     #     TurtleShapes, LSystemShapes, DigitalGeometry,
     #     WorldActions, PlayerActions, QTurtleActions
     # )
-    from mcshell.eventactions import EventActions
+    # from mcshell.eventactions import EventActions
     HAS_ALL_ACTIONS = True
 except ImportError as e:
     print(f"Warning: Some action classes could not be imported: {e}")
@@ -54,51 +55,52 @@ class RegistryBuilder:
             "Turtle": "#F3BA2B",
             "LSystem": "#75E538",
             "Player": "#3ECDE0",
-            "Events": "#FCBA03"
+            "Events": "#FCBA03",
+            "Server": "#75E538",
         }
 
-        # --- Type and Shadow Mapping ---
         self.TYPE_MAP = {
             'str': 'String',
             'int': 'Number',
             'float': 'Number',
             'bool': 'Boolean',
-            'Vec3': 'Vec3',
-            'Matrix3': 'Matrix3',
-            'Effect': 'Effect',
-            'TitleAction': 'TitleAction',
-            'Block': 'Block',
-            'Item': 'Item',
-            'Entity': 'Entity',
-            'DigitalSet': 'DigitalSet',
-            'Metric': 'Metric',
-            'QDirection': 'QDirection',
-            'Axis': 'Axis',
-            'QCompass': 'QCompass',
-            'Compass': 'Compass'
-        }
+            'Vec3': "3DVector", 'Matrix3': "3DMatrix", 'Block': "Block", 'DigitalSet': "Digital_Set",
+                    'Metric': 'Metric', 'QDirection': 'QDirection', 'Axis': 'Axis', 'QCompass': 'QCompass',
+                    'Time': 'Time',
+                    'Weather': 'Weather', 'Difficulty': 'Difficulty', 'Gamemode': 'Gamemode', 'GameRule': 'GameRule',
+                    'LocateType': 'LocateType', 'Structure': 'Structure', 'Biome': 'Biome', 'Poi': 'Poi',
+                    'Entity': 'Entity', 'Effect': "Effect"}
 
-        self.SHADOW_MAP = {
-            'math_number': '<shadow type="math_number"><field name="NUM">1</field></shadow>',
-            'text': '<shadow type="text"><field name="TEXT"></field></shadow>',
-            'minecraft_item_picker': '<shadow type="mc_item_picker_world"></shadow>',
-            'minecraft_block_picker': '<shadow type="mc_block_picker_world"></shadow>',
-            'minecraft_log_picker': '<shadow type="mc_block_log"><value name="VARIANT"><shadow type="picker_wood_types"></shadow></value></shadow>',
-            'minecraft_entity_picker_passive_mobs': '<shadow type="mc_entity_picker_passive_mobs"></shadow>',
-            'picker_effect': '<shadow type="picker_effect"><field name="VALUE">speed</field></shadow>',
-            'picker_titleaction': '<shadow type="picker_titleaction"><field name="VALUE">title</field></shadow>',
-            'picker_metric': '<shadow type="picker_metric"></shadow>',
-            'picker_axis': '<shadow type="picker_axis"></shadow>',
-            'picker_qcompass': '<shadow type="picker_qcompass"></shadow>',
-            'picker_qheading': '<shadow type="picker_qheading"></shadow>',
-            # 'picker_compass': '<shadow type="picker_compass"></shadow>'
-        }
+        self.SHADOW_MAP = dict(
+            math_number = '<shadow type="math_number"><field name="NUM">1</field></shadow>',
+            text = '<shadow type="text"><field name="TEXT"></field></shadow>',
+            Vec3='<shadow type="minecraft_vector_3d"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow>',
+            Block='<shadow type="minecraft_picker_world"><field name="MATERIAL_ID">STONE</field></shadow>',
+            Entity='<shadow type="minecraft_entity_picker_passive_mobs"><field name="ENTITY_ID">PIG</field></shadow>',
+            Matrix3='<shadow type="minecraft_matrix_3d_euler"></shadow>',
+            Metric='<shadow type="picker_metric"><field name="VALUE">euclidean</field></shadow>',
+            QHeading ='<shadow type="picker_qheading"><field name="VALUE">forward</field></shadow>',
+            Axis='<shadow type="picker_axis"><field name="VALUE">y</field></shadow>',
+            QCompass='<shadow type="picker_qcompass"><field name="VALUE">N</field></shadow>',
+            Time='<shadow type="picker_time"><field name="VALUE">day</field></shadow>',
+            Weather='<shadow type="picker_weather"><field name="VALUE">clear</field></shadow>',
+            Difficulty='<shadow type="picker_difficulty"><field name="VALUE">normal</field></shadow>',
+            Gamemode='<shadow type="picker_gamemode"><field name="VALUE">creative</field></shadow>',
+            GameRule='<shadow type="picker_gamerule"><field name="VALUE">doDaylightCycle</field></shadow>',
+            IntegerGameRule='<shadow type="picker_integergamerule"><field name="VALUE">respawn_radius</field></shadow>',
+            LocateType='<shadow type="picker_locatetype"><field name="VALUE">structure</field></shadow>',
+            Structure='<shadow type="picker_structure"><field name="VALUE">ancient_city</field></shadow>',
+            Biome='<shadow type="picker_biome"><field name="VALUE">badlands</field></shadow>',
+            Poi='<shadow type="picker_poi"><field name="VALUE">armorer</field></shadow>',
+            Effect='<shadow type="picker_effect"><field name="VALUE">speed</field></shadow>',
+        )
+
 
         self.ACTION_CLASSES = []
         if HAS_ALL_ACTIONS:
             self.ACTION_CLASSES.extend([
-                (ServerActions, "ServerActions", self.COLORS["Turtle"]),
-                (PyncraftActions, "PyncraftActions", "#252E28"),
+                # (ServerActions, "ServerActions", self.COLORS["Server"]),
+                # (PyncraftActions, "PyncraftActions", "#252E28"),
                 (PlayerActions, "PlayerActions", self.COLORS["Player"]),
                 # (TurtleShapes, "TurtleShapes", self.COLORS["Turtle"]),
                 # (LSystemShapes, "LSystemShapes", self.COLORS["LSystem"]),
@@ -106,18 +108,17 @@ class RegistryBuilder:
                 # (WorldActions, "WorldActions", self.COLORS["LSystem"]),
                 # (PlayerActions, "PlayerActions", self.COLORS["Player"]),
                 # (QTurtleActions, "QTurtleActions", self.COLORS["Turtle"]),
-                (EventActions, "EventActions", self.COLORS["Events"])
+                # (EventActions, "EventActions", self.COLORS["Events"])
             ])
 
         # --- Utility Picker Options ---
-        self.METRICS = [("Manhattan (L1)", "l1"), ("Euclidean (L2)", "l2"), ("Chebyshev (Linf)", "linf")]
-        self.AXES = [("Forward", "F"), ("Right", "R"), ("Up", "U")]
-
-        self.COMPASS = [("North", "NORTH"), ("South", "SOUTH"), ("East", "EAST"), ("West", "WEST")]
-
-        # self.QDIRECTIONS = [("Forward", "F"), ("Backward", "B"), ("Left", "L"), ("Right", "R"), ("Up", "U"),
-        #                     ("Down", "D")]
-        # self.QCOMPASS = [("North", "N"), ("South", "S"), ("East", "E"), ("West", "W"), ("Up", "U"), ("Down", "D")]
+        self.METRICS = [("Euclidean", "euclidean"), ("Manhattan", "manhattan"), ("Chebyshev", "chebyshev")]
+        self.AXES = [("Yaw (Y)", "y"), ("Pitch (X)", "x"), ("Roll (Z)", "z")]
+        self.COMPASS = [
+            ("North (-Z)", "N"), ("South (+Z)", "S"),
+            ("East (+X)", "E"), ("West (-X)", "W"),
+            ("North-East", "NE"), ("North-West", "NW"),
+            ("South-East", "SE"), ("South-West", "SW")]
 
         self.QHEADINGS = [
             # --- Pure Local Directions (6) ---
@@ -165,16 +166,242 @@ class RegistryBuilder:
             ("South-West-Up", "SWU"), ("South-West-Down", "SWD")
         ]
 
+        self.TIMES = [
+            ("Day (1000)", "day"),
+            ("Noon (6000)", "noon"),
+            ("Sunset (12000)", "sunset"),
+            ("Night (13000)", "night"),
+            ("Midnight (18000)", "midnight"),
+            ("Sunrise (23000)", "sunrise")
+        ]
+
+        self.WEATHERS = [
+            ("Clear", "clear"),
+            ("Rain", "rain"),
+            ("Thunder", "thunder")
+        ]
+
+        self.DIFFICULTYS = [
+            ("Peaceful", "peaceful"),
+            ("Easy", "easy"),
+            ("Normal", "normal"),
+            ("Hard", "hard")
+        ]
+
+        self.GAMEMODES = [
+            ("Survival", "survival"),
+            ("Creative", "creative"),
+            ("Adventure", "adventure"),
+            ("Spectator", "spectator")
+        ]
+
+        self.LOCATETYPES = [
+            ("Structure", "structure"),
+            ("Biome", "biome"),
+            ("Point of Interest (POI)", "poi")
+        ]
+
+        # Structures (Minecraft 1.19+)
+        self.STRUCTURES = [
+            ("Ancient City", "ancient_city"),
+            ("Bastion Remnant", "bastion_remnant"),
+            ("Buried Treasure", "buried_treasure"),
+            ("Desert Pyramid", "desert_pyramid"),
+            ("End City", "end_city"),
+            ("Fortress", "fortress"),
+            ("Igloo", "igloo"),
+            ("Jungle Pyramid", "jungle_pyramid"),
+            ("Mansion", "mansion"),
+            ("Mineshaft", "mineshaft"),
+            ("Monument", "monument"),
+            ("Nether Fossil", "nether_fossil"),
+            ("Ocean Ruin", "ocean_ruin"),
+            ("Pillager Outpost", "pillager_outpost"),
+            ("Ruined Portal", "ruined_portal"),
+            ("Shipwreck", "shipwreck"),
+            ("Stronghold", "stronghold"),
+            ("Swamp Hut", "swamp_hut"),
+            ("Village", "village"),
+            ("Woodland Mansion", "mansion")
+        ]
+
+        # Biomes (Common selection)
+        self.BIOMES = [
+            ("Badlands", "badlands"),
+            ("Bamboo Jungle", "bamboo_jungle"),
+            ("Beach", "beach"),
+            ("Birch Forest", "birch_forest"),
+            ("Cherry Grove", "cherry_grove"),
+            ("Dark Forest", "dark_forest"),
+            ("Deep Dark", "deep_dark"),
+            ("Desert", "desert"),
+            ("Dripstone Caves", "dripstone_caves"),
+            ("End Highlands", "end_highlands"),
+            ("End Midlands", "end_midlands"),
+            ("Forest", "forest"),
+            ("Frozen Peaks", "frozen_peaks"),
+            ("Grove", "grove"),
+            ("Ice Spikes", "ice_spikes"),
+            ("Jagged Peaks", "jagged_peaks"),
+            ("Jungle", "jungle"),
+            ("Lush Caves", "lush_caves"),
+            ("Mangrove Swamp", "mangrove_swamp"),
+            ("Meadow", "meadow"),
+            ("Mushroom Fields", "mushroom_fields"),
+            ("Nether Wastes", "nether_wastes"),
+            ("Ocean", "ocean"),
+            ("Plains", "plains"),
+            ("River", "river"),
+            ("Savanna", "savanna"),
+            ("Snowy Beach", "snowy_beach"),
+            ("Snowy Plains", "snowy_plains"),
+            ("Snowy Taiga", "snowy_taiga"),
+            ("Soul Sand Valley", "soul_sand_valley"),
+            ("Stony Peaks", "stony_peaks"),
+            ("Swamp", "swamp"),
+            ("Taiga", "taiga"),
+            ("The End", "the_end"),
+            ("The Void", "the_void"),
+            ("Warm Ocean", "warm_ocean"),
+            ("Warped Forest", "warped_forest")
+        ]
+
+        # Points of Interest (Villager jobs + others)
+        self.POIS = [
+            ("Armorer", "armorer"),
+            ("Butcher", "butcher"),
+            ("Cartographer", "cartographer"),
+            ("Cleric", "cleric"),
+            ("Farmer", "farmer"),
+            ("Fisherman", "fisherman"),
+            ("Fletcher", "fletcher"),
+            ("Leatherworker", "leatherworker"),
+            ("Librarian", "librarian"),
+            ("Mason", "mason"),
+            ("Shepherd", "shepherd"),
+            ("Toolsmith", "toolsmith"),
+            ("Weaponsmith", "weaponsmith"),
+            ("Beehive", "beehive"),
+            ("Bee Nest", "bee_nest"),
+            ("End Portal", "end_portal"),
+            ("Home", "home"),
+            ("Lightning Rod", "lightning_rod"),
+            ("Lodestone", "lodestone"),
+            ("Meeting", "meeting"),
+            ("Nether Portal", "nether_portal")
+        ]
+
+        # Boolean GameRules (True/False) - Snake Case for 1.21.11+
+        self.GAMERULES = [
+            ("Advance Time", "advance_time"),
+            ("Advance Weather", "advance_weather"),
+            ("Allow Entering Nether", "allow_entering_nether_using_portals"),
+            ("Block Drops", "block_drops"),
+            ("Block Explosion Drop Decay", "block_explosion_drop_decay"),
+            ("Command Block Output", "command_block_output"),
+            ("Command Blocks Work", "command_blocks_work"),
+            ("Disable Elytra Movement Check", "elytra_movement_check"),
+            ("Disable Raids", "raids"),
+            ("Do Entity Drops", "entity_drops"),
+            ("Drowning Damage", "drowning_damage"),
+            ("Ender Pearls Vanish On Death", "ender_pearls_vanish_on_death"),
+            ("Fall Damage", "fall_damage"),
+            ("Fire Damage", "fire_damage"),
+            ("Forgive Dead Players", "forgive_dead_players"),
+            ("Freeze Damage", "freeze_damage"),
+            ("Global Sound Events", "global_sound_events"),
+            ("Immediate Respawn", "immediate_respawn"),
+            ("Keep Inventory", "keep_inventory"),
+            ("Lava Source Conversion", "lava_source_conversion"),
+            ("Limit Crafting", "limited_crafting"),
+            ("Locator Bar", "locator_bar"),
+            ("Log Admin Commands", "log_admin_commands"),
+            ("Mob Drops", "mob_drops"),
+            ("Mob Explosion Drop Decay", "mob_explosion_drop_decay"),
+            ("Mob Griefing", "mob_griefing"),
+            ("Natural Health Regeneration", "natural_health_regeneration"),
+            ("Player Movement Check", "player_movement_check"),
+            ("Projectiles Can Break Blocks", "projectiles_can_break_blocks"),
+            ("PVP", "pvp"),
+            ("Reduced Debug Info", "reduced_debug_info"),
+            ("Send Command Feedback", "send_command_feedback"),
+            ("Show Advancement Messages", "show_advancement_messages"),
+            ("Show Death Messages", "show_death_messages"),
+            ("Spawn Mobs", "spawn_mobs"),
+            ("Spawn Monsters", "spawn_monsters"),
+            ("Spawn Patrols", "spawn_patrols"),
+            ("Spawn Phantoms", "spawn_phantoms"),
+            ("Spawn Wandering Traders", "spawn_wandering_traders"),
+            ("Spawn Wardens", "spawn_wardens"),
+            ("Spawner Blocks Work", "spawner_blocks_work"),
+            ("Spectators Generate Chunks", "spectators_generate_chunks"),
+            ("Spread Vines", "spread_vines"),
+            ("TNT Explodes", "tnt_explodes"),
+            ("TNT Explosion Drop Decay", "tnt_explosion_drop_decay"),
+            ("Universal Anger", "universal_anger"),
+            ("Water Source Conversion", "water_source_conversion")
+        ]
+
+        # Integer GameRules (Numeric Inputs) - Snake Case for 1.21.11+
+        self.INTEGERGAMERULES = [
+            ("Fire Spread Radius", "fire_spread_radius_around_player"),
+            ("Max Block Modifications", "max_block_modifications"),
+            ("Max Command Forks", "max_command_forks"),
+            ("Max Command Sequence Length", "max_command_sequence_length"),
+            ("Max Entity Cramming", "max_entity_cramming"),
+            ("Max Snow Accumulation Height", "max_snow_accumulation_height"),
+            ("Players Nether Portal Creative Delay", "players_nether_portal_creative_delay"),
+            ("Players Nether Portal Default Delay", "players_nether_portal_default_delay"),
+            ("Players Sleeping Percentage", "players_sleeping_percentage"),
+            ("Random Tick Speed", "random_tick_speed"),
+            ("Respawn Radius", "respawn_radius")
+        ]
+
+        self.EFFECTS = [
+            ("Speed", "speed"), ("Slowness", "slowness"), ("Haste", "haste"),
+            ("Strength", "strength"), ("Instant Health", "instant_health"),
+            ("Instant Damage", "instant_damage"), ("Jump Boost", "jump_boost"),
+            ("Regeneration", "regeneration"), ("Resistance", "resistance"),
+            ("Fire Resistance", "fire_resistance"), ("Water Breathing", "water_breathing"),
+            ("Invisibility", "invisibility"), ("Blindness", "blindness"),
+            ("Night Vision", "night_vision"), ("Hunger", "hunger"),
+            ("Weakness", "weakness"), ("Poison", "poison"), ("Wither", "wither"),
+            ("Health Boost", "health_boost"), ("Absorption", "absorption"),
+            ("Saturation", "saturation"), ("Glowing", "glowing"),
+            ("Levitation", "levitation"), ("Luck", "luck"), ("Unluck", "unluck"),
+            ("Slow Falling", "slow_falling"), ("Conduit Power", "conduit_power"),
+            ("Dolphins Grace", "dolphins_grace"), ("Bad Omen", "bad_omen"),
+            ("Hero of the Village", "hero_of_the_village"), ("Darkness", "darkness")
+        ]
+
+
+        self.TITLEACTIONS = [("Main Title", "title"), ("Subtitle", "subtitle"), ("Action Bar", "actionbar"), ("Clear", "clear"),
+                    ("Reset", "reset")]
+
         self.ACTION_PICKERS = [
-            {'id': 'picker_effect', 'label': 'Effect', 'options': self._get_effects(), 'input_type': 'Effect'},
-            {'id': 'picker_titleaction', 'label': 'Location', 'options': self._get_titles(), 'input_type': 'TitleAction'},
+            {'id': 'picker_time', 'label': 'Time', 'options': self.TIMES, 'input_type': 'Time'},
+            {'id': 'picker_weather', 'label': 'Weather', 'options': self.WEATHERS, 'input_type': 'Weather'},
+            {'id': 'picker_difficulty', 'label': 'Difficulty', 'options': self.DIFFICULTYS, 'input_type': 'Difficulty'},
+            {'id': 'picker_gamemode', 'label': 'Game Mode', 'options': self.GAMEMODES, 'input_type': 'GameMode'},
+            {'id': 'picker_gamerule', 'label': 'Game Rule', 'options': self.GAMERULES, 'input_type': 'GameRule'},
+            {'id': 'picker_integergamerule', 'label': 'Integer Game Rule', 'options': self.INTEGERGAMERULES,
+             'input_type': 'IntegerGameRule'},
+            {'id': 'picker_locatetype', 'label': 'Locate Type', 'options': self.LOCATETYPES,
+             'input_type': 'LocateType'},
+            {'id': 'picker_structure', 'label': 'Structure', 'options': self.STRUCTURES, 'input_type': 'Structure'},
+            {'id': 'picker_biome', 'label': 'Structure', 'options': self.BIOMES, 'input_type': 'Biome'},
+            {'id': 'picker_poi', 'label': 'Point of Interest', 'options': self.POIS, 'input_type': 'Poi'},
+            {'id': 'picker_effect', 'label': 'Effect', 'options': self.EFFECTS, 'input_type': 'Effect'},
+            {'id': 'picker_titleaction', 'label': 'Location', 'options': self.TITLEACTIONS,
+             'input_type': 'TitleAction'},
             {'id': 'picker_metric', 'label': 'Metric', 'options': self.METRICS, 'input_type': 'Metric'},
             {'id': 'picker_qheading', 'label': 'Local Q-Heading', 'options': self.QHEADINGS, 'input_type': 'QHeading'},
             {'id': 'picker_axis', 'label': 'Axis', 'options': self.AXES, 'input_type': 'Axis'},
-            {'id': 'picker_qcompass', 'label': 'Global Q-Compass Direction', 'options': self.QCOMPASS, 'input_type': 'QCompass'},
+            {'id': 'picker_qcompass', 'label': 'Global Q-Compass Direction', 'options': self.QCOMPASS,
+             'input_type': 'QCompass'},
         ]
 
-        # --- Materials Logic ---
+       # --- Materials Logic ---
         self.WOOD_TYPES = ["OAK", "SPRUCE", "BIRCH", "JUNGLE", "ACACIA", "DARK_OAK", "MANGROVE", "CHERRY", "PALE_OAK", "BAMBOO", "CRIMSON", "WARPED"]
         self.COLORS_LIST = ["WHITE", "ORANGE", "MAGENTA", "LIGHT_BLUE", "YELLOW", "LIME", "PINK", "GRAY", "LIGHT_GRAY", "CYAN", "PURPLE", "BLUE", "BROWN", "GREEN", "RED", "BLACK"]
 
@@ -221,11 +448,6 @@ class RegistryBuilder:
     def _normalize_name(self, name: str) -> str:
         return name.replace('_', ' ').title()
 
-    def _get_effects(self):
-        return [("Speed", "speed"), ("Slowness", "slowness"), ("Haste", "haste"), ("Strength", "strength"), ("Jump Boost", "jump_boost"), ("Regeneration", "regeneration"), ("Resistance", "resistance"), ("Fire Resistance", "fire_resistance"), ("Water Breathing", "water_breathing"), ("Invisibility", "invisibility"), ("Night Vision", "night_vision")]
-
-    def _get_titles(self):
-        return [("Main Title", "title"), ("Subtitle", "subtitle"), ("Action Bar", "actionbar"), ("Clear", "clear"), ("Reset", "reset")]
 
     def build_all(self):
         """Executes the complete build pipeline."""
