@@ -9,10 +9,10 @@ from blockapily import BlocklyGenerator
 
 # Import Action Classes
 try:
-    # from mcshell.serveractions import ServerActions
+    from mcshell.serveractions import ServerActions
     # from mcshell.pyncraftcactions import PyncraftActions
     from mcshell.playeractions import PlayerActions
-    # from mcshell.qturtleactions import QTurtleActions
+    from mcshell.qturtleactions import QTurtleActions
     # from mcshell.mcactions import (
     #     TurtleShapes, LSystemShapes, DigitalGeometry,
     #     WorldActions, PlayerActions, QTurtleActions
@@ -72,11 +72,14 @@ class RegistryBuilder:
                     'Entity': 'Entity', 'Effect': "Effect"}
 
         self.SHADOW_MAP = dict(
+            int = '<shadow type="math_number"><field name="NUM">1</field></shadow>',
+            float = '<shadow type="math_number"><field name="NUM">1.0</field></shadow>',
             math_number = '<shadow type="math_number"><field name="NUM">1</field></shadow>',
             text = '<shadow type="text"><field name="TEXT"></field></shadow>',
             Vec3='<shadow type="minecraft_vector_3d"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow>',
-            Block='<shadow type="minecraft_picker_world"><field name="MATERIAL_ID">STONE</field></shadow>',
-            Entity='<shadow type="minecraft_entity_picker_passive_mobs"><field name="ENTITY_ID">PIG</field></shadow>',
+            Block='<shadow type="mc_block_picker_world"><field name="MATERIAL_ID">STONE</field></shadow>',
+            Item='<shadow type="mc_item_picker_world"><field name="MATERIAL_ID">STONE</field></shadow>',
+            Entity='<shadow type="mc_entity_picker_passive_mobs"><field name="ENTITY_ID">PIG</field></shadow>',
             Matrix3='<shadow type="minecraft_matrix_3d_euler"></shadow>',
             Metric='<shadow type="picker_metric"><field name="VALUE">euclidean</field></shadow>',
             QHeading ='<shadow type="picker_qheading"><field name="VALUE">forward</field></shadow>',
@@ -85,7 +88,7 @@ class RegistryBuilder:
             Time='<shadow type="picker_time"><field name="VALUE">day</field></shadow>',
             Weather='<shadow type="picker_weather"><field name="VALUE">clear</field></shadow>',
             Difficulty='<shadow type="picker_difficulty"><field name="VALUE">normal</field></shadow>',
-            Gamemode='<shadow type="picker_gamemode"><field name="VALUE">creative</field></shadow>',
+            GameMode='<shadow type="picker_gamemode"><field name="VALUE">creative</field></shadow>',
             GameRule='<shadow type="picker_gamerule"><field name="VALUE">doDaylightCycle</field></shadow>',
             IntegerGameRule='<shadow type="picker_integergamerule"><field name="VALUE">respawn_radius</field></shadow>',
             LocateType='<shadow type="picker_locatetype"><field name="VALUE">structure</field></shadow>',
@@ -100,7 +103,7 @@ class RegistryBuilder:
         self.ACTION_CLASSES = []
         if HAS_ALL_ACTIONS:
             self.ACTION_CLASSES.extend([
-                # (ServerActions, "ServerActions", self.COLORS["Server"]),
+                (ServerActions, "ServerActions", self.COLORS["Server"]),
                 # (PyncraftActions, "PyncraftActions", "#252E28"),
                 (PlayerActions, "PlayerActions", self.COLORS["Player"]),
                 # (TurtleShapes, "TurtleShapes", self.COLORS["Turtle"]),
@@ -108,7 +111,7 @@ class RegistryBuilder:
                 # (DigitalGeometry, "DigitalGeometry", self.COLORS["Geometry"]),
                 # (WorldActions, "WorldActions", self.COLORS["LSystem"]),
                 # (PlayerActions, "PlayerActions", self.COLORS["Player"]),
-                # (QTurtleActions, "QTurtleActions", self.COLORS["Turtle"]),
+                (QTurtleActions, "QTurtleActions", self.COLORS["Turtle"]),
                 # (EventActions, "EventActions", self.COLORS["Events"])
             ])
 
