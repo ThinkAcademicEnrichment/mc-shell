@@ -93,6 +93,7 @@ class RegistryBuilder:
             Biome='<shadow type="picker_biome"><field name="VALUE">badlands</field></shadow>',
             Poi='<shadow type="picker_poi"><field name="VALUE">armorer</field></shadow>',
             Effect='<shadow type="picker_effect"><field name="VALUE">speed</field></shadow>',
+            TitleAction='<shadow type="picker_titleaction"><field name="VALUE">reset</field></shadow>',
         )
 
 
