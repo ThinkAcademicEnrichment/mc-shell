@@ -58,28 +58,28 @@ class ServerActions(MCActionsBase):
 
     @mced_block(
         label="Set Gamemode to [gamemode] for [target]",
-        gamemode={'label': 'Gamemode', 'shadow': '<shadow type="text"><field name="TEXT">creative</field></shadow>'},
+        gamemode={'label': 'Game Mode'},
         target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'}
     )
-    def server_gamemode_set(self, gamemode: str, target: str = "SELF"):
+    def server_gamemode_set(self, gamemode: 'GameMode', target: str = "SELF"):
         """Changes a player's gamemode."""
         target_name = self.mcplayer.name if target.upper() == "SELF" else target
         self._run_command(f"gamemode {gamemode} {target_name}")
 
     @mced_block(
         label="Set Gamerule [rule] to [value]",
-        rule={'label': 'GameRule', 'shadow': 'text'},
+        rule={'label': 'Game Rule'},
         value={'label': 'Value', 'shadow': 'text'}
     )
-    def server_gamerule_set(self, rule: str, value: Union[bool, int, str]):
+    def server_gamerule_set(self, rule: 'GameRule', value: Union[bool, int, str]):
         """Modifies a server game rule."""
         self._run_command(f"gamerule {rule} {value}")
 
     @mced_block(
         label="Locate Structure [structure]",
-        structure={'label': 'Structure', 'shadow': '<shadow type="text"><field name="TEXT">village</field></shadow>'}
+        structure={'label': 'Structure'}
     )
-    def server_locate_structure(self, structure: str) -> Vec3:
+    def server_locate_structure(self, structure: 'Structure') -> Vec3:
         """Locates a structure and returns its coordinates."""
         response = self._run_command(f"locate structure {structure}")
         if response:
@@ -131,7 +131,7 @@ class ServerActions(MCActionsBase):
 
     @mced_block(
         label="Summon [entity] at [pos]",
-        entity={'label': 'Entity', 'shadow': 'minecraft_entity_picker_passive_mobs'},
+        entity={'label': 'Entity'},
         pos={'label': 'Position'}
     )
     def server_summon(self, entity: 'Entity', pos: Vec3):
@@ -150,7 +150,7 @@ class ServerActions(MCActionsBase):
 
     @mced_block(
         label="Apply [effect] to [target] for [seconds]s (Level [amplifier])",
-        effect={'label': 'Effect', 'shadow': 'picker_effect'},
+        effect={'label': 'Effect'},
         target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'},
         seconds={'label': 'Duration', 'shadow': 'math_number'},
         amplifier={'label': 'Level', 'shadow': 'math_number'}
@@ -163,7 +163,7 @@ class ServerActions(MCActionsBase):
     @mced_block(
         label="Show Title [text] as [action] for [target]",
         text={'label': 'Message', 'shadow': 'text'},
-        action={'label': 'Display Location', 'shadow': 'picker_titleaction'},
+        action={'label': 'Title Action'},
         target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">@a</field></shadow>'}
     )
     def server_show_title(self, text: str, action: 'TitleAction', target: str = "@a"):
