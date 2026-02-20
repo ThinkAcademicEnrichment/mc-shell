@@ -13,7 +13,6 @@ class EventActions(MCActionsBase):
 
     @mced_block(
         label="Clear All Events",
-        tooltip="Clears the queue of old chat, hit, and projectile events. Useful to call before waiting."
     )
     def clear_events(self):
         """
@@ -24,8 +23,6 @@ class EventActions(MCActionsBase):
     @mced_block(
         label="Wait for Sword Strike from [player]",
         player_name={'label': 'Player', 'shadow': 'text'},
-        output_type="3DVector",
-        tooltip="Pauses execution until the specified player hits a block with a sword. Returns the block's position."
     )
     def wait_for_sword_strike_by_name(self, player_name: str = "SELF") -> Vec3:
         """
@@ -38,8 +35,6 @@ class EventActions(MCActionsBase):
     @mced_block(
         label="Wait for Chat from [player]",
         player_name={'label': 'Player', 'shadow': 'text'},
-        output_type="String",
-        tooltip="Pauses execution until the specified player types a message in chat. Returns the message text."
     )
     def wait_for_chat_by_name(self, player_name: str = "SELF") -> str:
         """
@@ -52,8 +47,6 @@ class EventActions(MCActionsBase):
     @mced_block(
         label="Wait for Arrow Hit from [player]",
         player_name={'label': 'Player', 'shadow': 'text'},
-        output_type="3DVector",
-        tooltip="Pauses execution until an arrow (or projectile) hits a block. Returns the hit position."
     )
     def wait_for_projectile_by_name(self, player_name: str = "SELF") -> Vec3:
         """

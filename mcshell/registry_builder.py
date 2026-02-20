@@ -10,15 +10,17 @@ from blockapily import BlocklyGenerator
 # Import Action Classes
 try:
     from mcshell.serveractions import ServerActions
-    HAS_SERVER_ACTIONS = True
-except ImportError:
-    HAS_SERVER_ACTIONS = False
-
-try:
-    from mcshell.pyncactions import PyncraftActions
-    HAS_PYNCRAFT_ACTIONS = True
-except ImportError:
-    HAS_PYNCRAFT_ACTIONS = False
+    from mcshell.pyncraftcactions import PyncraftActions
+    from mcshell.playeractions import PlayerActions
+    # from mcshell.mcactions import (
+    #     TurtleShapes, LSystemShapes, DigitalGeometry,
+    #     WorldActions, PlayerActions, QTurtleActions
+    # )
+    from mcshell.eventactions import EventActions
+    HAS_ALL_ACTIONS = True
+except ImportError as e:
+    print(f"Warning: Some action classes could not be imported: {e}")
+    HAS_ALL_ACTIONS = False
 
 class RegistryBuilder:
     """
@@ -47,10 +49,15 @@ class RegistryBuilder:
             "Block": 160,
             "Item": 50,
             "Entity": "#5b5ba5",
-            "Picker": 230
+            "Picker": 230,
+            "Geometry": "#364EE7",
+            "Turtle": "#F3BA2B",
+            "LSystem": "#75E538",
+            "Player": "#3ECDE0",
+            "Events": "#FCBA03"
         }
 
-        # --- Type and Shadow Mapping for Action Classes ---
+        # --- Type and Shadow Mapping ---
         self.TYPE_MAP = {
             'str': 'String',
             'int': 'Number',
@@ -62,7 +69,13 @@ class RegistryBuilder:
             'TitleAction': 'TitleAction',
             'Block': 'Block',
             'Item': 'Item',
-            'Entity': 'Entity'
+            'Entity': 'Entity',
+            'DigitalSet': 'DigitalSet',
+            'Metric': 'Metric',
+            'QDirection': 'QDirection',
+            'Axis': 'Axis',
+            'QCompass': 'QCompass',
+            'Compass': 'Compass'
         }
 
         self.SHADOW_MAP = {
@@ -70,67 +83,100 @@ class RegistryBuilder:
             'text': '<shadow type="text"><field name="TEXT"></field></shadow>',
             'minecraft_item_picker': '<shadow type="mc_item_picker_world"></shadow>',
             'minecraft_block_picker': '<shadow type="mc_block_picker_world"></shadow>',
-            # Compound Shadow: A Log block that internally has a Wood Type picker shadow
             'minecraft_log_picker': '<shadow type="mc_block_log"><value name="VARIANT"><shadow type="picker_wood_types"></shadow></value></shadow>',
             'minecraft_entity_picker_passive_mobs': '<shadow type="mc_entity_picker_passive_mobs"></shadow>',
             'picker_effect': '<shadow type="picker_effect"><field name="VALUE">speed</field></shadow>',
-            'picker_titleaction': '<shadow type="picker_titleaction"><field name="VALUE">title</field></shadow>'
+            'picker_titleaction': '<shadow type="picker_titleaction"><field name="VALUE">title</field></shadow>',
+            'picker_metric': '<shadow type="picker_metric"></shadow>',
+            'picker_axis': '<shadow type="picker_axis"></shadow>',
+            'picker_qcompass': '<shadow type="picker_qcompass"></shadow>',
+            'picker_qheading': '<shadow type="picker_qheading"></shadow>',
+            # 'picker_compass': '<shadow type="picker_compass"></shadow>'
         }
 
         self.ACTION_CLASSES = []
-        if HAS_SERVER_ACTIONS:
-            self.ACTION_CLASSES.append((ServerActions, "ServerActions", "#252E28"))
-        if HAS_PYNCRAFT_ACTIONS:
-            self.ACTION_CLASSES.append((PyncraftActions, "PyncraftActions", "#335522"))
+        if HAS_ALL_ACTIONS:
+            self.ACTION_CLASSES.extend([
+                (ServerActions, "ServerActions", self.COLORS["Turtle"]),
+                (PyncraftActions, "PyncraftActions", "#252E28"),
+                (PlayerActions, "PlayerActions", self.COLORS["Player"]),
+                # (TurtleShapes, "TurtleShapes", self.COLORS["Turtle"]),
+                # (LSystemShapes, "LSystemShapes", self.COLORS["LSystem"]),
+                # (DigitalGeometry, "DigitalGeometry", self.COLORS["Geometry"]),
+                # (WorldActions, "WorldActions", self.COLORS["LSystem"]),
+                # (PlayerActions, "PlayerActions", self.COLORS["Player"]),
+                # (QTurtleActions, "QTurtleActions", self.COLORS["Turtle"]),
+                (EventActions, "EventActions", self.COLORS["Events"])
+            ])
 
-        # --- Action Specific Pickers ---
-        self.EFFECTS = [
-            ("Speed", "speed"), ("Slowness", "slowness"), ("Haste", "haste"),
-            ("Strength", "strength"), ("Instant Health", "instant_health"),
-            ("Instant Damage", "instant_damage"), ("Jump Boost", "jump_boost"),
-            ("Regeneration", "regeneration"), ("Resistance", "resistance"),
-            ("Fire Resistance", "fire_resistance"), ("Water Breathing", "water_breathing"),
-            ("Invisibility", "invisibility"), ("Blindness", "blindness"),
-            ("Night Vision", "night_vision"), ("Hunger", "hunger"),
-            ("Weakness", "weakness"), ("Poison", "poison"), ("Wither", "wither"),
-            ("Health Boost", "health_boost"), ("Absorption", "absorption"),
-            ("Saturation", "saturation"), ("Glowing", "glowing"),
-            ("Levitation", "levitation"), ("Luck", "luck"), ("Unluck", "unluck"),
-            ("Slow Falling", "slow_falling"), ("Conduit Power", "conduit_power"),
-            ("Dolphins Grace", "dolphins_grace"), ("Bad Omen", "bad_omen"),
-            ("Hero of the Village", "hero_of_the_village"), ("Darkness", "darkness")
+        # --- Utility Picker Options ---
+        self.METRICS = [("Manhattan (L1)", "l1"), ("Euclidean (L2)", "l2"), ("Chebyshev (Linf)", "linf")]
+        self.AXES = [("Forward", "F"), ("Right", "R"), ("Up", "U")]
+
+        self.COMPASS = [("North", "NORTH"), ("South", "SOUTH"), ("East", "EAST"), ("West", "WEST")]
+
+        # self.QDIRECTIONS = [("Forward", "F"), ("Backward", "B"), ("Left", "L"), ("Right", "R"), ("Up", "U"),
+        #                     ("Down", "D")]
+        # self.QCOMPASS = [("North", "N"), ("South", "S"), ("East", "E"), ("West", "W"), ("Up", "U"), ("Down", "D")]
+
+        self.QHEADINGS = [
+            # --- Pure Local Directions (6) ---
+            ("Forward", "F"), ("Back", "B"),
+            ("Right", "R"), ("Left", "L"),
+            ("Up", "U"), ("Down", "D"),
+
+            # --- Local Planar Diagonals (4) ---
+            ("Forward-Right", "FR"), ("Forward-Left", "FL"),
+            ("Back-Right", "BR"), ("Back-Left", "BL"),
+
+            # --- Local Vertical Diagonals (8) ---
+            ("Forward-Up", "FU"), ("Forward-Down", "FD"),
+            ("Back-Up", "BU"), ("Back-Down", "BD"),
+            ("Right-Up", "RU"), ("Right-Down", "RD"),
+            ("Left-Up", "LU"), ("Left-Down", "LD"),
+
+            # --- Local 3D Diagonals (Corners) (8) ---
+            ("Forward-Right-Up", "FRU"), ("Forward-Right-Down", "FRD"),
+            ("Forward-Left-Up", "FLU"), ("Forward-Left-Down", "FLD"),
+            ("Back-Right-Up", "BRU"), ("Back-Right-Down", "BRD"),
+            ("Back-Left-Up", "BLU"), ("Back-Left-Down", "BLD")
         ]
 
-        self.TITLE_ACTIONS = [
-            ("Main Title", "title"),
-            ("Subtitle", "subtitle"),
-            ("Action Bar", "actionbar"),
-            ("Clear", "clear"),
-            ("Reset", "reset")
+        self.QCOMPASS = [
+            # --- Pure Cardinal Directions (6) ---
+            ("North (-Z)", "N"), ("South (+Z)", "S"),
+            ("East (+X)", "E"), ("West (-X)", "W"),
+            ("Up (+Y)", "U"), ("Down (-Y)", "D"),
+
+            # --- Horizontal Diagonals (4) ---
+            ("North-East", "NE"), ("North-West", "NW"),
+            ("South-East", "SE"), ("South-West", "SW"),
+
+            # --- Vertical Diagonals (Planar) (8) ---
+            ("North-Up", "NU"), ("North-Down", "ND"),
+            ("South-Up", "SU"), ("South-Down", "SD"),
+            ("East-Up", "EU"), ("East-Down", "ED"),
+            ("West-Up", "WU"), ("West-Down", "WD"),
+
+            # --- Full 3D Diagonals (Corners) (8) ---
+            ("North-East-Up", "NEU"), ("North-East-Down", "NED"),
+            ("North-West-Up", "NWU"), ("North-West-Down", "NWD"),
+            ("South-East-Up", "SEU"), ("South-East-Down", "SED"),
+            ("South-West-Up", "SWU"), ("South-West-Down", "SWD")
         ]
 
         self.ACTION_PICKERS = [
-            {
-                'id': 'picker_effect',
-                'label': 'Effect',
-                'options': self.EFFECTS,
-                'input_type': 'Effect'
-            },
-            {
-                'id': 'picker_titleaction',
-                'label': 'Display Location',
-                'options': self.TITLE_ACTIONS,
-                'input_type': 'TitleAction'
-            }
+            {'id': 'picker_effect', 'label': 'Effect', 'options': self._get_effects(), 'input_type': 'Effect'},
+            {'id': 'picker_titleaction', 'label': 'Location', 'options': self._get_titles(), 'input_type': 'TitleAction'},
+            {'id': 'picker_metric', 'label': 'Metric', 'options': self.METRICS, 'input_type': 'Metric'},
+            {'id': 'picker_qheading', 'label': 'Local Q-Heading', 'options': self.QHEADINGS, 'input_type': 'QHeading'},
+            {'id': 'picker_axis', 'label': 'Axis', 'options': self.AXES, 'input_type': 'Axis'},
+            {'id': 'picker_qcompass', 'label': 'Global Q-Compass Direction', 'options': self.QCOMPASS, 'input_type': 'QCompass'},
         ]
 
-        # --- Variant and Group Definitions ---
-        self.WOOD_TYPES = ["OAK", "SPRUCE", "BIRCH", "JUNGLE", "ACACIA", "DARK_OAK",
-                          "MANGROVE", "CHERRY", "PALE_OAK", "BAMBOO", "CRIMSON", "WARPED"]
-
-        self.COLORS_LIST = ["WHITE", "ORANGE", "MAGENTA", "LIGHT_BLUE", "YELLOW", "LIME",
-                           "PINK", "GRAY", "LIGHT_GRAY", "CYAN", "PURPLE", "BLUE",
-                           "BROWN", "GREEN", "RED", "BLACK"]
+        # --- Materials Logic ---
+        self.WOOD_TYPES = ["OAK", "SPRUCE", "BIRCH", "JUNGLE", "ACACIA", "DARK_OAK", "MANGROVE", "CHERRY", "PALE_OAK", "BAMBOO", "CRIMSON", "WARPED"]
+        self.COLORS_LIST = ["WHITE", "ORANGE", "MAGENTA", "LIGHT_BLUE", "YELLOW", "LIME", "PINK", "GRAY", "LIGHT_GRAY", "CYAN", "PURPLE", "BLUE", "BROWN", "GREEN", "RED", "BLACK"]
 
         self.VARIANT_MAP = {
             'WOOD': {
@@ -149,9 +195,10 @@ class RegistryBuilder:
             }
         }
 
+        # Complete Thematic Groupings for Blocks and Items
         self.MATERIAL_PICKER_GROUPS = {
             "world": ["AIR", "STONE", "GRANITE", "DIORITE", "ANDESITE", "DEEPSLATE", "CALCITE", "TUFF", "DIRT", "COARSE_DIRT", "ROOTED_DIRT", "GRASS_BLOCK", "PODZOL", "MYCELIUM", "DIRT_PATH", "SAND", "RED_SAND", "GRAVEL", "CLAY", "ICE", "PACKED_ICE", "BLUE_ICE", "SNOW", "SNOW_BLOCK", "WATER", "LAVA", "BEDROCK", "OBSIDIAN", "CRYING_OBSIDIAN", "MAGMA_BLOCK"],
-            "ores": ["COAL_ORE", "DEEPSLATE_COAL_ORE", "IRON_ORE", "DEEPSLATE_IRON_ORE", "COPPER_ORE", "DEEPSLATE_COPPER_ORE", "GOLD_ORE", "DEEPSLATE_GOLD_ORE", "REDSTONE_ORE", "DEEPSLATE_REDSTONE_ORE", "EMERALD_ORE", "DEEPSLATE_REDSTONE_ORE", "EMERALD_ORE", "DEEPSLATE_EMERALD_ORE", "LAPIS_ORE", "DEEPSLATE_LAPIS_ORE", "DIAMOND_ORE", "DEEPSLATE_DIAMOND_ORE", "NETHER_GOLD_ORE", "NETHER_QUARTZ_ORE", "ANCIENT_DEBRIS"],
+            "ores": ["COAL_ORE", "DEEPSLATE_COAL_ORE", "IRON_ORE", "DEEPSLATE_IRON_ORE", "COPPER_ORE", "DEEPSLATE_COPPER_ORE", "GOLD_ORE", "DEEPSLATE_GOLD_ORE", "REDSTONE_ORE", "DEEPSLATE_REDSTONE_ORE", "EMERALD_ORE", "DEEPSLATE_EMERALD_ORE", "LAPIS_ORE", "DEEPSLATE_LAPIS_ORE", "DIAMOND_ORE", "DEEPSLATE_DIAMOND_ORE", "NETHER_GOLD_ORE", "NETHER_QUARTZ_ORE", "ANCIENT_DEBRIS"],
             "stone_bricks": ["BRICKS", "STONE_BRICKS", "MUD_BRICKS", "DEEPSLATE_BRICKS", "DEEPSLATE_TILES", "NETHER_BRICKS", "RED_NETHER_BRICKS", "POLISHED_BLACKSTONE_BRICKS", "END_STONE_BRICKS", "QUARTZ_BRICKS", "CHISELED_STONE_BRICKS", "CRACKED_STONE_BRICKS", "MOSSY_STONE_BRICKS", "CHISELED_NETHER_BRICKS", "CRACKED_NETHER_BRICKS", "CHISELED_POLISHED_BLACKSTONE", "CRACKED_POLISHED_BLACKSTONE_BRICKS", "CHISELED_DEEPSLATE", "CRACKED_DEEPSLATE_BRICKS", "CRACKED_DEEPSLATE_TILES", "CHISELED_TUFF_BRICKS"],
             "glass": ["GLASS", "GLASS_PANE", "TINTED_GLASS"],
             "redstone_components": ["REDSTONE_WIRE", "REDSTONE_BLOCK", "REDSTONE_TORCH", "REPEATER", "COMPARATOR", "PISTON", "STICKY_PISTON", "SLIME_BLOCK", "HONEY_BLOCK", "OBSERVER", "DROPPER", "DISPENSER", "HOPPER", "LECTERN", "LEVER", "DAYLIGHT_DETECTOR", "TRIPWIRE_HOOK", "TARGET", "NOTE_BLOCK", "RAIL", "POWERED_RAIL", "DETECTOR_RAIL", "ACTIVATOR_RAIL", "REDSTONE_LAMP"],
@@ -174,6 +221,12 @@ class RegistryBuilder:
     def _normalize_name(self, name: str) -> str:
         return name.replace('_', ' ').title()
 
+    def _get_effects(self):
+        return [("Speed", "speed"), ("Slowness", "slowness"), ("Haste", "haste"), ("Strength", "strength"), ("Jump Boost", "jump_boost"), ("Regeneration", "regeneration"), ("Resistance", "resistance"), ("Fire Resistance", "fire_resistance"), ("Water Breathing", "water_breathing"), ("Invisibility", "invisibility"), ("Night Vision", "night_vision")]
+
+    def _get_titles(self):
+        return [("Main Title", "title"), ("Subtitle", "subtitle"), ("Action Bar", "actionbar"), ("Clear", "clear"), ("Reset", "reset")]
+
     def build_all(self):
         """Executes the complete build pipeline."""
         self.build_blocks()
@@ -184,219 +237,134 @@ class RegistryBuilder:
 
     def _generate_base_pickers(self) -> Dict[str, str]:
         """Generates the shared Wood and Color pickers used as shadows."""
-        js_parts = []
-        py_parts = []
-        for key, info in self.VARIANT_MAP.items():
-            res = BlocklyGenerator.generate_picker(
-                block_type=info['id'],
-                label=info['label'],
-                options=info['options'],
-                output_type=info['input_type'],
-                colour=self.COLORS["Picker"]
-            )
-            js_parts.append(res['js'])
-            py_parts.append(res['py'])
-        return {"js": "\n".join(js_parts), "py": "\n".join(py_parts)}
+        js, py = [], []
+        for info in self.VARIANT_MAP.values():
+            res = BlocklyGenerator.generate_picker(info['id'], info['label'], info['options'], info['input_type'], self.COLORS["Picker"])
+            js.append(res['js']); py.append(res['py'])
+        return {"js": "\n".join(js), "py": "\n".join(py)}
 
     def build_blocks(self):
-        """Processes materials flagged as 'is_block' and generates the Blocks category."""
-        js_defs, py_gens, xml_snippets = [], [], []
-
+        """Processes blocks and organizes them into thematic groups."""
+        js, py, xml = [], [], []
         base = self._generate_base_pickers()
-        js_defs.append(base['js']); py_gens.append(base['py'])
+        js.append(base['js']); py.append(base['py'])
 
         blocks = [k for k, v in self.materials_data.items() if v.get('is_block')]
         templates, consumed = self._classify_variants(blocks)
 
-        # 1. Parameterized Templates (Wood Planks, Colored Wool)
-        for template, info in templates.items():
-            block_type = f"mc_block_{template.lower().replace('{}_', '').replace(' ', '_')}"
-            res = BlocklyGenerator.generate_parameterized_block(
-                block_type=block_type, label=info["label"], input_name="VARIANT",
-                input_type=info["input_type"], output_type="Block", colour=self.COLORS["Block"],
-                template=template, shadow_block=info["shadow"]
-            )
-            js_defs.append(res['js']); py_gens.append(res['py']); xml_snippets.append(res['xml'])
+        # 1. Parameterized Templates (Wood, Color variants)
+        for t, info in templates.items():
+            b_type = f"mc_block_{t.lower().replace('{}_', '').replace(' ', '_')}"
+            res = BlocklyGenerator.generate_parameterized_block(b_type, info["label"], "VARIANT", info["input_type"], "Block", self.COLORS["Block"], t, info["shadow"])
+            js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
 
-        # 2. Material Picker Groups (Ores, Glass, etc)
+        # 2. Material Picker Groups (Ores, Glass, Nature, etc.)
         for group_name, members in self.MATERIAL_PICKER_GROUPS.items():
             valid_members = [m for m in members if m in blocks]
             if not valid_members: continue
 
-            block_type = f"mc_block_picker_{group_name.lower()}"
-            res = BlocklyGenerator.generate_picker(
-                block_type=block_type, label=self._normalize_name(group_name),
-                options=[(self._normalize_name(m), m) for m in valid_members],
-                output_type="Block", colour=self.COLORS["Picker"]
-            )
-            js_defs.append(res['js']); py_gens.append(res['py']); xml_snippets.append(res['xml'])
-            consumed.update(valid_members) # Crucial: Removes them from "Other Blocks"
+            b_type = f"mc_block_picker_{group_name.lower()}"
+            res = BlocklyGenerator.generate_picker(b_type, self._normalize_name(group_name), [(self._normalize_name(m), m) for m in valid_members], "Block", self.COLORS["Picker"])
+            js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
+            consumed.update(valid_members)
 
-        # 3. Everything Else (General)
-        remaining = sorted(list(set(blocks) - consumed))
-        if remaining:
-            picker_res = BlocklyGenerator.generate_picker(
-                block_type="mc_block_picker_general", label="Other Blocks",
-                options=[(self._normalize_name(m), m) for m in remaining],
-                output_type="Block", colour=self.COLORS["Picker"]
-            )
-            js_defs.append(picker_res['js']); py_gens.append(picker_res['py']); xml_snippets.append(picker_res['xml'])
+        # 3. Remaining General Blocks
+        rem = sorted(list(set(blocks) - consumed))
+        if rem:
+            res = BlocklyGenerator.generate_picker("mc_block_picker_general", "Other Blocks", [(self._normalize_name(m), m) for m in rem], "Block", self.COLORS["Picker"])
+            js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
 
-        self._write_output("blocks", "Blocks", js_defs, py_gens)
-        BlocklyGenerator.update_toolbox(f'<category name="Blocks" colour="{self.COLORS["Block"]}">{"".join(xml_snippets)}</category>', self.toolbox_path)
+        self._write_output("blocks", "Blocks", js, py)
+        BlocklyGenerator.update_toolbox(f'<category name="Blocks" colour="{self.COLORS["Block"]}">{"".join(xml)}</category>', self.toolbox_path)
 
     def build_items(self):
-        """Processes materials flagged as 'is_item' and generates the Items category."""
-        js_defs, py_gens, xml_snippets = [], [], []
-
-        base = self._generate_base_pickers()
-        js_defs.append(base['js']); py_gens.append(base['py'])
-
+        """Processes items and organizes them into thematic groups."""
+        js, py, xml = [], [], []
         items = [k for k, v in self.materials_data.items() if v.get('is_item')]
         templates, consumed = self._classify_variants(items)
 
-        # 1. Parameterized Templates (Wood Doors, Colored Beds)
-        for template, info in templates.items():
-            block_type = f"mc_item_{template.lower().replace('{}_', '').replace(' ', '_')}"
-            res = BlocklyGenerator.generate_parameterized_block(
-                block_type=block_type, label=info["label"], input_name="VARIANT",
-                input_type=info["input_type"], output_type="Item", colour=self.COLORS["Item"],
-                template=template, shadow_block=info["shadow"]
-            )
-            js_defs.append(res['js']); py_gens.append(res['py']); xml_snippets.append(res['xml'])
+        # 1. Parameterized Templates
+        for t, info in templates.items():
+            b_type = f"mc_item_{t.lower().replace('{}_', '').replace(' ', '_')}"
+            res = BlocklyGenerator.generate_parameterized_block(b_type, info["label"], "VARIANT", info["input_type"], "Item", self.COLORS["Item"], t, info["shadow"])
+            js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
 
-        # 2. Material Picker Groups (Ores, Nature, etc)
+        # 2. Material Picker Groups for Items
         for group_name, members in self.MATERIAL_PICKER_GROUPS.items():
             valid_members = [m for m in members if m in items]
             if not valid_members: continue
 
-            block_type = f"mc_item_picker_{group_name.lower()}"
-            res = BlocklyGenerator.generate_picker(
-                block_type=block_type, label=self._normalize_name(group_name),
-                options=[(self._normalize_name(m), m) for m in valid_members],
-                output_type="Item", colour=self.COLORS["Picker"]
-            )
-            js_defs.append(res['js']); py_gens.append(res['py']); xml_snippets.append(res['xml'])
+            b_type = f"mc_item_picker_{group_name.lower()}"
+            res = BlocklyGenerator.generate_picker(b_type, self._normalize_name(group_name), [(self._normalize_name(m), m) for m in valid_members], "Item", self.COLORS["Picker"])
+            js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
             consumed.update(valid_members)
 
-        # 3. Everything Else (General)
-        remaining = sorted(list(set(items) - consumed))
-        if remaining:
-            picker_res = BlocklyGenerator.generate_picker(
-                block_type="mc_item_picker_general", label="Other Items",
-                options=[(self._normalize_name(m), m) for m in remaining],
-                output_type="Item", colour=self.COLORS["Picker"]
-            )
-            js_defs.append(picker_res['js']); py_gens.append(picker_res['py']); xml_snippets.append(picker_res['xml'])
+        # 3. Remaining General Items
+        rem = sorted(list(set(items) - consumed))
+        if rem:
+            res = BlocklyGenerator.generate_picker("mc_item_picker_general", "Other Items", [(self._normalize_name(m), m) for m in rem], "Item", self.COLORS["Picker"])
+            js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
 
-        self._write_output("items", "Items", js_defs, py_gens)
-        BlocklyGenerator.update_toolbox(f'<category name="Items" colour="{self.COLORS["Item"]}">{"".join(xml_snippets)}</category>', self.toolbox_path)
+        self._write_output("items", "Items", js, py)
+        BlocklyGenerator.update_toolbox(f'<category name="Items" colour="{self.COLORS["Item"]}">{"".join(xml)}</category>', self.toolbox_path)
 
     def build_entities(self):
-        """Processes entity data and generates the Entities category."""
-        js_defs, py_gens, xml_snippets = [], [], []
-        for group_name, members in self.ENTITY_GROUPS.items():
-            options = [(self._normalize_name(e), e) for e in sorted(members) if e in self.entity_data]
-            if not options: continue
-            block_type = f"mc_entity_picker_{group_name.lower()}"
-            res = BlocklyGenerator.generate_picker(block_type=block_type, label=self._normalize_name(group_name),
-                options=options, output_type="Entity", colour=self.COLORS["Entity"])
-            js_defs.append(res['js']); py_gens.append(res['py']); xml_snippets.append(res['xml'])
-
-        self._write_output("entities", "Entities", js_defs, py_gens)
-        BlocklyGenerator.update_toolbox(f'<category name="Entities" colour="{self.COLORS["Entity"]}">{"".join(xml_snippets)}</category>', self.toolbox_path)
+        js, py, xml = [], [], []
+        for group, members in self.ENTITY_GROUPS.items():
+            opts = [(self._normalize_name(e), e) for e in sorted(members) if e in self.entity_data]
+            if not opts: continue
+            res = BlocklyGenerator.generate_picker(f"mc_entity_picker_{group}", self._normalize_name(group), opts, "Entity", self.COLORS["Entity"])
+            js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
+        self._write_output("entities", "Entities", js, py)
+        BlocklyGenerator.update_toolbox(f'<category name="Entities" colour="{self.COLORS["Entity"]}">{"".join(xml)}</category>', self.toolbox_path)
 
     def build_actions(self):
-        """Reflects over MCActionsBase derived classes and generates their blocks."""
+        pick_js, pick_py = [], []
+        for p in self.ACTION_PICKERS:
+            res = BlocklyGenerator.generate_picker(p['id'], p['label'], p['options'], p['input_type'], self.COLORS["Picker"])
+            pick_js.append(res['js']); pick_py.append(res['py'])
 
-        # 1. Generate action-specific pickers
-        action_pickers_js = []
-        action_pickers_py = []
-        for picker_info in self.ACTION_PICKERS:
-            res = BlocklyGenerator.generate_picker(
-                block_type=picker_info['id'],
-                label=picker_info['label'],
-                options=picker_info['options'],
-                output_type=picker_info['input_type'],
-                colour=self.COLORS["Picker"]
-            )
-            action_pickers_js.append(res['js'])
-            action_pickers_py.append(res['py'])
-
-        for i, (cls, export_name, color) in enumerate(self.ACTION_CLASSES):
-            generator = BlocklyGenerator(
-                cls=cls,
-                type_map=self.TYPE_MAP,
-                shadow_map=self.SHADOW_MAP,
-                category_colour=color
-            )
-
-            blocks_js, generators_py, category_xml = generator.generate()
-
-            js_out = action_pickers_js + [blocks_js] if i == 0 else [blocks_js]
-            py_out = action_pickers_py + [generators_py] if i == 0 else [generators_py]
-
-            self._write_output(export_name, export_name, js_out, py_out)
-            BlocklyGenerator.update_toolbox(category_xml, self.toolbox_path)
+        for i, (cls, name, color) in enumerate(self.ACTION_CLASSES):
+            gen = BlocklyGenerator(cls, self.TYPE_MAP, self.SHADOW_MAP, color)
+            b_js, p_py, c_xml = gen.generate()
+            js_out = pick_js + [b_js] if i == 0 else [b_js]
+            py_out = pick_py + [p_py] if i == 0 else [p_py]
+            self._write_output(name, name, js_out, py_out)
+            BlocklyGenerator.update_toolbox(c_xml, self.toolbox_path)
 
     def build_pickers_category(self):
-        """Creates a dedicated category in the toolbox for all utility pickers."""
-        xml_snippets = []
-
-        # Add Base Variant Pickers (Wood Type, Color)
-        for info in self.VARIANT_MAP.values():
-            xml_snippets.append(f'<block type="{info["id"]}"></block>')
-
-        # Add Action Pickers (Effect, Display Location)
-        for picker_info in self.ACTION_PICKERS:
-            xml_snippets.append(f'<block type="{picker_info["id"]}"></block>')
-
-        # Add Material Group Pickers (As Blocks, since they output blocks)
+        """Creates a central category for all standalone pickers."""
+        xml = [f'<block type="{info["id"]}"></block>' for info in self.VARIANT_MAP.values()]
+        xml += [f'<block type="{p["id"]}"></block>' for p in self.ACTION_PICKERS]
+        # Add the thematic group pickers to the central Pickers category too
         for group_name in self.MATERIAL_PICKER_GROUPS.keys():
-            xml_snippets.append(f'<block type="mc_block_picker_{group_name.lower()}"></block>')
+            xml.append(f'<block type="mc_block_picker_{group_name.lower()}"></block>')
 
-        BlocklyGenerator.update_toolbox(
-            f'<category name="Pickers" colour="{self.COLORS["Picker"]}">{"".join(xml_snippets)}</category>',
-            self.toolbox_path
-        )
+        BlocklyGenerator.update_toolbox(f'<category name="Pickers" colour="{self.COLORS["Picker"]}">{"".join(xml)}</category>', self.toolbox_path)
 
-    def _classify_variants(self, material_list: List[str]) -> Tuple[Dict[str, Dict], Set[str]]:
-        """Identifies templates and consumed materials."""
-        parameterized = {}
-        consumed = set()
+    def _classify_variants(self, material_list):
+        parameterized, consumed = {}, set()
         suffixes = {}
         for mat in material_list:
             parts = mat.split('_')
             if len(parts) > 1:
-                prefix = parts[0]
-                suffix = "_".join(parts[1:])
-                if prefix in self.WOOD_TYPES:
-                    suffixes.setdefault(f"{{}}_{suffix}", {"mats": [], "type": "WOOD"}).get("mats").append(mat)
-                elif prefix in self.COLORS_LIST:
-                    suffixes.setdefault(f"{{}}_{suffix}", {"mats": [], "type": "COLOR"}).get("mats").append(mat)
-
-        for template, info in suffixes.items():
+                prefix, suffix = parts[0], "_".join(parts[1:])
+                if prefix in self.WOOD_TYPES: suffixes.setdefault(f"{{}}_{suffix}", {"mats": [], "type": "WOOD"}).get("mats").append(mat)
+                elif prefix in self.COLORS_LIST: suffixes.setdefault(f"{{}}_{suffix}", {"mats": [], "type": "COLOR"}).get("mats").append(mat)
+        for t, info in suffixes.items():
             if len(info["mats"]) > 3:
-                var_info = self.VARIANT_MAP[info["type"]]
-                parameterized[template] = {
-                    "template": template, "input_type": var_info["input_type"],
-                    "shadow": var_info["shadow"], "label": self._normalize_name(template.replace('{}_', ''))
-                }
+                var = self.VARIANT_MAP[info["type"]]
+                parameterized[t] = {"template": t, "input_type": var["input_type"], "shadow": var["shadow"], "label": self._normalize_name(t.replace('{}_', ''))}
                 consumed.update(info["mats"])
         return parameterized, consumed
 
-    def _write_output(self, file_name: str, export_name: str, js: List[str], py: List[str]):
-        """Helper to write JS and Python generator files with precise export naming."""
-        js_content = f"import {{ MCED }} from \"../lib/constants.mjs\";\n\nexport function define{export_name}Blocks(Blockly) {{\n" + "\n".join(js) + "\n}"
-        py_content = f"export function define{export_name}Generators(pythonGenerator) {{\n" + "\n".join(py) + "\n}"
-
-        (self.blocks_dir / f"{file_name}.mjs").write_text(js_content, encoding='utf-8')
-        (self.gens_dir / f"{file_name}.mjs").write_text(py_content, encoding='utf-8')
+    def _write_output(self, file_name, export_name, js, py):
+        header = 'import { MCED } from "../lib/constants.mjs";\n\n'
+        js_c = f"{header}export function define{export_name}Blocks(Blockly) {{\n" + "\n".join(js) + "\n}"
+        py_c = f"export function define{export_name}Generators(pythonGenerator) {{\n" + "\n".join(py) + "\n}"
+        (self.blocks_dir / f"{file_name}.mjs").write_text(js_c, encoding='utf-8')
+        (self.gens_dir / f"{file_name}.mjs").write_text(py_c, encoding='utf-8')
 
 if __name__ == "__main__":
-    builder = RegistryBuilder(
-        toolbox_path=MC_APP_SRC_DIR / 'toolbox.xml',
-        blocks_dir=MC_APP_SRC_DIR / 'blocks',
-        gens_dir=MC_APP_SRC_DIR / 'generators' / 'python'
-    )
+    builder = RegistryBuilder(MC_APP_SRC_DIR / 'toolbox.xml', MC_APP_SRC_DIR / 'blocks', MC_APP_SRC_DIR / 'generators' / 'python')
     builder.build_all()

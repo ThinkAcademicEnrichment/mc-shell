@@ -41,6 +41,15 @@ class PyncraftActions(MCActionsBase):
         pos = self._get_player_by_name(player_name).pc.player.getPos()
         return Vec3(pos.x, pos.y, pos.z)
 
+    @mced_block(
+        label="Get Tile Position for [player]",
+        player_name={'label': 'Player', 'shadow': 'text'}
+    )
+    def get_tile_position_by_name(self, player_name: str = "SELF") -> 'Vec3':
+        """Gets the position of the specified player."""
+        pos = self._get_player_by_name(player_name).pc.player.getTilePos()
+        return Vec3(pos.x, pos.y, pos.z)
+
     # --- Blocks (CmdBlocks) ---
 
     @mced_block(
