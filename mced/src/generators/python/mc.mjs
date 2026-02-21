@@ -33,7 +33,7 @@ export function defineMineCraftGenerators(pythonGenerator) {
         // Default namespaces as a fallback
         let actionClasses = [
             'PlayerActions', 'ServerActions', 'QTurtleActions', 'LSystemShapes',
-            'TurtleShapes', 'DigitalGeometry', 'WorldActions', 'PyncraftActions', 'EventActions'
+            'TurtleShapes', 'DigitalGeometryActions', 'WorldActions', 'PyncraftActions', 'EventActions'
         ];
 
         // Dynamically extract action class names from the Toolbox categories

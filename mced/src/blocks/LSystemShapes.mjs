@@ -4,25 +4,25 @@ export function defineLSystemShapesBlocks(Blockly) {
 
     Blockly.Blocks['lsystemshapes_define_rule'] = {
         init: function() {
-            this.appendDummyInput().appendField("L-System Rule: [predecessor] -> [successor]");
-            this.appendValueInput('predecessor').appendField('Symbol').setCheck('String');
+            this.appendDummyInput().appendField("L-System: Define Rule");
+            this.appendValueInput('predecessor').appendField('Symbol (char)').setCheck('String');
 this.appendValueInput('successor').appendField('Replacement').setCheck('String');
-            this.setOutput(true, 'list');
+            this.setOutput(true, 'LSYSTEM_RULE');
             this.setColour("#75E538");
-            this.setTooltip("Defines a string replacement rule for an L-System.");
+            this.setTooltip("");
         }
     };
 
     Blockly.Blocks['lsystemshapes_get_lsystem_shape'] = {
         init: function() {
-            this.appendDummyInput().appendField("L-System Shape: Axiom [axiom] Iterations [iterations]");
+            this.appendDummyInput().appendField("L-System: Generate Shape");
             this.appendValueInput('axiom').appendField('Axiom').setCheck('String');
 this.appendValueInput('iterations').appendField('Iterations').setCheck('Number');
 this.appendValueInput('step_length').appendField('Step Length').setCheck('Number');
-this.appendValueInput('rules').appendField('Rules List').setCheck('list');
-            this.setOutput(true, 'DigitalSet');
+this.appendValueInput('rules').appendField('Rules (List)').setCheck('list');
+            this.setOutput(true, 'Digital_Set');
             this.setColour("#75E538");
-            this.setTooltip("Iterates an L-System and interprets it as a digital shape.");
+            this.setTooltip("");
         }
     };
 }

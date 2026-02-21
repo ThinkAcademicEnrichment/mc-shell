@@ -6,6 +6,12 @@ export function definePlayerActionsGenerators(pythonGenerator) {
         return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
     };
 
+    pythonGenerator.forBlock['playeractions_get_height'] = function(block, generator) {
+        const position = generator.valueToCode(block, 'position', pythonGenerator.ORDER_ATOMIC) || 'None';
+        const code = `PlayerActions.get_height(${position})\n`;
+        return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
+    };
+
     pythonGenerator.forBlock['playeractions_get_position'] = function(block, generator) {
         
         const code = `PlayerActions.get_position()\n`;
