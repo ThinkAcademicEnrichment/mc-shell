@@ -25,28 +25,29 @@ class MCClient:
 
     def run(self, *args):
         """
-        Executes a command via RCON.
-
-        Args:
-            *args: Command components. Will be joined by spaces.
+        Executes a command via RCON using mctools to handle fragmentation.
         """
         if not self.password:
             print('A password is required!')
             return
 
         if not args:
-            raise MCClientException("Arguments required!")
+            return
 
-        # Join arguments into a single command string
         full_command = " ".join(str(a) for a in args)
 
-        with Client(self.host, self.rcon_port, passwd=self.password) as client:
-            # client.run/command handles the basic send/recv cycle.
-            # Note: Automatic reassembly of fragmented >4KB packets depends on the
-            # underlying mcrcon library version.
-            _response = client.run(full_command)
+        # mctools handles the fragmented packet reassembly internally
+        rcon = RCONClient(self.host, port=self.rcon_port)
 
-        return _response
+        try:
+            if rcon.login(self.password):
+                # frag_check=True is the default in mctools
+                response = rcon.command(full_command)
+                return self._strip_ansi(response)
+            else:
+                return "Authentication failed."
+        finally:
+            rcon.stop()
 
     @lru_cache(maxsize=1)
     def py_client(self,player_name=None):
@@ -76,24 +77,35 @@ class MCClient:
                 print(_response)
             return {}
 
-    async def data_async(self,varname,namespace,operation,*args):
+    async def data_async(self, varname, namespace, operation, *args):
+        """
+        Async implementation using mctools.AsyncRCONClient to handle
+        fragmented responses without blocking the event loop.
+        """
         if not self.password:
             print('A password is required!')
             return
-        async with AioClient(host=self.host, port=self.rcon_port, password=self.password) as client:
-            _response = await client.send_cmd(' '.join(['data',operation,*args]))
-        if isinstance(_response,tuple):
-            _response = _response[0]
-            try:
-                _response = _response[_response.index(':')+1:]
-                namespace.update({varname:json.loads(self._fix_json(_response))})
-            except Exception as e:
-                if _DEBUG.data:
-                    print(e)
-                    print(_response)
-        else:
-            namespace.update({varname:_response})
 
+        full_command = ' '.join(['data', operation, *args])
+
+        # AsyncRCONClient handles fragmentation reassembly automatically
+        async with AsyncRCONClient(self.host, self.rcon_port) as client:
+            if await client.login(self.password):
+                _response = await client.command(full_command)
+
+                try:
+                    # Strip the prefix and parse NBT-to-JSON
+                    _response = _response[_response.index(':') + 1:]
+                    parsed_data = json.loads(self._fix_json(_response.strip()))
+                    namespace.update({varname: parsed_data})
+                except Exception as e:
+                    if _DEBUG.data:
+                        print(e)
+                        print(_response)
+                    # Fallback to raw response if parsing fails
+                    namespace.update({varname: _response})
+            else:
+                print("Async RCON Authentication failed.")
 
     def _fix_nbt_values(self, _text):
         """Removes NBT suffixes and converts to appropriate Python types."""
@@ -115,3 +127,11 @@ class MCClient:
         _fixed_string = _fixed_string.replace('False','false').replace('True','true').replace("\'","")
         _fixed_string = _fixed_string.replace('-false','false').replace('-true','true').replace("\'","")
         return _fixed_string
+
+    def _strip_ansi(self, text):
+        """Removes all ANSI escape sequences to provide clean text output."""
+        if not text:
+            return ""
+        # Matches ESC[ followed by formatting codes and ending with a letter
+        ansi_regex = re.compile(r'\x1b\[[0-9;]*[a-zA-Z]')
+        return ansi_regex.sub('', text).strip()

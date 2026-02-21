@@ -52,6 +52,7 @@ class MCShell(Magics):
 
         self.active_paper_server: Optional[PaperServerManager ,None ] = None
 
+
     def _complete_world_command(self, ipyshell, event):
         ipyshell.user_ns.update(dict(rcon_event=event))
         text = event.symbol
@@ -494,7 +495,7 @@ class MCShell(Magics):
         except ConnectionRefusedError as e:
             print("[red bold]Unable to send command. Is the server running?[/]")
             pprint(self.server_data)
-        except (WrongPassword, IncorrectPasswordError) as e:
+        except RCONAuthenticationError as e:
             print("[red bold]The password is wrong. Use %mc_login reset[/]")
 
     def _get_client(self):
@@ -506,41 +507,105 @@ class MCShell(Magics):
     def _help(self, *args):
         return self._send('help', *args)
     def _run(self, *args):
-        return self._send('run',*args)
+        return  self._send('run',*args)
     def _data(self, *args):
         return self._send('data',*args)
 
+    # @property
+    # def commands(self):
+    #     _rcon_commands = {}
+    #     if not self.rcon_commands:
+    #         try:
+    #             _help_text = self._help()
+    #         except:
+    #             return _rcon_commands
+    #
+    #         _help_data = list(filter(lambda x: x != '', map(lambda x: x.split(' '), _help_text.split('/'))))[1:]
+    #         for _help_datum in _help_data:
+    #             _cmd = _help_datum[0]
+    #             if 'minecraft:' in _cmd:
+    #                 _cmd = _cmd.split(':')[1]
+    #             try:
+    #                 _cmd_data = self._help(_cmd)
+    #             except:
+    #                 return
+    #             if not _cmd_data:
+    #                 # found a shortcut command like xp -> experience
+    #                 continue
+    #             _cmd_data = list(map(lambda x:x.split()[1:],_cmd_data.split('/')))
+    #             _sub_cmd_data = {}
+    #             for _sub_cmd_datum in _cmd_data[1:]:
+    #                 if not _sub_cmd_datum[0][0]  in ('<','[','('):
+    #                     _sub_cmd_data.update({_sub_cmd_datum[0]: _sub_cmd_datum[1:]})
+    #                 else:
+    #                     # TODO what about commands without sub-commands?
+    #                     _sub_cmd_data.update({' ': _sub_cmd_datum})
+    #                 _rcon_commands.update({_cmd.replace('-','_'): _sub_cmd_data})
+    #         self.rcon_commands = _rcon_commands
+    #     return self.rcon_commands
+
     @property
     def commands(self):
-        _rcon_commands = {}
+        """
+        Builds a unique, deduplicated command and subcommand registry.
+        Deduplicates sub-items like gamerules (e.g., 'spawn_mobs' vs 'minecraft:spawn_mobs').
+        """
         if not self.rcon_commands:
+            _rcon_commands = {}
             try:
-                _help_text = self._help()
+                _help_text = self._help() # Stripped by MCClient
             except:
-                return _rcon_commands
+                return {}
 
-            _help_data = list(filter(lambda x: x != '', map(lambda x: x.split(' '), _help_text.split('/'))))[1:]
-            for _help_datum in _help_data:
-                _cmd = _help_datum[0]
-                if 'minecraft:' in _cmd:
-                    _cmd = _cmd.split(':')[1]
-                try:
-                    _cmd_data = self._help(_cmd)
-                except:
-                    return
-                if not _cmd_data:
-                    # found a shortcut command like xp -> experience
+            if not _help_text:
+                return {}
+
+            seen_base_cmds = set()
+            _help_data = list(filter(None, _help_text.split('/')))
+
+            for entry in _help_data:
+                parts = entry.split()
+                if not parts or parts[0] in ('?', 'bukkit:?'):
                     continue
-                _cmd_data = list(map(lambda x:x.split()[1:],_cmd_data.split('/')))
-                _sub_cmd_data = {}
-                for _sub_cmd_datum in _cmd_data[1:]:
-                    if not _sub_cmd_datum[0][0]  in ('<','[','('):
-                        _sub_cmd_data.update({_sub_cmd_datum[0]: _sub_cmd_datum[1:]})
-                    else:
-                        # TODO what about commands without sub-commands?
-                        _sub_cmd_data.update({' ': _sub_cmd_datum})
-                    _rcon_commands.update({_cmd.replace('-','_'): _sub_cmd_data})
+
+                raw_cmd = parts[0]
+                base_cmd = raw_cmd.split(':')[-1]
+
+                if base_cmd in seen_base_cmds:
+                    continue
+
+                seen_base_cmds.add(base_cmd)
+                clean_key = raw_cmd.replace('-', '_')
+
+                try:
+                    _cmd_help = self._help(raw_cmd) # Stripped by MCClient
+                    _help_lines = list(map(lambda x: x.split()[1:], _cmd_help.split('/')))
+
+                    _sub_cmd_data = {}
+                    seen_sub_items = set() # Track subcommands/gamerules specifically
+
+                    for line_args in _help_lines:
+                        if not line_args:
+                            continue
+
+                        arg0 = line_args[0]
+                        # If it's a literal (not a placeholder like <target>)
+                        if not arg0.startswith(('<', '[', '(')):
+                            # Deduplicate sub-item (e.g., minecraft:spawn_mobs -> spawn_mobs)
+                            clean_sub = arg0.split(':')[-1]
+                            if clean_sub not in seen_sub_items:
+                                _sub_cmd_data.update({clean_sub: line_args[1:]})
+                                seen_sub_items.add(clean_sub)
+                        else:
+                            # Catch-all for commands that take direct syntax arguments
+                            _sub_cmd_data.update({' ': line_args})
+
+                    _rcon_commands.update({clean_key: _sub_cmd_data})
+                except:
+                    continue
+
             self.rcon_commands = _rcon_commands
+
         return self.rcon_commands
 
     @line_magic
@@ -567,56 +632,91 @@ class MCShell(Magics):
         _mcc = self._get_client()
         pprint(self.server_data)
 
-    @line_magic
-    def mc_help(self,line):
-        '''
-        %mc_help [COMMAND]
-        '''
 
+    @line_magic
+    def mc_help(self, line):
+        """
+        Sorted, deduplicated help menu.
+        Prevents 'minecraft:' clutter and gamerule text-walls.
+        """
         _cmd = []
-        _doc_line = ''
-        _doc_url = ''
-        _doc_code_lines = ''
         if line:
             _line_parts = line.split()
-            if 'minecraft:' in _line_parts[0]:
-                _line_parts[0] = _line_parts[0].split(':')[1]
-            _doc_line,_doc_url,_doc_code_lines = self.mc_cmd_docs.get(_line_parts[0],('','',''))
-            _line_parts[0] = _line_parts[0].replace('_', '-')
+            # Lookup docs by clean name (e.g., 'enchant' even if user types 'minecraft:enchant')
+            clean_name = _line_parts[0].split(':')[-1]
+            _doc_data = self.mc_cmd_docs.get(clean_name, (None, None, None))
+
+            if _doc_data[0]:
+                print(f"{_doc_data[0]}\n{_doc_data[1]}\n")
+
+            if _doc_data[2]:
+                for d_line in _doc_data[2]: print(d_line)
+                return
+
             _cmd += [' '.join(_line_parts)]
 
-            if _doc_line and _doc_url:
-                print(_doc_line)
-                print(_doc_url)
-                print()
+        _raw_help = self._help(*_cmd)
+        if not _raw_help:
+            print("No help available!")
+            return
 
-        if _doc_code_lines:
-            for _doc_code_line in _doc_code_lines:
-                print(_doc_code_line)
-        else:
-            _help_text = self._help(*_cmd)
-            if not _help_text:
-                print("No help available!")
-                return
-            for _help_line in _help_text.split('/')[1:]:
-                _help_parts = _help_line.split()
-                _help_parts[0] = _help_parts[0].replace('-','_')
-                print(f'{" ".join(_help_parts)}')
+        _help_text = _raw_help
+
+        seen_base = set()
+        output = []
+
+        for entry in filter(None, _help_text.split('/')):
+            parts = entry.split()
+            if not parts or parts[0] in ('?', 'bukkit:?'): continue
+
+            raw_cmd = parts[0]
+            base_name = raw_cmd.split(':')[-1]
+
+            if base_name in seen_base: continue
+            seen_base.add(base_name)
+
+            # Truncate the massive gamerule ruleset for the general list
+            if base_name == "gamerule" and len(entry) > 200:
+                entry = f"{raw_cmd} <rule> [<value>]"
+
+            output.append(entry.replace('-', '_'))
+
+        # Sort alphabetically for easy scanning
+        for line in sorted(output):
+            print(line)
 
     def _complete_mc_help(self, ipyshell, event):
-        ipyshell.user_ns.update(dict(rcon_event=event))
-        text = event.symbol
+        """
+        Provides deep, deduplicated completion for %mc_help.
+        Supports: %mc_help gamerule <TAB> -> clean list of rules.
+        """
+        text_to_complete = event.symbol
         parts = event.line.split()
-        ipyshell.user_ns.update(dict(rcon_event=event))
 
-        arg_matches= []
-        if len(parts) == 1: # showing commands
-            arg_matches = [c for c in self.commands.keys()]
-            ipyshell.user_ns.update({'rcon_matches':arg_matches})
-        elif len(parts) == 2 and text != '':  # completing commands
-            arg_matches = [c for c in self.commands.keys() if c.startswith(text)]
-            ipyshell.user_ns.update({'rcon_matches':arg_matches})
+        # Extract and normalize the command name
+        command = None
+        if len(parts) >= 2:
+            command = parts[1].replace('-', '_')
+            if ':' in command:
+                command = command.split(':')[-1]
 
+        arg_matches = []
+
+        # Case 1: Completing the base command
+        if len(parts) == 1 or (len(parts) == 2 and text_to_complete != ''):
+            arg_matches = [c for c in self.commands.keys() if c.startswith(text_to_complete)]
+
+        # Case 2: Showing/Completing sub-items (like gamerules)
+        elif len(parts) >= 2 and command in self.commands:
+            sub_map = self.commands[command]
+            sub_keys = [k for k in sub_map.keys() if k != ' ']
+
+            if len(parts) == 2 and text_to_complete == '':
+                arg_matches = sub_keys
+            elif len(parts) == 3 and text_to_complete != '':
+                arg_matches = [k for k in sub_keys if k.startswith(text_to_complete)]
+
+        ipyshell.user_ns.update({'rcon_matches': arg_matches})
         return arg_matches
 
     @line_magic
@@ -641,8 +741,14 @@ class MCShell(Magics):
         print('-' * 100)
         if _arg_list[0] == 'help':
             _responses = response.split('/')
-            for _response in _responses:
-                print('\t' + _response)
+            for _resp in _responses:
+                if _resp.strip():
+                    # Keep namespaces, just fix hyphens
+                    _parts = _resp.split()
+                    _parts[0] = _parts[0].replace('-', '_')
+                    print('\t' + ' '.join(_parts))
+            # for _response in _responses:
+            #     print('\t' + _response)
         elif response.split()[0] == 'Unknown':
             print("[red]Error in usage:[/]")
             self.mc_help(line)
@@ -849,10 +955,13 @@ class MCShell(Magics):
             print("Currently running powers:", list(RUNNING_POWERS.keys()))
             return
 
-        power_to_cancel = RUNNING_POWERS.get(execution_id)
-        if power_to_cancel and execution_id in RUNNING_POWERS:
+        # Lookup the execution metadata in the global registry
+        power_metadata = RUNNING_POWERS.get(execution_id)
+
+        if power_metadata:
             print(f"Sending cancellation signal to power: {execution_id}")
-            power_to_cancel['cancel_event'].set()
+            # Corrected Key: Simply 'cancel_event'
+            power_metadata['cancel_event'].set()
         else:
             print(f"Error: No running power found with ID: {execution_id}")
 

@@ -346,3 +346,29 @@ class Pickers:
         ("Random Tick Speed", "random_tick_speed"),
         ("Respawn Radius", "respawn_radius")
     ]
+
+
+    Effect = [
+        ("Speed", "speed"), ("Slowness", "slowness"), ("Haste", "haste"),
+        ("Strength", "strength"), ("Instant Health", "instant_health"),
+        ("Instant Damage", "instant_damage"), ("Jump Boost", "jump_boost"),
+        ("Regeneration", "regeneration"), ("Resistance", "resistance"),
+        ("Fire Resistance", "fire_resistance"), ("Water Breathing", "water_breathing"),
+        ("Invisibility", "invisibility"), ("Blindness", "blindness"),
+        ("Night Vision", "night_vision"), ("Hunger", "hunger"),
+        ("Weakness", "weakness"), ("Poison", "poison"), ("Wither", "wither"),
+        ("Health Boost", "health_boost"), ("Absorption", "absorption"),
+        ("Saturation", "saturation"), ("Glowing", "glowing"),
+        ("Levitation", "levitation"), ("Luck", "luck"), ("Unluck", "unluck"),
+        ("Slow Falling", "slow_falling"), ("Conduit Power", "conduit_power"),
+        ("Dolphins Grace", "dolphins_grace"), ("Bad Omen", "bad_omen"),
+        ("Hero of the Village", "hero_of_the_village"), ("Darkness", "darkness")
+    ]
+
+    TitleAction = [
+        ("Main Title", "title"),
+        ("Subtitle", "subtitle"),
+        ("Action Bar", "actionbar"),
+        ("Clear", "clear"),
+        ("Reset", "reset")
+    ]

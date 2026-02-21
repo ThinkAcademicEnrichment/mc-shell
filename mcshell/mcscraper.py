@@ -11,7 +11,6 @@ from typing import Optional
 from mcshell.constants import *
 
 # --- Configuration & Setup ---
-# USER_AGENT = "MinecraftCommandDocBot/1.0"
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
 # Initialize robots.txt parser once
@@ -28,12 +27,12 @@ except ImportError:
     print("Warning: Playwright is not installed. Browser fetching will fail.")
 
 
-def fetch_with_browser(url,robots_txt_check=False):
+def fetch_with_browser(url, robots_txt_check=False):
     """
-    Fetches HTML using Playwright (headless browser) with robots.txt compliance 
+    Fetches HTML using Playwright (headless browser) with robots.txt compliance
     and local caching.
     """
-    # Ensure url is a yarl.URL object for consistent handling (accessing .name)
+    # Ensure url is a yarl.URL object for consistent handling
     if not isinstance(url, (yarl.URL, Path)):
         url_obj = yarl.URL(str(url))
     else:
@@ -43,168 +42,173 @@ def fetch_with_browser(url,robots_txt_check=False):
 
     # 1. Local Cache Check
     if _pkl_path.exists():
-        print(f'Loading from cache: {_pkl_path.name}')
-        with _pkl_path.open('rb') as f:
-            return pickle.load(f)
+        return pickle.load(_pkl_path.open('rb'))
 
-    # 2. Robots.txt Check
-    url_str = str(url_obj)
-    if robots_txt_check and  not rp.can_fetch(USER_AGENT, url_str):
-        print(f'Skipping (Blocked by robots.txt): {url_str}')
+    # 2. Robots.txt check
+    if robots_txt_check and not rp.can_fetch(USER_AGENT, str(url)):
+        print(f"Access denied by robots.txt: {url}")
         return None
 
-    # 3. Etiquette: Crawl Delay
-    delay = rp.crawl_delay(USER_AGENT) or 1
-    time.sleep(delay)
-
-    # 4. Fetch with Playwright
+    # 3. Fetch with Playwright
     if not PLAYWRIGHT_AVAILABLE:
-        print(f"Cannot fetch {url_str}: Playwright not installed.")
+        print("Playwright not available. Cannot fetch new content.")
         return None
 
-    print(f"Navigating to {url_str}...")
+    print(f"Fetching from web: {url}...")
     try:
-        html_content = None
         with sync_playwright() as p:
-            # Launch a real browser (headless=True means no window pops up)
             browser = p.chromium.launch(headless=True)
-            context = browser.new_context(user_agent=USER_AGENT)
-            page = context.new_page()
-
-            page.goto(url_str)
-
-            # Wait a moment to ensure JS-heavy wiki content loads
-            time.sleep(2)
-
-            # Get the rendered HTML source
-            html_content = page.content()
+            page = browser.new_page(user_agent=USER_AGENT)
+            page.goto(str(url), wait_until="networkidle")
+            content = page.content()
             browser.close()
 
-        # 5. Save to Cache
-        if html_content:
+            # Save to cache
+            _pkl_path.parent.mkdir(parents=True, exist_ok=True)
             with _pkl_path.open('wb') as f:
-                pickle.dump(html_content, f)
-        
-        return html_content
+                pickle.dump(content, f)
 
+            return content
     except Exception as e:
-        print(f"Failed to fetch {url_str} with browser: {e}")
+        print(f"Error during browser fetch: {e}")
         return None
 
 
 def make_docs():
-    # Fetch the main list page
-    main_html = fetch_with_browser(MC_DOC_URL)
-    if not main_html:
+    """Scrapes Minecraft command documentation from the wiki."""
+    url = "https://minecraft.fandom.com/wiki/Commands"
+    html_content = fetch_with_browser(url, robots_txt_check=True)
+
+    if not html_content:
         return {}
 
-    _soup_data = BeautifulSoup(main_html, 'html.parser')
-    _tables = _soup_data.find_all('table', attrs={'class': 'stikitable'})
+    soup = BeautifulSoup(html_content, 'html.parser')
+    commands = {}
 
-    if not _tables:
-        print("Could not find the commands table.")
+    # Logic to find the command summary table
+    command_table = soup.find('table', {'class': 'wikitable'})
+    if not command_table:
         return {}
 
-    _code_elements = _tables[0].select('code')
-    _doc_dict = {}
+    for row in command_table.find_all('tr')[1:]:  # Skip header
+        cols = row.find_all('td')
+        if len(cols) >= 2:
+            cmd_link = cols[0].find('a')
+            if cmd_link:
+                cmd_name = cmd_link.text.strip()
+                cmd_url = f"https://minecraft.fandom.com{cmd_link['href']}"
+                description = cols[1].text.strip()
 
-    for _code_element in _code_elements:
-        _cmd = _code_element.text.strip().lstrip('/') # Clean command name
-        _parent = _code_element.find_parent()
+                # Try to fetch syntax from individual command page
+                syntax_list = []
+                cmd_html = fetch_with_browser(cmd_url)
+                if cmd_html:
+                    cmd_soup = BeautifulSoup(cmd_html, 'html.parser')
+                    syntax_elements = cmd_soup.find_all('code')
+                    for se in syntax_elements:
+                        if '/' in se.text and cmd_name in se.text:
+                            syntax_list.append(se.text.strip())
 
-        # Guard against index errors if the table structure shifts
-        siblings = _parent.find_next_siblings()
-        if not siblings: continue
-        _doc_line = siblings[0].text.strip()
+                commands[cmd_name] = (description, cmd_url, syntax_list)
 
-        try:
-            anchor = _code_element.find_all('a')
-            if not anchor: continue
-
-            _doc_url_stub = yarl.URL(anchor[0].attrs['href'])
-            # Ensure we are joining paths correctly with yarl
-            _doc_url = MC_DOC_URL.origin().joinpath(str(_doc_url_stub).lstrip('/'))
-        except (IndexError, KeyError):
-            continue
-
-        # Recursive Fetch using Browser
-        sub_html = fetch_with_browser(_doc_url)
-        if not sub_html:
-            continue
-
-        _doc_soup_data = BeautifulSoup(sub_html, 'html.parser')
-
-        try:
-            # More robust way to find the Syntax header
-            _syntax_span = _doc_soup_data.find('span', id='Syntax') or \
-                           _doc_soup_data.find('span', string='Syntax')
-
-            if _syntax_span:
-                _h2_parent = _syntax_span.find_parent('h2')
-                _dl_block = _h2_parent.find_next_sibling('dl')
-                _doc_code_elements = _dl_block.find_all('code')
-
-                _doc_code_lines = [
-                    code.text.strip() for code in _doc_code_elements
-                    if code.text.strip().startswith(_cmd)
-                ]
-            else:
-                _doc_code_lines = []
-        except Exception:
-            _doc_code_lines = []
-
-        _doc_dict[_cmd] = (_doc_line, str(_doc_url), _doc_code_lines)
-
-    # Save final results
     with MC_DOC_PATH.open('wb') as f:
-        pickle.dump(_doc_dict, f)
-
-    return _doc_dict
+        pickle.dump(commands, f)
+    return commands
 
 
 def make_materials():
-    html_content = fetch_with_browser(MC_MATERIAL_URL)
-    if not html_content:
-        return []
-
-    _soup_data = BeautifulSoup(html_content, 'html.parser')
-    material_names = []
-
-    enum_summary_section = _soup_data.find('section', id='enum-constant-summary')
-    if not enum_summary_section:
-        print(f"Error: Could not find the section with id 'enum-constant-summary' on the page {MC_MATERIAL_URL}")
-        return material_names
-
-    code_tags_in_section = enum_summary_section.select('code')
-    for code_tag in code_tags_in_section:
-        link_tags_in_code = code_tag.find_all('a')
-        for link_tag in link_tags_in_code:
-            text = link_tag.string
-            if text and text.upper() == text:
-                if text.strip() not in material_names: # Avoid duplicates from broader search
-                     material_names.append(text.strip())
-
-    pickle.dump(material_names, MC_MATERIALS_PATH.open('wb'))
-
-    return sorted(list(set(material_names))) # Return sorted unique names
-
-
-def make_entity_id_map() -> Optional[dict[str, int]]:
     """
-    Fetches and parses the implemented Bukkit EntityType.java file to create a mapping
+    Scrapes the Spigot Material Javadocs and categorizes them into
+    Blocks, Items, and Entities using semantic markers and method descriptions.
+    """
+    url = "https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Material.html"
+    html_content = fetch_with_browser(url)
+
+    if not html_content:
+        return {}
+
+    soup = BeautifulSoup(html_content, 'html.parser')
+    materials_data = {}
+
+    # Find the summary table for enum constants
+    summary_table = soup.find("section", {"class": "summary"})
+    if summary_table:
+        summary_table = summary_table.find("div", {"class": "summary-table"})
+
+    if not summary_table:
+        print("Could not find Material summary table.")
+        return {}
+
+    # The table structure in modern Javadocs often alternates between name (col-first)
+    # and description (col-last)
+    rows = summary_table.find_all("div", recursive=False)
+
+    current_name = None
+    for row in rows:
+        classes = row.get("class", [])
+
+        if "col-first" in classes:
+            current_name = row.text.strip()
+            if current_name.startswith("LEGACY_"):
+                current_name = None
+                continue
+
+        elif "col-last" in classes and current_name:
+            description = row.text.strip().lower()
+
+            # Semantic Classification Logic
+            is_block = False
+            is_item = True  # Default to Item
+            is_entity = False
+
+            # 1. Block Detection
+            # If the description refers to being a block or block data
+            if "block" in description or "legacy" not in description:
+                # Heuristic: if it's not explicitly flagged as legacy and doesn't
+                # contain specific non-block keywords, we treat it as a Block.
+                is_block = True
+
+            # 2. Entity Detection (Boats, Minecarts, Armor Stands)
+            # These are Items that place Entities
+            if any(term in current_name.lower() for term in ["boat", "minecart", "armor_stand"]):
+                is_block = False
+                is_item = True
+                is_entity = True
+
+            # 3. Non-Placeable Item detection
+            # Certain items are strictly items even if they sounds like blocks or have descriptions
+            if any(term in description for term in ["edible", "tool", "weapon", "armor", "food"]):
+                is_block = False
+
+            materials_data[current_name] = {
+                "is_block": is_block,
+                "is_item": is_item,
+                "is_entity": is_entity,
+                "description": description
+            }
+            current_name = None
+
+    # Save structured data
+    with MC_MATERIALS_PATH.open('wb') as f:
+        pickle.dump(materials_data, f)
+
+    print(f"Scraped and categorized {len(materials_data)} materials.")
+    return materials_data
+
+
+def make_entity_id_map():
+    """
+    Scrapes the non-documented Bukkit EntityType.java file to create a mapping
     from the Bukkit enum name string to its legacy numerical ID.
     """
-    java_code_html = fetch_with_browser(MC_ENTITY_TYPE_URL)
-    
-    if not java_code_html:
-        return None
+    url = "https://raw.githubusercontent.com/Bukkit/Bukkit/master/src/main/java/org/bukkit/entity/EntityType.java"
+    java_code_html = fetch_with_browser(url)
 
-    # Playwright returns rendered HTML. Depending on if the URL is raw or a view page,
-    # we might need to parse it. Assuming it's the raw text content or wrapped in pre.
-    # We treat the string result as the content to parse.
-    
-    # Capture enum constant name and its ID.
-    pattern = re.compile(r"^\s*([A-Z_]+)\(.*?,\s*(-?\d+).*?\),?$")
+    if not java_code_html:
+        return {}
+
+    # Capture enum constant name and its ID via regex
+    pattern = re.compile(r"^\s*([A-Z_]+)\(.*?, \s*(-?\d+).*?\),?$")
 
     entity_id_map = {}
     lines = java_code_html.splitlines()
@@ -218,11 +222,7 @@ def make_entity_id_map() -> Optional[dict[str, int]]:
             is_deprecated = True
             continue
 
-        try:
-            match = pattern.match(stripped_line)
-        except TypeError:
-             # Fallback if type issues occur, though stripped_line is str
-            match = pattern.match(str(stripped_line))
+        match = pattern.match(stripped_line)
 
         if match and not is_deprecated:
             enum_name = match.group(1)
@@ -230,9 +230,11 @@ def make_entity_id_map() -> Optional[dict[str, int]]:
 
             if enum_name != 'UNKNOWN' and entity_id != -1:
                 entity_id_map[enum_name] = entity_id
-        
-        # Reset the deprecated flag
-        is_deprecated = False
 
-    pickle.dump(entity_id_map, MC_ENTITY_ID_MAP_PATH.open('wb'))
+        # Reset the deprecated flag if we hit a non-empty line that isn't a match
+        if stripped_line and not match and stripped_line != "@Deprecated":
+            is_deprecated = False
+
+    with MC_ENTITY_ID_MAP_PATH.open('wb') as f:
+        pickle.dump(entity_id_map, f)
     return entity_id_map

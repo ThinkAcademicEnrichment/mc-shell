@@ -3,6 +3,7 @@
 
 import { defineMineCraftBlocks } from "./mc.mjs";
 import { defineDigitalGeometryBlocks } from "./DigitalGeometry.mjs";
+import { defineDigitalGeometryActionsBlocks } from "./DigitalGeometryActions.mjs";
 import { defineEventActionsBlocks } from "./EventActions.mjs";
 import { defineLSystemShapesBlocks } from "./LSystemShapes.mjs";
 import { definePlayerActionsBlocks } from "./PlayerActions.mjs";
@@ -12,12 +13,15 @@ import { defineServerActionsBlocks } from "./ServerActions.mjs";
 import { defineThreadsBlocks } from "./Threads.mjs";
 import { defineTurtleShapesBlocks } from "./TurtleShapes.mjs";
 import { defineWorldActionsBlocks } from "./WorldActions.mjs";
-import { defineMineCraftEntityBlocks } from "./entities.mjs";
-import { defineMineCraftMaterialBlocks } from "./materials.mjs";
+import { defineBlocksBlocks } from "./blocks.mjs";
+import { defineEntitiesBlocks } from "./entities.mjs";
+import { defineItemsBlocks } from "./items.mjs";
+import { defineMaterialsBlocks } from "./materials.mjs";
 
 export function registerAllBlocks(Blockly) {
     defineMineCraftBlocks(Blockly);
     defineDigitalGeometryBlocks(Blockly);
+    defineDigitalGeometryActionsBlocks(Blockly);
     defineEventActionsBlocks(Blockly);
     defineLSystemShapesBlocks(Blockly);
     definePlayerActionsBlocks(Blockly);
@@ -27,6 +31,8 @@ export function registerAllBlocks(Blockly) {
     defineThreadsBlocks(Blockly);
     defineTurtleShapesBlocks(Blockly);
     defineWorldActionsBlocks(Blockly);
-    defineMineCraftEntityBlocks(Blockly);
-    defineMineCraftMaterialBlocks(Blockly);
+    defineBlocksBlocks(Blockly);
+    defineEntitiesBlocks(Blockly);
+    defineItemsBlocks(Blockly);
+    defineMaterialsBlocks(Blockly);
 }
