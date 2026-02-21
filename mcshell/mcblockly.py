@@ -406,7 +406,11 @@ def generate_mcactions_blocks():
     output_toolbox_path = MC_APP_SRC_DIR / 'toolbox.xml'
 
     # Configure Shadows for BlocklyGenerator
-    type_map = {'Vec3': "3DVector", 'Matrix3': "3DMatrix", 'Block': "Block", 'DigitalSet': "Digital_Set", 'Metric': 'Metric', 'QDirection': 'QDirection', 'Axis': 'Axis', 'QCompass': 'QCompass', 'Time': 'Time', 'Weather': 'Weather', 'Difficulty': 'Difficulty', 'Gamemode': 'Gamemode', 'GameRule': 'GameRule', 'LocateType': 'LocateType', 'Structure': 'Structure', 'Biome': 'Biome', 'Poi': 'Poi', 'Entity': 'Entity','Effect':"Effect"}
+    type_map = {'Vec3': "3DVector", 'Matrix3': "3DMatrix", 'Block': "Block", 'DigitalSet': "Digital_Set",
+                'Metric': 'Metric', 'QDirection': 'QDirection', 'Axis': 'Axis', 'QCompass': 'QCompass', 'Time': 'Time',
+                'Weather': 'Weather', 'Difficulty': 'Difficulty', 'Gamemode': 'Gamemode', 'GameRule': 'GameRule',
+                'LocateType': 'LocateType', 'Structure': 'Structure', 'Biome': 'Biome', 'Poi': 'Poi',
+                'Entity': 'Entity', 'Effect': "Effect"}
     shadow_map = dict(
         Vec3='<shadow type="minecraft_vector_3d"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow>',
         Block='<shadow type="minecraft_picker_world"><field name="MATERIAL_ID">STONE</field></shadow>',
