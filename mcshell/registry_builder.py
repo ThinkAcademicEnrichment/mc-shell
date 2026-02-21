@@ -10,14 +10,14 @@ from blockapily import BlocklyGenerator
 # Import Action Classes
 try:
     from mcshell.serveractions import ServerActions
-    # from mcshell.pyncraftcactions import PyncraftActions
+    from mcshell.pyncraftcactions import PyncraftActions
     from mcshell.playeractions import PlayerActions
     from mcshell.qturtleactions import QTurtleActions
-    # from mcshell.mcactions import (
-    #     TurtleShapes, LSystemShapes, DigitalGeometry,
-    #     WorldActions, PlayerActions, QTurtleActions
-    # )
-    # from mcshell.eventactions import EventActions
+    from mcshell.digitalgeometryactions import DigitalGeometryActions
+    from mcshell.eventactions import EventActions
+    from mcshell.mcactions import (
+        TurtleShapes, LSystemShapes
+    )
     HAS_ALL_ACTIONS = True
 except ImportError as e:
     print(f"Warning: Some action classes could not be imported: {e}")
@@ -104,15 +104,13 @@ class RegistryBuilder:
         if HAS_ALL_ACTIONS:
             self.ACTION_CLASSES.extend([
                 (ServerActions, "ServerActions", self.COLORS["Server"]),
-                # (PyncraftActions, "PyncraftActions", "#252E28"),
+                (PyncraftActions, "PyncraftActions", "#252E28"),
                 (PlayerActions, "PlayerActions", self.COLORS["Player"]),
-                # (TurtleShapes, "TurtleShapes", self.COLORS["Turtle"]),
-                # (LSystemShapes, "LSystemShapes", self.COLORS["LSystem"]),
-                # (DigitalGeometry, "DigitalGeometry", self.COLORS["Geometry"]),
-                # (WorldActions, "WorldActions", self.COLORS["LSystem"]),
-                # (PlayerActions, "PlayerActions", self.COLORS["Player"]),
+                (TurtleShapes, "TurtleShapes", self.COLORS["Turtle"]),
+                (LSystemShapes, "LSystemShapes", self.COLORS["LSystem"]),
+                (DigitalGeometryActions, "DigitalGeometryActions", self.COLORS["Geometry"]),
                 (QTurtleActions, "QTurtleActions", self.COLORS["Turtle"]),
-                # (EventActions, "EventActions", self.COLORS["Events"])
+                (EventActions, "EventActions", self.COLORS["Events"])
             ])
 
         # --- Utility Picker Options ---
