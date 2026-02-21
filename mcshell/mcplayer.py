@@ -54,8 +54,6 @@ class MCPlayer(MCClient):
         asyncio.run(self.build_player_data_async())
         return self
 
-    def set_direction(self,dir:Vec3):
-        return self.pc.player.setDirection(*dir)
 
     @property
     def pc(self):
@@ -65,9 +63,15 @@ class MCPlayer(MCClient):
     def position(self):
         return Vec3(*self.pc.player.getPos())
 
+    def set_position(self, pos:Vec3):
+        return self.pc.player.setPos(*pos)
+
     @property
     def tile_position(self):
         return Vec3(*self.pc.player.getTilePos())
+
+    def set_tile_position(self,pos:Vec3):
+        self.pc.cmdplayer.setTilePos(*tuple(map(int,pos.to_tuple())))
 
     @property
     def direction(self):
@@ -75,31 +79,37 @@ class MCPlayer(MCClient):
         # this is an arbitrary direction vector
         return Vec3(*self.pc.player.getDirection())
 
+    def set_direction(self,direction:Vec3):
+        self.pc.player.setDirection(*direction)
+
     @property
     def q_direction(self):
         # this is a quantized direction vector
         return self._get_q_direction_vector(self.q_compass_direction)
 
     @property
-    def here(self):
-        return Vec3(*self.get_sword_hit_position())
-
-    @property
-    def compass_direction(self):
-        return self._get_compass_direction(self.direction.to_tuple())
+    def set_q_direction(self,direction:Vec3):
+        # this is a quantized direction vector
+        self.pc.player.setDirection(*direction)
 
     @property
     def q_compass_direction(self):
         return self._get_q_compass_direction(self.direction.to_tuple())
 
-    def set_compass_direction(self,dir:str):
-        return self.pc.player.setDirection(*self._get_direction_vector(dir).to_tuple())
-
     def set_q_compass_direction(self, dir: str):
         return self.pc.player.setDirection(*self._get_q_direction_vector(dir).to_tuple())
 
-    def set_position(self, pos:Vec3):
-        return self.pc.player.setPos(*pos)
+    # moved to eventactions.py
+    # @property
+    # def here(self):
+    #     return Vec3(*self.get_sword_hit_position())
+
+    # @property
+    # def compass_direction(self):
+    #     return self._get_compass_direction(self.direction.to_tuple())
+    # def set_compass_direction(self,dir:str):
+    #     return self.pc.player.setDirection(*self._get_direction_vector(dir).to_tuple())
+
 
     # --- New Methods for Event Actions ---
 

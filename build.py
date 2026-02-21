@@ -1,15 +1,57 @@
-from mcshell.mcblockly import generate_entity_blocks,generate_material_blocks,generate_mcactions_blocks
-from mcshell.mcblockly import ensure_toolbox,process_entities,process_materials
+# from mcshell.mcblockly import generate_entity_blocks,generate_material_blocks,generate_mcactions_blocks
+# from mcshell.mcblockly import ensure_toolbox,process_entities,process_materials
+#
+#
+# if __name__ == '__main__':
+#
+#     ensure_toolbox()
+#
+#     process_entities()
+#     generate_entity_blocks()
+#
+#     process_materials()
+#     generate_material_blocks()
+#
+#     generate_mcactions_blocks()
+#
+#
+import sys
+from pathlib import Path
 
+# Ensure we can import from mcshell
+sys.path.append(str(Path(__file__).parent))
 
-if __name__ == '__main__':
+from mcshell.mcscraper import make_materials, make_entity_id_map
+from mcshell.registry_builder import RegistryBuilder
+from mcshell.constants import MC_APP_SRC_DIR
 
-    ensure_toolbox()
+def rebuild():
+    """
+    Primary orchestration script to rebuild the Minecraft Blockly registry.
+    This serves as a full-pipeline test for the data-driven migration.
+    """
+    print("Step 1: Scraping latest Minecraft data...")
+    # These functions now produce structured dictionaries for Blocks/Items/Entities
+    make_materials()
+    make_entity_id_map()
 
-    process_entities()
-    generate_entity_blocks()
+    print("\nStep 2: Building Blockly Registries...")
+    builder = RegistryBuilder(
+        toolbox_path=MC_APP_SRC_DIR / 'toolbox.xml',
+        blocks_dir=MC_APP_SRC_DIR / 'blocks',
+        gens_dir=MC_APP_SRC_DIR / 'generators' / 'python'
+    )
 
-    process_materials()
-    generate_material_blocks()
+    # This generates:
+    # 1. blocks/materials.mjs, blocks/items.mjs, blocks/entities.mjs
+    # 2. generators/python/materials.mjs, ... etc.
+    # 3. Updates toolbox.xml via blockapily's structured XML injection
+    builder.build_all()
 
-    generate_mcactions_blocks()
+    print("\nRebuild Complete!")
+    print(f"Blocks generated in: {MC_APP_SRC_DIR / 'blocks'}")
+    print(f"Toolbox updated: {MC_APP_SRC_DIR / 'toolbox.xml'}")
+    print("\nYou can now refresh the mced editor or restart the web application.")
+
+if __name__ == "__main__":
+    rebuild()

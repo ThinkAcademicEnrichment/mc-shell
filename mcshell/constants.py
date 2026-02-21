@@ -1,9 +1,6 @@
 import eventlet
-from rcon.source import Client
-from aiomcrcon import Client as AioClient
-
-from rcon.errorhandler import WrongPassword
-from aiomcrcon.errors import IncorrectPasswordError
+from mctools import RCONClient, AsyncRCONClient
+from mctools.errors import RCONAuthenticationError
 
 import os
 import re

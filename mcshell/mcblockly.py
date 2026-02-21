@@ -406,7 +406,11 @@ def generate_mcactions_blocks():
     output_toolbox_path = MC_APP_SRC_DIR / 'toolbox.xml'
 
     # Configure Shadows for BlocklyGenerator
-    type_map = {'Vec3': "3DVector", 'Matrix3': "3DMatrix", 'Block': "Block", 'DigitalSet': "Digital_Set", 'Metric': 'Metric', 'QDirection': 'QDirection', 'Axis': 'Axis', 'QCompass': 'QCompass', 'Time': 'Time', 'Weather': 'Weather', 'Difficulty': 'Difficulty', 'Gamemode': 'Gamemode', 'GameRule': 'GameRule', 'LocateType': 'LocateType', 'Structure': 'Structure', 'Biome': 'Biome', 'Poi': 'Poi', 'Entity': 'Entity'}
+    type_map = {'Vec3': "3DVector", 'Matrix3': "3DMatrix", 'Block': "Block", 'DigitalSet': "Digital_Set",
+                'Metric': 'Metric', 'QDirection': 'QDirection', 'Axis': 'Axis', 'QCompass': 'QCompass', 'Time': 'Time',
+                'Weather': 'Weather', 'Difficulty': 'Difficulty', 'Gamemode': 'Gamemode', 'GameRule': 'GameRule',
+                'LocateType': 'LocateType', 'Structure': 'Structure', 'Biome': 'Biome', 'Poi': 'Poi',
+                'Entity': 'Entity', 'Effect': "Effect"}
     shadow_map = dict(
         Vec3='<shadow type="minecraft_vector_3d"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow>',
         Block='<shadow type="minecraft_picker_world"><field name="MATERIAL_ID">STONE</field></shadow>',
@@ -425,7 +429,8 @@ def generate_mcactions_blocks():
         LocateType = '<shadow type="picker_locatetype"><field name="VALUE">structure</field></shadow>',
         Structure = '<shadow type="picker_structure"><field name="VALUE">ancient_city</field></shadow>',
         Biome='<shadow type="picker_biome"><field name="VALUE">badlands</field></shadow>',
-        Poi ='<shadow type="picker_poi"><field name="VALUE">armorer</field></shadow>',
+        Poi='<shadow type="picker_poi"><field name="VALUE">armorer</field></shadow>',
+        Effect='<shadow type="picker_effect"><field name="VALUE">speed</field></shadow>',
     )
 
     custom_pickers = {}
@@ -446,7 +451,7 @@ def generate_mcactions_blocks():
     turtleshapes_extras = get_extras(["Metric"])
     playeractions_extras = get_extras(["QDirection", "Axis", "QCompass"])
     qturtleactions_extras = get_extras(["QDirection","Axis","QCompass"])
-    serveractions_extras = get_extras(["Time","Weather","Difficulty","Gamemode","GameRule","IntegerGameRule","LocateType","Structure","Biome","Poi"])
+    serveractions_extras = get_extras(["Time","Weather","Difficulty","Gamemode","GameRule","IntegerGameRule","LocateType","Structure","Biome","Poi","Effect"])
 
     classes_to_generate = [
         (DigitalGeometry, "DigitalGeometry", None, None, None, "#364EE7"),
