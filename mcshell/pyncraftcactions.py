@@ -18,7 +18,7 @@ class PyncraftActions(MCActionsBase):
 
     @mced_block(
         label="Get Health for [player]",
-        player_name={'label': 'Player', 'shadow': 'text'}
+        player_name={'label': 'Player'}
     )
     def get_health_by_name(self, player_name: str = "SELF") -> float:
         """Returns the health of the specified player."""
@@ -26,7 +26,7 @@ class PyncraftActions(MCActionsBase):
 
     @mced_block(
         label="Get Food Level for [player]",
-        player_name={'label': 'Player', 'shadow': 'text'}
+        player_name={'label': 'Player'}
     )
     def get_food_level_by_name(self, player_name: str = "SELF") -> int:
         """Returns the food level of the specified player."""
@@ -34,7 +34,7 @@ class PyncraftActions(MCActionsBase):
 
     @mced_block(
         label="Get Position for [player]",
-        player_name={'label': 'Player', 'shadow': 'text'}
+        player_name={'label': 'Player'}
     )
     def get_position_by_name(self, player_name: str = "SELF") -> 'Vec3':
         """Gets the position of the specified player."""
@@ -43,7 +43,7 @@ class PyncraftActions(MCActionsBase):
 
     @mced_block(
         label="Get Tile Position for [player]",
-        player_name={'label': 'Player', 'shadow': 'text'}
+        player_name={'label': 'Player'}
     )
     def get_tile_position_by_name(self, player_name: str = "SELF") -> 'Vec3':
         """Gets the position of the specified player."""
@@ -56,7 +56,7 @@ class PyncraftActions(MCActionsBase):
         label="Get Block at [position]",
         position={'label': 'Position'}
     )
-    def get_block(self, position: 'Vec3') -> 'Block':
+    def get_block(self, position: Vec3) -> 'Block':
         """Returns the Block ID at the specified position."""
         return self.mcplayer.pc.getBlock(int(position.x), int(position.y), int(position.z))
 
@@ -64,16 +64,16 @@ class PyncraftActions(MCActionsBase):
         label="Get Block with Data at [position]",
         position={'label': 'Position'}
     )
-    def get_block_with_data(self, position: 'Vec3') -> 'Block':
+    def get_block_with_data(self, position: Vec3) -> 'Block':
         """Returns the Block ID with its blockstate data at the specified position."""
         return self.mcplayer.pc.getBlockWithData(int(position.x), int(position.y), int(position.z))
 
     @mced_block(
         label="Set Block [block_type] at [position]",
         position={'label': 'Position'},
-        block_type={'label': 'Block', 'shadow': 'minecraft_block_picker'}
+        block_type={'label': 'Block'}
     )
-    def set_block(self, position: 'Vec3', block_type: 'Block'):
+    def set_block(self, position: Vec3, block_type: 'Block'):
         """Sets a block at the specified position."""
         self.mcplayer.pc.setBlock(int(position.x), int(position.y), int(position.z), block_type)
 
@@ -81,17 +81,17 @@ class PyncraftActions(MCActionsBase):
         label="Set Blocks [block_type] from [pos1] to [pos2]",
         pos1={'label': 'From Position'},
         pos2={'label': 'To Position'},
-        block_type={'label': 'Block', 'shadow': 'minecraft_block_picker'}
+        block_type={'label': 'Block'}
     )
-    def set_blocks(self, pos1: 'Vec3', pos2: 'Vec3', block_type: 'Block'):
+    def set_blocks(self, pos1: Vec3, pos2: Vec3, block_type: 'Block'):
         """Fills a cuboid area with the specified block."""
         self.mcplayer.pc.setBlocks(int(pos1.x), int(pos1.y), int(pos1.z),
                                    int(pos2.x), int(pos2.y), int(pos2.z), block_type)
 
     @mced_block(
         label="Get Highest Block Y at X: [x] Z: [z]",
-        x={'label': 'X', 'shadow': 'math_number'},
-        z={'label': 'Z', 'shadow': 'math_number'}
+        x={'label': 'X'},
+        z={'label': 'Z'}
     )
     def get_highest_block_y(self, x: float, z: float) -> int:
         """Gets the Y coordinate of the highest solid block at X, Z."""
@@ -102,18 +102,18 @@ class PyncraftActions(MCActionsBase):
     @mced_block(
         label="Spawn [entity_id] at [position]",
         position={'label': 'Position'},
-        entity_id={'label': 'Entity', 'shadow': 'minecraft_entity_picker_passive_mobs'}
+        entity_id={'label': 'Entity'}
     )
-    def spawn_entity(self, position: 'Vec3', entity_id: 'Entity') -> int:
+    def spawn_entity(self, position: Vec3, entity_id: 'Entity') -> int:
         """Spawns an entity at a given position and returns its unique ID."""
         return int(self.mcplayer.pc.spawnEntity(int(position.x), int(position.y), int(position.z), entity_id))
 
     @mced_block(
         label="Get Entities in [radius] block radius from [position]",
         position={'label': 'Position'},
-        radius={'label': 'Radius', 'shadow': 'math_number'}
+        radius={'label': 'Radius'}
     )
-    def get_entities_in_radius(self, position: 'Vec3', radius: float) -> 'Array':
+    def get_entities_in_radius(self, position: Vec3, radius: float) -> 'Array':
         """Returns a list of entity IDs within a radius of a position."""
         return self.mcplayer.pc.getEntitiesInRadius(int(position.x), int(position.y), int(position.z), int(radius))
 
@@ -122,14 +122,14 @@ class PyncraftActions(MCActionsBase):
     @mced_block(
         label="Set Sign Text",
         position={'label': 'At Position'},
-        line1={'label': 'Line 1', 'shadow': 'text'},
-        line2={'label': 'Line 2', 'shadow': 'text'},
-        line3={'label': 'Line 3', 'shadow': 'text'},
-        line4={'label': 'Line 4', 'shadow': 'text'},
-        sign_type={'label': 'Sign Material', 'shadow': 'minecraft_log_picker'},
-        direction={'label': 'Direction (0-15)', 'shadow': '<shadow type="math_number"><field name="NUM">0</field></shadow>'}
+        line1={'label': 'Line 1'},
+        line2={'label': 'Line 2'},
+        line3={'label': 'Line 3'},
+        line4={'label': 'Line 4'},
+        sign_type={'label': 'Sign Material', 'shadow': 'minecraft_log_picker'}, # custom shadow
+        direction={'label': 'Direction (0-15)'}
     )
-    def set_sign(self, position: 'Vec3', sign_type: 'Block' = "OAK_SIGN", direction: int = 0,
+    def set_sign(self, position: Vec3, sign_type: 'Block' = "OAK_SIGN", direction: int = 0,
                  line1: str = "", line2: str = "", line3: str = "", line4: str = ""):
         """Sets the text and type of a sign at the specified position."""
         self.mcplayer.pc.setSign(int(position.x), int(position.y), int(position.z),
