@@ -12,8 +12,10 @@ import { defineServerActionsBlocks } from "./ServerActions.mjs";
 import { defineThreadsBlocks } from "./Threads.mjs";
 import { defineTurtleShapesBlocks } from "./TurtleShapes.mjs";
 import { defineWorldActionsBlocks } from "./WorldActions.mjs";
-import { defineMineCraftEntityBlocks } from "./entities.mjs";
-import { defineMineCraftMaterialBlocks } from "./materials.mjs";
+import { defineBlocksBlocks } from "./blocks.mjs";
+import { defineEntitiesBlocks } from "./entities.mjs";
+import { defineItemsBlocks } from "./items.mjs";
+import { defineMaterialsBlocks } from "./materials.mjs";
 
 export function registerAllBlocks(Blockly) {
     defineMineCraftBlocks(Blockly);
@@ -27,6 +29,8 @@ export function registerAllBlocks(Blockly) {
     defineThreadsBlocks(Blockly);
     defineTurtleShapesBlocks(Blockly);
     defineWorldActionsBlocks(Blockly);
-    defineMineCraftEntityBlocks(Blockly);
-    defineMineCraftMaterialBlocks(Blockly);
+    defineBlocksBlocks(Blockly);
+    defineEntitiesBlocks(Blockly);
+    defineItemsBlocks(Blockly);
+    defineMaterialsBlocks(Blockly);
 }

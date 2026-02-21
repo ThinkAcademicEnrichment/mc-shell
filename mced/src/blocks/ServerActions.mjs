@@ -15,11 +15,10 @@ export function defineServerActionsBlocks(Blockly) {
                 ["Sunrise (23000)", "sunrise"]
                 ]), "VALUE");
             this.setOutput(true, "Time");
-            this.setColour(230);
-            this.setTooltip("Select a Time.");
+            this.setColour("230");
+            this.setTooltip("");
         }
     };
-
 
     Blockly.Blocks['picker_weather'] = {
         init: function() {
@@ -31,11 +30,10 @@ export function defineServerActionsBlocks(Blockly) {
                 ["Thunder", "thunder"]
                 ]), "VALUE");
             this.setOutput(true, "Weather");
-            this.setColour(230);
-            this.setTooltip("Select a Weather.");
+            this.setColour("230");
+            this.setTooltip("");
         }
     };
-
 
     Blockly.Blocks['picker_difficulty'] = {
         init: function() {
@@ -48,33 +46,31 @@ export function defineServerActionsBlocks(Blockly) {
                 ["Hard", "hard"]
                 ]), "VALUE");
             this.setOutput(true, "Difficulty");
-            this.setColour(230);
-            this.setTooltip("Select a Difficulty.");
+            this.setColour("230");
+            this.setTooltip("");
         }
     };
-
 
     Blockly.Blocks['picker_gamemode'] = {
         init: function() {
             this.appendDummyInput()
-                .appendField("Gamemode")
+                .appendField("Game Mode")
                 .appendField(new Blockly.FieldDropdown([
                 ["Survival", "survival"],
                 ["Creative", "creative"],
                 ["Adventure", "adventure"],
                 ["Spectator", "spectator"]
                 ]), "VALUE");
-            this.setOutput(true, "Gamemode");
-            this.setColour(230);
-            this.setTooltip("Select a Gamemode.");
+            this.setOutput(true, "GameMode");
+            this.setColour("230");
+            this.setTooltip("");
         }
     };
-
 
     Blockly.Blocks['picker_gamerule'] = {
         init: function() {
             this.appendDummyInput()
-                .appendField("Gamerule")
+                .appendField("Game Rule")
                 .appendField(new Blockly.FieldDropdown([
                 ["Advance Time", "advance_time"],
                 ["Advance Weather", "advance_weather"],
@@ -125,16 +121,15 @@ export function defineServerActionsBlocks(Blockly) {
                 ["Water Source Conversion", "water_source_conversion"]
                 ]), "VALUE");
             this.setOutput(true, "GameRule");
-            this.setColour(230);
-            this.setTooltip("Select a Gamerule.");
+            this.setColour("230");
+            this.setTooltip("");
         }
     };
-
 
     Blockly.Blocks['picker_integergamerule'] = {
         init: function() {
             this.appendDummyInput()
-                .appendField("Integergamerule")
+                .appendField("Integer Game Rule")
                 .appendField(new Blockly.FieldDropdown([
                 ["Fire Spread Radius", "fire_spread_radius_around_player"],
                 ["Max Block Modifications", "max_block_modifications"],
@@ -149,27 +144,25 @@ export function defineServerActionsBlocks(Blockly) {
                 ["Respawn Radius", "respawn_radius"]
                 ]), "VALUE");
             this.setOutput(true, "IntegerGameRule");
-            this.setColour(230);
-            this.setTooltip("Select a Integergamerule.");
+            this.setColour("230");
+            this.setTooltip("");
         }
     };
-
 
     Blockly.Blocks['picker_locatetype'] = {
         init: function() {
             this.appendDummyInput()
-                .appendField("Locatetype")
+                .appendField("Locate Type")
                 .appendField(new Blockly.FieldDropdown([
                 ["Structure", "structure"],
                 ["Biome", "biome"],
                 ["Point of Interest (POI)", "poi"]
                 ]), "VALUE");
             this.setOutput(true, "LocateType");
-            this.setColour(230);
-            this.setTooltip("Select a Locatetype.");
+            this.setColour("230");
+            this.setTooltip("");
         }
     };
-
 
     Blockly.Blocks['picker_structure'] = {
         init: function() {
@@ -198,16 +191,15 @@ export function defineServerActionsBlocks(Blockly) {
                 ["Woodland Mansion", "mansion"]
                 ]), "VALUE");
             this.setOutput(true, "Structure");
-            this.setColour(230);
-            this.setTooltip("Select a Structure.");
+            this.setColour("230");
+            this.setTooltip("");
         }
     };
-
 
     Blockly.Blocks['picker_biome'] = {
         init: function() {
             this.appendDummyInput()
-                .appendField("Biome")
+                .appendField("Structure")
                 .appendField(new Blockly.FieldDropdown([
                 ["Badlands", "badlands"],
                 ["Bamboo Jungle", "bamboo_jungle"],
@@ -248,16 +240,15 @@ export function defineServerActionsBlocks(Blockly) {
                 ["Warped Forest", "warped_forest"]
                 ]), "VALUE");
             this.setOutput(true, "Biome");
-            this.setColour(230);
-            this.setTooltip("Select a Biome.");
+            this.setColour("230");
+            this.setTooltip("");
         }
     };
-
 
     Blockly.Blocks['picker_poi'] = {
         init: function() {
             this.appendDummyInput()
-                .appendField("Poi")
+                .appendField("Point of Interest")
                 .appendField(new Blockly.FieldDropdown([
                 ["Armorer", "armorer"],
                 ["Butcher", "butcher"],
@@ -282,11 +273,10 @@ export function defineServerActionsBlocks(Blockly) {
                 ["Nether Portal", "nether_portal"]
                 ]), "VALUE");
             this.setOutput(true, "Poi");
-            this.setColour(230);
-            this.setTooltip("Select a Poi.");
+            this.setColour("230");
+            this.setTooltip("");
         }
     };
-
 
     Blockly.Blocks['picker_effect'] = {
         init: function() {
@@ -326,163 +316,273 @@ export function defineServerActionsBlocks(Blockly) {
                 ["Darkness", "darkness"]
                 ]), "VALUE");
             this.setOutput(true, "Effect");
-            this.setColour(230);
-            this.setTooltip("Select a Effect.");
+            this.setColour("230");
+            this.setTooltip("");
         }
     };
 
+    Blockly.Blocks['picker_titleaction'] = {
+        init: function() {
+            this.appendDummyInput()
+                .appendField("Location")
+                .appendField(new Blockly.FieldDropdown([
+                ["Main Title", "title"],
+                ["Subtitle", "subtitle"],
+                ["Action Bar", "actionbar"],
+                ["Clear", "clear"],
+                ["Reset", "reset"]
+                ]), "VALUE");
+            this.setOutput(true, "TitleAction");
+            this.setColour("230");
+            this.setTooltip("");
+        }
+    };
 
+    Blockly.Blocks['picker_metric'] = {
+        init: function() {
+            this.appendDummyInput()
+                .appendField("Metric")
+                .appendField(new Blockly.FieldDropdown([
+                ["Euclidean", "euclidean"],
+                ["Manhattan", "manhattan"],
+                ["Chebyshev", "chebyshev"]
+                ]), "VALUE");
+            this.setOutput(true, "Metric");
+            this.setColour("230");
+            this.setTooltip("");
+        }
+    };
 
-Blockly.Blocks['server_actions_server_apply_effect'] = {
-    init: function() {
-        this.appendDummyInput().appendField("Apply [effect] to [target] for [seconds]s (Level [amplifier])");
-        this.appendValueInput("EFFECT").setCheck("Effect").setAlign("RIGHT").appendField("Effect");
-        this.appendValueInput("TARGET").setCheck("String").setAlign("RIGHT").appendField("Target");
-        this.appendValueInput("SECONDS").setCheck("Number").setAlign("RIGHT").appendField("Duration");
-        this.appendValueInput("AMPLIFIER").setCheck("Number").setAlign("RIGHT").appendField("Level");
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(65);
-        this.setTooltip("An auto-generated block for the 'Apply [effect] to [target] for [seconds]s (Level [amplifier])' action.");
-        this.setInputsInline(false);
+    Blockly.Blocks['picker_qheading'] = {
+        init: function() {
+            this.appendDummyInput()
+                .appendField("Local Q-Heading")
+                .appendField(new Blockly.FieldDropdown([
+                ["Forward", "F"],
+                ["Back", "B"],
+                ["Right", "R"],
+                ["Left", "L"],
+                ["Up", "U"],
+                ["Down", "D"],
+                ["Forward-Right", "FR"],
+                ["Forward-Left", "FL"],
+                ["Back-Right", "BR"],
+                ["Back-Left", "BL"],
+                ["Forward-Up", "FU"],
+                ["Forward-Down", "FD"],
+                ["Back-Up", "BU"],
+                ["Back-Down", "BD"],
+                ["Right-Up", "RU"],
+                ["Right-Down", "RD"],
+                ["Left-Up", "LU"],
+                ["Left-Down", "LD"],
+                ["Forward-Right-Up", "FRU"],
+                ["Forward-Right-Down", "FRD"],
+                ["Forward-Left-Up", "FLU"],
+                ["Forward-Left-Down", "FLD"],
+                ["Back-Right-Up", "BRU"],
+                ["Back-Right-Down", "BRD"],
+                ["Back-Left-Up", "BLU"],
+                ["Back-Left-Down", "BLD"]
+                ]), "VALUE");
+            this.setOutput(true, "QHeading");
+            this.setColour("230");
+            this.setTooltip("");
+        }
+    };
 
-        // Configure shadow blocks directly
-        this.getInput('EFFECT').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="picker_effect"><field name="VALUE">speed</field></shadow>`));
-        this.getInput('TARGET').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT">SELF</field></shadow>`));
-        this.getInput('SECONDS').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="math_number"><field name="NUM">30</field></shadow>`));
-        this.getInput('AMPLIFIER').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="math_number"><field name="NUM">1</field></shadow>`));
-    }
-};
-Blockly.Blocks['server_actions_server_clear_inventory'] = {
-    init: function() {
-        this.appendDummyInput().appendField("Clear Inventory of [target]");
-        this.appendValueInput("TARGET").setCheck("String").setAlign("RIGHT").appendField("Target Player");
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(65);
-        this.setTooltip("An auto-generated block for the 'Clear Inventory of [target]' action.");
-        this.setInputsInline(false);
+    Blockly.Blocks['picker_axis'] = {
+        init: function() {
+            this.appendDummyInput()
+                .appendField("Axis")
+                .appendField(new Blockly.FieldDropdown([
+                ["Yaw (Y)", "y"],
+                ["Pitch (X)", "x"],
+                ["Roll (Z)", "z"]
+                ]), "VALUE");
+            this.setOutput(true, "Axis");
+            this.setColour("230");
+            this.setTooltip("");
+        }
+    };
 
-        // Configure shadow blocks directly
-        this.getInput('TARGET').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT">SELF</field></shadow>`));
-    }
-};
-Blockly.Blocks['server_actions_server_execute_command'] = {
-    init: function() {
-        this.appendDummyInput().appendField("Execute Command");
-        this.appendValueInput("COMMAND").setCheck("String").setAlign("RIGHT").appendField("Command");
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(65);
-        this.setTooltip("An auto-generated block for the 'Execute Command' action.");
-        this.setInputsInline(false);
+    Blockly.Blocks['picker_qcompass'] = {
+        init: function() {
+            this.appendDummyInput()
+                .appendField("Global Q-Compass Direction")
+                .appendField(new Blockly.FieldDropdown([
+                ["North (-Z)", "N"],
+                ["South (+Z)", "S"],
+                ["East (+X)", "E"],
+                ["West (-X)", "W"],
+                ["Up (+Y)", "U"],
+                ["Down (-Y)", "D"],
+                ["North-East", "NE"],
+                ["North-West", "NW"],
+                ["South-East", "SE"],
+                ["South-West", "SW"],
+                ["North-Up", "NU"],
+                ["North-Down", "ND"],
+                ["South-Up", "SU"],
+                ["South-Down", "SD"],
+                ["East-Up", "EU"],
+                ["East-Down", "ED"],
+                ["West-Up", "WU"],
+                ["West-Down", "WD"],
+                ["North-East-Up", "NEU"],
+                ["North-East-Down", "NED"],
+                ["North-West-Up", "NWU"],
+                ["North-West-Down", "NWD"],
+                ["South-East-Up", "SEU"],
+                ["South-East-Down", "SED"],
+                ["South-West-Up", "SWU"],
+                ["South-West-Down", "SWD"]
+                ]), "VALUE");
+            this.setOutput(true, "QCompass");
+            this.setColour("230");
+            this.setTooltip("");
+        }
+    };
 
-        // Configure shadow blocks directly
-        this.getInput('COMMAND').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT"></field></shadow>`));
-    }
-};
-Blockly.Blocks['server_actions_server_locate'] = {
-    init: function() {
-        this.appendDummyInput().appendField("Locate [type] [target]");
-        this.appendValueInput("LOCATE_TYPE").setCheck("LocateType").setAlign("RIGHT").appendField("Type");
-        this.appendValueInput("TARGET").setCheck(null).setAlign("RIGHT").appendField("Structure/Biome/POI");
-        this.setOutput(true, "3DVector");
-        this.setColour(65);
-        this.setTooltip("An auto-generated block for the 'Locate [type] [target]' action.");
-        this.setInputsInline(false);
+    Blockly.Blocks['serveractions_server_apply_effect'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Apply [effect] to [target] for [seconds]s (Level [amplifier])");
+            this.appendValueInput('effect').appendField('Effect').setCheck('Effect');
+this.appendValueInput('target').appendField('Target Player').setCheck('String');
+this.appendValueInput('seconds').appendField('Duration').setCheck('Number');
+this.appendValueInput('amplifier').appendField('Level').setCheck('Number');
+            this.setPreviousStatement(true); this.setNextStatement(true);
+            this.setColour("#75E538");
+            this.setTooltip("Applies a status effect to a target.");
+        }
+    };
 
-        // Configure shadow blocks directly
-        this.getInput('LOCATE_TYPE').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="picker_locatetype"><field name="VALUE">structure</field></shadow>`));
-    }
-};
-Blockly.Blocks['server_actions_server_set_difficulty'] = {
-    init: function() {
-        this.appendDummyInput().appendField("Set Difficulty to [difficulty]");
-        this.appendValueInput("DIFFICULTY_OPTION").setCheck("Difficulty").setAlign("RIGHT").appendField("Difficulty");
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(65);
-        this.setTooltip("An auto-generated block for the 'Set Difficulty to [difficulty]' action.");
-        this.setInputsInline(false);
+    Blockly.Blocks['serveractions_server_clear_inventory'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Clear Inventory of [target]");
+            this.appendValueInput('target').appendField('Target Player').setCheck('String');
+            this.setPreviousStatement(true); this.setNextStatement(true);
+            this.setColour("#75E538");
+            this.setTooltip("Clears items from a player's inventory.");
+        }
+    };
 
-        // Configure shadow blocks directly
-        this.getInput('DIFFICULTY_OPTION').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="picker_difficulty"><field name="VALUE">normal</field></shadow>`));
-    }
-};
-Blockly.Blocks['server_actions_server_set_gamemode'] = {
-    init: function() {
-        this.appendDummyInput().appendField("Set Gamemode [mode] for [target]");
-        this.appendValueInput("MODE").setCheck("Gamemode").setAlign("RIGHT").appendField("Mode");
-        this.appendValueInput("TARGET").setCheck("String").setAlign("RIGHT").appendField("Target Player");
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(65);
-        this.setTooltip("An auto-generated block for the 'Set Gamemode [mode] for [target]' action.");
-        this.setInputsInline(false);
+    Blockly.Blocks['serveractions_server_damage'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Damage [target] by [amount]");
+            this.appendValueInput('target').appendField('Target Player').setCheck('String');
+this.appendValueInput('amount').appendField('Amount').setCheck('Number');
+            this.setPreviousStatement(true); this.setNextStatement(true);
+            this.setColour("#75E538");
+            this.setTooltip("Deals damage to a target.");
+        }
+    };
 
-        // Configure shadow blocks directly
-        this.getInput('MODE').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="picker_gamemode"><field name="VALUE">creative</field></shadow>`));
-        this.getInput('TARGET').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="text"><field name="TEXT">SELF</field></shadow>`));
-    }
-};
-Blockly.Blocks['server_actions_server_set_gamerule'] = {
-    init: function() {
-        this.appendDummyInput().appendField("Set Game Rule [rule] to [value]");
-        this.appendValueInput("RULE").setCheck("GameRule").setAlign("RIGHT").appendField("Rule");
-        this.appendValueInput("VALUE").setCheck("Boolean").setAlign("RIGHT").appendField("Enabled");
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(65);
-        this.setTooltip("An auto-generated block for the 'Set Game Rule [rule] to [value]' action.");
-        this.setInputsInline(false);
+    Blockly.Blocks['serveractions_server_execute_command'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Execute Command");
+            this.appendValueInput('command').appendField('Command').setCheck('String');
+            this.setPreviousStatement(true); this.setNextStatement(true);
+            this.setColour("#75E538");
+            this.setTooltip("Executes a custom command string.");
+        }
+    };
 
-        // Configure shadow blocks directly
-        this.getInput('RULE').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="picker_gamerule"><field name="VALUE">doDaylightCycle</field></shadow>`));
-        this.getInput('VALUE').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="logic_boolean"><field name="BOOL">TRUE</field></shadow>`));
-    }
-};
-Blockly.Blocks['server_actions_server_set_integer_gamerule'] = {
-    init: function() {
-        this.appendDummyInput().appendField("Set Integer Game Rule [rule] to [value]");
-        this.appendValueInput("RULE").setCheck(null).setAlign("RIGHT").appendField("Rule");
-        this.appendValueInput("VALUE").setCheck("Number").setAlign("RIGHT").appendField("Value");
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(65);
-        this.setTooltip("An auto-generated block for the 'Set Integer Game Rule [rule] to [value]' action.");
-        this.setInputsInline(false);
+    Blockly.Blocks['serveractions_server_gamemode_set'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Set Gamemode to [gamemode] for [target]");
+            this.appendValueInput('gamemode').appendField('Game Mode').setCheck('GameMode');
+this.appendValueInput('target').appendField('Target Player').setCheck('String');
+            this.setPreviousStatement(true); this.setNextStatement(true);
+            this.setColour("#75E538");
+            this.setTooltip("Changes a player's gamemode.");
+        }
+    };
 
-        // Configure shadow blocks directly
-        this.getInput('RULE').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="picker_integergamerule"><field name="VALUE">respawn_radius</field></shadow>`));
-        this.getInput('VALUE').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="math_number"><field name="NUM">0</field></shadow>`));
-    }
-};
-Blockly.Blocks['server_actions_server_set_time'] = {
-    init: function() {
-        this.appendDummyInput().appendField("Set Time to [time]");
-        this.appendValueInput("TIME_OPTION").setCheck("Time").setAlign("RIGHT").appendField("Time");
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(65);
-        this.setTooltip("An auto-generated block for the 'Set Time to [time]' action.");
-        this.setInputsInline(false);
+    Blockly.Blocks['serveractions_server_gamerule_set'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Set Gamerule [rule] to [value]");
+            this.appendValueInput('rule').appendField('Game Rule').setCheck('GameRule');
+this.appendValueInput('value').appendField('Value').setCheck(['Boolean', 'Number', 'String']);
+            this.setPreviousStatement(true); this.setNextStatement(true);
+            this.setColour("#75E538");
+            this.setTooltip("Modifies a server game rule.");
+        }
+    };
 
-        // Configure shadow blocks directly
-        this.getInput('TIME_OPTION').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="picker_time"><field name="VALUE">day</field></shadow>`));
-    }
-};
-Blockly.Blocks['server_actions_server_set_weather'] = {
-    init: function() {
-        this.appendDummyInput().appendField("Set Weather to [weather]");
-        this.appendValueInput("WEATHER_OPTION").setCheck("Weather").setAlign("RIGHT").appendField("Weather");
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(65);
-        this.setTooltip("An auto-generated block for the 'Set Weather to [weather]' action.");
-        this.setInputsInline(false);
+    Blockly.Blocks['serveractions_server_give_item'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Give [count] [item] to [target]");
+            this.appendValueInput('item').appendField('Item').setCheck('Item');
+this.appendValueInput('count').appendField('Count').setCheck('Number');
+this.appendValueInput('target').appendField('Target Player').setCheck('String');
+            this.setPreviousStatement(true); this.setNextStatement(true);
+            this.setColour("#75E538");
+            this.setTooltip("Gives an item to a player.");
+        }
+    };
 
-        // Configure shadow blocks directly
-        this.getInput('WEATHER_OPTION').connection.setShadowDom(Blockly.utils.xml.textToDom(`<shadow type="picker_weather"><field name="VALUE">clear</field></shadow>`));
-    }
-};
+    Blockly.Blocks['serveractions_server_locate_structure'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Locate Structure [structure]");
+            this.appendValueInput('structure').appendField('Structure').setCheck('Structure');
+            this.setOutput(true, '3DVector');
+            this.setColour("#75E538");
+            this.setTooltip("Locates a structure and returns its coordinates.");
+        }
+    };
+
+    Blockly.Blocks['serveractions_server_show_title'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Show Title [text] as [action] for [target]");
+            this.appendValueInput('text').appendField('Message').setCheck('String');
+this.appendValueInput('action').appendField('Title Action').setCheck('TitleAction');
+this.appendValueInput('target').appendField('Target Player').setCheck('String');
+            this.setPreviousStatement(true); this.setNextStatement(true);
+            this.setColour("#75E538");
+            this.setTooltip("Displays large text on the player's screen.");
+        }
+    };
+
+    Blockly.Blocks['serveractions_server_summon'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Summon [entity] at [pos]");
+            this.appendValueInput('entity').appendField('Entity').setCheck('Entity');
+this.appendValueInput('pos').appendField('Position').setCheck('3DVector');
+            this.setPreviousStatement(true); this.setNextStatement(true);
+            this.setColour("#75E538");
+            this.setTooltip("Summons an entity at a specific location.");
+        }
+    };
+
+    Blockly.Blocks['serveractions_server_teleport'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Teleport [target] to [pos]");
+            this.appendValueInput('target').appendField('Target Player').setCheck('String');
+this.appendValueInput('pos').appendField('Position').setCheck('3DVector');
+            this.setPreviousStatement(true); this.setNextStatement(true);
+            this.setColour("#75E538");
+            this.setTooltip("Teleports a player or entity to a location.");
+        }
+    };
+
+    Blockly.Blocks['serveractions_server_time_set'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Set Time to [time]");
+            this.appendValueInput('time').appendField('Time').setCheck('Number');
+            this.setPreviousStatement(true); this.setNextStatement(true);
+            this.setColour("#75E538");
+            this.setTooltip("Sets the server time.");
+        }
+    };
+
+    Blockly.Blocks['serveractions_server_weather_set'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Set Weather to [weather]");
+            this.appendValueInput('weather').appendField('Weather').setCheck('String');
+            this.setPreviousStatement(true); this.setNextStatement(true);
+            this.setColour("#75E538");
+            this.setTooltip("Sets the server weather (clear, rain, thunder).");
+        }
+    };
 }

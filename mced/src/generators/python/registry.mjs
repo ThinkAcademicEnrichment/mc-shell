@@ -12,8 +12,10 @@ import { defineServerActionsGenerators } from "./ServerActions.mjs";
 import { defineThreadsGenerators } from "./Threads.mjs";
 import { defineTurtleShapesGenerators } from "./TurtleShapes.mjs";
 import { defineWorldActionsGenerators } from "./WorldActions.mjs";
-import { defineMineCraftEntityGenerators } from "./entities.mjs";
-import { defineMineCraftMaterialGenerators } from "./materials.mjs";
+import { defineBlocksGenerators } from "./blocks.mjs";
+import { defineEntitiesGenerators } from "./entities.mjs";
+import { defineItemsGenerators } from "./items.mjs";
+import { defineMaterialsGenerators } from "./materials.mjs";
 
 export function registerAllGenerators(pythonGenerator) {
     defineMineCraftGenerators(pythonGenerator);
@@ -27,6 +29,8 @@ export function registerAllGenerators(pythonGenerator) {
     defineThreadsGenerators(pythonGenerator);
     defineTurtleShapesGenerators(pythonGenerator);
     defineWorldActionsGenerators(pythonGenerator);
-    defineMineCraftEntityGenerators(pythonGenerator);
-    defineMineCraftMaterialGenerators(pythonGenerator);
+    defineBlocksGenerators(pythonGenerator);
+    defineEntitiesGenerators(pythonGenerator);
+    defineItemsGenerators(pythonGenerator);
+    defineMaterialsGenerators(pythonGenerator);
 }
