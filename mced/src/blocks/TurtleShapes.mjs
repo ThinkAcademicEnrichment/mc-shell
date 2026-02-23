@@ -8,7 +8,7 @@ export function defineTurtleShapesBlocks(Blockly) {
             this.appendValueInput('normal').appendField('Normal').setCheck('3DVector');
 this.appendValueInput('side_length').appendField('Side Length').setCheck('Number');
             this.setOutput(true, 'Digital_Set');
-            this.setColour("#F3BA2B");
+            this.setColour("#C9A65B");
             this.setTooltip("");
         }
     };
@@ -19,7 +19,7 @@ this.appendValueInput('side_length').appendField('Side Length').setCheck('Number
             this.appendValueInput('p1').appendField('point_1').setCheck('3DVector');
 this.appendValueInput('p2').appendField('point_2').setCheck('3DVector');
             this.setOutput(true, 'Digital_Set');
-            this.setColour("#F3BA2B");
+            this.setColour("#C9A65B");
             this.setTooltip("");
         }
     };
@@ -30,7 +30,7 @@ this.appendValueInput('p2').appendField('point_2').setCheck('3DVector');
             this.appendValueInput('radius').appendField('Radius').setCheck('Number');
 this.appendValueInput('metric').appendField('Metric').setCheck('Metric');
             this.setOutput(true, 'Digital_Set');
-            this.setColour("#F3BA2B");
+            this.setColour("#C9A65B");
             this.setTooltip("");
         }
     };

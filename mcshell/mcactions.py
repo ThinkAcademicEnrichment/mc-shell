@@ -61,8 +61,8 @@ class TurtleShapes(MCActionsBase):
         return generate_linear_path(p1.to_tuple(), p2.to_tuple())
 
 class LSystemShapes(MCActionsBase):
-    def __init__(self, player):
-        super().__init__(player, 0.01)
+    def __init__(self, player, delay_between_blocks=0.01):
+        super().__init__(player, delay_between_blocks)
         self.local_turtle = QTurtle()
 
     @mced_block(

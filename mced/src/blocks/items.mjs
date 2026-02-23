@@ -8,7 +8,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftWood')
                 .appendField('Boat');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -18,7 +18,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftWood')
                 .appendField('Button');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -28,7 +28,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftWood')
                 .appendField('Chest Boat');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -38,7 +38,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftWood')
                 .appendField('Door');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -48,7 +48,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftWood')
                 .appendField('Fence');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -58,7 +58,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftWood')
                 .appendField('Fence Gate');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -68,7 +68,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftWood')
                 .appendField('Hanging Sign');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -78,7 +78,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftWood')
                 .appendField('Leaves');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -88,7 +88,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftWood')
                 .appendField('Log');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -98,7 +98,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftWood')
                 .appendField('Planks');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -108,7 +108,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftWood')
                 .appendField('Pressure Plate');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -118,7 +118,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftWood')
                 .appendField('Sapling');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -128,7 +128,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftWood')
                 .appendField('Shelf');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -138,7 +138,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftWood')
                 .appendField('Sign');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -148,7 +148,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftWood')
                 .appendField('Slab');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -158,7 +158,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftWood')
                 .appendField('Stairs');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -168,7 +168,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftWood')
                 .appendField('Trapdoor');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -178,7 +178,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftWood')
                 .appendField('Wall Hanging Sign');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -188,7 +188,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftWood')
                 .appendField('Wall Sign');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -198,7 +198,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftWood')
                 .appendField('Wood');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -208,7 +208,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftColour')
                 .appendField('Banner');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -218,7 +218,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftColour')
                 .appendField('Bed');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -228,7 +228,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftColour')
                 .appendField('Bundle');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -238,7 +238,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftColour')
                 .appendField('Candle');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -248,7 +248,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftColour')
                 .appendField('Candle Cake');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -258,7 +258,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftColour')
                 .appendField('Carpet');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -268,7 +268,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftColour')
                 .appendField('Concrete');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -278,7 +278,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftColour')
                 .appendField('Concrete Powder');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -288,7 +288,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftColour')
                 .appendField('Dye');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -298,7 +298,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftColour')
                 .appendField('Glazed Terracotta');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -308,7 +308,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftColour')
                 .appendField('Harness');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -318,7 +318,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftColour')
                 .appendField('Shulker Box');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -328,7 +328,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftColour')
                 .appendField('Stained Glass');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -338,7 +338,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftColour')
                 .appendField('Stained Glass Pane');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -348,7 +348,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftColour')
                 .appendField('Terracotta');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -358,7 +358,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftColour')
                 .appendField('Wall Banner');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -368,7 +368,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftColour')
                 .appendField('Wool');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -378,7 +378,7 @@ export function defineItemsBlocks(Blockly) {
                 .setCheck('MinecraftColour')
                 .appendField('Tulip');
             this.setOutput(true, 'Item');
-            this.setColour("50");
+            this.setColour("#D4A373");
         }
     };
 
@@ -419,7 +419,7 @@ export function defineItemsBlocks(Blockly) {
                 ["Magma Block", "MAGMA_BLOCK"]
                 ]), "VALUE");
             this.setOutput(true, "Item");
-            this.setColour("230");
+            this.setColour("#95A5A6");
             this.setTooltip("");
         }
     };
@@ -450,7 +450,7 @@ export function defineItemsBlocks(Blockly) {
                 ["Ancient Debris", "ANCIENT_DEBRIS"]
                 ]), "VALUE");
             this.setOutput(true, "Item");
-            this.setColour("230");
+            this.setColour("#95A5A6");
             this.setTooltip("");
         }
     };
@@ -483,7 +483,7 @@ export function defineItemsBlocks(Blockly) {
                 ["Chiseled Tuff Bricks", "CHISELED_TUFF_BRICKS"]
                 ]), "VALUE");
             this.setOutput(true, "Item");
-            this.setColour("230");
+            this.setColour("#95A5A6");
             this.setTooltip("");
         }
     };
@@ -498,7 +498,7 @@ export function defineItemsBlocks(Blockly) {
                 ["Tinted Glass", "TINTED_GLASS"]
                 ]), "VALUE");
             this.setOutput(true, "Item");
-            this.setColour("230");
+            this.setColour("#95A5A6");
             this.setTooltip("");
         }
     };
@@ -534,7 +534,7 @@ export function defineItemsBlocks(Blockly) {
                 ["Redstone Lamp", "REDSTONE_LAMP"]
                 ]), "VALUE");
             this.setOutput(true, "Item");
-            this.setColour("230");
+            this.setColour("#95A5A6");
             this.setTooltip("");
         }
     };
@@ -560,7 +560,7 @@ export function defineItemsBlocks(Blockly) {
                 ["End Rod", "END_ROD"]
                 ]), "VALUE");
             this.setOutput(true, "Item");
-            this.setColour("230");
+            this.setColour("#95A5A6");
             this.setTooltip("");
         }
     };
@@ -580,7 +580,7 @@ export function defineItemsBlocks(Blockly) {
                 ["Copper Bulb", "COPPER_BULB"]
                 ]), "VALUE");
             this.setOutput(true, "Item");
-            this.setColour("230");
+            this.setColour("#95A5A6");
             this.setTooltip("");
         }
     };
@@ -606,7 +606,7 @@ export function defineItemsBlocks(Blockly) {
                 ["Weeping Vines", "WEEPING_VINES"]
                 ]), "VALUE");
             this.setOutput(true, "Item");
-            this.setColour("230");
+            this.setColour("#95A5A6");
             this.setTooltip("");
         }
     };
@@ -635,7 +635,7 @@ export function defineItemsBlocks(Blockly) {
                 ["Peony", "PEONY"]
                 ]), "VALUE");
             this.setOutput(true, "Item");
-            this.setColour("230");
+            this.setColour("#95A5A6");
             this.setTooltip("");
         }
     };
@@ -655,7 +655,7 @@ export function defineItemsBlocks(Blockly) {
                 ["Smoker", "SMOKER"]
                 ]), "VALUE");
             this.setOutput(true, "Item");
-            this.setColour("230");
+            this.setColour("#95A5A6");
             this.setTooltip("");
         }
     };
@@ -671,7 +671,7 @@ export function defineItemsBlocks(Blockly) {
                 ["Respawn Anchor", "RESPAWN_ANCHOR"]
                 ]), "VALUE");
             this.setOutput(true, "Item");
-            this.setColour("230");
+            this.setColour("#95A5A6");
             this.setTooltip("");
         }
     };
@@ -1767,7 +1767,7 @@ export function defineItemsBlocks(Blockly) {
                 ["Zombified Piglin Spawn Egg", "ZOMBIFIED_PIGLIN_SPAWN_EGG"]
                 ]), "VALUE");
             this.setOutput(true, "Item");
-            this.setColour("230");
+            this.setColour("#95A5A6");
             this.setTooltip("");
         }
     };

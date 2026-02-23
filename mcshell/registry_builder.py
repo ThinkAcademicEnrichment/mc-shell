@@ -46,17 +46,18 @@ class RegistryBuilder:
         except (FileNotFoundError, EOFError):
             self.entity_data = {}
 
+        # Muted Primary & Secondary Palette
         self.COLORS = {
-            "Block": 160,
-            "Item": 50,
-            "Entity": "#5b5ba5",
-            "Picker": 230,
-            "Geometry": "#364EE7",
-            "Turtle": "#F3BA2B",
-            "LSystem": "#75E538",
-            "Player": "#3ECDE0",
-            "Events": "#FCBA03",
-            "Server": "#75E538",
+            "Block": "#B06161",     # Muted Red / Terracotta
+            "Item": "#D4A373",      # Muted Gold / Tan
+            "Entity": "#8D7EB5",    # Muted Purple / Lavender
+            "Picker": "#95A5A6",    # Muted Slate / Gray
+            "Geometry": "#5B7BA1",  # Muted Blue / Steel
+            "Turtle": "#C9A65B",    # Muted Yellow / Amber
+            "LSystem": "#7A9473",   # Muted Green / Sage
+            "Player": "#61A1B0",    # Muted Cyan / Teal
+            "Events": "#D68C45",    # Muted Orange / Copper
+            "Server": "#5C7457",    # Muted Forest / Dark Green
         }
 
         self.TYPE_MAP = {
@@ -75,6 +76,7 @@ class RegistryBuilder:
             int = '<shadow type="math_number"><field name="NUM">1</field></shadow>',
             float = '<shadow type="math_number"><field name="NUM">1.0</field></shadow>',
             math_number = '<shadow type="math_number"><field name="NUM">1</field></shadow>',
+            str = '<shadow type="text"><field name="TEXT"></field></shadow>',
             text = '<shadow type="text"><field name="TEXT"></field></shadow>',
             Vec3='<shadow type="minecraft_vector_3d"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow>',
             Block='<shadow type="mc_block_picker_world"><field name="VALUE">STONE</field></shadow>',
@@ -103,14 +105,14 @@ class RegistryBuilder:
         self.ACTION_CLASSES = []
         if HAS_ALL_ACTIONS:
             self.ACTION_CLASSES.extend([
-                (ServerActions, "ServerActions", self.COLORS["Server"]),
-                (PyncraftActions, "PyncraftActions", "#252E28"),
-                (PlayerActions, "PlayerActions", self.COLORS["Player"]),
-                (TurtleShapes, "TurtleShapes", self.COLORS["Turtle"]),
-                (LSystemShapes, "LSystemShapes", self.COLORS["LSystem"]),
-                (DigitalGeometryActions, "DigitalGeometryActions", self.COLORS["Geometry"]),
-                (QTurtleActions, "QTurtleActions", self.COLORS["Turtle"]),
-                (EventActions, "EventActions", self.COLORS["Events"])
+                (ServerActions, "Server", self.COLORS["Server"]),
+                (PyncraftActions, "Pyncraft", "#252E28"),
+                (PlayerActions, "Player", self.COLORS["Player"]),
+                (TurtleShapes, "Turtle", self.COLORS["Turtle"]),
+                (LSystemShapes, "LSystem", self.COLORS["LSystem"]),
+                (DigitalGeometryActions, "Digital Geometry", self.COLORS["Geometry"]),
+                (QTurtleActions, "Q-Turtle", self.COLORS["Turtle"]),
+                (EventActions, "Event", self.COLORS["Events"])
             ])
 
         # --- Utility Picker Options ---
@@ -549,11 +551,11 @@ class RegistryBuilder:
             pick_js.append(res['js']); pick_py.append(res['py'])
 
         for i, (cls, name, color) in enumerate(self.ACTION_CLASSES):
-            gen = BlocklyGenerator(cls, self.TYPE_MAP, self.SHADOW_MAP, color)
+            gen = BlocklyGenerator(cls, self.TYPE_MAP, self.SHADOW_MAP, color, name)
             b_js, p_py, c_xml = gen.generate()
             js_out = pick_js + [b_js] if i == 0 else [b_js]
             py_out = pick_py + [p_py] if i == 0 else [p_py]
-            self._write_output(name, name, js_out, py_out)
+            self._write_output(cls.__name__, cls.__name__, js_out, py_out)
             BlocklyGenerator.update_toolbox(c_xml, self.toolbox_path)
 
     def build_pickers_category(self):
