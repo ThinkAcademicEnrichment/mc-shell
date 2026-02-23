@@ -105,14 +105,14 @@ class RegistryBuilder:
         self.ACTION_CLASSES = []
         if HAS_ALL_ACTIONS:
             self.ACTION_CLASSES.extend([
-                (ServerActions, "ServerActions", self.COLORS["Server"]),
-                (PyncraftActions, "PyncraftActions", "#252E28"),
-                (PlayerActions, "PlayerActions", self.COLORS["Player"]),
-                (TurtleShapes, "TurtleShapes", self.COLORS["Turtle"]),
-                (LSystemShapes, "LSystemShapes", self.COLORS["LSystem"]),
-                (DigitalGeometryActions, "DigitalGeometryActions", self.COLORS["Geometry"]),
-                (QTurtleActions, "QTurtleActions", self.COLORS["Turtle"]),
-                (EventActions, "EventActions", self.COLORS["Events"])
+                (ServerActions, "Server", self.COLORS["Server"]),
+                (PyncraftActions, "Pyncraft", "#252E28"),
+                (PlayerActions, "Player", self.COLORS["Player"]),
+                (TurtleShapes, "Turtle", self.COLORS["Turtle"]),
+                (LSystemShapes, "LSystem", self.COLORS["LSystem"]),
+                (DigitalGeometryActions, "Digital Geometry", self.COLORS["Geometry"]),
+                (QTurtleActions, "Q-Turtle", self.COLORS["Turtle"]),
+                (EventActions, "Event", self.COLORS["Events"])
             ])
 
         # --- Utility Picker Options ---
@@ -551,11 +551,11 @@ class RegistryBuilder:
             pick_js.append(res['js']); pick_py.append(res['py'])
 
         for i, (cls, name, color) in enumerate(self.ACTION_CLASSES):
-            gen = BlocklyGenerator(cls, self.TYPE_MAP, self.SHADOW_MAP, color)
+            gen = BlocklyGenerator(cls, self.TYPE_MAP, self.SHADOW_MAP, color, name)
             b_js, p_py, c_xml = gen.generate()
             js_out = pick_js + [b_js] if i == 0 else [b_js]
             py_out = pick_py + [p_py] if i == 0 else [p_py]
-            self._write_output(name, name, js_out, py_out)
+            self._write_output(cls.__name__, cls.__name__, js_out, py_out)
             BlocklyGenerator.update_toolbox(c_xml, self.toolbox_path)
 
     def build_pickers_category(self):
