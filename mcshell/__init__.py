@@ -220,7 +220,7 @@ class MCShell(Magics):
                 "server-port": self.server_data.get('port', MC_SERVER_PORT),
                 "query.port": self.server_data.get('port', MC_SERVER_PORT),
                 "rcon.port": self.server_data.get('rcon_port', MC_RCON_PORT),
-                "app.port": self.server_data.get('app_port', MC_RCON_PORT),
+                "app.port": self.server_data.get('app_port', MC_APP_PORT),
                 "rcon.password": self.server_data.get('password', world_name),
                 "enable-command-block":'true',
             },

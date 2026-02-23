@@ -62,8 +62,8 @@ MC_SERVER_DATA = {
     'port':MC_SERVER_PORT,
     'rcon_port':MC_RCON_PORT,
     'fj_port': FJ_PLUGIN_PORT,
-    'password': None,
     'app_port': MC_APP_PORT,
+    'password': None,
 }
 
 MC_DATA_DIR = pathlib.Path(__file__).parent.joinpath('data')
