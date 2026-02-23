@@ -46,17 +46,18 @@ class RegistryBuilder:
         except (FileNotFoundError, EOFError):
             self.entity_data = {}
 
+        # Muted Primary & Secondary Palette
         self.COLORS = {
-            "Block": 160,
-            "Item": 50,
-            "Entity": "#5b5ba5",
-            "Picker": 230,
-            "Geometry": "#364EE7",
-            "Turtle": "#F3BA2B",
-            "LSystem": "#75E538",
-            "Player": "#3ECDE0",
-            "Events": "#FCBA03",
-            "Server": "#75E538",
+            "Block": "#B06161",     # Muted Red / Terracotta
+            "Item": "#D4A373",      # Muted Gold / Tan
+            "Entity": "#8D7EB5",    # Muted Purple / Lavender
+            "Picker": "#95A5A6",    # Muted Slate / Gray
+            "Geometry": "#5B7BA1",  # Muted Blue / Steel
+            "Turtle": "#C9A65B",    # Muted Yellow / Amber
+            "LSystem": "#7A9473",   # Muted Green / Sage
+            "Player": "#61A1B0",    # Muted Cyan / Teal
+            "Events": "#D68C45",    # Muted Orange / Copper
+            "Server": "#5C7457",    # Muted Forest / Dark Green
         }
 
         self.TYPE_MAP = {
@@ -75,6 +76,7 @@ class RegistryBuilder:
             int = '<shadow type="math_number"><field name="NUM">1</field></shadow>',
             float = '<shadow type="math_number"><field name="NUM">1.0</field></shadow>',
             math_number = '<shadow type="math_number"><field name="NUM">1</field></shadow>',
+            str = '<shadow type="text"><field name="TEXT"></field></shadow>',
             text = '<shadow type="text"><field name="TEXT"></field></shadow>',
             Vec3='<shadow type="minecraft_vector_3d"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow>',
             Block='<shadow type="mc_block_picker_world"><field name="VALUE">STONE</field></shadow>',
