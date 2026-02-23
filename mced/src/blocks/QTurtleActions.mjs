@@ -8,7 +8,7 @@ export function defineQTurtleActionsBlocks(Blockly) {
             this.appendValueInput('position').appendField('Position').setCheck('3DVector');
 this.appendValueInput('heading_q_str').appendField('Facing').setCheck('QCompass');
             this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#F3BA2B");
+            this.setColour("#C9A65B");
             this.setTooltip("Resets the turtle to a specific position and aligns its Forward vector with the specified Global Q-Direction (e.g., 'N', 'NE', 'SWU').  It automatically recalculates the orthogonal(ish) Right and Up vectors to form a consistent basis frame.");
         }
     };
@@ -18,7 +18,7 @@ this.appendValueInput('heading_q_str').appendField('Facing').setCheck('QCompass'
             this.appendDummyInput().appendField("QTurtle: Capture Brush");
             this.appendValueInput('shape').appendField('Shape').setCheck('Digital_Set');
             this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#F3BA2B");
+            this.setColour("#C9A65B");
             this.setTooltip("");
         }
     };
@@ -30,7 +30,7 @@ this.appendValueInput('heading_q_str').appendField('Facing').setCheck('QCompass'
 this.appendValueInput('direction').appendField('Q-Heading').setCheck('QHeading');
 this.appendValueInput('block_type').appendField('Material').setCheck('Block');
             this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#F3BA2B");
+            this.setColour("#C9A65B");
             this.setTooltip("");
         }
     };
@@ -41,7 +41,7 @@ this.appendValueInput('block_type').appendField('Material').setCheck('Block');
             this.appendValueInput('direction').appendField('Direction').setCheck('QHeading');
 this.appendValueInput('distance').appendField('Distance').setCheck('Number');
             this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#F3BA2B");
+            this.setColour("#C9A65B");
             this.setTooltip("");
         }
     };
@@ -51,7 +51,7 @@ this.appendValueInput('distance').appendField('Distance').setCheck('Number');
             this.appendDummyInput().appendField("QTurtle: Pop State");
             
             this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#F3BA2B");
+            this.setColour("#C9A65B");
             this.setTooltip("");
         }
     };
@@ -61,7 +61,7 @@ this.appendValueInput('distance').appendField('Distance').setCheck('Number');
             this.appendDummyInput().appendField("QTurtle: Position");
             
             this.setOutput(true, '3DVector');
-            this.setColour("#F3BA2B");
+            this.setColour("#C9A65B");
             this.setTooltip("");
         }
     };
@@ -71,7 +71,7 @@ this.appendValueInput('distance').appendField('Distance').setCheck('Number');
             this.appendDummyInput().appendField("QTurtle: Push State");
             
             this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#F3BA2B");
+            this.setColour("#C9A65B");
             this.setTooltip("");
         }
     };
@@ -82,7 +82,7 @@ this.appendValueInput('distance').appendField('Distance').setCheck('Number');
             this.appendValueInput('axis').appendField('Axis').setCheck('Axis');
 this.appendValueInput('steps').appendField('Steps (90 deg)').setCheck('Number');
             this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#F3BA2B");
+            this.setColour("#C9A65B");
             this.setTooltip("");
         }
     };
@@ -92,7 +92,7 @@ this.appendValueInput('steps').appendField('Steps (90 deg)').setCheck('Number');
             this.appendDummyInput().appendField("QTurtle: Set Brush");
             this.appendValueInput('shape').appendField('Shape').setCheck('Digital_Set');
             this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#F3BA2B");
+            this.setColour("#C9A65B");
             this.setTooltip("");
         }
     };
@@ -102,7 +102,7 @@ this.appendValueInput('steps').appendField('Steps (90 deg)').setCheck('Number');
             this.appendDummyInput().appendField("QTurtle: Stamp Brush");
             this.appendValueInput('block_type').appendField('Material').setCheck('Block');
             this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#F3BA2B");
+            this.setColour("#C9A65B");
             this.setTooltip("");
         }
     };

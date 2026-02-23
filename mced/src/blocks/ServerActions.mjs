@@ -15,7 +15,7 @@ export function defineServerActionsBlocks(Blockly) {
                 ["Sunrise (23000)", "sunrise"]
                 ]), "VALUE");
             this.setOutput(true, "Time");
-            this.setColour("230");
+            this.setColour("#95A5A6");
             this.setTooltip("");
         }
     };
@@ -30,7 +30,7 @@ export function defineServerActionsBlocks(Blockly) {
                 ["Thunder", "thunder"]
                 ]), "VALUE");
             this.setOutput(true, "Weather");
-            this.setColour("230");
+            this.setColour("#95A5A6");
             this.setTooltip("");
         }
     };
@@ -46,7 +46,7 @@ export function defineServerActionsBlocks(Blockly) {
                 ["Hard", "hard"]
                 ]), "VALUE");
             this.setOutput(true, "Difficulty");
-            this.setColour("230");
+            this.setColour("#95A5A6");
             this.setTooltip("");
         }
     };
@@ -62,7 +62,7 @@ export function defineServerActionsBlocks(Blockly) {
                 ["Spectator", "spectator"]
                 ]), "VALUE");
             this.setOutput(true, "GameMode");
-            this.setColour("230");
+            this.setColour("#95A5A6");
             this.setTooltip("");
         }
     };
@@ -121,7 +121,7 @@ export function defineServerActionsBlocks(Blockly) {
                 ["Water Source Conversion", "water_source_conversion"]
                 ]), "VALUE");
             this.setOutput(true, "GameRule");
-            this.setColour("230");
+            this.setColour("#95A5A6");
             this.setTooltip("");
         }
     };
@@ -144,7 +144,7 @@ export function defineServerActionsBlocks(Blockly) {
                 ["Respawn Radius", "respawn_radius"]
                 ]), "VALUE");
             this.setOutput(true, "IntegerGameRule");
-            this.setColour("230");
+            this.setColour("#95A5A6");
             this.setTooltip("");
         }
     };
@@ -159,7 +159,7 @@ export function defineServerActionsBlocks(Blockly) {
                 ["Point of Interest (POI)", "poi"]
                 ]), "VALUE");
             this.setOutput(true, "LocateType");
-            this.setColour("230");
+            this.setColour("#95A5A6");
             this.setTooltip("");
         }
     };
@@ -191,7 +191,7 @@ export function defineServerActionsBlocks(Blockly) {
                 ["Woodland Mansion", "mansion"]
                 ]), "VALUE");
             this.setOutput(true, "Structure");
-            this.setColour("230");
+            this.setColour("#95A5A6");
             this.setTooltip("");
         }
     };
@@ -240,7 +240,7 @@ export function defineServerActionsBlocks(Blockly) {
                 ["Warped Forest", "warped_forest"]
                 ]), "VALUE");
             this.setOutput(true, "Biome");
-            this.setColour("230");
+            this.setColour("#95A5A6");
             this.setTooltip("");
         }
     };
@@ -273,7 +273,7 @@ export function defineServerActionsBlocks(Blockly) {
                 ["Nether Portal", "nether_portal"]
                 ]), "VALUE");
             this.setOutput(true, "Poi");
-            this.setColour("230");
+            this.setColour("#95A5A6");
             this.setTooltip("");
         }
     };
@@ -316,7 +316,7 @@ export function defineServerActionsBlocks(Blockly) {
                 ["Darkness", "darkness"]
                 ]), "VALUE");
             this.setOutput(true, "Effect");
-            this.setColour("230");
+            this.setColour("#95A5A6");
             this.setTooltip("");
         }
     };
@@ -333,7 +333,7 @@ export function defineServerActionsBlocks(Blockly) {
                 ["Reset", "reset"]
                 ]), "VALUE");
             this.setOutput(true, "TitleAction");
-            this.setColour("230");
+            this.setColour("#95A5A6");
             this.setTooltip("");
         }
     };
@@ -348,7 +348,7 @@ export function defineServerActionsBlocks(Blockly) {
                 ["Chebyshev", "chebyshev"]
                 ]), "VALUE");
             this.setOutput(true, "Metric");
-            this.setColour("230");
+            this.setColour("#95A5A6");
             this.setTooltip("");
         }
     };
@@ -386,7 +386,7 @@ export function defineServerActionsBlocks(Blockly) {
                 ["Back-Left-Down", "BLD"]
                 ]), "VALUE");
             this.setOutput(true, "QHeading");
-            this.setColour("230");
+            this.setColour("#95A5A6");
             this.setTooltip("");
         }
     };
@@ -401,7 +401,7 @@ export function defineServerActionsBlocks(Blockly) {
                 ["Roll (Z)", "z"]
                 ]), "VALUE");
             this.setOutput(true, "Axis");
-            this.setColour("230");
+            this.setColour("#95A5A6");
             this.setTooltip("");
         }
     };
@@ -439,7 +439,7 @@ export function defineServerActionsBlocks(Blockly) {
                 ["South-West-Down", "SWD"]
                 ]), "VALUE");
             this.setOutput(true, "QCompass");
-            this.setColour("230");
+            this.setColour("#95A5A6");
             this.setTooltip("");
         }
     };
@@ -452,7 +452,7 @@ this.appendValueInput('target').appendField('Target Player').setCheck('String');
 this.appendValueInput('seconds').appendField('Duration').setCheck('Number');
 this.appendValueInput('amplifier').appendField('Level').setCheck('Number');
             this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#75E538");
+            this.setColour("#5C7457");
             this.setTooltip("Applies a status effect to a target.");
         }
     };
@@ -462,7 +462,7 @@ this.appendValueInput('amplifier').appendField('Level').setCheck('Number');
             this.appendDummyInput().appendField("Clear Inventory of [target]");
             this.appendValueInput('target').appendField('Target Player').setCheck('String');
             this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#75E538");
+            this.setColour("#5C7457");
             this.setTooltip("Clears items from a player's inventory.");
         }
     };
@@ -473,7 +473,7 @@ this.appendValueInput('amplifier').appendField('Level').setCheck('Number');
             this.appendValueInput('target').appendField('Target Player').setCheck('String');
 this.appendValueInput('amount').appendField('Amount').setCheck('Number');
             this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#75E538");
+            this.setColour("#5C7457");
             this.setTooltip("Deals damage to a target.");
         }
     };
@@ -483,7 +483,7 @@ this.appendValueInput('amount').appendField('Amount').setCheck('Number');
             this.appendDummyInput().appendField("Execute Command");
             this.appendValueInput('command').appendField('Command').setCheck('String');
             this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#75E538");
+            this.setColour("#5C7457");
             this.setTooltip("Executes a custom command string.");
         }
     };
@@ -494,7 +494,7 @@ this.appendValueInput('amount').appendField('Amount').setCheck('Number');
             this.appendValueInput('gamemode').appendField('Game Mode').setCheck('GameMode');
 this.appendValueInput('target').appendField('Target Player').setCheck('String');
             this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#75E538");
+            this.setColour("#5C7457");
             this.setTooltip("Changes a player's gamemode.");
         }
     };
@@ -505,7 +505,7 @@ this.appendValueInput('target').appendField('Target Player').setCheck('String');
             this.appendValueInput('rule').appendField('Game Rule').setCheck('GameRule');
 this.appendValueInput('value').appendField('Value').setCheck(['Boolean', 'Number', 'String']);
             this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#75E538");
+            this.setColour("#5C7457");
             this.setTooltip("Modifies a server game rule.");
         }
     };
@@ -517,7 +517,7 @@ this.appendValueInput('value').appendField('Value').setCheck(['Boolean', 'Number
 this.appendValueInput('count').appendField('Count').setCheck('Number');
 this.appendValueInput('target').appendField('Target Player').setCheck('String');
             this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#75E538");
+            this.setColour("#5C7457");
             this.setTooltip("Gives an item to a player.");
         }
     };
@@ -527,7 +527,7 @@ this.appendValueInput('target').appendField('Target Player').setCheck('String');
             this.appendDummyInput().appendField("Locate Structure [structure]");
             this.appendValueInput('structure').appendField('Structure').setCheck('Structure');
             this.setOutput(true, '3DVector');
-            this.setColour("#75E538");
+            this.setColour("#5C7457");
             this.setTooltip("Locates a structure and returns its coordinates.");
         }
     };
@@ -539,7 +539,7 @@ this.appendValueInput('target').appendField('Target Player').setCheck('String');
 this.appendValueInput('action').appendField('Title Action').setCheck('TitleAction');
 this.appendValueInput('target').appendField('Target Player').setCheck('String');
             this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#75E538");
+            this.setColour("#5C7457");
             this.setTooltip("Displays large text on the player's screen.");
         }
     };
@@ -550,7 +550,7 @@ this.appendValueInput('target').appendField('Target Player').setCheck('String');
             this.appendValueInput('entity').appendField('Entity').setCheck('Entity');
 this.appendValueInput('pos').appendField('Position').setCheck('3DVector');
             this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#75E538");
+            this.setColour("#5C7457");
             this.setTooltip("Summons an entity at a specific location.");
         }
     };
@@ -561,7 +561,7 @@ this.appendValueInput('pos').appendField('Position').setCheck('3DVector');
             this.appendValueInput('target').appendField('Target Player').setCheck('String');
 this.appendValueInput('pos').appendField('Position').setCheck('3DVector');
             this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#75E538");
+            this.setColour("#5C7457");
             this.setTooltip("Teleports a player or entity to a location.");
         }
     };
@@ -571,7 +571,7 @@ this.appendValueInput('pos').appendField('Position').setCheck('3DVector');
             this.appendDummyInput().appendField("Set Time to [time]");
             this.appendValueInput('time').appendField('Time').setCheck('Number');
             this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#75E538");
+            this.setColour("#5C7457");
             this.setTooltip("Sets the server time.");
         }
     };
@@ -581,7 +581,7 @@ this.appendValueInput('pos').appendField('Position').setCheck('3DVector');
             this.appendDummyInput().appendField("Set Weather to [weather]");
             this.appendValueInput('weather').appendField('Weather').setCheck('String');
             this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#75E538");
+            this.setColour("#5C7457");
             this.setTooltip("Sets the server weather (clear, rain, thunder).");
         }
     };
