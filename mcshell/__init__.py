@@ -148,7 +148,7 @@ class MCShell(Magics):
             print("\nWorld creation cancelled.")
             return
 
-        self.server_data = {"host": '127.0.0.1','port':MC_SERVER_PORT, "rcon_port": MC_RCON_PORT, "password": password, "fj_port":FJ_PLUGIN_PORT} # Port can be dynamic if needed
+        # self.server_data = {"host": '127.0.0.1','port':MC_SERVER_PORT, "rcon_port": MC_RCON_PORT, "password": password, "fj_port":FJ_PLUGIN_PORT} # Port can be dynamic if needed
 
         print("Input the ports for the server, rcon and plugin. These only need to be changed if you are running more than one mc-shell!")
         try:
@@ -156,13 +156,22 @@ class MCShell(Magics):
             resp_port = Prompt.ask('Server Port:', default=str(self.server_data['port']))
             resp_rcon = Prompt.ask('RCON Port:', default=str(self.server_data['rcon_port']))
             resp_fj   = Prompt.ask('FruitJuice Port:', default=str(self.server_data['fj_port']))
+            resp_app  = Prompt.ask('Application Port:', default=str(self.server_data['app_port']))
 
             # Robust casting logic
             ports = {
                 'port': int(resp_port) if resp_port else self.server_data['port'],
                 'rcon_port': int(resp_rcon) if resp_rcon else self.server_data['rcon_port'],
-                'fj_port': int(resp_fj) if resp_fj else self.server_data['fj_port']
+                'fj_port': int(resp_fj) if resp_fj else self.server_data['fj_port'],
+                'app_port': int(resp_app) if resp_app else self.server_data['app_port']
             }
+
+
+            self.server_data['port'] = ports['port']
+            self.server_data['rcon_port'] = ports['rcon_port']
+            self.server_data['fj_port'] = ports['fj_port']
+            self.server_data['app_port'] = ports['app_port']
+
         except (EOFError, KeyboardInterrupt):
             print("\nWorld creation cancelled.")
             return
@@ -211,7 +220,8 @@ class MCShell(Magics):
                 "server-port": self.server_data.get('port', MC_SERVER_PORT),
                 "query.port": self.server_data.get('port', MC_SERVER_PORT),
                 "rcon.port": self.server_data.get('rcon_port', MC_RCON_PORT),
-                "rcon.password": self.server_data.get('password', 'minecraft'),
+                "app.port": self.server_data.get('app_port', MC_RCON_PORT),
+                "rcon.password": self.server_data.get('password', world_name),
                 "enable-command-block":'true',
             },
             "FruitJuice" : {
@@ -1045,13 +1055,13 @@ class MCShell(Magics):
         Starts the mc-ed application server, getting the authorized Minecraft user
         name from the central configuration file.
         """
-        app_port = 5001
         # if we started a world, self.server_data should be set
         if not self.active_paper_server:
             self.server_data = {
                 'host': Prompt.ask('Server Address:', default=self.server_data['host']),
                 'fj_port': int(Prompt.ask('Plugin Port:', default=str(self.server_data['fj_port']))),
                 'rcon_port': int(Prompt.ask('Server Port:', default=str(self.server_data['rcon_port']))),
+                'app_port': int(Prompt.ask('Application Port:', default=str(self.server_data['app_port']))),
                 'password':None,
             }
 
@@ -1068,9 +1078,9 @@ class MCShell(Magics):
         print(f"Starting application server for authorized Minecraft player: {minecraft_name}")
         start_app_server(self.server_data,minecraft_name,self.shell,power_repo)
         print(f"Open a browser here to use the editor:")
-        print(f"\thttp://{socket.gethostname()}.local:{app_port}")
+        print(f"\thttp://{socket.gethostname()}.local:{self.server_data['app_port']}")
         print(f"Open a browser here to use the control:")
-        print(f"\thttp://{socket.gethostname()}.local:{app_port}/control")
+        print(f"\thttp://{socket.gethostname()}.local:{self.server_data['app_port']}/control")
         return
 
     @line_magic

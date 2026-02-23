@@ -70,7 +70,7 @@ def start_app_server(server_data,mc_name,ipy_shell,power_repo):
     # provides a clean exit from the run() loop.
 
     app_server_thread = threading.Thread(
-        target=lambda: socketio.run(app, host='0.0.0.0', port=5001, debug=False, use_reloader=False, allow_unsafe_werkzeug=False),
+        target=lambda: socketio.run(app, host='0.0.0.0', port=server_data['app_port'], debug=False, use_reloader=False, allow_unsafe_werkzeug=False),
         daemon=True
     )
     app_server_thread.start()
@@ -95,7 +95,7 @@ def stop_app_server():
     sio = socketio_client.Client()
     try:
         print("CLient connecting to server to send shutdown event...")
-        sio.connect('http://127.0.0.1:5001')
+        sio.connect(f"http://127.0.0.1:{app.config['MCSHELL_SERVER_DATA']['app_port']}")
     except Exception as e:
         print(f"Could not connect to server to send shutdown event: {e}")
         print("The server might already be down or unresponsive.")
