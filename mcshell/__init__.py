@@ -148,6 +148,8 @@ class MCShell(Magics):
             print("\nWorld creation cancelled.")
             return
 
+        self.server_data['password'] = password
+
         # self.server_data = {"host": '127.0.0.1','port':MC_SERVER_PORT, "rcon_port": MC_RCON_PORT, "password": password, "fj_port":FJ_PLUGIN_PORT} # Port can be dynamic if needed
 
         print("Input the ports for the server, rcon and plugin. These only need to be changed if you are running more than one mc-shell!")
@@ -221,7 +223,7 @@ class MCShell(Magics):
                 "query.port": self.server_data.get('port', MC_SERVER_PORT),
                 "rcon.port": self.server_data.get('rcon_port', MC_RCON_PORT),
                 "app.port": self.server_data.get('app_port', MC_APP_PORT),
-                "rcon.password": self.server_data.get('password', world_name),
+                "rcon.password": self.server_data.get('password'),
                 "enable-command-block":'true',
             },
             "FruitJuice" : {
