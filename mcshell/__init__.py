@@ -1045,19 +1045,19 @@ class MCShell(Magics):
         Starts the mc-ed application server, getting the authorized Minecraft user
         name from the central configuration file.
         """
+        app_port = 5001
         # if we started a world, self.server_data should be set
         if not self.active_paper_server:
             self.server_data = {
                 'host': Prompt.ask('Server Address:', default=self.server_data['host']),
                 'fj_port': int(Prompt.ask('Plugin Port:', default=str(self.server_data['fj_port']))),
-                'rcon_port':MC_RCON_PORT,
+                'rcon_port': int(Prompt.ask('Server Port:', default=str(self.server_data['rcon_port']))),
                 'password':None,
             }
 
             login_to_server = Prompt.ask('Do you want to be a server op?',choices=['yes','no'],default='no')
             if login_to_server.lower() == 'yes':
                 self.server_data.update({
-                    'rcon_port': int(Prompt.ask('Server Port:', default=str(self.server_data['rcon_port']))),
                     'password': Prompt.ask('Server Password:', password=True)
                 })
 
@@ -1067,6 +1067,10 @@ class MCShell(Magics):
         stop_app_server()
         print(f"Starting application server for authorized Minecraft player: {minecraft_name}")
         start_app_server(self.server_data,minecraft_name,self.shell,power_repo)
+        print(f"Open a browser here to use the editor:")
+        print(f"\thttp://{socket.gethostname()}.local:{app_port}")
+        print(f"Open a browser here to use the control:")
+        print(f"\thttp://{socket.gethostname()}.local:{app_port}/control")
         return
 
     @line_magic
