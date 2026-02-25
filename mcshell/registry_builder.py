@@ -65,12 +65,15 @@ class RegistryBuilder:
             'int': 'Number',
             'float': 'Number',
             'bool': 'Boolean',
+            'list': 'Array',
+            'tuple': 'List',
             'Vec3': "3DVector", 'Matrix3': "3DMatrix", 'Block': "Block", 'DigitalSet': "Digital_Set",
-                    'Metric': 'Metric', 'QDirection': 'QDirection', 'Axis': 'Axis', 'QCompass': 'QCompass',
-                    'Time': 'Time',
-                    'Weather': 'Weather', 'Difficulty': 'Difficulty', 'Gamemode': 'Gamemode', 'GameRule': 'GameRule',
-                    'LocateType': 'LocateType', 'Structure': 'Structure', 'Biome': 'Biome', 'Poi': 'Poi',
-                    'Entity': 'Entity', 'Effect': "Effect"}
+            'Metric': 'Metric', 'QDirection': 'QDirection', 'Axis': 'Axis', 'QCompass': 'QCompass',
+            'Time': 'Time',
+            'TimeType':'TimeType',
+            'Weather': 'Weather', 'Difficulty': 'Difficulty', 'Gamemode': 'Gamemode', 'GameRule': 'GameRule',
+            'LocateType': 'LocateType', 'Structure': 'Structure', 'Biome': 'Biome', 'Poi': 'Poi',
+            'Entity': 'Entity', 'Effect': "Effect"}
 
         self.SHADOW_MAP = dict(
             int = '<shadow type="math_number"><field name="NUM">1</field></shadow>',
@@ -88,6 +91,7 @@ class RegistryBuilder:
             Axis='<shadow type="picker_axis"><field name="VALUE">y</field></shadow>',
             QCompass='<shadow type="picker_qcompass"><field name="VALUE">N</field></shadow>',
             Time='<shadow type="picker_time"><field name="VALUE">day</field></shadow>',
+            TimeType='<shadow type="picker_timetype"><field name="VALUE">gametime</field></shadow>',
             Weather='<shadow type="picker_weather"><field name="VALUE">clear</field></shadow>',
             Difficulty='<shadow type="picker_difficulty"><field name="VALUE">normal</field></shadow>',
             GameMode='<shadow type="picker_gamemode"><field name="VALUE">creative</field></shadow>',
@@ -177,6 +181,12 @@ class RegistryBuilder:
             ("Night (13000)", "night"),
             ("Midnight (18000)", "midnight"),
             ("Sunrise (23000)", "sunrise")
+        ]
+
+        self.TIMETYPES = [
+            ("Day Time", "daytime"),
+            ("Game Time", "gametime"),
+            ("Day", "day"),
         ]
 
         self.WEATHERS = [
@@ -383,6 +393,7 @@ class RegistryBuilder:
                     ("Reset", "reset")]
 
         self.ACTION_PICKERS = [
+            {'id': 'picker_timetype', 'label': 'Time Type', 'options': self.TIMETYPES, 'input_type': 'TimeType'},
             {'id': 'picker_time', 'label': 'Time', 'options': self.TIMES, 'input_type': 'Time'},
             {'id': 'picker_weather', 'label': 'Weather', 'options': self.WEATHERS, 'input_type': 'Weather'},
             {'id': 'picker_difficulty', 'label': 'Difficulty', 'options': self.DIFFICULTYS, 'input_type': 'Difficulty'},
@@ -455,6 +466,7 @@ class RegistryBuilder:
 
     def build_all(self):
         """Executes the complete build pipeline."""
+        self.ensure_toolbox()
         self.build_blocks()
         self.build_items()
         self.build_entities()
@@ -468,6 +480,14 @@ class RegistryBuilder:
             res = BlocklyGenerator.generate_picker(info['id'], info['label'], info['options'], info['input_type'], self.COLORS["Picker"])
             js.append(res['js']); py.append(res['py'])
         return {"js": "\n".join(js), "py": "\n".join(py)}
+
+    def ensure_toolbox(self):
+        """Ensures the toolbox.xml exists and is valid."""
+        output_toolbox_path = MC_APP_SRC_DIR / 'toolbox.xml'
+        if not output_toolbox_path.exists():
+            toolbox_template_path = MC_DATA_DIR / 'toolbox_template.xml'
+            with output_toolbox_path.open('w') as f:
+                f.write(toolbox_template_path.read_text())
 
     def build_blocks(self):
         """Processes blocks and organizes them into thematic groups."""
