@@ -243,6 +243,20 @@ async function init() {
         if (!e.isUiEvent) { debouncedAutosave(); debouncedCodeUpdate(); }
     });
 
+    workspace.addChangeListener((e) => {
+        if (!e.isUiEvent) { debouncedAutosave(); debouncedCodeUpdate(); }
+
+        // --- NEW: Dynamic Space Elimination Logic ---
+        // Listen for blocks being collapsed or expanded
+        if (e.type === Blockly.Events.BLOCK_CHANGE && e.element === 'collapsed') {
+            // Use a short timeout to let the collapse animation finish visually
+            setTimeout(() => {
+                // cleanUp() re-arranges all top-level blocks to eliminate empty vertical space
+                workspace.cleanUp();
+            }, 50);
+        }
+    });
+
     // 4. Button Wiring (Delegating to PowerManager)
     document.getElementById('confirmSaveButton')?.addEventListener('click', async () => {
         const form = document.getElementById('savePowerForm');
