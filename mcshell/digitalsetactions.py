@@ -28,9 +28,9 @@ class DigitalSetActions(MCActionsBase):
     @mced_block(
         label="Add Voxel",
         target_set={'label': "Set"},
-        x={'label': "x", 'default': 0},
-        y={'label': "y", 'default': 0},
-        z={'label': "z", 'default': 0}
+        x={'label': "x"},
+        y={'label': "y"},
+        z={'label': "z"}
     )
     def add_voxel(self, target_set: DigitalSet, x: int, y: int, z: int) -> DigitalSet:
         """
@@ -121,9 +121,9 @@ class DigitalSetActions(MCActionsBase):
     @mced_block(
         label="Translate",
         target_set={'label': "Set"},
-        dx={'label': "dx", 'default': 0},
-        dy={'label': "dy", 'default': 0},
-        dz={'label': "dz", 'default': 0}
+        dx={'label': "dx"},
+        dy={'label': "dy"},
+        dz={'label': "dz"}
     )
     def translate(self, target_set: DigitalSet, dx: int, dy: int, dz: int) -> DigitalSet:
         """
@@ -136,7 +136,7 @@ class DigitalSetActions(MCActionsBase):
         target_set={'label': "Set"},
         axis_primary={'label': 'Primary Axis'},
         axis_secondary={'label': 'Secondary Axis'},
-        factor={'label': 'Factor', 'default': 1.0}
+        factor={'label': 'Factor'}
     )
     def shear(self, target_set: DigitalSet, axis_primary: 'Axis', axis_secondary: 'Axis', factor: float) -> DigitalSet:
         """
@@ -147,7 +147,7 @@ class DigitalSetActions(MCActionsBase):
     @mced_block(
         label="Scale",
         target_set={'label': "Set"},
-        factor={'label': "Factor", 'default': 1.0}
+        factor={'label': "Factor"}
     )
     def scale(self, target_set: DigitalSet, factor: float) -> DigitalSet:
         """
@@ -161,7 +161,7 @@ class DigitalSetActions(MCActionsBase):
         label="Rotate",
         target_set={'label': "Set"},
         axis={'label': "Axis"},
-        angle={'label': "Angle (deg)", 'default': 90}
+        angle={'label': "Angle (deg)"}
     )
     def rotate(self, target_set: DigitalSet, axis: 'Axis', angle: float) -> DigitalSet:
         """
@@ -208,9 +208,9 @@ class DigitalSetActions(MCActionsBase):
     @mced_block(
         label="Extrude",
         target_set={'label': "Set"},
-        dx={'label': "dx", 'default': 0},
-        dy={'label': "dy", 'default': 1},
-        dz={'label': "dz", 'default': 0}
+        dx={'label': "dx"},
+        dy={'label': "dy"},
+        dz={'label': "dz"}
     )
     def extrude(self, target_set: DigitalSet, dx: int, dy: int, dz: int) -> DigitalSet:
         """

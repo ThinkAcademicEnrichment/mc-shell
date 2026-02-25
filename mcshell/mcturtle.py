@@ -30,17 +30,17 @@ class DigitalSet:
 
     # --- Set Operations ---
     def union(self, other):
-        return DigitalSet(self.voxels.union(other.voxels))
+        return DigitalSet(self.voxels.union(other.voxels.copy()))
 
     def intersection(self, other):
-        return DigitalSet(self.voxels.intersection(other.voxels))
+        return DigitalSet(self.voxels.intersection(other.voxels.copy()))
 
     def difference(self, other):
-        return DigitalSet(self.voxels.difference(other.voxels))
+        return DigitalSet(self.voxels.difference(other.voxels.copy()))
 
     # --- Affine Transformations (Local) ---
     def translate(self, dx, dy, dz):
-        new_voxels = { (x + int(dx), y + int(dy), z + int(dz)) for x, y, z in self.voxels }
+        new_voxels = { (x + int(dx), y + int(dy), z + int(dz)) for x, y, z in self.voxels.copy() }
         return DigitalSet(new_voxels)
 
     def shear(self, axis_primary, axis_secondary, factor):
@@ -48,7 +48,7 @@ class DigitalSet:
         idx_s = {'x': 0, 'y': 1, 'z': 2}[axis_secondary.lower()]
 
         new_voxels = set()
-        for v in self.voxels:
+        for v in self.voxels.copy():
             coords = list(v)
             shift = math.floor(coords[idx_s] * factor)
             coords[idx_p] += shift
@@ -58,7 +58,7 @@ class DigitalSet:
     # --- Morphology ---
     def dilate(self, connectivity=6):
         offsets = self._get_connectivity_offsets(connectivity)
-        new_voxels = set(self.voxels)
+        new_voxels = set(self.voxels.copy())
         for x, y, z in self.voxels:
             for dx, dy, dz in offsets:
                 new_voxels.add((x + dx, y + dy, z + dz))
@@ -67,7 +67,7 @@ class DigitalSet:
     def erode(self, connectivity=6):
         offsets = self._get_connectivity_offsets(connectivity)
         new_voxels = set()
-        for x, y, z in self.voxels:
+        for x, y, z in self.voxels.copy():
             is_interior = True
             for dx, dy, dz in offsets:
                 if (x + dx, y + dy, z + dz) not in self.voxels:
@@ -88,7 +88,7 @@ class DigitalSet:
         path = generate_linear_path((0,0,0), (vx, vy, vz))
         new_voxels = set()
         for px, py, pz in path:
-            for vx, vy, vz in self.voxels:
+            for vx, vy, vz in self.voxels.copy():
                 new_voxels.add((vx + px, vy + py, vz + pz))
         return DigitalSet(new_voxels)
 
