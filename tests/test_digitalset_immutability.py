@@ -16,8 +16,8 @@ class TestDigitalSetActionsImmutability(unittest.TestCase):
 
         # Note: If your DigitalSet requires actual coordinate data to test properly,
         # you would populate them here. For example:
-        # self.set_a.add(0, 0, 0)
-        # self.set_b.add(1, 1, 1)
+        self.set_a.add((0, 0, 0))
+        self.set_b.add((1, 1, 1))
 
         # We take a deepcopy of the original sets. This serves as our "ground truth"
         # to ensure that the methods didn't secretly mutate the original references.
