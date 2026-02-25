@@ -7,7 +7,7 @@ export function definePlayerActionsBlocks(Blockly) {
             this.appendDummyInput().appendField("Get Direction");
             
             this.setOutput(true, '3DVector');
-            this.setColour("#3ECDE0");
+            this.setColour("#61A1B0");
             this.setTooltip("Returns the direction the player is looking as a unit vector.");
         }
     };
@@ -17,7 +17,7 @@ export function definePlayerActionsBlocks(Blockly) {
             this.appendDummyInput().appendField("Get Height");
             this.appendValueInput('position').appendField('At Position (X,Z)').setCheck('3DVector');
             this.setOutput(true, 'Number');
-            this.setColour("#3ECDE0");
+            this.setColour("#61A1B0");
             this.setTooltip("Gets the Y coordinate of the highest block at the X,Z of the given position.");
         }
     };
@@ -27,7 +27,7 @@ export function definePlayerActionsBlocks(Blockly) {
             this.appendDummyInput().appendField("Get Player Position");
             
             this.setOutput(true, '3DVector');
-            this.setColour("#3ECDE0");
+            this.setColour("#61A1B0");
             this.setTooltip("Returns the player's current Vec3 position.");
         }
     };
@@ -37,7 +37,7 @@ export function definePlayerActionsBlocks(Blockly) {
             this.appendDummyInput().appendField("Get Player Q-Compass Direction");
             
             this.setOutput(true, 'QCompass');
-            this.setColour("#3ECDE0");
+            this.setColour("#61A1B0");
             this.setTooltip("");
         }
     };
@@ -47,7 +47,7 @@ export function definePlayerActionsBlocks(Blockly) {
             this.appendDummyInput().appendField("Get Q Direction");
             
             this.setOutput(true, '3DVector');
-            this.setColour("#3ECDE0");
+            this.setColour("#61A1B0");
             this.setTooltip("Returns the quantized direction the player is looking as a unit vector.");
         }
     };
@@ -57,7 +57,7 @@ export function definePlayerActionsBlocks(Blockly) {
             this.appendDummyInput().appendField("Get Tile Position");
             
             this.setOutput(true, '3DVector');
-            this.setColour("#3ECDE0");
+            this.setColour("#61A1B0");
             this.setTooltip("Returns the integer block coordinates of the player.");
         }
     };
@@ -67,7 +67,7 @@ export function definePlayerActionsBlocks(Blockly) {
             this.appendDummyInput().appendField("Set Direction");
             this.appendValueInput('direction').appendField('Direction Vector').setCheck('3DVector');
             this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#3ECDE0");
+            this.setColour("#61A1B0");
             this.setTooltip("Sets the player's facing direction.");
         }
     };
@@ -77,7 +77,7 @@ export function definePlayerActionsBlocks(Blockly) {
             this.appendDummyInput().appendField("Set Player Position");
             this.appendValueInput('pos').appendField('Position').setCheck('3DVector');
             this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#3ECDE0");
+            this.setColour("#61A1B0");
             this.setTooltip("");
         }
     };
@@ -87,7 +87,7 @@ export function definePlayerActionsBlocks(Blockly) {
             this.appendDummyInput().appendField("Set Player Q-Compass Direction");
             this.appendValueInput('direction').appendField('Q-Compass Direction').setCheck('QCompass');
             this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#3ECDE0");
+            this.setColour("#61A1B0");
             this.setTooltip("");
         }
     };
@@ -97,7 +97,7 @@ export function definePlayerActionsBlocks(Blockly) {
             this.appendDummyInput().appendField("Set Tile Position");
             this.appendValueInput('pos').appendField('Position').setCheck('3DVector');
             this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#3ECDE0");
+            this.setColour("#61A1B0");
             this.setTooltip("Returns the integer block coordinates of the player.");
         }
     };

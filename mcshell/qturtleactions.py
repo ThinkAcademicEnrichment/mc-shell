@@ -13,7 +13,7 @@ class QTurtleActions(MCActionsBase):
         position={'label': 'Position'},
         heading_q_str={'label': 'Facing'}
     )
-    def reset(self, position:'Vec3', heading_q_str:'QCompass'):
+    def reset(self, position:Vec3, heading_q_str:'QCompass'):
         """
         Resets the turtle to a specific position and aligns its Forward vector
         with the specified Global Q-Direction (e.g., 'N', 'NE', 'SWU').
@@ -118,5 +118,5 @@ class QTurtleActions(MCActionsBase):
     @mced_block(
         label="QTurtle: Position",
     )
-    def turtle_position(self) -> '3DVector':
+    def turtle_position(self) -> Vec3:
         return Vec3(*self.turtle.pos)

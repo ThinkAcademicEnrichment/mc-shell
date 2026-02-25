@@ -14,6 +14,7 @@ try:
     from mcshell.playeractions import PlayerActions
     from mcshell.qturtleactions import QTurtleActions
     from mcshell.digitalgeometryactions import DigitalGeometryActions
+    from mcshell.digitalsetactions import DigitalSetActions
     from mcshell.eventactions import EventActions
     from mcshell.mcactions import (
         TurtleShapes, LSystemShapes
@@ -46,17 +47,19 @@ class RegistryBuilder:
         except (FileNotFoundError, EOFError):
             self.entity_data = {}
 
+        # Muted Primary & Secondary Palette
         self.COLORS = {
-            "Block": 160,
-            "Item": 50,
-            "Entity": "#5b5ba5",
-            "Picker": 230,
-            "Geometry": "#364EE7",
-            "Turtle": "#F3BA2B",
-            "LSystem": "#75E538",
-            "Player": "#3ECDE0",
-            "Events": "#FCBA03",
-            "Server": "#75E538",
+            "Block": "#B06161",     # Muted Red / Terracotta
+            "Item": "#D4A373",      # Muted Gold / Tan
+            "Entity": "#8D7EB5",    # Muted Purple / Lavender
+            "Picker": "#95A5A6",    # Muted Slate / Gray
+            "Geometry": "#5B7BA1",  # Muted Blue / Steel
+            "Turtle": "#C9A65B",    # Muted Yellow / Amber
+            "LSystem": "#7A9473",   # Muted Green / Sage
+            "Player": "#61A1B0",    # Muted Cyan / Teal
+            "Events": "#D68C45",    # Muted Orange / Copper
+            "Server": "#5C7457",    # Muted Forest / Dark Green
+            "Digital Set": "#A57582", # Muted Mauve / Rose   <-- New Addition
         }
 
         self.TYPE_MAP = {
@@ -64,17 +67,21 @@ class RegistryBuilder:
             'int': 'Number',
             'float': 'Number',
             'bool': 'Boolean',
+            'list': 'Array',
+            'tuple': 'List',
             'Vec3': "3DVector", 'Matrix3': "3DMatrix", 'Block': "Block", 'DigitalSet': "Digital_Set",
-                    'Metric': 'Metric', 'QDirection': 'QDirection', 'Axis': 'Axis', 'QCompass': 'QCompass',
-                    'Time': 'Time',
-                    'Weather': 'Weather', 'Difficulty': 'Difficulty', 'Gamemode': 'Gamemode', 'GameRule': 'GameRule',
-                    'LocateType': 'LocateType', 'Structure': 'Structure', 'Biome': 'Biome', 'Poi': 'Poi',
-                    'Entity': 'Entity', 'Effect': "Effect"}
+            'Metric': 'Metric', 'QDirection': 'QDirection', 'Axis': 'Axis', 'QCompass': 'QCompass',
+            'Time': 'Time',
+            'TimeType':'TimeType',
+            'Weather': 'Weather', 'Difficulty': 'Difficulty', 'Gamemode': 'Gamemode', 'GameRule': 'GameRule',
+            'LocateType': 'LocateType', 'Structure': 'Structure', 'Biome': 'Biome', 'Poi': 'Poi',
+            'Entity': 'Entity', 'Effect': "Effect"}
 
         self.SHADOW_MAP = dict(
             int = '<shadow type="math_number"><field name="NUM">1</field></shadow>',
             float = '<shadow type="math_number"><field name="NUM">1.0</field></shadow>',
             math_number = '<shadow type="math_number"><field name="NUM">1</field></shadow>',
+            str = '<shadow type="text"><field name="TEXT"></field></shadow>',
             text = '<shadow type="text"><field name="TEXT"></field></shadow>',
             Vec3='<shadow type="minecraft_vector_3d"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow>',
             Block='<shadow type="mc_block_picker_world"><field name="VALUE">STONE</field></shadow>',
@@ -86,6 +93,7 @@ class RegistryBuilder:
             Axis='<shadow type="picker_axis"><field name="VALUE">y</field></shadow>',
             QCompass='<shadow type="picker_qcompass"><field name="VALUE">N</field></shadow>',
             Time='<shadow type="picker_time"><field name="VALUE">day</field></shadow>',
+            TimeType='<shadow type="picker_timetype"><field name="VALUE">gametime</field></shadow>',
             Weather='<shadow type="picker_weather"><field name="VALUE">clear</field></shadow>',
             Difficulty='<shadow type="picker_difficulty"><field name="VALUE">normal</field></shadow>',
             GameMode='<shadow type="picker_gamemode"><field name="VALUE">creative</field></shadow>',
@@ -103,14 +111,15 @@ class RegistryBuilder:
         self.ACTION_CLASSES = []
         if HAS_ALL_ACTIONS:
             self.ACTION_CLASSES.extend([
-                (ServerActions, "ServerActions", self.COLORS["Server"]),
-                (PyncraftActions, "PyncraftActions", "#252E28"),
-                (PlayerActions, "PlayerActions", self.COLORS["Player"]),
-                (TurtleShapes, "TurtleShapes", self.COLORS["Turtle"]),
-                (LSystemShapes, "LSystemShapes", self.COLORS["LSystem"]),
-                (DigitalGeometryActions, "DigitalGeometryActions", self.COLORS["Geometry"]),
-                (QTurtleActions, "QTurtleActions", self.COLORS["Turtle"]),
-                (EventActions, "EventActions", self.COLORS["Events"])
+                (ServerActions, "Server", self.COLORS["Server"]),
+                (PyncraftActions, "Pyncraft", "#252E28"),
+                (PlayerActions, "Player", self.COLORS["Player"]),
+                (TurtleShapes, "Turtle", self.COLORS["Turtle"]),
+                (LSystemShapes, "LSystem", self.COLORS["LSystem"]),
+                (DigitalGeometryActions, "Digital Geometry", self.COLORS["Geometry"]),
+                (QTurtleActions, "Q-Turtle", self.COLORS["Turtle"]),
+                (EventActions, "Event", self.COLORS["Events"]),
+                (DigitalSetActions, "Digital Set", self.COLORS["Digital Set"]),
             ])
 
         # --- Utility Picker Options ---
@@ -175,6 +184,12 @@ class RegistryBuilder:
             ("Night (13000)", "night"),
             ("Midnight (18000)", "midnight"),
             ("Sunrise (23000)", "sunrise")
+        ]
+
+        self.TIMETYPES = [
+            ("Day Time", "daytime"),
+            ("Game Time", "gametime"),
+            ("Day", "day"),
         ]
 
         self.WEATHERS = [
@@ -381,6 +396,7 @@ class RegistryBuilder:
                     ("Reset", "reset")]
 
         self.ACTION_PICKERS = [
+            {'id': 'picker_timetype', 'label': 'Time Type', 'options': self.TIMETYPES, 'input_type': 'TimeType'},
             {'id': 'picker_time', 'label': 'Time', 'options': self.TIMES, 'input_type': 'Time'},
             {'id': 'picker_weather', 'label': 'Weather', 'options': self.WEATHERS, 'input_type': 'Weather'},
             {'id': 'picker_difficulty', 'label': 'Difficulty', 'options': self.DIFFICULTYS, 'input_type': 'Difficulty'},
@@ -453,6 +469,7 @@ class RegistryBuilder:
 
     def build_all(self):
         """Executes the complete build pipeline."""
+        self.ensure_toolbox()
         self.build_blocks()
         self.build_items()
         self.build_entities()
@@ -466,6 +483,14 @@ class RegistryBuilder:
             res = BlocklyGenerator.generate_picker(info['id'], info['label'], info['options'], info['input_type'], self.COLORS["Picker"])
             js.append(res['js']); py.append(res['py'])
         return {"js": "\n".join(js), "py": "\n".join(py)}
+
+    def ensure_toolbox(self):
+        """Ensures the toolbox.xml exists and is valid."""
+        output_toolbox_path = MC_APP_SRC_DIR / 'toolbox.xml'
+        if not output_toolbox_path.exists():
+            toolbox_template_path = MC_DATA_DIR / 'toolbox_template.xml'
+            with output_toolbox_path.open('w') as f:
+                f.write(toolbox_template_path.read_text())
 
     def build_blocks(self):
         """Processes blocks and organizes them into thematic groups."""
@@ -549,11 +574,11 @@ class RegistryBuilder:
             pick_js.append(res['js']); pick_py.append(res['py'])
 
         for i, (cls, name, color) in enumerate(self.ACTION_CLASSES):
-            gen = BlocklyGenerator(cls, self.TYPE_MAP, self.SHADOW_MAP, color)
+            gen = BlocklyGenerator(cls, self.TYPE_MAP, self.SHADOW_MAP, color, name)
             b_js, p_py, c_xml = gen.generate()
             js_out = pick_js + [b_js] if i == 0 else [b_js]
             py_out = pick_py + [p_py] if i == 0 else [p_py]
-            self._write_output(name, name, js_out, py_out)
+            self._write_output(cls.__name__, cls.__name__, js_out, py_out)
             BlocklyGenerator.update_toolbox(c_xml, self.toolbox_path)
 
     def build_pickers_category(self):

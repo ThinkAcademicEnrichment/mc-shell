@@ -18,6 +18,7 @@ from mcshell.ppmanager import *
 from mcshell.ppdownloader import *
 
 from mcshell.mcserver import stop_app_server
+from mcshell.mcplayer import MCPlayer
 
 import atexit
 
@@ -147,7 +148,9 @@ class MCShell(Magics):
             print("\nWorld creation cancelled.")
             return
 
-        self.server_data = {"host": '127.0.0.1','port':MC_SERVER_PORT, "rcon_port": MC_RCON_PORT, "password": password, "fj_port":FJ_PLUGIN_PORT} # Port can be dynamic if needed
+        self.server_data['password'] = password
+
+        # self.server_data = {"host": '127.0.0.1','port':MC_SERVER_PORT, "rcon_port": MC_RCON_PORT, "password": password, "fj_port":FJ_PLUGIN_PORT} # Port can be dynamic if needed
 
         print("Input the ports for the server, rcon and plugin. These only need to be changed if you are running more than one mc-shell!")
         try:
@@ -155,13 +158,22 @@ class MCShell(Magics):
             resp_port = Prompt.ask('Server Port:', default=str(self.server_data['port']))
             resp_rcon = Prompt.ask('RCON Port:', default=str(self.server_data['rcon_port']))
             resp_fj   = Prompt.ask('FruitJuice Port:', default=str(self.server_data['fj_port']))
+            resp_app  = Prompt.ask('Application Port:', default=str(self.server_data['app_port']))
 
             # Robust casting logic
             ports = {
                 'port': int(resp_port) if resp_port else self.server_data['port'],
                 'rcon_port': int(resp_rcon) if resp_rcon else self.server_data['rcon_port'],
-                'fj_port': int(resp_fj) if resp_fj else self.server_data['fj_port']
+                'fj_port': int(resp_fj) if resp_fj else self.server_data['fj_port'],
+                'app_port': int(resp_app) if resp_app else self.server_data['app_port']
             }
+
+
+            self.server_data['port'] = ports['port']
+            self.server_data['rcon_port'] = ports['rcon_port']
+            self.server_data['fj_port'] = ports['fj_port']
+            self.server_data['app_port'] = ports['app_port']
+
         except (EOFError, KeyboardInterrupt):
             print("\nWorld creation cancelled.")
             return
@@ -210,7 +222,8 @@ class MCShell(Magics):
                 "server-port": self.server_data.get('port', MC_SERVER_PORT),
                 "query.port": self.server_data.get('port', MC_SERVER_PORT),
                 "rcon.port": self.server_data.get('rcon_port', MC_RCON_PORT),
-                "rcon.password": self.server_data.get('password', 'minecraft'),
+                "app.port": self.server_data.get('app_port', MC_APP_PORT),
+                "rcon.password": self.server_data.get('password'),
                 "enable-command-block":'true',
             },
             "FruitJuice" : {
@@ -326,6 +339,8 @@ class MCShell(Magics):
         with creds_path.open('r') as f:
             self.server_data = json.load(f)
 
+        if not 'app_port' in list(self.server_data.keys()):
+            self.server_data['app_port'] = 5001
         # start the app server
         self.ip.run_line_magic('mc_start_app','')
 
@@ -1049,14 +1064,14 @@ class MCShell(Magics):
             self.server_data = {
                 'host': Prompt.ask('Server Address:', default=self.server_data['host']),
                 'fj_port': int(Prompt.ask('Plugin Port:', default=str(self.server_data['fj_port']))),
-                'rcon_port':MC_RCON_PORT,
+                'rcon_port': int(Prompt.ask('Server Port:', default=str(self.server_data['rcon_port']))),
+                'app_port': int(Prompt.ask('Application Port:', default=str(self.server_data['app_port']))),
                 'password':None,
             }
 
             login_to_server = Prompt.ask('Do you want to be a server op?',choices=['yes','no'],default='no')
             if login_to_server.lower() == 'yes':
                 self.server_data.update({
-                    'rcon_port': int(Prompt.ask('Server Port:', default=str(self.server_data['rcon_port']))),
                     'password': Prompt.ask('Server Password:', password=True)
                 })
 
@@ -1066,6 +1081,10 @@ class MCShell(Magics):
         stop_app_server()
         print(f"Starting application server for authorized Minecraft player: {minecraft_name}")
         start_app_server(self.server_data,minecraft_name,self.shell,power_repo)
+        print(f"Open a browser here to use the editor:")
+        print(f"\thttp://{socket.gethostname()}.local:{self.server_data['app_port']}")
+        print(f"Open a browser here to use the control:")
+        print(f"\thttp://{socket.gethostname()}.local:{self.server_data['app_port']}/control")
         return
 
     @line_magic
@@ -1137,7 +1156,6 @@ class MCShell(Magics):
                 print(f"Message: {response.text}")
         except requests.exceptions.RequestException as e:
             print(f"Error: Could not connect to the other player's application server. {e}")
-
 
     @line_magic
     def mc_stdlib(self, line):
@@ -1336,6 +1354,167 @@ class MCShell(Magics):
                     print("Refresh the editor to see the new additions.")
             except Exception as e:
                 print(f"Sync failed: {e}")
+
+    @line_magic
+    def mc_library(self, line):
+        """
+        Management magic for your personal Minecraft Shell Power Library.
+        Usage:
+            %mc_library list                         - List all powers in your library.
+            %mc_library rename-category <old> <new>  - Rename a category in your library.
+            %mc_library remove                       - Interactively remove powers from your library.
+            %mc_library export <filepath.json>       - Export selected powers to a JSON file.
+            %mc_library import <filepath.json>       - Import powers from a JSON file into your library.
+        """
+        import shlex  # Ensure shlex is available
+        from mcshell.mcrepo import PowerRepository, SQLiteRepository
+
+        try:
+            args = shlex.split(line)
+        except ValueError as e:
+            print(f"Error parsing command line: {e}")
+            return
+
+        if not args:
+            print("Usage: %mc_library [list|rename-category|remove|export|import]")
+            return
+
+        command = args[0]
+        player = self.mc_name or self._get_mc_name()
+        if not player:
+            return
+
+        # Treat the repository purely as its interface type
+        repo: PowerRepository = SQLiteRepository(player)
+
+        if command == "list":
+            powers = repo.list_powers()
+            if not powers:
+                print(f"No powers found in your library ({player}).")
+                return
+            print(f"\nPowers in your library ({player}):")
+            for i, p in enumerate(powers):
+                print(f" [{i}] {p['name']} ({p.get('category', 'General')})")
+
+        elif command == "rename-category":
+            if len(args) < 3:
+                print("Usage: %mc_library rename-category <old_name> <new_name>")
+                return
+            old_name, new_name = args[1], args[2]
+
+            # Utilizing strictly the PowerRepository interface
+            powers = repo.list_full_powers()
+            count = 0
+            for p in powers:
+                cat = p.get('category', '')
+                if cat == old_name:
+                    p['category'] = new_name
+                    repo.save_power(p)
+                    count += 1
+                elif cat.startswith(f"{old_name}/"):
+                    p['category'] = new_name + cat[len(old_name):]
+                    repo.save_power(p)
+                    count += 1
+
+            print(f"Renamed {count} powers from '{old_name}' to '{new_name}'.")
+            print("Refresh the editor to see changes.")
+
+        elif command == "remove":
+            powers = repo.list_powers()
+            if not powers:
+                print("Your library is empty.")
+                return
+
+            print("\nSelect powers to remove from your library:")
+            for i, p in enumerate(powers):
+                print(f" [{i}] {p['name']} ({p.get('category', 'General')})")
+
+            selection = Prompt.ask("Enter indices to remove (space separated)")
+            try:
+                indices_to_remove = [int(i) for i in selection.split()]
+            except ValueError:
+                print("Invalid selection.")
+                return
+
+            removed_count = 0
+            for idx in indices_to_remove:
+                if 0 <= idx < len(powers):
+                    power_id = powers[idx]['power_id']
+                    if repo.delete_power(power_id):
+                        removed_count += 1
+
+            print(f"Successfully removed {removed_count} powers from your library.")
+
+        elif command == "export":
+            if len(args) < 2:
+                print("Usage: %mc_library export <filepath.json>")
+                return
+
+            export_path = Path(args[1]).expanduser()
+            powers = repo.list_full_powers()
+            if not powers:
+                print("Your library is empty. Nothing to export.")
+                return
+
+            print(f"\nSelect powers to export to {export_path}:")
+            for i, p in enumerate(powers):
+                print(f" [{i}] {p['name']} ({p.get('category', 'General')})")
+
+            selection = Prompt.ask("Enter indices to export (space separated, or 'all')")
+
+            if selection.lower() == 'all':
+                powers_to_export = powers
+            else:
+                try:
+                    selected_indices = [int(i) for i in selection.split()]
+                    powers_to_export = [powers[i] for i in selected_indices if 0 <= i < len(powers)]
+                except (ValueError, IndexError):
+                    print("Invalid selection.")
+                    return
+
+            if not powers_to_export:
+                print("No valid powers selected for export.")
+                return
+
+            export_data = {"powers": powers_to_export}
+            export_path.parent.mkdir(parents=True, exist_ok=True)
+            with export_path.open('w') as f:
+                json.dump(export_data, f, indent=4)
+
+            print(f"Successfully exported {len(powers_to_export)} powers to {export_path}.")
+
+        elif command == "import":
+            if len(args) < 2:
+                print("Usage: %mc_library import <filepath.json>")
+                return
+
+            import_path = Path(args[1]).expanduser()
+            if not import_path.exists():
+                print(f"Error: File not found at {import_path}")
+                return
+
+            try:
+                with import_path.open('r') as f:
+                    data = json.load(f)
+
+                # Handle standard {"powers": [...]} structure or legacy flat list/dict structures
+                if isinstance(data, dict) and "powers" in data:
+                    powers_to_import = data["powers"]
+                else:
+                    powers_to_import = data if isinstance(data, list) else data.values()
+
+                count = 0
+                for p_data in powers_to_import:
+                    repo.save_power(p_data)
+                    count += 1
+
+                print(f"Successfully imported {count} powers into your library from {import_path}.")
+            except Exception as e:
+                print(f"Error importing powers: {e}")
+
+        else:
+            print(f"Unknown command: {command}")
+            print("Usage: %mc_library [list|rename-category|remove|export|import]")
 
 def sync_datapack_library():
     """

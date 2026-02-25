@@ -6,12 +6,6 @@ export function definePyncraftActionsGenerators(pythonGenerator) {
         return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
     };
 
-    pythonGenerator.forBlock['pyncraftactions_get_block_with_data'] = function(block, generator) {
-        const position = generator.valueToCode(block, 'position', pythonGenerator.ORDER_ATOMIC) || 'None';
-        const code = `PyncraftActions.get_block_with_data(${position})\n`;
-        return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
-    };
-
     pythonGenerator.forBlock['pyncraftactions_get_entities_in_radius'] = function(block, generator) {
         const position = generator.valueToCode(block, 'position', pythonGenerator.ORDER_ATOMIC) || 'None';
 const radius = generator.valueToCode(block, 'radius', pythonGenerator.ORDER_ATOMIC) || 'None';
@@ -47,6 +41,15 @@ const z = generator.valueToCode(block, 'z', pythonGenerator.ORDER_ATOMIC) || 'No
     pythonGenerator.forBlock['pyncraftactions_get_tile_position_by_name'] = function(block, generator) {
         const player_name = generator.valueToCode(block, 'player_name', pythonGenerator.ORDER_ATOMIC) || 'None';
         const code = `PyncraftActions.get_tile_position_by_name(${player_name})\n`;
+        return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
+    };
+
+    pythonGenerator.forBlock['pyncraftactions_send_title_by_name'] = function(block, generator) {
+        const title = generator.valueToCode(block, 'title', pythonGenerator.ORDER_ATOMIC) || 'None';
+const subtitle = generator.valueToCode(block, 'subtitle', pythonGenerator.ORDER_ATOMIC) || 'None';
+const stay = generator.valueToCode(block, 'stay', pythonGenerator.ORDER_ATOMIC) || 'None';
+const player_name = generator.valueToCode(block, 'player_name', pythonGenerator.ORDER_ATOMIC) || 'None';
+        const code = `PyncraftActions.send_title_by_name(${title}, ${subtitle}, ${stay}, ${player_name})\n`;
         return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
     };
 

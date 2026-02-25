@@ -25,12 +25,12 @@ class ServerActions(MCActionsBase):
         else:
             cmd = verb
 
-        print(f"Sending Server Command: {cmd}")
+        # print(f"Sending Server Command: {cmd}")
 
         try:
             response = self.mcplayer.run(cmd)
-            if response:
-                print(f"Server Response: {response}")
+            # if response:
+            #     print(f"Server Response: {response}")
             return response
         except Exception as e:
             print(f"Failed to execute command '{cmd}': {e}")
@@ -118,7 +118,7 @@ class ServerActions(MCActionsBase):
     def server_give_item(self, item: 'Item', count: int = 1, target: str = "SELF"):
         """Gives an item to a player."""
         target_name = self.mcplayer.name if target.upper() == "SELF" else target
-        self._run_command(f"give {target_name} {item} {count}")
+        self._run_command(f"give {target_name} {self._get_item_id_from_bukkit_name(item)} {count}")
 
     @mced_block(
         label="Clear Inventory of [target]",
@@ -143,10 +143,11 @@ class ServerActions(MCActionsBase):
         target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'},
         pos={'label': 'Position'}
     )
-    def server_teleport(self, pos: Vec3, target: str = "SELF"):
+    def server_teleport(self, target: str, pos: Vec3):
         """Teleports a player or entity to a location."""
+        # note the custom shadow block that yields the default argument to target
         target_name = self.mcplayer.name if target.upper() == "SELF" else target
-        self._run_command(f"tp {target_name} {pos.x} {pos.y} {pos.z}")
+        self._run_command(f"tp {target_name} {int(pos.x)} {int(pos.y)} {int(pos.z)}")
 
     @mced_block(
         label="Apply [effect] to [target] for [seconds]s (Level [amplifier])",
@@ -175,9 +176,74 @@ class ServerActions(MCActionsBase):
     @mced_block(
         label="Damage [target] by [amount]",
         target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'},
-        amount={'label': 'Amount', 'shadow': 'math_number'}
+        amount={'label': 'Amount'}
     )
     def server_damage(self, amount: float, target: str = "SELF"):
         """Deals damage to a target."""
         target_name = self.mcplayer.name if target.upper() == "SELF" else target
         self._run_command(f"damage {target_name} {amount}")
+
+    def _parse_minecraft_players(self,output_text):
+        """
+        Parses the player list from Minecraft server 'list' command output.
+        Returns a list of player name strings.
+        """
+        # Regex breakdown:
+        # online:  -> Matches the literal label
+        # \s* -> Matches any whitespace after the colon
+        # (.*)     -> Captures everything else on that line (the player list)
+        match = re.search(r"online:\s*(.*)", output_text)
+
+        if not match:
+            return []
+
+        players_str = match.group(1).strip()
+
+        # If the string is empty (0 players), return an empty list
+        if not players_str:
+            return []
+
+        # Split by comma and strip whitespace from each name
+        return [name.strip() for name in players_str.split(",")]
+    
+    @mced_block(
+        label="List Players on Server"
+    )
+    def server_list(self) -> list:
+        """List the players on the server. """
+        return self._parse_minecraft_players(self._run_command("list"))
+
+    @mced_block(
+        label="Set the spawnpoint for [target] at [position]",
+        position={'label':'Position'},
+        target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'},
+    )
+    def server_spawnpoint(self,position: Vec3,target: str = "@a"):
+        """Sets the spawn point for a player."""
+        self._run_command(f"spawnpoint {target} {int(position.x)} {int(position.y)} {int(position.z)}")
+
+    def _parse_minecraft_time_query(self, output_text):
+        """
+        Parses the player list from Minecraft server 'list' command output.
+        Returns a list of player name strings.
+        """
+        # Regex breakdown:
+        # is:  -> Matches the literal label
+        # \s* -> Matches any whitespace after the colon
+        # (.*)     -> Captures everything else on that line (the time)
+        match = re.search(r"is\s*(.*)", output_text)
+
+        if not match:
+            return 0
+
+        time_str = match.group(1).strip()
+
+        return int(time_str)
+
+    @mced_block(
+        label="Query the world time",
+        time_type={'label':'Time Type'}
+    )
+    def server_time_query(self,time_type:'TimeType') -> int:
+        """Query the world time."""
+        return self._parse_minecraft_time_query(self._run_command(f"time query {time_type}"))

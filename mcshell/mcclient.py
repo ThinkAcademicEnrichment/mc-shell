@@ -9,11 +9,12 @@ class MCClientException(Exception):
     pass
 
 class MCClient:
-    def __init__(self, host=MC_SERVER_HOST, port=MC_SERVER_PORT,rcon_port=MC_RCON_PORT, fj_port=FJ_PLUGIN_PORT, password='' ):
+    def __init__(self, host=MC_SERVER_HOST, port=MC_SERVER_PORT,rcon_port=MC_RCON_PORT, fj_port=FJ_PLUGIN_PORT, app_port=MC_APP_PORT, password='' ):
 
         self.host = host
         self.port = port
         self.rcon_port = rcon_port
+        self.app_port = MC_APP_PORT
         self.password = password
         self.fruit_juice_port  = fj_port
 

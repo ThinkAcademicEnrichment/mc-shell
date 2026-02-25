@@ -1,5 +1,9 @@
 export function defineServerActionsGenerators(pythonGenerator) {
 
+    pythonGenerator.forBlock['picker_timetype'] = function(block, generator) {
+        return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
+    };
+
     pythonGenerator.forBlock['picker_time'] = function(block, generator) {
         return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
     };
@@ -114,6 +118,12 @@ const target = generator.valueToCode(block, 'target', pythonGenerator.ORDER_ATOM
         return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
     };
 
+    pythonGenerator.forBlock['serveractions_server_list'] = function(block, generator) {
+        
+        const code = `ServerActions.server_list()\n`;
+        return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
+    };
+
     pythonGenerator.forBlock['serveractions_server_locate_structure'] = function(block, generator) {
         const structure = generator.valueToCode(block, 'structure', pythonGenerator.ORDER_ATOMIC) || 'None';
         const code = `ServerActions.server_locate_structure(${structure})\n`;
@@ -128,6 +138,13 @@ const target = generator.valueToCode(block, 'target', pythonGenerator.ORDER_ATOM
         return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
     };
 
+    pythonGenerator.forBlock['serveractions_server_spawnpoint'] = function(block, generator) {
+        const position = generator.valueToCode(block, 'position', pythonGenerator.ORDER_ATOMIC) || 'None';
+const target = generator.valueToCode(block, 'target', pythonGenerator.ORDER_ATOMIC) || 'None';
+        const code = `ServerActions.server_spawnpoint(${position}, ${target})\n`;
+        return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
+    };
+
     pythonGenerator.forBlock['serveractions_server_summon'] = function(block, generator) {
         const entity = generator.valueToCode(block, 'entity', pythonGenerator.ORDER_ATOMIC) || 'None';
 const pos = generator.valueToCode(block, 'pos', pythonGenerator.ORDER_ATOMIC) || 'None';
@@ -139,6 +156,12 @@ const pos = generator.valueToCode(block, 'pos', pythonGenerator.ORDER_ATOMIC) ||
         const target = generator.valueToCode(block, 'target', pythonGenerator.ORDER_ATOMIC) || 'None';
 const pos = generator.valueToCode(block, 'pos', pythonGenerator.ORDER_ATOMIC) || 'None';
         const code = `ServerActions.server_teleport(${target}, ${pos})\n`;
+        return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
+    };
+
+    pythonGenerator.forBlock['serveractions_server_time_query'] = function(block, generator) {
+        const time_type = generator.valueToCode(block, 'time_type', pythonGenerator.ORDER_ATOMIC) || 'None';
+        const code = `ServerActions.server_time_query(${time_type})\n`;
         return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
     };
 

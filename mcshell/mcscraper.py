@@ -121,8 +121,7 @@ def make_materials():
     Scrapes the Spigot Material Javadocs and categorizes them into
     Blocks, Items, and Entities using semantic markers and method descriptions.
     """
-    url = "https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Material.html"
-    html_content = fetch_with_browser(url)
+    html_content = fetch_with_browser(MC_MATERIAL_URL)
 
     if not html_content:
         return {}
@@ -238,3 +237,64 @@ def make_entity_id_map():
     with MC_ENTITY_ID_MAP_PATH.open('wb') as f:
         pickle.dump(entity_id_map, f)
     return entity_id_map
+
+def make_item_id_map(force_refresh=False):
+    """
+    Creates and caches a mapping from Spigot Material enum constants to
+    properly namespaced Minecraft item references.
+
+    Example: IRON_SWORD -> minecraft:iron_sword
+
+    Args:
+        force_refresh (bool): If True, re-scrapes the data even if a cache exists.
+
+    Returns:
+        dict: The mapping of Spigot Name -> minecraft:namespaced_id
+    """
+    if not MC_ITEM_ID_MAP_PATH.parent.exists():
+        MC_ITEM_ID_MAP_PATH.parent.mkdir(parents=True)
+
+    if MC_ITEM_ID_MAP_PATH.exists() and not force_refresh:
+        with open(MC_ITEM_ID_MAP_PATH, "rb") as f:
+            return pickle.load(f)
+
+    html_content = fetch_with_browser(MC_MATERIAL_URL)
+
+    if not html_content:
+        return {}
+
+    soup = BeautifulSoup(html_content, 'html.parser')
+    item_id_map = {}
+
+    # Find all enum constants
+    # The structure typically has the constant name in a <code> or <a> tag inside a <th> or <td>
+    constants = soup.find_all(["th", "td"], {"class": ["col-first", "col-summary-item-name"]})
+
+    if not constants:
+        # Generic fallback for different Javadoc templates
+        constants = soup.find_all("code")
+
+    for entry in constants:
+        name = entry.get_text().strip()
+
+        # Validation:
+        # 1. Must be uppercase (standard enum style)
+        # 2. Must not be a legacy material
+        # 3. Must not be "AIR" (usually handled specifically or skipped)
+        if name and name.isupper() and not name.startswith("LEGACY_") and name != "AIR":
+            # Generate the Minecraft namespaced ID
+            # Standard conversion: lowercase and replace underscores with nothing?
+            # No, Minecraft IDs use underscores, but Spigot enums are 1:1 with namespaced IDs
+            # e.g. IRON_SWORD -> iron_sword
+            namespaced_id = f"minecraft:{name.lower()}"
+            item_id_map[name] = namespaced_id
+
+    # Add AIR manually if needed as it's often special
+    item_id_map["AIR"] = "minecraft:air"
+
+    # Cache the result
+    with open(MC_ITEM_ID_MAP_PATH, "wb") as f:
+        pickle.dump(item_id_map, f)
+
+    print(f"Created item mapping with {len(item_id_map)} entries at {MC_ITEM_ID_MAP_PATH}")
+    return item_id_map

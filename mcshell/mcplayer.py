@@ -10,11 +10,12 @@ import asyncio
 DEFAULT_TOLERANCE = 1e-9
 
 class MCPlayer(MCClient):
-    def __init__(self, name, host=MC_SERVER_HOST, port=MC_SERVER_PORT,rcon_port=MC_RCON_PORT, fj_port=FJ_PLUGIN_PORT, password=None,  cancel_event=None):
-        super().__init__(host, port, rcon_port, fj_port,password)
+    def __init__(self, name, host=MC_SERVER_HOST, port=MC_SERVER_PORT,rcon_port=MC_RCON_PORT, fj_port=FJ_PLUGIN_PORT, app_port=MC_APP_PORT, password=None,  cancel_event=None):
+        super().__init__(host, port, rcon_port, fj_port,app_port,password)
         self.name = name
-        self.state = {}
         self.cancel_event = cancel_event
+
+        self.state = {}
 
     def get_data(self,data_path):
         _args = ['get','entity',f'@p[name={self.name}]',data_path]

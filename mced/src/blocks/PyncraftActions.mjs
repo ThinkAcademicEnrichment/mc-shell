@@ -12,16 +12,6 @@ export function definePyncraftActionsBlocks(Blockly) {
         }
     };
 
-    Blockly.Blocks['pyncraftactions_get_block_with_data'] = {
-        init: function() {
-            this.appendDummyInput().appendField("Get Block with Data at [position]");
-            this.appendValueInput('position').appendField('Position').setCheck('3DVector');
-            this.setOutput(true, 'Block');
-            this.setColour("#252E28");
-            this.setTooltip("Returns the Block ID with its blockstate data at the specified position.");
-        }
-    };
-
     Blockly.Blocks['pyncraftactions_get_entities_in_radius'] = {
         init: function() {
             this.appendDummyInput().appendField("Get Entities in [radius] block radius from [position]");
@@ -81,6 +71,19 @@ this.appendValueInput('z').appendField('Z').setCheck('Number');
             this.setOutput(true, '3DVector');
             this.setColour("#252E28");
             this.setTooltip("Gets the position of the specified player.");
+        }
+    };
+
+    Blockly.Blocks['pyncraftactions_send_title_by_name'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Send Title to [player]");
+            this.appendValueInput('title').appendField('Title').setCheck('String');
+this.appendValueInput('subtitle').appendField('Subtitle').setCheck('String');
+this.appendValueInput('stay').appendField('Stay (Ticks)').setCheck('Number');
+this.appendValueInput('player_name').appendField('Player').setCheck('String');
+            this.setPreviousStatement(true); this.setNextStatement(true);
+            this.setColour("#252E28");
+            this.setTooltip("Sends a title and subtitle to the specified player's screen.");
         }
     };
 

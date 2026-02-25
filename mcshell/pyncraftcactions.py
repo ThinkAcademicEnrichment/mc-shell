@@ -60,13 +60,14 @@ class PyncraftActions(MCActionsBase):
         """Returns the Block ID at the specified position."""
         return self.mcplayer.pc.getBlock(int(position.x), int(position.y), int(position.z))
 
-    @mced_block(
-        label="Get Block with Data at [position]",
-        position={'label': 'Position'}
-    )
-    def get_block_with_data(self, position: Vec3) -> 'Block':
-        """Returns the Block ID with its blockstate data at the specified position."""
-        return self.mcplayer.pc.getBlockWithData(int(position.x), int(position.y), int(position.z))
+    # Legacy; use get_block instead
+    # @mced_block(
+    #     label="Get Block with Data at [position]",
+    #     position={'label': 'Position'}
+    # )
+    # def get_block_with_data(self, position: Vec3) -> 'Block':
+    #     """Returns the Block ID with its blockstate data at the specified position."""
+    #     return self.mcplayer.pc.getBlockWithData(int(position.x), int(position.y), int(position.z))
 
     @mced_block(
         label="Set Block [block_type] at [position]",
@@ -116,6 +117,17 @@ class PyncraftActions(MCActionsBase):
     def get_entities_in_radius(self, position: Vec3, radius: float) -> 'Array':
         """Returns a list of entity IDs within a radius of a position."""
         return self.mcplayer.pc.getEntitiesInRadius(int(position.x), int(position.y), int(position.z), int(radius))
+
+    @mced_block(
+        label="Send Title to [player]",
+        title={'label': 'Title'},
+        subtitle={'label': 'Subtitle'},
+        stay={'label': 'Stay (Ticks)', 'shadow': '<shadow type="math_number"><field name="NUM">70</field></shadow>'},
+        player_name={'label': 'Player'}
+    )
+    def send_title_by_name(self, title: str = "", subtitle: str = "", stay: int = 70, player_name: str = "SELF"):
+        """Sends a title and subtitle to the specified player's screen."""
+        self._get_player_by_name(player_name).pc.player.sendTitle(title=title, subTitle=subtitle, stay=stay)
 
     # --- Game Data & Miscellaneous ---
 

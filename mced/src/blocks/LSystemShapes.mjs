@@ -8,7 +8,7 @@ export function defineLSystemShapesBlocks(Blockly) {
             this.appendValueInput('predecessor').appendField('Symbol (char)').setCheck('String');
 this.appendValueInput('successor').appendField('Replacement').setCheck('String');
             this.setOutput(true, 'LSYSTEM_RULE');
-            this.setColour("#75E538");
+            this.setColour("#7A9473");
             this.setTooltip("");
         }
     };
@@ -19,9 +19,9 @@ this.appendValueInput('successor').appendField('Replacement').setCheck('String')
             this.appendValueInput('axiom').appendField('Axiom').setCheck('String');
 this.appendValueInput('iterations').appendField('Iterations').setCheck('Number');
 this.appendValueInput('step_length').appendField('Step Length').setCheck('Number');
-this.appendValueInput('rules').appendField('Rules (List)').setCheck('list');
+this.appendValueInput('rules').appendField('Rules (List)').setCheck('Array');
             this.setOutput(true, 'Digital_Set');
-            this.setColour("#75E538");
+            this.setColour("#7A9473");
             this.setTooltip("");
         }
     };

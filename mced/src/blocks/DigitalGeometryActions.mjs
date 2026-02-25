@@ -9,7 +9,7 @@ export function defineDigitalGeometryActionsBlocks(Blockly) {
 this.appendValueInput('side_length').appendField('Side Length').setCheck('Number');
 this.appendValueInput('block_type').appendField('Block Type').setCheck('Block');
             this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#364EE7");
+            this.setColour("#5B7BA1");
             this.setTooltip("");
         }
     };
@@ -22,7 +22,7 @@ this.appendValueInput('radius').appendField('Radius').setCheck('Number');
 this.appendValueInput('normal').appendField('Normal').setCheck('3DVector');
 this.appendValueInput('block_type').appendField('Block Type').setCheck('Block');
             this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#364EE7");
+            this.setColour("#5B7BA1");
             this.setTooltip("");
         }
     };
@@ -34,7 +34,7 @@ this.appendValueInput('block_type').appendField('Block Type').setCheck('Block');
 this.appendValueInput('point2').appendField('End Point').setCheck('3DVector');
 this.appendValueInput('block_type').appendField('Block Type').setCheck('Block');
             this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#364EE7");
+            this.setColour("#5B7BA1");
             this.setTooltip("");
         }
     };
@@ -46,7 +46,7 @@ this.appendValueInput('block_type').appendField('Block Type').setCheck('Block');
 this.appendValueInput('radius').appendField('Radius').setCheck('Number');
 this.appendValueInput('block_type').appendField('Block Type').setCheck('Block');
             this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#364EE7");
+            this.setColour("#5B7BA1");
             this.setTooltip("");
         }
     };

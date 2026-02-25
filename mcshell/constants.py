@@ -49,11 +49,12 @@ except ImportError:  # Graceful fallback if IceCream isn't installed.
 # the default version when using %pp_create_world
 MC_VERSION = '1.21.11' # this must match the client version
 
-# default server data
+# default server data; avoid common ports
 MC_SERVER_HOST = 'localhost'
-MC_RCON_PORT = 25575
-MC_SERVER_PORT = 25565
-FJ_PLUGIN_PORT = 4711
+MC_RCON_PORT = 25576
+MC_SERVER_PORT = 25566
+FJ_PLUGIN_PORT = 4712
+MC_APP_PORT = 5001
 
 
 MC_SERVER_DATA = {
@@ -61,6 +62,7 @@ MC_SERVER_DATA = {
     'port':MC_SERVER_PORT,
     'rcon_port':MC_RCON_PORT,
     'fj_port': FJ_PLUGIN_PORT,
+    'app_port': MC_APP_PORT,
     'password': None,
 }
 
@@ -79,10 +81,13 @@ MC_COLOURABLE_MATERIALS_DATA_PATH = MC_DATA_DIR.joinpath('materials/colourables.
 MC_PICKER_MATERIALS_DATA_PATH = MC_DATA_DIR.joinpath('materials/pickers.json')
 MC_SINGLE_MATERIALS_DATA_PATH = MC_DATA_DIR.joinpath('materials/singles.json')
 
+MC_ITEM_ID_MAP_PATH = MC_DATA_DIR.joinpath('materials/item_id_map.pkl')
+
 # here is the source of truth for Entity IDs like in pyncraft.entity
 MC_ENTITY_TYPE_URL = yarl.URL("https://raw.githubusercontent.com/PaperMC/Paper/refs/heads/main/paper-api/src/main/java/org/bukkit/entity/EntityType.java")
 MC_ENTITY_ID_MAP_PATH = MC_DATA_DIR.joinpath('entities/entity_id_map.pkl')
 MC_ENTITY_PICKERS_PATH = MC_DATA_DIR.joinpath('entities/pickers.json')
+
 
 MC_APP_DIR = MC_DATA_DIR.joinpath('app')
 
