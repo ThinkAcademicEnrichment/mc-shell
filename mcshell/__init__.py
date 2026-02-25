@@ -339,6 +339,8 @@ class MCShell(Magics):
         with creds_path.open('r') as f:
             self.server_data = json.load(f)
 
+        if not 'app_port' in list(self.server_data.keys()):
+            self.server_data['app_port'] = 5001
         # start the app server
         self.ip.run_line_magic('mc_start_app','')
 
