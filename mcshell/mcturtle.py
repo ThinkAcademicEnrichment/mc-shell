@@ -252,27 +252,72 @@ class QTurtle:
     def pop_state(self):
         if self.stack: self.pos, self.forward, self.up, self.right, self.scale = self.stack.pop()
 
-    def interpret_symbol(self, symbol, step_size):
-        scaled_step = max(1, int(step_size * self.scale))
-        if symbol == 'F': return self.extrude(scaled_step)
-        elif symbol == 'f': self.move(scaled_step)
-        elif symbol == '+': self.rotate_90('y', 1)
-        elif symbol == '-': self.rotate_90('y', -1)
-        elif symbol == '&': self.rotate_90('x', 1)
-        elif symbol == '^': self.rotate_90('x', -1)
-        elif symbol == '\\': self.rotate_90('z', 1)
-        elif symbol == '/': self.rotate_90('z', -1)
-        elif symbol == '|': self.rotate_90('y', 2)
-        elif symbol == '[': self.push_state()
-        elif symbol == ']': self.pop_state()
-        elif symbol == '>': self.shear('z', 'x', 1)
-        elif symbol == '<': self.shear('z', 'x', -1)
-        elif symbol == '@': self.scale *= self.scale_factor; return self.extrude(scaled_step)
-        elif symbol == '!':
-            if self.scale_factor > 0: self.scale /= self.scale_factor
-            return self.extrude(scaled_step)
-        return None
+    # def interpret_symbol(self, symbol, step_size):
+    #     scaled_step = max(1, int(step_size * self.scale))
+    #     if symbol == 'F': return self.extrude(scaled_step)
+    #     elif symbol == 'f': self.move(scaled_step)
+    #     elif symbol == '+': self.rotate_90('y', 1)
+    #     elif symbol == '-': self.rotate_90('y', -1)
+    #     elif symbol == '&': self.rotate_90('x', 1)
+    #     elif symbol == '^': self.rotate_90('x', -1)
+    #     elif symbol == '\\': self.rotate_90('z', 1)
+    #     elif symbol == '/': self.rotate_90('z', -1)
+    #     elif symbol == '|': self.rotate_90('y', 2)
+    #     elif symbol == '[': self.push_state()
+    #     elif symbol == ']': self.pop_state()
+    #     elif symbol == '>': self.shear('z', 'x', 1)
+    #     elif symbol == '<': self.shear('z', 'x', -1)
+    #     elif symbol == '@': self.scale *= self.scale_factor; return self.extrude(scaled_step)
+    #     elif symbol == '!':
+    #         if self.scale_factor > 0: self.scale /= self.scale_factor
+    #         return self.extrude(scaled_step)
+    #     return None
 
+    def interpret_symbol(self, symbol, step_size):
+        """
+        Executes a single L-System symbol.
+        Returns a DigitalSet of placed blocks (if drawing occurred), or None.
+
+        New Symbols:
+        " : Multiply scale by scale_factor (Shrink)
+        ! : Divide scale by scale_factor (Grow)
+        """
+        # Calculate Scaled Step Size (Minimum 1 block)
+        scaled_step = max(1, int(step_size * self.scale))
+
+        if symbol == 'F':
+            return self.extrude(scaled_step)
+        elif symbol == 'f':
+            self.move(scaled_step)
+        elif symbol == '+':
+            self.rotate_90('y', 1)
+        elif symbol == '-':
+            self.rotate_90('y', -1)
+        elif symbol == '&':
+            self.rotate_90('x', 1)
+        elif symbol == '^':
+            self.rotate_90('x', -1)
+        elif symbol == '\\':
+            self.rotate_90('z', 1)
+        elif symbol == '/':
+            self.rotate_90('z', -1)
+        elif symbol == '|':
+            self.rotate_90('y', 2)
+        elif symbol == '[':
+            self.push_state()
+        elif symbol == ']':
+            self.pop_state()
+        elif symbol == '>': # "Bend Right"
+             self.shear('z', 'x', 1)
+        elif symbol == '<': # "Bend Left"
+             self.shear('z', 'x', -1)
+        elif symbol == '@': # Shrink
+             self.scale *= self.scale_factor
+             return self.extrude(scaled_step)
+        elif symbol == '!': # Grow
+             if self.scale_factor > 0:
+                 self.scale /= self.scale_factor
+             return self.extrude(scaled_step)
 
     def reset(self, position, heading_q_str='N'):
         self.pos = np.array(position, dtype=int)
