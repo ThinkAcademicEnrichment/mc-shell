@@ -483,11 +483,21 @@
 <block type="eventactions_wait_for_projectile_by_name"><value name="player_name"><shadow type="text"><field name="TEXT" /></shadow></value></block>
 <block type="eventactions_wait_for_sword_strike_by_name"><value name="player_name"><shadow type="text"><field name="TEXT" /></shadow></value></block>
 </category><category name="Digital Set" colour="#A57582">
+<block type="digitalsetactions_add_voxel"><value name="x"><shadow type="math_number"><field name="NUM">1</field></shadow></value> <value name="y"><shadow type="math_number"><field name="NUM">1</field></shadow></value> <value name="z"><shadow type="math_number"><field name="NUM">1</field></shadow></value></block>
 <block type="digitalsetactions_difference" />
+<block type="digitalsetactions_dilate" />
+<block type="digitalsetactions_empty_set" />
+<block type="digitalsetactions_erode" />
+<block type="digitalsetactions_extrude"><value name="dx"><shadow type="math_number"><field name="NUM">1</field></shadow></value> <value name="dy"><shadow type="math_number"><field name="NUM">1</field></shadow></value> <value name="dz"><shadow type="math_number"><field name="NUM">1</field></shadow></value></block>
 <block type="digitalsetactions_intersection" />
 <block type="digitalsetactions_is_empty" />
+<block type="digitalsetactions_rotate"><value name="axis"><shadow type="picker_axis"><field name="VALUE">y</field></shadow></value> <value name="angle"><shadow type="math_number"><field name="NUM">1.0</field></shadow></value></block>
+<block type="digitalsetactions_scale"><value name="factor"><shadow type="math_number"><field name="NUM">1.0</field></shadow></value></block>
 <block type="digitalsetactions_shear"><value name="axis_primary"><shadow type="picker_axis"><field name="VALUE">y</field></shadow></value> <value name="axis_secondary"><shadow type="picker_axis"><field name="VALUE">y</field></shadow></value> <value name="factor"><shadow type="math_number"><field name="NUM">1.0</field></shadow></value></block>
+<block type="digitalsetactions_shell" />
+<block type="digitalsetactions_symmetric_difference" />
 <block type="digitalsetactions_translate"><value name="dx"><shadow type="math_number"><field name="NUM">1</field></shadow></value> <value name="dy"><shadow type="math_number"><field name="NUM">1</field></shadow></value> <value name="dz"><shadow type="math_number"><field name="NUM">1</field></shadow></value></block>
 <block type="digitalsetactions_union" />
 <block type="digitalsetactions_union_all" />
+<block type="digitalsetactions_voxel_count" />
 </category><category name="Pickers" colour="#95A5A6"><block type="picker_wood_types" /><block type="picker_colours" /><block type="picker_timetype" /><block type="picker_time" /><block type="picker_weather" /><block type="picker_difficulty" /><block type="picker_gamemode" /><block type="picker_gamerule" /><block type="picker_integergamerule" /><block type="picker_locatetype" /><block type="picker_structure" /><block type="picker_biome" /><block type="picker_poi" /><block type="picker_effect" /><block type="picker_titleaction" /><block type="picker_metric" /><block type="picker_qheading" /><block type="picker_axis" /><block type="picker_qcompass" /><block type="mc_block_picker_world" /><block type="mc_block_picker_ores" /><block type="mc_block_picker_stone_bricks" /><block type="mc_block_picker_glass" /><block type="mc_block_picker_redstone_components" /><block type="mc_block_picker_lighting" /><block type="mc_block_picker_copper_variants" /><block type="mc_block_picker_nature" /><block type="mc_block_picker_flowers" /><block type="mc_block_picker_functional_storage" /><block type="mc_block_picker_spawning" /></category></xml>

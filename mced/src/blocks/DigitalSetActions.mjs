@@ -2,6 +2,19 @@ import { MCED } from "../lib/constants.mjs";
 
 export function defineDigitalSetActionsBlocks(Blockly) {
 
+    Blockly.Blocks['digitalsetactions_add_voxel'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Add Voxel");
+            this.appendValueInput('target_set').appendField('Set').setCheck('Digital_Set');
+this.appendValueInput('x').appendField('x').setCheck('Number');
+this.appendValueInput('y').appendField('y').setCheck('Number');
+this.appendValueInput('z').appendField('z').setCheck('Number');
+            this.setOutput(true, 'Digital_Set');
+            this.setColour("#A57582");
+            this.setTooltip("Adds a single point to a set. Maintains immutability by cloning the set before adding the voxel.");
+        }
+    };
+
     Blockly.Blocks['digitalsetactions_difference'] = {
         init: function() {
             this.appendDummyInput().appendField("Difference");
@@ -9,7 +22,50 @@ export function defineDigitalSetActionsBlocks(Blockly) {
 this.appendValueInput('set_b').appendField('Set B').setCheck('Digital_Set');
             this.setOutput(true, 'Digital_Set');
             this.setColour("#A57582");
-            this.setTooltip("Returns a new Digital Set containing points from Set A that are NOT in Set B. Note: Unlike union and intersection, difference is order-dependent.");
+            this.setTooltip("Returns a new Digital Set containing points from Set A that are NOT in Set B.");
+        }
+    };
+
+    Blockly.Blocks['digitalsetactions_dilate'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Dilate");
+            this.appendValueInput('target_set').appendField('Set').setCheck('Digital_Set');
+            this.setOutput(true, 'Digital_Set');
+            this.setColour("#A57582");
+            this.setTooltip("Expands the Digital Set by adding a layer of voxels to its boundary.");
+        }
+    };
+
+    Blockly.Blocks['digitalsetactions_empty_set'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Empty Set");
+            
+            this.setOutput(true, 'Digital_Set');
+            this.setColour("#A57582");
+            this.setTooltip("Creates a new, completely empty DigitalSet.");
+        }
+    };
+
+    Blockly.Blocks['digitalsetactions_erode'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Erode");
+            this.appendValueInput('target_set').appendField('Set').setCheck('Digital_Set');
+            this.setOutput(true, 'Digital_Set');
+            this.setColour("#A57582");
+            this.setTooltip("Shrinks the Digital Set by removing the outermost layer of voxels.");
+        }
+    };
+
+    Blockly.Blocks['digitalsetactions_extrude'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Extrude");
+            this.appendValueInput('target_set').appendField('Set').setCheck('Digital_Set');
+this.appendValueInput('dx').appendField('dx').setCheck('Number');
+this.appendValueInput('dy').appendField('dy').setCheck('Number');
+this.appendValueInput('dz').appendField('dz').setCheck('Number');
+            this.setOutput(true, 'Digital_Set');
+            this.setColour("#A57582");
+            this.setTooltip("Extrudes (sweeps) the Digital Set along a directional vector.");
         }
     };
 
@@ -30,7 +86,30 @@ this.appendValueInput('set_b').appendField('Set B').setCheck('Digital_Set');
             this.appendValueInput('target_set').appendField('Set').setCheck('Digital_Set');
             this.setOutput(true, 'Boolean');
             this.setColour("#A57582");
-            this.setTooltip("Checks if a Digital Set contains zero points. Returns a Boolean value, useful in Blockly logic statements.");
+            this.setTooltip("Checks if a Digital Set contains zero points.");
+        }
+    };
+
+    Blockly.Blocks['digitalsetactions_rotate'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Rotate");
+            this.appendValueInput('target_set').appendField('Set').setCheck('Digital_Set');
+this.appendValueInput('axis').appendField('Axis').setCheck('Axis');
+this.appendValueInput('angle').appendField('Angle (deg)').setCheck('Number');
+            this.setOutput(true, 'Digital_Set');
+            this.setColour("#A57582");
+            this.setTooltip("Rotates a Digital Set around a specific axis.");
+        }
+    };
+
+    Blockly.Blocks['digitalsetactions_scale'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Scale");
+            this.appendValueInput('target_set').appendField('Set').setCheck('Digital_Set');
+this.appendValueInput('factor').appendField('Factor').setCheck('Number');
+            this.setOutput(true, 'Digital_Set');
+            this.setColour("#A57582");
+            this.setTooltip("Scales a Digital Set by multiplying voxel coordinates.");
         }
     };
 
@@ -43,7 +122,28 @@ this.appendValueInput('axis_secondary').appendField('Secondary Axis').setCheck('
 this.appendValueInput('factor').appendField('Factor').setCheck('Number');
             this.setOutput(true, 'Digital_Set');
             this.setColour("#A57582");
-            this.setTooltip("");
+            this.setTooltip("Shear a Digital Set along given axes by a specific factor.");
+        }
+    };
+
+    Blockly.Blocks['digitalsetactions_shell'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Shell");
+            this.appendValueInput('target_set').appendField('Set').setCheck('Digital_Set');
+            this.setOutput(true, 'Digital_Set');
+            this.setColour("#A57582");
+            this.setTooltip("Returns the hollow boundary (shell) of the Digital Set.");
+        }
+    };
+
+    Blockly.Blocks['digitalsetactions_symmetric_difference'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Symmetric Difference");
+            this.appendValueInput('set_a').appendField('Set A').setCheck('Digital_Set');
+this.appendValueInput('set_b').appendField('Set B').setCheck('Digital_Set');
+            this.setOutput(true, 'Digital_Set');
+            this.setColour("#A57582");
+            this.setTooltip("Returns a new Digital Set containing points in either Set A or Set B, but NOT both.");
         }
     };
 
@@ -56,7 +156,7 @@ this.appendValueInput('dy').appendField('dy').setCheck('Number');
 this.appendValueInput('dz').appendField('dz').setCheck('Number');
             this.setOutput(true, 'Digital_Set');
             this.setColour("#A57582");
-            this.setTooltip("Moves a Digital Set by a given (dx, dy, dz) offset and returns the new Set. Treats the input set as immutable and returns a newly transformed set.");
+            this.setTooltip("Moves a Digital Set by a given (dx, dy, dz) offset.");
         }
     };
 
@@ -67,7 +167,7 @@ this.appendValueInput('dz').appendField('dz').setCheck('Number');
 this.appendValueInput('set_b').appendField('Set B').setCheck('Digital_Set');
             this.setOutput(true, 'Digital_Set');
             this.setColour("#A57582");
-            this.setTooltip("Combines two Digital Sets, returning a new set containing all points from both. Generates a symmetric 2-input block.");
+            this.setTooltip("Combines two Digital Sets, returning a new set containing all points from both.");
         }
     };
 
@@ -77,7 +177,17 @@ this.appendValueInput('set_b').appendField('Set B').setCheck('Digital_Set');
             this.appendValueInput('sets').appendField('Sets').setCheck('List');
             this.setOutput(true, 'Digital_Set');
             this.setColour("#A57582");
-            this.setTooltip("Combines a list of Digital Sets into a single Set. This is perfect for a Blockly block equipped with a mutator (+/- buttons) to accept an arbitrary number of inputs.");
+            this.setTooltip("Combines a list of Digital Sets into a single Set. Used for Blockly mutator blocks taking N inputs.");
+        }
+    };
+
+    Blockly.Blocks['digitalsetactions_voxel_count'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Voxel Count");
+            this.appendValueInput('target_set').appendField('Set').setCheck('Digital_Set');
+            this.setOutput(true, 'Number');
+            this.setColour("#A57582");
+            this.setTooltip("Returns the total number of blocks/points in the Digital Set.");
         }
     };
 }
