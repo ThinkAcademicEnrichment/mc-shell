@@ -1,27 +1,10 @@
-# from mcshell.mcblockly import generate_entity_blocks,generate_material_blocks,generate_mcactions_blocks
-# from mcshell.mcblockly import ensure_toolbox,process_entities,process_materials
-#
-#
-# if __name__ == '__main__':
-#
-#     ensure_toolbox()
-#
-#     process_entities()
-#     generate_entity_blocks()
-#
-#     process_materials()
-#     generate_material_blocks()
-#
-#     generate_mcactions_blocks()
-#
-#
 import sys
 from pathlib import Path
 
 # Ensure we can import from mcshell
 sys.path.append(str(Path(__file__).parent))
 
-from mcshell.mcscraper import make_materials, make_entity_id_map
+from mcshell.mcscraper import make_materials, make_entity_id_map, make_item_id_map
 from mcshell.registry_builder import RegistryBuilder
 from mcshell.constants import MC_APP_SRC_DIR
 
@@ -34,6 +17,7 @@ def rebuild():
     # These functions now produce structured dictionaries for Blocks/Items/Entities
     make_materials()
     make_entity_id_map()
+    make_item_id_map()
 
     print("\nStep 2: Building Blockly Registries...")
     builder = RegistryBuilder(
