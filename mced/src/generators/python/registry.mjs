@@ -3,6 +3,7 @@
 
 import { defineMineCraftGenerators } from "./mc.mjs";
 import { defineDigitalGeometryActionsGenerators } from "./DigitalGeometryActions.mjs";
+import { defineDigitalSetActionsGenerators } from "./DigitalSetActions.mjs";
 import { defineEventActionsGenerators } from "./EventActions.mjs";
 import { defineLSystemShapesGenerators } from "./LSystemShapes.mjs";
 import { definePlayerActionsGenerators } from "./PlayerActions.mjs";
@@ -20,6 +21,7 @@ import { defineMaterialsGenerators } from "./materials.mjs";
 export function registerAllGenerators(pythonGenerator) {
     defineMineCraftGenerators(pythonGenerator);
     defineDigitalGeometryActionsGenerators(pythonGenerator);
+    defineDigitalSetActionsGenerators(pythonGenerator);
     defineEventActionsGenerators(pythonGenerator);
     defineLSystemShapesGenerators(pythonGenerator);
     definePlayerActionsGenerators(pythonGenerator);

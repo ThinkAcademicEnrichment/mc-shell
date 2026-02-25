@@ -9,6 +9,7 @@ from mcshell.serveractions import ServerActions
 from mcshell.playeractions import PlayerActions
 from mcshell.qturtleactions import QTurtleActions
 from mcshell.digitalgeometryactions import DigitalGeometryActions
+from mcshell.digitalsetactions import DigitalSetActions
 
 # Advanced Digital Geometry and Turtle
 from mcshell.mcturtle import (
@@ -97,7 +98,7 @@ class LSystemShapes(MCActionsBase):
 
 
 
-class MCActions(EventActions,PlayerActions,ServerActions,QTurtleActions,DigitalGeometryActions,PyncraftActions,TurtleShapes,LSystemShapes):
+class MCActions(EventActions,PlayerActions,ServerActions,QTurtleActions,DigitalGeometryActions,DigitalSetActions,PyncraftActions,TurtleShapes,LSystemShapes):
     """
     Unified API for Blockly combining all action groups.
     """
@@ -112,4 +113,5 @@ class MCActions(EventActions,PlayerActions,ServerActions,QTurtleActions,DigitalG
         ServerActions.__init__(self, mc_player_instance, delay_between_blocks)
         PlayerActions.__init__(self,mc_player_instance,delay_between_blocks)
         DigitalGeometryActions.__init__(self,mc_player_instance, delay_between_blocks)
+        DigitalSetActions.__init__(self,mc_player_instance, delay_between_blocks)
 

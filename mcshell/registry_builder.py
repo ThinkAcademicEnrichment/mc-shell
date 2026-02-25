@@ -14,6 +14,7 @@ try:
     from mcshell.playeractions import PlayerActions
     from mcshell.qturtleactions import QTurtleActions
     from mcshell.digitalgeometryactions import DigitalGeometryActions
+    from mcshell.digitalsetactions import DigitalSetActions
     from mcshell.eventactions import EventActions
     from mcshell.mcactions import (
         TurtleShapes, LSystemShapes
@@ -58,6 +59,7 @@ class RegistryBuilder:
             "Player": "#61A1B0",    # Muted Cyan / Teal
             "Events": "#D68C45",    # Muted Orange / Copper
             "Server": "#5C7457",    # Muted Forest / Dark Green
+            "Digital Set": "#A57582", # Muted Mauve / Rose   <-- New Addition
         }
 
         self.TYPE_MAP = {
@@ -116,7 +118,8 @@ class RegistryBuilder:
                 (LSystemShapes, "LSystem", self.COLORS["LSystem"]),
                 (DigitalGeometryActions, "Digital Geometry", self.COLORS["Geometry"]),
                 (QTurtleActions, "Q-Turtle", self.COLORS["Turtle"]),
-                (EventActions, "Event", self.COLORS["Events"])
+                (EventActions, "Event", self.COLORS["Events"]),
+                (DigitalSetActions, "Digital Set", self.COLORS["Digital Set"]),
             ])
 
         # --- Utility Picker Options ---

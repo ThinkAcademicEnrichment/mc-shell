@@ -12,16 +12,6 @@ export function definePyncraftActionsBlocks(Blockly) {
         }
     };
 
-    Blockly.Blocks['pyncraftactions_get_block_with_data'] = {
-        init: function() {
-            this.appendDummyInput().appendField("Get Block with Data at [position]");
-            this.appendValueInput('position').appendField('Position').setCheck('3DVector');
-            this.setOutput(true, 'Block');
-            this.setColour("#252E28");
-            this.setTooltip("Returns the Block ID with its blockstate data at the specified position.");
-        }
-    };
-
     Blockly.Blocks['pyncraftactions_get_entities_in_radius'] = {
         init: function() {
             this.appendDummyInput().appendField("Get Entities in [radius] block radius from [position]");

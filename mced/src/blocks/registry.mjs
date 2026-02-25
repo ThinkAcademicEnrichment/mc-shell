@@ -3,6 +3,7 @@
 
 import { defineMineCraftBlocks } from "./mc.mjs";
 import { defineDigitalGeometryActionsBlocks } from "./DigitalGeometryActions.mjs";
+import { defineDigitalSetActionsBlocks } from "./DigitalSetActions.mjs";
 import { defineEventActionsBlocks } from "./EventActions.mjs";
 import { defineLSystemShapesBlocks } from "./LSystemShapes.mjs";
 import { definePlayerActionsBlocks } from "./PlayerActions.mjs";
@@ -20,6 +21,7 @@ import { defineMaterialsBlocks } from "./materials.mjs";
 export function registerAllBlocks(Blockly) {
     defineMineCraftBlocks(Blockly);
     defineDigitalGeometryActionsBlocks(Blockly);
+    defineDigitalSetActionsBlocks(Blockly);
     defineEventActionsBlocks(Blockly);
     defineLSystemShapesBlocks(Blockly);
     definePlayerActionsBlocks(Blockly);
