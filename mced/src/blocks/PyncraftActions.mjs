@@ -84,6 +84,19 @@ this.appendValueInput('z').appendField('Z').setCheck('Number');
         }
     };
 
+    Blockly.Blocks['pyncraftactions_send_title_by_name'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Send Title to [player]");
+            this.appendValueInput('title').appendField('Title').setCheck('String');
+this.appendValueInput('subtitle').appendField('Subtitle').setCheck('String');
+this.appendValueInput('stay').appendField('Stay (Ticks)').setCheck('Number');
+this.appendValueInput('player_name').appendField('Player').setCheck('String');
+            this.setPreviousStatement(true); this.setNextStatement(true);
+            this.setColour("#252E28");
+            this.setTooltip("Sends a title and subtitle to the specified player's screen.");
+        }
+    };
+
     Blockly.Blocks['pyncraftactions_set_block'] = {
         init: function() {
             this.appendDummyInput().appendField("Set Block [block_type] at [position]");

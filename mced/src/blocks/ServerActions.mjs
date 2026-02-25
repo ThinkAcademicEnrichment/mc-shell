@@ -2,6 +2,21 @@ import { MCED } from "../lib/constants.mjs";
 
 export function defineServerActionsBlocks(Blockly) {
 
+    Blockly.Blocks['picker_timetype'] = {
+        init: function() {
+            this.appendDummyInput()
+                .appendField("Time Type")
+                .appendField(new Blockly.FieldDropdown([
+                ["Day Time", "daytime"],
+                ["Game Time", "gametime"],
+                ["Day", "day"]
+                ]), "VALUE");
+            this.setOutput(true, "TimeType");
+            this.setColour("#95A5A6");
+            this.setTooltip("");
+        }
+    };
+
     Blockly.Blocks['picker_time'] = {
         init: function() {
             this.appendDummyInput()
@@ -522,6 +537,16 @@ this.appendValueInput('target').appendField('Target Player').setCheck('String');
         }
     };
 
+    Blockly.Blocks['serveractions_server_list'] = {
+        init: function() {
+            this.appendDummyInput().appendField("List Players on Server");
+            
+            this.setOutput(true, 'Array');
+            this.setColour("#5C7457");
+            this.setTooltip("List the players on the server. ");
+        }
+    };
+
     Blockly.Blocks['serveractions_server_locate_structure'] = {
         init: function() {
             this.appendDummyInput().appendField("Locate Structure [structure]");
@@ -544,6 +569,17 @@ this.appendValueInput('target').appendField('Target Player').setCheck('String');
         }
     };
 
+    Blockly.Blocks['serveractions_server_spawnpoint'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Set the spawnpoint for [target] at [position]");
+            this.appendValueInput('position').appendField('Position').setCheck('3DVector');
+this.appendValueInput('target').appendField('Target Player').setCheck('String');
+            this.setPreviousStatement(true); this.setNextStatement(true);
+            this.setColour("#5C7457");
+            this.setTooltip("Sets the spawn point for a player.");
+        }
+    };
+
     Blockly.Blocks['serveractions_server_summon'] = {
         init: function() {
             this.appendDummyInput().appendField("Summon [entity] at [pos]");
@@ -563,6 +599,16 @@ this.appendValueInput('pos').appendField('Position').setCheck('3DVector');
             this.setPreviousStatement(true); this.setNextStatement(true);
             this.setColour("#5C7457");
             this.setTooltip("Teleports a player or entity to a location.");
+        }
+    };
+
+    Blockly.Blocks['serveractions_server_time_query'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Query the world time");
+            this.appendValueInput('time_type').appendField('Time Type').setCheck('TimeType');
+            this.setOutput(true, 'Number');
+            this.setColour("#5C7457");
+            this.setTooltip("Query the world time.");
         }
     };
 

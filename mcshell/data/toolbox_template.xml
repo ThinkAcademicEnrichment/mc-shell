@@ -411,5 +411,5 @@
         <block type="minecraft_vector_dot_product"></block>
         <block type="minecraft_matrix_vector_multiply"></block>
     </category>
-
+    <sep></sep>
 </xml>
