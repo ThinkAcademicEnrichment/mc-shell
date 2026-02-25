@@ -6,12 +6,6 @@ export function definePyncraftActionsGenerators(pythonGenerator) {
         return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
     };
 
-    pythonGenerator.forBlock['pyncraftactions_get_block_with_data'] = function(block, generator) {
-        const position = generator.valueToCode(block, 'position', pythonGenerator.ORDER_ATOMIC) || 'None';
-        const code = `PyncraftActions.get_block_with_data(${position})\n`;
-        return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
-    };
-
     pythonGenerator.forBlock['pyncraftactions_get_entities_in_radius'] = function(block, generator) {
         const position = generator.valueToCode(block, 'position', pythonGenerator.ORDER_ATOMIC) || 'None';
 const radius = generator.valueToCode(block, 'radius', pythonGenerator.ORDER_ATOMIC) || 'None';

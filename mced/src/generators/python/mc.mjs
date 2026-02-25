@@ -31,9 +31,11 @@ export function defineMineCraftGenerators(pythonGenerator) {
         const classIndent = this.INDENT || '    ';
 
         // Default namespaces as a fallback
+        // this sucks
         let actionClasses = [
             'PlayerActions', 'ServerActions', 'QTurtleActions', 'LSystemShapes',
-            'TurtleShapes', 'DigitalGeometryActions', 'WorldActions', 'PyncraftActions', 'EventActions'
+            'TurtleShapes', 'DigitalGeometryActions', 'WorldActions', 'PyncraftActions', 'EventActions',
+            'DigitalSetActions'
         ];
 
         // Dynamically extract action class names from the Toolbox categories
