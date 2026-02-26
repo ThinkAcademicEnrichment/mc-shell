@@ -15,6 +15,7 @@ import asyncio
 import requests
 import shutil
 import pathlib
+import subprocess
 import yarl
 import inspect
 import zipfile
@@ -66,9 +67,11 @@ MC_SERVER_DATA = {
     'password': None,
 }
 
+
 MC_DATA_DIR = pathlib.Path(__file__).parent.joinpath('data')
 MC_PAPER_GLOBAL_TEMPLATE = MC_DATA_DIR / 'paper-global-template.yaml'
 FJ_JAR_PATH = MC_DATA_DIR.joinpath('FruitJuice-0.4.1.jar')
+
 
 MC_WEBPAGE_CACHE = MC_DATA_DIR.joinpath('webpage-cache')
 MC_DOC_URL = yarl.URL("https://minecraft.fandom.com/wiki/Commands")
@@ -103,6 +106,10 @@ MC_CENTRAL_CONFIG_FILE = pathlib.Path("/etc/mc-shell/user_map.json")
 # new: datapacks
 MC_INTERNAL_DATAPACKS = MC_DATA_DIR / 'datapacks'
 MC_DATAPACK_LIB_DIR = MC_WORLDS_BASE_DIR / 'datapacks-library'
+
+#new: mcjuice server
+MC_JUICE_SRC_DIR = pathlib.Path(__file__).parent.parent / 'mcjuice' / 'src'
+MC_JUICE_JAR_PATH = MC_DATA_DIR / "mcjuice-0.1.0.jar"
 
 MC_JRE_DIR = MC_WORLDS_BASE_DIR / 'jre'
 # Determine the binary name based on the OS

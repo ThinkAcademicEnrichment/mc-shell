@@ -260,6 +260,9 @@ class MCShell(Magics):
         # Always install FruitJuice from bundled version
         plugins_dir.joinpath(FJ_JAR_PATH.name).symlink_to(FJ_JAR_PATH)
 
+        # Always install McJuice from bundled version
+        plugins_dir.joinpath(MC_JUICE_JAR_PATH.name).symlink_to(MC_JUICE_JAR_PATH)
+
         # Install the plugins listed in the manifest
         plugin_urls = manifest.get("plugins", [])
         if plugin_urls:

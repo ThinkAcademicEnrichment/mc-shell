@@ -614,6 +614,129 @@ class RegistryBuilder:
         (self.blocks_dir / f"{file_name}.mjs").write_text(js_c, encoding='utf-8')
         (self.gens_dir / f"{file_name}.mjs").write_text(py_c, encoding='utf-8')
 
+class JavaGenerator:
+    def __init__(self, schema_path, output_path):
+        try:
+            with open(schema_path, 'r') as f:
+                self.schema = yaml.safe_load(f)
+        except Exception as e:
+            print(f"Error loading YAML schema: {e}")
+            self.schema = {}
+        self.output_path = Path(output_path)
+
+    def generate(self):
+        # Header for the Java file
+        code = [
+            "package org.mcshell.mcjuice;",
+            "",
+            "import org.bukkit.entity.Player;",
+            "import org.bukkit.Location;",
+            "import java.util.HashMap;",
+            "import java.util.Map;",
+            "",
+            "public class GeneratedCommandRegistry {",
+            "    private final Map<String, CommandExecutor> registry = new HashMap<>();",
+            "",
+            "    public GeneratedCommandRegistry() {",
+            "        // Root level helper",
+            "        registry.put(\"ping\", (args, session) -> session.send(\"pong\"));",
+            ""
+        ]
+
+        # Generate the registry.put() calls from the YAML
+        namespaces = self.schema.get('namespaces', {})
+        for ns_name, ns_data in namespaces.items():
+            target_type = ns_data.get('target', 'Player')
+            for cmd in ns_data.get('commands', []):
+                cmd_full_name = f"{ns_name}.{cmd['name']}"
+                code.append(self._build_command_lambda(cmd_full_name, cmd, target_type))
+
+        code.extend([
+            "    }",
+            "",
+            "    public CommandExecutor getExecutor(String name) { return registry.get(name); }",
+            "}"
+        ])
+
+        # Write the file to the mcjuice source tree
+        self.output_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(self.output_path, "w") as f:
+            f.write("\n".join(code))
+
+    def _build_command_lambda(self, name, cmd, target_type):
+        """Creates the registry.put("name", (args, session) -> { ... }) block"""
+        lines = [f'        registry.put("{name}", (args, session) -> {{']
+
+        # 1. Boilerplate: Check args length and resolve the player/entity (index 0 is always the ID)
+        lines.append('            if (args.length < 1) { session.send("Fail,Missing ID"); return; }')
+        lines.append('            int entityId = Integer.parseInt(args[0]);')
+
+        if target_type == "Player":
+            lines.append('            Player player = session.getPlayerById(entityId);')
+            lines.append('            if (player == null) { session.send("Fail,Player not found"); return; }')
+
+        # 2. Argument Parsing Logic
+        # We extract types and names from the YAML to build the parsing lines
+        bukkit_call = cmd["bukkit"]
+        yaml_args = cmd.get("args", [])
+
+        for i, arg in enumerate(yaml_args):
+            arg_name = arg["name"]
+            arg_type = arg["type"]
+            # Socket args index is i + 1 because args[0] is the entityId
+            idx = i + 1
+
+            if arg_type == "double":
+                lines.append(f'            double {arg_name} = Double.parseDouble(args[{idx}]);')
+            elif arg_type == "int":
+                lines.append(f'            int {arg_name} = Integer.parseInt(args[{idx}]);')
+            elif arg_type == "String":
+                lines.append(f'            String {arg_name} = args[{idx}];')
+
+            # Replace {var} in the bukkit string with the actual Java variable name
+            bukkit_call = bukkit_call.replace(f"{{{arg_name}}}", arg_name)
+
+        # 3. Execution and Response Logic
+        ret_type = cmd.get('returns', 'void')
+
+        if ret_type == 'void':
+            lines.append(f'            player.{bukkit_call};')
+            # CRITICAL: Send "OK" so the Python client doesn't hang waiting for a response
+            lines.append('            session.send("OK");')
+        elif ret_type in ('Location', 'string') and 'getLocation' in bukkit_call:
+            lines.append(f'            Location loc = player.{bukkit_call};')
+            lines.append('            session.send(loc.getX() + "," + loc.getY() + "," + loc.getZ());')
+        else:
+            lines.append(f'            Object res = player.{bukkit_call};')
+            lines.append('            session.send(String.valueOf(res));')
+
+        lines.append('        });')
+        return "\n".join(lines)
+
+# Integration snippet for your main build.py
+def build_java_component():
+    # 1. Run the Generator
+    gen = JavaGenerator("mcjuice_api.yaml", "mcjuice/src/main/java/org/mcshell/mcjuice/GeneratedCommandRegistry.java")
+    gen.generate()
+
+    # 2. Compile via Maven
+    print("Building McJuice JAR...")
+    subprocess.run(["mvn", "clean", "package"], cwd="mcjuice", check=True, shell=True)
+
+    # 3. Move the artifact to the mc-shell data directory
+    # Note: Using 0.1.0 as requested
+    built_jar = Path("mcjuice/target/mcjuice-0.1.0.jar")
+    dest_jar = Path("mcshell/data/mcjuice-0.1.0.jar")
+
+    if built_jar.exists():
+        shutil.copy2(built_jar, dest_jar)
+        print(f"McJuice JAR integrated into mcshell/data/")
+    else:
+        print(f"Error: Compiled JAR not found at {built_jar}")
+
 if __name__ == "__main__":
     builder = RegistryBuilder(MC_APP_SRC_DIR / 'toolbox.xml', MC_APP_SRC_DIR / 'blocks', MC_APP_SRC_DIR / 'generators' / 'python')
     builder.build_all()
+
+    gen = JavaGenerator( MC_DATA_DIR / "mcjuice_api.yaml",MC_JUICE_SRC_DIR / "main/java/org/mcshell/mcjuice/GeneratedCommandRegistry.java")
+    gen.generate()
