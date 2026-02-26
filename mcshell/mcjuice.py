@@ -10,6 +10,7 @@ class MCJuiceClient:
         self.player = PlayerNamespace(conn, entity_id)
         self.world = WorldNamespace(conn, entity_id)
         self.chat = ChatNamespace(conn, entity_id)
+        self.events = EventsNamespace(conn)
 
     @staticmethod
     def create(address='localhost', port=4721, playerName=''):
@@ -125,3 +126,25 @@ class ChatNamespace:
     def post(self, message):
         res = self.conn.sendReceive('chat.post', message)
         return res
+
+class EventsNamespace:
+    def __init__(self, conn):
+        self.conn = conn
+
+    def poll(self, event_name: str):
+        res = self.conn.sendReceive('events.poll', event_name)
+        from mcshell.event import EventFactory
+        events = [e for e in res.split('|') if e]
+        return [EventFactory.create(event_name, e) for e in events]
+
+    def clearAll(self):
+        self.conn.sendReceive('events.clear')
+
+    def pollBlockHits(self):
+        return self.poll('blockHit')
+
+    def pollChatPosts(self):
+        return self.poll('chat')
+
+    def pollArrowHits(self):
+        return self.poll('arrowHit')
