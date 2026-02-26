@@ -1,13 +1,11 @@
-
 namespaces:
   player:
     target: Player
     commands:
-    # --- Movement & Position ---- name: getPosbukkit: getLocation()returns: Location
+      # --- Movement & Position (CmdPositioner) ---
       - name: getPos
         bukkit: getLocation()
         returns: Location
-        # Result helper to format Location to "x,y,z"
 
       - name: setPos
         bukkit: teleport(new Location(player.getWorld(), {x}, {y}, {z}, player.getLocation().getYaw(), player.getLocation().getPitch()))
@@ -17,19 +15,52 @@ namespaces:
           - { name: z, type: double }
         returns: void
 
+      - name: getTilePos
+        bukkit: getLocation()
+        returns: TileLocation # Correctly identifies this should return integers
+
+      - name: setTilePos
+        bukkit: teleport(new Location(player.getWorld(), Math.floor({x}) + 0.5, Math.floor({y}), Math.floor({z}) + 0.5, player.getLocation().getYaw(), player.getLocation().getPitch()))
+        args:
+          - { name: x, type: double }
+          - { name: y, type: double }
+          - { name: z, type: double }
+        returns: void
+
+      # --- Orientation (CmdPositioner) ---
       - name: getDirection
         bukkit: getEyeLocation().getDirection()
         returns: Vector
+
+      - name: setDirection
+        bukkit: teleport(player.getLocation().setDirection(new org.bukkit.util.Vector({x}, {y}, {z})))
+        args:
+          - { name: x, type: double }
+          - { name: y, type: double }
+          - { name: z, type: double }
+        returns: void
 
       - name: getRotation
         bukkit: getLocation().getYaw()
         returns: double
 
+      - name: setRotation
+        bukkit: teleport(new Location(player.getWorld(), player.getLocation().getX(), player.getLocation().getY(), player.getLocation().getZ(), (float){yaw}, player.getLocation().getPitch()))
+        args:
+          - { name: yaw, type: double }
+        returns: void
+
       - name: getPitch
         bukkit: getLocation().getPitch()
         returns: double
 
-      # --- Stats & State ---
+      - name: setPitch
+        bukkit: teleport(new Location(player.getWorld(), player.getLocation().getX(), player.getLocation().getY(), player.getLocation().getZ(), player.getLocation().getYaw(), (float){pitch}))
+        args:
+          - { name: pitch, type: double }
+        returns: void
+
+      # --- Stats & State (CmdPlayer) ---
       - name: getHealth
         bukkit: getHealth()
         returns: double
@@ -50,8 +81,19 @@ namespaces:
           - { name: level, type: int }
         returns: void
 
+      # --- Messaging & UI (CmdPlayer) ---
       - name: sendMessage
         bukkit: sendMessage({message})
         args:
           - { name: message, type: String }
+        returns: void
+
+      - name: sendTitle
+        bukkit: sendTitle({title}, {subTitle}, {fadeIn}, {stay}, {fadeOut})
+        args:
+          - { name: title, type: String }
+          - { name: subTitle, type: String }
+          - { name: fadeIn, type: int }
+          - { name: stay, type: int }
+          - { name: fadeOut, type: int }
         returns: void
