@@ -608,6 +608,7 @@ class RegistryBuilder:
         (self.blocks_dir / f"{file_name}.mjs").write_text(js_c, encoding='utf-8')
         (self.gens_dir / f"{file_name}.mjs").write_text(py_c, encoding='utf-8')
 
+
 import yaml
 from pathlib import Path
 import re
@@ -620,7 +621,7 @@ class ApiGenerator:
         except Exception as e:
             print(f"Error loading YAML schema: {e}")
             self.schema = {}
-        self.java_out = Path(java_out)
+        self.output_path = Path(java_out)
         self.python_out = Path(python_out)
 
     def run(self):
@@ -630,6 +631,7 @@ class ApiGenerator:
     def generate_java_registry(self):
         code = [
             "package org.mcshell.mcjuice;",
+            "",
             "import org.bukkit.Bukkit;",
             "import org.bukkit.World;",
             "import org.bukkit.entity.Player;",
@@ -641,38 +643,64 @@ class ApiGenerator:
             "",
             "public class GeneratedCommandRegistry {",
             "    private final Map<String, CommandExecutor> registry = new HashMap<>();",
+            "",
             "    public GeneratedCommandRegistry() {",
+            "        // Root level helper",
             "        registry.put(\"ping\", (args, session) -> session.send(\"pong\"));",
             ""
         ]
 
-        for ns, data in self.schema.get('namespaces', {}).items():
-            target = data.get('target', 'Player')
-            for cmd in data.get('commands', []):
-                code.append(self._build_java_lambda(f"{ns}.{cmd['name']}", cmd, target))
+        namespaces = self.schema.get('namespaces', {})
+        for ns_name, ns_data in namespaces.items():
+            target_type = ns_data.get('target', 'Player')
+            for cmd in ns_data.get('commands', []):
+                cmd_full_name = f"{ns_name}.{cmd['name']}"
+                code.append(self._build_java_lambda(cmd_full_name, cmd, target_type))
 
-        code.extend(["    }", "    public CommandExecutor getExecutor(String n) { return registry.get(n); }", "}"])
-        self.java_out.write_text("\n".join(code))
+        code.extend([
+            "    }",
+            "",
+            "    public CommandExecutor getExecutor(String name) { return registry.get(name); }",
+            "}"
+        ])
+
+        self.output_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(self.output_path, "w") as f:
+            f.write("\n".join(code))
 
     def _build_java_lambda(self, name, cmd, target_type):
+        """Creates the registry.put("name", (args, session) -> { ... }) block"""
         lines = [f'        registry.put("{name}", (args, session) -> {{']
 
         # 1. Parameter extraction
         offset = 1 if target_type == "Player" else 0
         bukkit_call = cmd["bukkit"]
-        yaml_args = cmd.get("args", [])
 
+        # Handle YAML parsing quirks for blocks (where { code } becomes a dict)
+        if isinstance(bukkit_call, dict):
+            bukkit_call = "{" + list(bukkit_call.keys())[0] + "}"
+
+        yaml_args = cmd.get("args", [])
         for i, arg in enumerate(yaml_args):
             t, n, idx = arg["type"], arg["name"], i + offset
-            if t == "double": lines.append(f'            final double {n} = Double.parseDouble(args[{idx}]);')
-            elif t == "int": lines.append(f'            final int {n} = Integer.parseInt(args[{idx}]);')
-            elif t == "String": lines.append(f'            final String {n} = args[{idx}];')
-            bukkit_call = bukkit_call.replace(f"{{{n}}}", n)
+            # USE PREFIX to avoid collision with variables declared inside bukkit_call blocks
+            arg_var = f"_arg_{n}"
+
+            if t == "double":
+                lines.append(f'            final double {arg_var} = Double.parseDouble(args[{idx}]);')
+            elif t == "int":
+                lines.append(f'            final int {arg_var} = Integer.parseInt(args[{idx}]);')
+            elif t == "String":
+                lines.append(f'            final String {arg_var} = args[{idx}];')
+
+            # Replace placeholder in the bukkit string with our safe variable name
+            bukkit_call = bukkit_call.replace(f"{{{n}}}", arg_var)
 
         # 2. Main Thread Execution
         lines.append('            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {')
 
         if target_type == "Player":
+            # Player ID is always args[0] for player-target namespaces
             lines.append('                int eid = Integer.parseInt(args[0]);')
             lines.append('                Player player = session.getPlayerById(eid);')
             lines.append('                if (player == null) { session.send("Fail,No Player"); return; }')
@@ -683,40 +711,54 @@ class ApiGenerator:
         else:
             exec_on = "Bukkit"
 
-        # FIX: Only skip prefix if the call starts with a static accessor or is a block
-        is_block = bukkit_call.strip().startswith("{")
-        # Matches strings starting with Bukkit., McJuicePlugin., org.bukkit., or a capital letter (Capital.method)
-        is_static = re.match(r'^(Bukkit|McJuicePlugin|org\.bukkit|[A-Z])', bukkit_call.strip())
+        # Determine if this is a block or a static call
+        stripped_call = bukkit_call.strip()
+        is_block = stripped_call.startswith("{")
+        # Matches strings starting with Bukkit., McJuicePlugin., org.bukkit., or a CapitalizedClass
+        is_static = re.match(r'^(Bukkit|McJuicePlugin|org\.bukkit|[A-Z])', stripped_call)
 
         full_expr = bukkit_call if (is_block or is_static) else f"{exec_on}.{bukkit_call}"
-        ret = cmd.get('returns', 'void')
+        ret_type = cmd.get('returns', 'void')
 
-        if ret == 'void':
-            lines.append(f'                {full_expr}{"" if is_block else ";"}')
-            lines.append('                session.send("OK");')
+        if is_block:
+            # Code blocks are executed directly
+            lines.append(f'                {full_expr}')
+            # If void, send OK unless it's a block that manages its own response (like getBlocks)
+            if ret_type == 'void':
+                lines.append('                session.send("OK");')
         else:
-            lines.append(f'                Object res = {full_expr};')
-            lines.append('                if (res == null) { session.send("null"); }')
-            if ret == 'TileLocation':
-                lines.append('                else if (res instanceof Location) { Location l = (Location)res; session.send(l.getBlockX()+","+l.getBlockY()+","+l.getBlockZ()); }')
+            # Standard single-line expressions
+            if ret_type == 'void':
+                lines.append(f'                {full_expr};')
+                lines.append('                session.send("OK");')
             else:
-                lines.append('                else if (res instanceof Location) { Location l = (Location)res; session.send(l.getX()+","+l.getY()+","+l.getZ()); }')
-                lines.append('                else if (res instanceof Vector) { Vector v = (Vector)res; session.send(v.getX()+","+v.getY()+","+v.getZ()); }')
-                lines.append('                else { session.send(String.valueOf(res)); }')
+                lines.append(f'                Object res = {full_expr};')
+                lines.append('                if (res == null) { session.send("null"); }')
+                if ret_type == 'TileLocation':
+                    lines.append('                else if (res instanceof Location) { Location l = (Location)res; session.send(l.getBlockX()+","+l.getBlockY()+","+l.getBlockZ()); }')
+                else:
+                    lines.append('                else if (res instanceof Location) { Location l = (Location)res; session.send(l.getX()+","+l.getY()+","+l.getZ()); }')
+                    lines.append('                else if (res instanceof Vector) { Vector v = (Vector)res; session.send(v.getX()+","+v.getY()+","+v.getZ()); }')
+                    lines.append('                else { session.send(String.valueOf(res)); }')
 
-        lines.append('            });'); lines.append('        });')
+        lines.append('            });')
+        lines.append('        });')
         return "\n".join(lines)
 
     def generate_python_client(self):
+        """Generates the Python Client with full pyncraft compatibility."""
         code = [
             "from mcshell.mcjuiceconn import MCJuiceConnection",
             "from mcshell.Vec3 import Vec3",
+            "",
+            "# --- THIS FILE IS GENERATED BY THE REGISTRY BUILDER ---",
             "",
             "class MCJuiceClient:",
             "    def __init__(self, conn, entity_id=None):",
             "        self.conn = conn",
             "        self.entity_id = entity_id"
         ]
+
         namespaces = self.schema.get('namespaces', {})
         for ns in namespaces.keys():
             code.append(f"        self.{ns} = {ns.capitalize()}Namespace(conn, entity_id)")
@@ -729,11 +771,15 @@ class ApiGenerator:
         for ns, data in namespaces.items():
             target = data.get('target', 'Player')
             code.append(f"\nclass {ns.capitalize()}Namespace:")
-            code.append("    def __init__(self, conn, entity_id): self.conn = conn; self.entity_id = entity_id")
+            code.append("    def __init__(self, conn, entity_id):")
+            code.append("        self.conn = conn")
+            code.append("        self.entity_id = entity_id")
+
             for cmd in data.get('commands', []):
                 args = [a["name"] for a in cmd.get("args", [])]
+                # Maintain python syntax: entity_id=None must be the LAST argument
                 sig = ", ".join(["self"] + args + (["entity_id=None"] if target == "Player" else []))
-                code.append(f"    def {cmd['name']}({sig}):")
+                code.append(f"\n    def {cmd['name']}({sig}):")
 
                 payload_parts = []
                 if target == "Player":
@@ -746,11 +792,18 @@ class ApiGenerator:
                 code.append(f"        res = self.conn.sendReceive('{ns}.{cmd['name']}', {payload})")
 
                 r = cmd.get('returns', 'void')
-                if r in ('Location', 'Vector'): code.append("        return Vec3(*list(map(float, res.split(','))))")
-                elif r == 'TileLocation': code.append("        return Vec3(*list(map(int, res.split(','))))")
-                elif r == 'double': code.append("        return float(res)")
-                elif r == 'int': code.append("        return int(res)")
-                else: code.append("        return res")
+                if r in ('Location', 'Vector'):
+                    code.append("        return Vec3(*list(map(float, res.split(','))))")
+                elif r == 'TileLocation':
+                    code.append("        return Vec3(*list(map(int, res.split(','))))")
+                elif r == 'string_list':
+                    code.append("        return res.split(',')")
+                elif r == 'double':
+                    code.append("        return float(res)")
+                elif r == 'int':
+                    code.append("        return int(res)")
+                else:
+                    code.append("        return res")
 
         self.python_out.write_text("\n".join(code))
 
