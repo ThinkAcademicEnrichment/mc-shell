@@ -2,11 +2,9 @@ namespaces:
   player:
     target: Player
     commands:
-      # --- Movement & Position (CmdPositioner) ---
       - name: getPos
         bukkit: getLocation()
         returns: Location
-
       - name: setPos
         bukkit: teleport(new Location(player.getWorld(), {x}, {y}, {z}, player.getLocation().getYaw(), player.getLocation().getPitch()))
         args:
@@ -14,11 +12,9 @@ namespaces:
           - { name: y, type: double }
           - { name: z, type: double }
         returns: void
-
       - name: getTilePos
         bukkit: getLocation()
-        returns: TileLocation # Correctly identifies this should return integers
-
+        returns: TileLocation
       - name: setTilePos
         bukkit: teleport(new Location(player.getWorld(), Math.floor({x}) + 0.5, Math.floor({y}), Math.floor({z}) + 0.5, player.getLocation().getYaw(), player.getLocation().getPitch()))
         args:
@@ -26,74 +22,77 @@ namespaces:
           - { name: y, type: double }
           - { name: z, type: double }
         returns: void
-
-      # --- Orientation (CmdPositioner) ---
       - name: getDirection
         bukkit: getEyeLocation().getDirection()
         returns: Vector
+      - name: getRotation
+        bukkit: getLocation().getYaw()
+        returns: double
+      - name: getPitch
+        bukkit: getLocation().getPitch()
+        returns: double
+      - name: getHealth
+        bukkit: getHealth()
+        returns: double
+      - name: setHealth
+        bukkit: setHealth({health})
+        args: [{ name: health, type: double }]
+        returns: void
 
-      - name: setDirection
-        bukkit: teleport(player.getLocation().setDirection(new org.bukkit.util.Vector({x}, {y}, {z})))
+  world:
+    target: World
+    commands:
+      - name: getBlock
+        bukkit: getBlockAt({x}, {y}, {z}).getType().name()
+        args:
+          - { name: x, type: int }
+          - { name: y, type: int }
+          - { name: z, type: int }
+        returns: string
+
+      - name: setBlock
+        bukkit: getBlockAt({x}, {y}, {z}).setType(org.bukkit.Material.valueOf({block}.toUpperCase()))
+        args:
+          - { name: x, type: int }
+          - { name: y, type: int }
+          - { name: z, type: int }
+          - { name: block, type: String }
+        returns: void
+
+      - name: getHeight
+        bukkit: getHighestBlockYAt({x}, {z})
+        args:
+          - { name: x, type: int }
+          - { name: z, type: int }
+        returns: int
+
+      - name: getPlayerId
+        bukkit: Bukkit.getPlayer({name}).getEntityId()
+        args: [{ name: name, type: String }]
+        returns: int
+
+      - name: spawnEntity
+        bukkit: spawnEntity(new Location(world, {x}, {y}, {z}), org.bukkit.entity.EntityType.valueOf({type}.toUpperCase())).getEntityId()
         args:
           - { name: x, type: double }
           - { name: y, type: double }
           - { name: z, type: double }
-        returns: void
-
-      - name: getRotation
-        bukkit: getLocation().getYaw()
-        returns: double
-
-      - name: setRotation
-        bukkit: teleport(new Location(player.getWorld(), player.getLocation().getX(), player.getLocation().getY(), player.getLocation().getZ(), (float){yaw}, player.getLocation().getPitch()))
-        args:
-          - { name: yaw, type: double }
-        returns: void
-
-      - name: getPitch
-        bukkit: getLocation().getPitch()
-        returns: double
-
-      - name: setPitch
-        bukkit: teleport(new Location(player.getWorld(), player.getLocation().getX(), player.getLocation().getY(), player.getLocation().getZ(), player.getLocation().getYaw(), (float){pitch}))
-        args:
-          - { name: pitch, type: double }
-        returns: void
-
-      # --- Stats & State (CmdPlayer) ---
-      - name: getHealth
-        bukkit: getHealth()
-        returns: double
-
-      - name: setHealth
-        bukkit: setHealth({health})
-        args:
-          - { name: health, type: double }
-        returns: void
-
-      - name: getFoodLevel
-        bukkit: getFoodLevel()
+          - { name: type, type: String }
         returns: int
 
-      - name: setFoodLevel
-        bukkit: setFoodLevel({level})
+      - name: createExplosion
+        bukkit: createExplosion({x}, {y}, {z}, (float){power})
         args:
-          - { name: level, type: int }
+          - { name: x, type: double }
+          - { name: y, type: double }
+          - { name: z, type: double }
+          - { name: power, type: double }
         returns: void
 
-      # --- Messaging & UI (CmdPlayer) ---
-      - name: sendMessage
-        bukkit: sendMessage({message})
-        args:
-          - { name: message, type: String }
-        returns: void
-
-      - name: sendTitle
-        bukkit: sendTitle({title}, {subTitle}, {fadeIn}, {stay}, {fadeOut})
-        args:
-          - { name: title, type: String }
-          - { name: subTitle, type: String }
-          - { name: fadeIn, type: int }
-          - { name: stay, type: int }
-          - { name: fadeOut, type: int }
+  chat:
+    target: Server
+    commands:
+      - name: post
+        bukkit: broadcastMessage({message})
+        args: [{ name: message, type: String }]
         returns: void
