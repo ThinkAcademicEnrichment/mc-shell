@@ -2,25 +2,20 @@ namespaces:
   player:
     target: Player
     commands:
+      # --- Position & Tile ---
       - name: getPos
         bukkit: getLocation()
         returns: Location
       - name: setPos
         bukkit: teleport(new Location(player.getWorld(), {x}, {y}, {z}, player.getLocation().getYaw(), player.getLocation().getPitch()))
-        args:
-          - { name: x, type: double }
-          - { name: y, type: double }
-          - { name: z, type: double }
+        args: [{ name: x, type: double }, { name: y, type: double }, { name: z, type: double }]
         returns: void
       - name: getTilePos
         bukkit: getLocation()
         returns: TileLocation
       - name: setTilePos
         bukkit: teleport(new Location(player.getWorld(), Math.floor({x}) + 0.5, Math.floor({y}), Math.floor({z}) + 0.5, player.getLocation().getYaw(), player.getLocation().getPitch()))
-        args:
-          - { name: x, type: double }
-          - { name: y, type: double }
-          - { name: z, type: double }
+        args: [{ name: x, type: double }, { name: y, type: double }, { name: z, type: double }]
         returns: void
       - name: getDirection
         bukkit: getEyeLocation().getDirection()
@@ -42,28 +37,60 @@ namespaces:
   world:
     target: World
     commands:
+      # --- Block Management ---
       - name: getBlock
         bukkit: getBlockAt({x}, {y}, {z}).getType().name()
-        args:
-          - { name: x, type: int }
-          - { name: y, type: int }
-          - { name: z, type: int }
+        args: [{ name: x, type: int }, { name: y, type: int }, { name: z, type: int }]
         returns: string
 
       - name: setBlock
         bukkit: getBlockAt({x}, {y}, {z}).setType(org.bukkit.Material.valueOf({block}.toUpperCase()))
-        args:
-          - { name: x, type: int }
-          - { name: y, type: int }
-          - { name: z, type: int }
-          - { name: block, type: String }
+        args: [{ name: x, type: int }, { name: y, type: int }, { name: z, type: int }, { name: block, type: String }]
         returns: void
 
+      - name: getBlocks
+        bukkit: |
+          {
+            int x1 = {x1}, y1 = {y1}, z1 = {z1}, x2 = {x2}, y2 = {y2}, z2 = {z2};
+            int xMin = Math.min(x1, x2), xMax = Math.max(x1, x2);
+            int yMin = Math.min(y1, y2), yMax = Math.max(y1, y2);
+            int zMin = Math.min(z1, z2), zMax = Math.max(z1, z2);
+            StringBuilder sb = new StringBuilder();
+            for (int z = zMin; z <= zMax; z++) {
+              for (int y = yMin; y <= yMax; y++) {
+                for (int x = xMin; x <= xMax; x++) {
+                  sb.append(world.getBlockAt(x, y, z).getType().name()).append(",");
+                }
+              }
+            }
+            if (sb.length() > 0) sb.setLength(sb.length() - 1);
+            session.send(sb.toString());
+          }
+        args: [{ name: x1, type: int }, { name: y1, type: int }, { name: z1, type: int }, { name: x2, type: int }, { name: y2, type: int }, { name: z2, type: int }]
+        returns: string_list
+
+      - name: setBlocks
+        bukkit: |
+          {
+            int xMin = Math.min({x1}, {x2}), xMax = Math.max({x1}, {x2});
+            int yMin = Math.min({y1}, {y2}), yMax = Math.max({y1}, {y2});
+            int zMin = Math.min({z1}, {z2}), zMax = Math.max({z1}, {z2});
+            Material mat = Material.valueOf({block}.toUpperCase());
+            for (int x = xMin; x <= xMax; x++) {
+              for (int y = yMin; y <= yMax; y++) {
+                for (int z = zMin; z <= zMax; z++) {
+                  world.getBlockAt(x, y, z).setType(mat, false);
+                }
+              }
+            }
+          }
+        args: [{ name: x1, type: int }, { name: y1, type: int }, { name: z1, type: int }, { name: x2, type: int }, { name: y2, type: int }, { name: z2, type: int }, { name: block, type: String }]
+        returns: void
+
+      # --- Metadata & Entities ---
       - name: getHeight
         bukkit: getHighestBlockYAt({x}, {z})
-        args:
-          - { name: x, type: int }
-          - { name: z, type: int }
+        args: [{ name: x, type: int }, { name: z, type: int }]
         returns: int
 
       - name: getPlayerId
@@ -87,6 +114,11 @@ namespaces:
           - { name: y, type: double }
           - { name: z, type: double }
           - { name: power, type: double }
+        returns: void
+
+      # --- State ---
+      - name: saveCheckpoint
+        bukkit: { Bukkit.savePlayers(); world.save(); }
         returns: void
 
   chat:
