@@ -608,6 +608,10 @@ class RegistryBuilder:
         (self.blocks_dir / f"{file_name}.mjs").write_text(js_c, encoding='utf-8')
         (self.gens_dir / f"{file_name}.mjs").write_text(py_c, encoding='utf-8')
 
+import yaml
+from pathlib import Path
+import re
+
 class ApiGenerator:
     def __init__(self, schema_path, java_out, python_out):
         try:
@@ -627,150 +631,125 @@ class ApiGenerator:
         code = [
             "package org.mcshell.mcjuice;",
             "import org.bukkit.Bukkit;",
+            "import org.bukkit.World;",
             "import org.bukkit.entity.Player;",
             "import org.bukkit.Location;",
             "import org.bukkit.util.Vector;",
+            "import org.bukkit.Material;",
             "import java.util.HashMap;",
             "import java.util.Map;",
             "",
             "public class GeneratedCommandRegistry {",
             "    private final Map<String, CommandExecutor> registry = new HashMap<>();",
             "    public GeneratedCommandRegistry() {",
-            "        // Root level helper",
             "        registry.put(\"ping\", (args, session) -> session.send(\"pong\"));",
-            "",
-            "        // Support for MCJuiceClient.create(playerName=...)",
-            "        registry.put(\"world.getPlayerId\", (args, session) -> {",
-            "            if (args.length < 1) { session.send(\"Fail,Missing Name\"); return; }",
-            "            // Bukkit.getPlayer is generally thread-safe, but we use the scheduler to be consistent",
-            "            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {",
-            "                Player p = Bukkit.getPlayer(args[0]);",
-            "                if (p != null) session.send(String.valueOf(p.getEntityId()));",
-            "                else session.send(\"Fail,Player not found\");",
-            "            });",
-            "        });"
+            ""
         ]
 
-        namespaces = self.schema.get('namespaces', {})
-        for ns_name, ns_data in namespaces.items():
-            target_type = ns_data.get('target', 'Player')
-            for cmd in ns_data.get('commands', []):
-                cmd_full_name = f"{ns_name}.{cmd['name']}"
-                code.append(self._build_java_lambda(cmd_full_name, cmd, target_type))
+        for ns, data in self.schema.get('namespaces', {}).items():
+            target = data.get('target', 'Player')
+            for cmd in data.get('commands', []):
+                code.append(self._build_java_lambda(f"{ns}.{cmd['name']}", cmd, target))
 
-        code.extend(["    }", "    public CommandExecutor getExecutor(String name) { return registry.get(name); }", "}"])
-        self.java_out.parent.mkdir(parents=True, exist_ok=True)
+        code.extend(["    }", "    public CommandExecutor getExecutor(String n) { return registry.get(n); }", "}"])
         self.java_out.write_text("\n".join(code))
 
     def _build_java_lambda(self, name, cmd, target_type):
-        """Creates the registry.put(\"name\", (args, session) -> { ... }) block"""
         lines = [f'        registry.put("{name}", (args, session) -> {{']
 
-        # 1. Parse arguments in the session thread (thread-safe, saves main thread time)
-        lines.append('            final int entityId = Integer.parseInt(args[0]);')
-
+        # 1. Parameter extraction
+        offset = 1 if target_type == "Player" else 0
         bukkit_call = cmd["bukkit"]
         yaml_args = cmd.get("args", [])
+
         for i, arg in enumerate(yaml_args):
-            arg_name, arg_type, idx = arg["name"], arg["type"], i + 1
-            if arg_type == "double":
-                lines.append(f'            final double {arg_name} = Double.parseDouble(args[{idx}]);')
-            elif arg_type == "int":
-                lines.append(f'            final int {arg_name} = Integer.parseInt(args[{idx}]);')
-            elif arg_type == "String":
-                lines.append(f'            final String {arg_name} = args[{idx}];')
+            t, n, idx = arg["type"], arg["name"], i + offset
+            if t == "double": lines.append(f'            final double {n} = Double.parseDouble(args[{idx}]);')
+            elif t == "int": lines.append(f'            final int {n} = Integer.parseInt(args[{idx}]);')
+            elif t == "String": lines.append(f'            final String {n} = args[{idx}];')
+            bukkit_call = bukkit_call.replace(f"{{{n}}}", n)
 
-            # Replace placeholder with variable name
-            bukkit_call = bukkit_call.replace(f"{{{arg_name}}}", arg_name)
-
-        # 2. Schedule the execution on the Main Server Thread
+        # 2. Main Thread Execution
         lines.append('            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {')
 
         if target_type == "Player":
-            lines.append('                Player player = session.getPlayerById(entityId);')
-            lines.append('                if (player == null) { session.send("Fail,Player not found"); return; }')
+            lines.append('                int eid = Integer.parseInt(args[0]);')
+            lines.append('                Player player = session.getPlayerById(eid);')
+            lines.append('                if (player == null) { session.send("Fail,No Player"); return; }')
+            exec_on = "player"
+        elif target_type == "World":
+            lines.append('                World world = Bukkit.getWorlds().get(0);')
+            exec_on = "world"
+        else:
+            exec_on = "Bukkit"
 
-        # 3. Execution and Response (inside the task)
-        ret_type = cmd.get('returns', 'void')
-        if ret_type == 'void':
-            lines.append(f'                player.{bukkit_call};')
+        # FIX: Only skip prefix if the call starts with a static accessor or is a block
+        is_block = bukkit_call.strip().startswith("{")
+        # Matches strings starting with Bukkit., McJuicePlugin., org.bukkit., or a capital letter (Capital.method)
+        is_static = re.match(r'^(Bukkit|McJuicePlugin|org\.bukkit|[A-Z])', bukkit_call.strip())
+
+        full_expr = bukkit_call if (is_block or is_static) else f"{exec_on}.{bukkit_call}"
+        ret = cmd.get('returns', 'void')
+
+        if ret == 'void':
+            lines.append(f'                {full_expr}{"" if is_block else ";"}')
             lines.append('                session.send("OK");')
         else:
-            # Note: We use effectively final variables from the outer scope
-            lines.append(f'                Object result = player.{bukkit_call};')
-            lines.append('                if (result == null) { session.send("null"); }')
-            if ret_type == 'TileLocation':
-                lines.append('                else if (result instanceof Location) {')
-                lines.append('                    Location l = (Location) result;')
-                lines.append('                    session.send(l.getBlockX() + "," + l.getBlockY() + "," + l.getBlockZ());')
-                lines.append('                }')
+            lines.append(f'                Object res = {full_expr};')
+            lines.append('                if (res == null) { session.send("null"); }')
+            if ret == 'TileLocation':
+                lines.append('                else if (res instanceof Location) { Location l = (Location)res; session.send(l.getBlockX()+","+l.getBlockY()+","+l.getBlockZ()); }')
             else:
-                lines.append('                else if (result instanceof Location) {')
-                lines.append('                    Location l = (Location) result;')
-                lines.append('                    session.send(l.getX() + "," + l.getY() + "," + l.getZ());')
-                lines.append('                } else if (result instanceof Vector) {')
-                lines.append('                    Vector v = (Vector) result;')
-                lines.append('                    session.send(v.getX() + "," + v.getY() + "," + v.getZ());')
-                lines.append('                } else { session.send(String.valueOf(result)); }')
+                lines.append('                else if (res instanceof Location) { Location l = (Location)res; session.send(l.getX()+","+l.getY()+","+l.getZ()); }')
+                lines.append('                else if (res instanceof Vector) { Vector v = (Vector)res; session.send(v.getX()+","+v.getY()+","+v.getZ()); }')
+                lines.append('                else { session.send(String.valueOf(res)); }')
 
-        lines.append('            });') # End of runTask
-        lines.append('        });') # End of registry.put
+        lines.append('            });'); lines.append('        });')
         return "\n".join(lines)
 
     def generate_python_client(self):
-        """Generates the Python Client with full pyncraft compatibility."""
         code = [
             "from mcshell.mcjuiceconn import MCJuiceConnection",
             "from mcshell.Vec3 import Vec3",
-            "",
-            "# --- THIS FILE IS GENERATED BY THE REGISTRY BUILDER ---",
             "",
             "class MCJuiceClient:",
             "    def __init__(self, conn, entity_id=None):",
             "        self.conn = conn",
             "        self.entity_id = entity_id"
         ]
-
         namespaces = self.schema.get('namespaces', {})
         for ns in namespaces.keys():
             code.append(f"        self.{ns} = {ns.capitalize()}Namespace(conn, entity_id)")
 
-        code.extend([
-            "",
-            "    @staticmethod",
-            "    def create(address='localhost', port=4721, playerName='') -> 'MCJuiceClient':",
-            "        conn = MCJuiceConnection(address, port)",
-            "        entity_id = None",
-            "        if playerName != '':",
-            "            try:",
-            "                res = conn.sendReceive('world.getPlayerId', playerName)",
-            "                entity_id = int(res)",
-            "            except Exception: entity_id = None",
-            "        return MCJuiceClient(conn, entity_id)"
-        ])
+        code.append("\n    @staticmethod\n    def create(address='localhost', port=4721, playerName=''):")
+        code.append("        conn = MCJuiceConnection(address, port); eid = None")
+        code.append("        if playerName: eid = int(conn.sendReceive('world.getPlayerId', playerName))")
+        code.append("        return MCJuiceClient(conn, eid)")
 
-        for ns_name, ns_data in namespaces.items():
-            code.append(f"\nclass {ns_name.capitalize()}Namespace:")
+        for ns, data in namespaces.items():
+            target = data.get('target', 'Player')
+            code.append(f"\nclass {ns.capitalize()}Namespace:")
             code.append("    def __init__(self, conn, entity_id): self.conn = conn; self.entity_id = entity_id")
-            for cmd in ns_data.get('commands', []):
-                arg_names = [a["name"] for a in cmd.get("args", [])]
-                # Default entity_id to None in the signature - must be at the end
-                func_args = ", ".join(["self"] + arg_names + ["entity_id=None"])
-                code.append(f"\n    def {cmd['name']}({func_args}):")
-                code.append("        eid = entity_id if entity_id is not None else self.entity_id")
-                code.append("        if eid is None: raise ValueError('No entity_id provided or resolved.')")
-                payload = ", ".join(["eid"] + arg_names)
-                code.append(f"        res = self.conn.sendReceive('{ns_name}.{cmd['name']}', {payload})")
+            for cmd in data.get('commands', []):
+                args = [a["name"] for a in cmd.get("args", [])]
+                sig = ", ".join(["self"] + args + (["entity_id=None"] if target == "Player" else []))
+                code.append(f"    def {cmd['name']}({sig}):")
 
-                ret_type = cmd.get('returns', 'void')
-                if ret_type == 'Location':
-                    code.append("        return Vec3(*list(map(float, res.split(','))))")
-                elif ret_type == 'TileLocation':
-                    code.append("        return Vec3(*list(map(int, res.split(','))))")
-                elif ret_type == 'Vector':
-                    code.append("        return Vec3(*list(map(float, res.split(','))))")
-                elif ret_type == 'double': code.append("        return float(res)")
-                elif ret_type == 'int': code.append("        return int(res)")
+                payload_parts = []
+                if target == "Player":
+                    code.append("        eid = entity_id if entity_id is not None else self.entity_id")
+                    code.append("        if eid is None: raise ValueError('No entity_id')")
+                    payload_parts.append("eid")
+                payload_parts.extend(args)
+
+                payload = ", ".join(payload_parts)
+                code.append(f"        res = self.conn.sendReceive('{ns}.{cmd['name']}', {payload})")
+
+                r = cmd.get('returns', 'void')
+                if r in ('Location', 'Vector'): code.append("        return Vec3(*list(map(float, res.split(','))))")
+                elif r == 'TileLocation': code.append("        return Vec3(*list(map(int, res.split(','))))")
+                elif r == 'double': code.append("        return float(res)")
+                elif r == 'int': code.append("        return int(res)")
                 else: code.append("        return res")
 
         self.python_out.write_text("\n".join(code))
