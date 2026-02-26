@@ -8,18 +8,14 @@ class MCJuiceClient:
         self.conn = conn
         self.entity_id = entity_id
         self.player = PlayerNamespace(conn, entity_id)
+        self.world = WorldNamespace(conn, entity_id)
+        self.chat = ChatNamespace(conn, entity_id)
 
     @staticmethod
-    def create(address='localhost', port=4721, playerName='') -> 'MCJuiceClient':
-        conn = MCJuiceConnection(address, port)
-        entity_id = None
-        if playerName != '':
-            try:
-                res = conn.sendReceive('world.getPlayerId', playerName)
-                entity_id = int(res)
-            except Exception:
-                entity_id = None
-        return MCJuiceClient(conn, entity_id)
+    def create(address='localhost', port=4721, playerName=''):
+        conn = MCJuiceConnection(address, port); eid = None
+        if playerName: eid = int(conn.sendReceive('world.getPlayerId', playerName))
+        return MCJuiceClient(conn, eid)
 
 class PlayerNamespace:
     def __init__(self, conn, entity_id):
@@ -28,60 +24,104 @@ class PlayerNamespace:
 
     def getPos(self, entity_id=None):
         eid = entity_id if entity_id is not None else self.entity_id
-        if eid is None: raise ValueError('No entity_id provided or resolved.')
+        if eid is None: raise ValueError('No entity_id')
         res = self.conn.sendReceive('player.getPos', eid)
         return Vec3(*list(map(float, res.split(','))))
 
     def setPos(self, x, y, z, entity_id=None):
         eid = entity_id if entity_id is not None else self.entity_id
-        if eid is None: raise ValueError('No entity_id provided or resolved.')
+        if eid is None: raise ValueError('No entity_id')
         res = self.conn.sendReceive('player.setPos', eid, x, y, z)
+        return res
+
+    def getTilePos(self, entity_id=None):
+        eid = entity_id if entity_id is not None else self.entity_id
+        if eid is None: raise ValueError('No entity_id')
+        res = self.conn.sendReceive('player.getTilePos', eid)
+        return Vec3(*list(map(int, res.split(','))))
+
+    def setTilePos(self, x, y, z, entity_id=None):
+        eid = entity_id if entity_id is not None else self.entity_id
+        if eid is None: raise ValueError('No entity_id')
+        res = self.conn.sendReceive('player.setTilePos', eid, x, y, z)
         return res
 
     def getDirection(self, entity_id=None):
         eid = entity_id if entity_id is not None else self.entity_id
-        if eid is None: raise ValueError('No entity_id provided or resolved.')
+        if eid is None: raise ValueError('No entity_id')
         res = self.conn.sendReceive('player.getDirection', eid)
         return Vec3(*list(map(float, res.split(','))))
 
     def getRotation(self, entity_id=None):
         eid = entity_id if entity_id is not None else self.entity_id
-        if eid is None: raise ValueError('No entity_id provided or resolved.')
+        if eid is None: raise ValueError('No entity_id')
         res = self.conn.sendReceive('player.getRotation', eid)
         return float(res)
 
     def getPitch(self, entity_id=None):
         eid = entity_id if entity_id is not None else self.entity_id
-        if eid is None: raise ValueError('No entity_id provided or resolved.')
+        if eid is None: raise ValueError('No entity_id')
         res = self.conn.sendReceive('player.getPitch', eid)
         return float(res)
 
     def getHealth(self, entity_id=None):
         eid = entity_id if entity_id is not None else self.entity_id
-        if eid is None: raise ValueError('No entity_id provided or resolved.')
+        if eid is None: raise ValueError('No entity_id')
         res = self.conn.sendReceive('player.getHealth', eid)
         return float(res)
 
     def setHealth(self, health, entity_id=None):
         eid = entity_id if entity_id is not None else self.entity_id
-        if eid is None: raise ValueError('No entity_id provided or resolved.')
+        if eid is None: raise ValueError('No entity_id')
         res = self.conn.sendReceive('player.setHealth', eid, health)
         return res
 
-    def getFoodLevel(self, entity_id=None):
-        eid = entity_id if entity_id is not None else self.entity_id
-        if eid is None: raise ValueError('No entity_id provided or resolved.')
-        res = self.conn.sendReceive('player.getFoodLevel', eid)
-        return int(res)
+class WorldNamespace:
+    def __init__(self, conn, entity_id):
+        self.conn = conn
+        self.entity_id = entity_id
 
-    def setFoodLevel(self, level, entity_id=None):
-        eid = entity_id if entity_id is not None else self.entity_id
-        if eid is None: raise ValueError('No entity_id provided or resolved.')
-        res = self.conn.sendReceive('player.setFoodLevel', eid, level)
+    def getBlock(self, x, y, z):
+        res = self.conn.sendReceive('world.getBlock', x, y, z)
         return res
 
-    def sendMessage(self, message, entity_id=None):
-        eid = entity_id if entity_id is not None else self.entity_id
-        if eid is None: raise ValueError('No entity_id provided or resolved.')
-        res = self.conn.sendReceive('player.sendMessage', eid, message)
+    def setBlock(self, x, y, z, block):
+        res = self.conn.sendReceive('world.setBlock', x, y, z, block)
+        return res
+
+    def getBlocks(self, x1, y1, z1, x2, y2, z2):
+        res = self.conn.sendReceive('world.getBlocks', x1, y1, z1, x2, y2, z2)
+        return res.split(',')
+
+    def setBlocks(self, x1, y1, z1, x2, y2, z2, block):
+        res = self.conn.sendReceive('world.setBlocks', x1, y1, z1, x2, y2, z2, block)
+        return res
+
+    def getHeight(self, x, z):
+        res = self.conn.sendReceive('world.getHeight', x, z)
+        return int(res)
+
+    def getPlayerId(self, name):
+        res = self.conn.sendReceive('world.getPlayerId', name)
+        return int(res)
+
+    def spawnEntity(self, x, y, z, type):
+        res = self.conn.sendReceive('world.spawnEntity', x, y, z, type)
+        return int(res)
+
+    def createExplosion(self, x, y, z, power):
+        res = self.conn.sendReceive('world.createExplosion', x, y, z, power)
+        return res
+
+    def saveCheckpoint(self):
+        res = self.conn.sendReceive('world.saveCheckpoint', )
+        return res
+
+class ChatNamespace:
+    def __init__(self, conn, entity_id):
+        self.conn = conn
+        self.entity_id = entity_id
+
+    def post(self, message):
+        res = self.conn.sendReceive('chat.post', message)
         return res

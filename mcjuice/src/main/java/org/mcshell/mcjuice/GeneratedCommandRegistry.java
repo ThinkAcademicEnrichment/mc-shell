@@ -1,9 +1,11 @@
 package org.mcshell.mcjuice;
 
 import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.Location;
 import org.bukkit.util.Vector;
+import org.bukkit.Material;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -14,152 +16,250 @@ public class GeneratedCommandRegistry {
         // Root level helper
         registry.put("ping", (args, session) -> session.send("pong"));
 
-        // Support for MCJuiceClient.create(playerName=...)
-        registry.put("world.getPlayerId", (args, session) -> {
-            if (args.length < 1) { session.send("Fail,Missing Name"); return; }
-            Player p = Bukkit.getPlayer(args[0]);
-            if (p != null) {
-                session.send(String.valueOf(p.getEntityId()));
-            } else {
-                session.send("Fail,Player not found");
-            }
-        });
-
         registry.put("player.getPos", (args, session) -> {
-            int entityId = Integer.parseInt(args[0]);
-            Player player = session.getPlayerById(entityId);
-            if (player == null) { session.send("Fail,Player not found"); return; }
-            Object result = player.getLocation();
-            if (result == null) {
-                session.send("null");
-            } else if (result instanceof Location) {
-                Location l = (Location) result;
-                session.send(l.getX() + "," + l.getY() + "," + l.getZ());
-            } else if (result instanceof Vector) {
-                Vector v = (Vector) result;
-                session.send(v.getX() + "," + v.getY() + "," + v.getZ());
-            } else {
-                session.send(String.valueOf(result));
-            }
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                int eid = Integer.parseInt(args[0]);
+                Player player = session.getPlayerById(eid);
+                if (player == null) { session.send("Fail,No Player"); return; }
+                Object res = player.getLocation();
+                if (res == null) { session.send("null"); }
+                else if (res instanceof Location) { Location l = (Location)res; session.send(l.getX()+","+l.getY()+","+l.getZ()); }
+                else if (res instanceof Vector) { Vector v = (Vector)res; session.send(v.getX()+","+v.getY()+","+v.getZ()); }
+                else { session.send(String.valueOf(res)); }
+            });
         });
         registry.put("player.setPos", (args, session) -> {
-            int entityId = Integer.parseInt(args[0]);
-            Player player = session.getPlayerById(entityId);
-            if (player == null) { session.send("Fail,Player not found"); return; }
-            double x = Double.parseDouble(args[1]);
-            double y = Double.parseDouble(args[2]);
-            double z = Double.parseDouble(args[3]);
-            player.teleport(new Location(player.getWorld(), x, y, z, player.getLocation().getYaw(), player.getLocation().getPitch()));
-            session.send("OK");
+            final double _arg_x = Double.parseDouble(args[1]);
+            final double _arg_y = Double.parseDouble(args[2]);
+            final double _arg_z = Double.parseDouble(args[3]);
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                int eid = Integer.parseInt(args[0]);
+                Player player = session.getPlayerById(eid);
+                if (player == null) { session.send("Fail,No Player"); return; }
+                player.teleport(new Location(player.getWorld(), _arg_x, _arg_y, _arg_z, player.getLocation().getYaw(), player.getLocation().getPitch()));
+                session.send("OK");
+            });
+        });
+        registry.put("player.getTilePos", (args, session) -> {
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                int eid = Integer.parseInt(args[0]);
+                Player player = session.getPlayerById(eid);
+                if (player == null) { session.send("Fail,No Player"); return; }
+                Object res = player.getLocation();
+                if (res == null) { session.send("null"); }
+                else if (res instanceof Location) { Location l = (Location)res; session.send(l.getBlockX()+","+l.getBlockY()+","+l.getBlockZ()); }
+            });
+        });
+        registry.put("player.setTilePos", (args, session) -> {
+            final double _arg_x = Double.parseDouble(args[1]);
+            final double _arg_y = Double.parseDouble(args[2]);
+            final double _arg_z = Double.parseDouble(args[3]);
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                int eid = Integer.parseInt(args[0]);
+                Player player = session.getPlayerById(eid);
+                if (player == null) { session.send("Fail,No Player"); return; }
+                player.teleport(new Location(player.getWorld(), Math.floor(_arg_x) + 0.5, Math.floor(_arg_y), Math.floor(_arg_z) + 0.5, player.getLocation().getYaw(), player.getLocation().getPitch()));
+                session.send("OK");
+            });
         });
         registry.put("player.getDirection", (args, session) -> {
-            int entityId = Integer.parseInt(args[0]);
-            Player player = session.getPlayerById(entityId);
-            if (player == null) { session.send("Fail,Player not found"); return; }
-            Object result = player.getEyeLocation().getDirection();
-            if (result == null) {
-                session.send("null");
-            } else if (result instanceof Location) {
-                Location l = (Location) result;
-                session.send(l.getX() + "," + l.getY() + "," + l.getZ());
-            } else if (result instanceof Vector) {
-                Vector v = (Vector) result;
-                session.send(v.getX() + "," + v.getY() + "," + v.getZ());
-            } else {
-                session.send(String.valueOf(result));
-            }
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                int eid = Integer.parseInt(args[0]);
+                Player player = session.getPlayerById(eid);
+                if (player == null) { session.send("Fail,No Player"); return; }
+                Object res = player.getEyeLocation().getDirection();
+                if (res == null) { session.send("null"); }
+                else if (res instanceof Location) { Location l = (Location)res; session.send(l.getX()+","+l.getY()+","+l.getZ()); }
+                else if (res instanceof Vector) { Vector v = (Vector)res; session.send(v.getX()+","+v.getY()+","+v.getZ()); }
+                else { session.send(String.valueOf(res)); }
+            });
         });
         registry.put("player.getRotation", (args, session) -> {
-            int entityId = Integer.parseInt(args[0]);
-            Player player = session.getPlayerById(entityId);
-            if (player == null) { session.send("Fail,Player not found"); return; }
-            Object result = player.getLocation().getYaw();
-            if (result == null) {
-                session.send("null");
-            } else if (result instanceof Location) {
-                Location l = (Location) result;
-                session.send(l.getX() + "," + l.getY() + "," + l.getZ());
-            } else if (result instanceof Vector) {
-                Vector v = (Vector) result;
-                session.send(v.getX() + "," + v.getY() + "," + v.getZ());
-            } else {
-                session.send(String.valueOf(result));
-            }
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                int eid = Integer.parseInt(args[0]);
+                Player player = session.getPlayerById(eid);
+                if (player == null) { session.send("Fail,No Player"); return; }
+                Object res = player.getLocation().getYaw();
+                if (res == null) { session.send("null"); }
+                else if (res instanceof Location) { Location l = (Location)res; session.send(l.getX()+","+l.getY()+","+l.getZ()); }
+                else if (res instanceof Vector) { Vector v = (Vector)res; session.send(v.getX()+","+v.getY()+","+v.getZ()); }
+                else { session.send(String.valueOf(res)); }
+            });
         });
         registry.put("player.getPitch", (args, session) -> {
-            int entityId = Integer.parseInt(args[0]);
-            Player player = session.getPlayerById(entityId);
-            if (player == null) { session.send("Fail,Player not found"); return; }
-            Object result = player.getLocation().getPitch();
-            if (result == null) {
-                session.send("null");
-            } else if (result instanceof Location) {
-                Location l = (Location) result;
-                session.send(l.getX() + "," + l.getY() + "," + l.getZ());
-            } else if (result instanceof Vector) {
-                Vector v = (Vector) result;
-                session.send(v.getX() + "," + v.getY() + "," + v.getZ());
-            } else {
-                session.send(String.valueOf(result));
-            }
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                int eid = Integer.parseInt(args[0]);
+                Player player = session.getPlayerById(eid);
+                if (player == null) { session.send("Fail,No Player"); return; }
+                Object res = player.getLocation().getPitch();
+                if (res == null) { session.send("null"); }
+                else if (res instanceof Location) { Location l = (Location)res; session.send(l.getX()+","+l.getY()+","+l.getZ()); }
+                else if (res instanceof Vector) { Vector v = (Vector)res; session.send(v.getX()+","+v.getY()+","+v.getZ()); }
+                else { session.send(String.valueOf(res)); }
+            });
         });
         registry.put("player.getHealth", (args, session) -> {
-            int entityId = Integer.parseInt(args[0]);
-            Player player = session.getPlayerById(entityId);
-            if (player == null) { session.send("Fail,Player not found"); return; }
-            Object result = player.getHealth();
-            if (result == null) {
-                session.send("null");
-            } else if (result instanceof Location) {
-                Location l = (Location) result;
-                session.send(l.getX() + "," + l.getY() + "," + l.getZ());
-            } else if (result instanceof Vector) {
-                Vector v = (Vector) result;
-                session.send(v.getX() + "," + v.getY() + "," + v.getZ());
-            } else {
-                session.send(String.valueOf(result));
-            }
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                int eid = Integer.parseInt(args[0]);
+                Player player = session.getPlayerById(eid);
+                if (player == null) { session.send("Fail,No Player"); return; }
+                Object res = player.getHealth();
+                if (res == null) { session.send("null"); }
+                else if (res instanceof Location) { Location l = (Location)res; session.send(l.getX()+","+l.getY()+","+l.getZ()); }
+                else if (res instanceof Vector) { Vector v = (Vector)res; session.send(v.getX()+","+v.getY()+","+v.getZ()); }
+                else { session.send(String.valueOf(res)); }
+            });
         });
         registry.put("player.setHealth", (args, session) -> {
-            int entityId = Integer.parseInt(args[0]);
-            Player player = session.getPlayerById(entityId);
-            if (player == null) { session.send("Fail,Player not found"); return; }
-            double health = Double.parseDouble(args[1]);
-            player.setHealth(health);
-            session.send("OK");
+            final double _arg_health = Double.parseDouble(args[1]);
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                int eid = Integer.parseInt(args[0]);
+                Player player = session.getPlayerById(eid);
+                if (player == null) { session.send("Fail,No Player"); return; }
+                player.setHealth(_arg_health);
+                session.send("OK");
+            });
         });
-        registry.put("player.getFoodLevel", (args, session) -> {
-            int entityId = Integer.parseInt(args[0]);
-            Player player = session.getPlayerById(entityId);
-            if (player == null) { session.send("Fail,Player not found"); return; }
-            Object result = player.getFoodLevel();
-            if (result == null) {
-                session.send("null");
-            } else if (result instanceof Location) {
-                Location l = (Location) result;
-                session.send(l.getX() + "," + l.getY() + "," + l.getZ());
-            } else if (result instanceof Vector) {
-                Vector v = (Vector) result;
-                session.send(v.getX() + "," + v.getY() + "," + v.getZ());
-            } else {
-                session.send(String.valueOf(result));
-            }
+        registry.put("world.getBlock", (args, session) -> {
+            final int _arg_x = Integer.parseInt(args[0]);
+            final int _arg_y = Integer.parseInt(args[1]);
+            final int _arg_z = Integer.parseInt(args[2]);
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                World world = Bukkit.getWorlds().get(0);
+                Object res = world.getBlockAt(_arg_x, _arg_y, _arg_z).getType().name();
+                if (res == null) { session.send("null"); }
+                else if (res instanceof Location) { Location l = (Location)res; session.send(l.getX()+","+l.getY()+","+l.getZ()); }
+                else if (res instanceof Vector) { Vector v = (Vector)res; session.send(v.getX()+","+v.getY()+","+v.getZ()); }
+                else { session.send(String.valueOf(res)); }
+            });
         });
-        registry.put("player.setFoodLevel", (args, session) -> {
-            int entityId = Integer.parseInt(args[0]);
-            Player player = session.getPlayerById(entityId);
-            if (player == null) { session.send("Fail,Player not found"); return; }
-            int level = Integer.parseInt(args[1]);
-            player.setFoodLevel(level);
-            session.send("OK");
+        registry.put("world.setBlock", (args, session) -> {
+            final int _arg_x = Integer.parseInt(args[0]);
+            final int _arg_y = Integer.parseInt(args[1]);
+            final int _arg_z = Integer.parseInt(args[2]);
+            final String _arg_block = args[3];
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                World world = Bukkit.getWorlds().get(0);
+                world.getBlockAt(_arg_x, _arg_y, _arg_z).setType(org.bukkit.Material.valueOf(_arg_block.toUpperCase()));
+                session.send("OK");
+            });
         });
-        registry.put("player.sendMessage", (args, session) -> {
-            int entityId = Integer.parseInt(args[0]);
-            Player player = session.getPlayerById(entityId);
-            if (player == null) { session.send("Fail,Player not found"); return; }
-            String message = args[1];
-            player.sendMessage(message);
-            session.send("OK");
+        registry.put("world.getBlocks", (args, session) -> {
+            final int _arg_x1 = Integer.parseInt(args[0]);
+            final int _arg_y1 = Integer.parseInt(args[1]);
+            final int _arg_z1 = Integer.parseInt(args[2]);
+            final int _arg_x2 = Integer.parseInt(args[3]);
+            final int _arg_y2 = Integer.parseInt(args[4]);
+            final int _arg_z2 = Integer.parseInt(args[5]);
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                World world = Bukkit.getWorlds().get(0);
+                {
+  int x1 = _arg_x1, y1 = _arg_y1, z1 = _arg_z1, x2 = _arg_x2, y2 = _arg_y2, z2 = _arg_z2;
+  int xMin = Math.min(x1, x2), xMax = Math.max(x1, x2);
+  int yMin = Math.min(y1, y2), yMax = Math.max(y1, y2);
+  int zMin = Math.min(z1, z2), zMax = Math.max(z1, z2);
+  StringBuilder sb = new StringBuilder();
+  for (int z = zMin; z <= zMax; z++) {
+    for (int y = yMin; y <= yMax; y++) {
+      for (int x = xMin; x <= xMax; x++) {
+        sb.append(world.getBlockAt(x, y, z).getType().name()).append(",");
+      }
+    }
+  }
+  if (sb.length() > 0) sb.setLength(sb.length() - 1);
+  session.send(sb.toString());
+}
+
+            });
+        });
+        registry.put("world.setBlocks", (args, session) -> {
+            final int _arg_x1 = Integer.parseInt(args[0]);
+            final int _arg_y1 = Integer.parseInt(args[1]);
+            final int _arg_z1 = Integer.parseInt(args[2]);
+            final int _arg_x2 = Integer.parseInt(args[3]);
+            final int _arg_y2 = Integer.parseInt(args[4]);
+            final int _arg_z2 = Integer.parseInt(args[5]);
+            final String _arg_block = args[6];
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                World world = Bukkit.getWorlds().get(0);
+                {
+  int xMin = Math.min(_arg_x1, _arg_x2), xMax = Math.max(_arg_x1, _arg_x2);
+  int yMin = Math.min(_arg_y1, _arg_y2), yMax = Math.max(_arg_y1, _arg_y2);
+  int zMin = Math.min(_arg_z1, _arg_z2), zMax = Math.max(_arg_z1, _arg_z2);
+  Material mat = Material.valueOf(_arg_block.toUpperCase());
+  for (int x = xMin; x <= xMax; x++) {
+    for (int y = yMin; y <= yMax; y++) {
+      for (int z = zMin; z <= zMax; z++) {
+        world.getBlockAt(x, y, z).setType(mat, false);
+      }
+    }
+  }
+}
+
+                session.send("OK");
+            });
+        });
+        registry.put("world.getHeight", (args, session) -> {
+            final int _arg_x = Integer.parseInt(args[0]);
+            final int _arg_z = Integer.parseInt(args[1]);
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                World world = Bukkit.getWorlds().get(0);
+                Object res = world.getHighestBlockYAt(_arg_x, _arg_z);
+                if (res == null) { session.send("null"); }
+                else if (res instanceof Location) { Location l = (Location)res; session.send(l.getX()+","+l.getY()+","+l.getZ()); }
+                else if (res instanceof Vector) { Vector v = (Vector)res; session.send(v.getX()+","+v.getY()+","+v.getZ()); }
+                else { session.send(String.valueOf(res)); }
+            });
+        });
+        registry.put("world.getPlayerId", (args, session) -> {
+            final String _arg_name = args[0];
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                World world = Bukkit.getWorlds().get(0);
+                Object res = Bukkit.getPlayer(_arg_name).getEntityId();
+                if (res == null) { session.send("null"); }
+                else if (res instanceof Location) { Location l = (Location)res; session.send(l.getX()+","+l.getY()+","+l.getZ()); }
+                else if (res instanceof Vector) { Vector v = (Vector)res; session.send(v.getX()+","+v.getY()+","+v.getZ()); }
+                else { session.send(String.valueOf(res)); }
+            });
+        });
+        registry.put("world.spawnEntity", (args, session) -> {
+            final double _arg_x = Double.parseDouble(args[0]);
+            final double _arg_y = Double.parseDouble(args[1]);
+            final double _arg_z = Double.parseDouble(args[2]);
+            final String _arg_type = args[3];
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                World world = Bukkit.getWorlds().get(0);
+                Object res = world.spawnEntity(new Location(world, _arg_x, _arg_y, _arg_z), org.bukkit.entity.EntityType.valueOf(_arg_type.toUpperCase())).getEntityId();
+                if (res == null) { session.send("null"); }
+                else if (res instanceof Location) { Location l = (Location)res; session.send(l.getX()+","+l.getY()+","+l.getZ()); }
+                else if (res instanceof Vector) { Vector v = (Vector)res; session.send(v.getX()+","+v.getY()+","+v.getZ()); }
+                else { session.send(String.valueOf(res)); }
+            });
+        });
+        registry.put("world.createExplosion", (args, session) -> {
+            final double _arg_x = Double.parseDouble(args[0]);
+            final double _arg_y = Double.parseDouble(args[1]);
+            final double _arg_z = Double.parseDouble(args[2]);
+            final double _arg_power = Double.parseDouble(args[3]);
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                World world = Bukkit.getWorlds().get(0);
+                world.createExplosion(_arg_x, _arg_y, _arg_z, (float)_arg_power);
+                session.send("OK");
+            });
+        });
+        registry.put("world.saveCheckpoint", (args, session) -> {
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                World world = Bukkit.getWorlds().get(0);
+                {Bukkit.savePlayers(); world.save();}
+                session.send("OK");
+            });
+        });
+        registry.put("chat.post", (args, session) -> {
+            final String _arg_message = args[0];
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                Bukkit.broadcastMessage(_arg_message);
+                session.send("OK");
+            });
         });
     }
 
