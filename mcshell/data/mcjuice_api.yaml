@@ -1,0 +1,20 @@
+# This file lives in the root of mc-shell
+namespaces:
+  player:
+    target: Player
+    commands:
+      - name: getPos
+        bukkit: getLocation()
+        returns: string
+        # Result helper to format Location to "x,y,z"
+
+      - name: getHealth
+        bukkit: getHealth()
+        returns: double
+
+      - name: setHealth
+        bukkit: setHealth({health})
+        args:
+          - name: health
+            type: double
+        returns: void
