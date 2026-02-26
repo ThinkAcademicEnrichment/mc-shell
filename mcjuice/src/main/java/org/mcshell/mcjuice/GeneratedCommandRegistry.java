@@ -15,6 +15,9 @@ public class GeneratedCommandRegistry {
     public GeneratedCommandRegistry() {
         // Root level helper
         registry.put("ping", (args, session) -> session.send("pong"));
+        // Event Polling Commands
+        registry.put("events.poll", (args, session) -> session.send(McJuicePlugin.getInstance().pollEvents(args[0])));
+        registry.put("events.clear", (args, session) -> { McJuicePlugin.getInstance().clearEvents(); session.send("OK"); });
 
         registry.put("player.getPos", (args, session) -> {
             Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {

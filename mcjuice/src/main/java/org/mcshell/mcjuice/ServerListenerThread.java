@@ -5,6 +5,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -17,7 +18,9 @@ public class ServerListenerThread extends Thread {
     private final int port;
     private ServerSocket serverSocket;
     private boolean running = true;
-    private final List<RemoteSession> sessions = new ArrayList<>();
+
+    // Use a synchronized list to prevent ConcurrentModificationException
+    private final List<RemoteSession> sessions = Collections.synchronizedList(new ArrayList<>());
 
     public ServerListenerThread(McJuicePlugin plugin, String hostname, int port) {
         super("McJuice-Listener");
@@ -31,7 +34,7 @@ public class ServerListenerThread extends Thread {
         try {
             serverSocket = new ServerSocket();
             serverSocket.bind(new InetSocketAddress(hostname, port));
-            plugin.logger.info("Listening for Python connections on " + hostname + ":" + port);
+            plugin.getLogger().info("McJuice listening for Python connections on " + hostname + ":" + port);
 
             while (running) {
                 Socket clientSocket = serverSocket.accept();
@@ -39,11 +42,15 @@ public class ServerListenerThread extends Thread {
                 // Create a new session and start it in its own thread
                 RemoteSession session = new RemoteSession(plugin, clientSocket);
                 sessions.add(session);
+
+                // Cleanup closed sessions occasionally
+                sessions.removeIf(s -> !s.isRunning());
+
                 new Thread(session).start();
             }
         } catch (IOException e) {
             if (running) {
-                plugin.logger.severe("Socket error: " + e.getMessage());
+                plugin.getLogger().severe("Socket error: " + e.getMessage());
             }
         } finally {
             shutdown();
@@ -56,9 +63,11 @@ public class ServerListenerThread extends Thread {
             if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();
             }
-            // Close all active sessions
-            for (RemoteSession session : sessions) {
-                session.close();
+            synchronized (sessions) {
+                for (RemoteSession session : sessions) {
+                    session.close();
+                }
+                sessions.clear();
             }
         } catch (IOException ignored) {}
     }
