@@ -608,13 +608,8 @@ class RegistryBuilder:
         (self.blocks_dir / f"{file_name}.mjs").write_text(js_c, encoding='utf-8')
         (self.gens_dir / f"{file_name}.mjs").write_text(py_c, encoding='utf-8')
 
-
-import yaml
-from pathlib import Path
-import re
-
 class ApiGenerator:
-    def __init__(self, schema_path, java_out, python_out):
+    def __init__(self, schema_path, java_out, java_listener_out, python_out):
         try:
             with open(schema_path, 'r') as f:
                 self.schema = yaml.safe_load(f)
@@ -622,10 +617,12 @@ class ApiGenerator:
             print(f"Error loading YAML schema: {e}")
             self.schema = {}
         self.output_path = Path(java_out)
+        self.listener_output_path = Path(java_listener_out)
         self.python_out = Path(python_out)
 
     def run(self):
         self.generate_java_registry()
+        self.generate_java_listener()
         self.generate_python_client()
 
     def generate_java_registry(self):
@@ -647,6 +644,9 @@ class ApiGenerator:
             "    public GeneratedCommandRegistry() {",
             "        // Root level helper",
             "        registry.put(\"ping\", (args, session) -> session.send(\"pong\"));",
+            "        // Event Polling Commands",
+            "        registry.put(\"events.poll\", (args, session) -> session.send(McJuicePlugin.getInstance().pollEvents(args[0])));",
+            "        registry.put(\"events.clear\", (args, session) -> { McJuicePlugin.getInstance().clearEvents(); session.send(\"OK\"); });",
             ""
         ]
 
@@ -667,6 +667,30 @@ class ApiGenerator:
         self.output_path.parent.mkdir(parents=True, exist_ok=True)
         with open(self.output_path, "w") as f:
             f.write("\n".join(code))
+
+    def generate_java_listener(self):
+        """Generates the Bukkit Listener from the events schema section."""
+        code = [
+            "package org.mcshell.mcjuice;",
+            "import org.bukkit.event.Listener;",
+            "import org.bukkit.event.EventHandler;",
+            "import org.bukkit.event.EventPriority;",
+            "",
+            "public class GeneratedEventListener implements Listener {"
+        ]
+
+        for event in self.schema.get('events', []):
+            code.append(f"\n    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)")
+            code.append(f"    public void on{event['name'].capitalize()}({event['bukkit_event']} event) {{")
+            if 'condition' in event:
+                code.append(f"        if (!({event['condition']})) return;")
+            code.append(f"        String data = {event['data']};")
+            code.append(f"        McJuicePlugin.getInstance().recordEvent(\"{event['name']}\", data);")
+            code.append("    }")
+
+        code.append("}")
+        self.listener_output_path.parent.mkdir(parents=True, exist_ok=True)
+        self.listener_output_path.write_text("\n".join(code))
 
     def _build_java_lambda(self, name, cmd, target_type):
         """Creates the registry.put("name", (args, session) -> { ... }) block"""
@@ -760,8 +784,16 @@ class ApiGenerator:
         ]
 
         namespaces = self.schema.get('namespaces', {})
+        # Pop 'events' from namespaces if present, to avoid generation collisions
+        # with our newly structured dynamic events namespace.
+        namespaces.pop('events', None)
+
         for ns in namespaces.keys():
             code.append(f"        self.{ns} = {ns.capitalize()}Namespace(conn, entity_id)")
+
+        # Add the dynamic events namespace if events are defined
+        if 'events' in self.schema:
+            code.append("        self.events = EventsNamespace(conn)")
 
         code.append("\n    @staticmethod\n    def create(address='localhost', port=4721, playerName=''):")
         code.append("        conn = MCJuiceConnection(address, port); eid = None")
@@ -805,6 +837,26 @@ class ApiGenerator:
                 else:
                     code.append("        return res")
 
+        # Generate the dedicated dynamic Event namespace
+        if 'events' in self.schema:
+            code.append("\nclass EventsNamespace:")
+            code.append("    def __init__(self, conn):")
+            code.append("        self.conn = conn")
+            code.append("\n    def poll(self, event_name: str):")
+            code.append("        res = self.conn.sendReceive('events.poll', event_name)")
+            code.append("        from mcshell.event import EventFactory")
+            code.append("        events = [e for e in res.split('|') if e]")
+            code.append("        return [EventFactory.create(event_name, e) for e in events]")
+            code.append("\n    def clearAll(self):")
+            code.append("        self.conn.sendReceive('events.clear')")
+            # Legacy wrapper methods mapped to the new schema identifiers
+            code.append("\n    def pollBlockHits(self):")
+            code.append("        return self.poll('blockHit')")
+            code.append("\n    def pollChatPosts(self):")
+            code.append("        return self.poll('chat')")
+            code.append("\n    def pollArrowHits(self):")
+            code.append("        return self.poll('arrowHit')")
+
         self.python_out.write_text("\n".join(code))
 
 if __name__ == "__main__":
@@ -814,6 +866,7 @@ if __name__ == "__main__":
     gen = ApiGenerator(
         MC_DATA_DIR / "mcjuice_api.yaml",
         MC_JUICE_SRC_DIR / "main/java/org/mcshell/mcjuice/GeneratedCommandRegistry.java",
+        MC_JUICE_SRC_DIR / "main/java/org/mcshell/mcjuice/GeneratedEventListener.java",
         MC_SHELL_DIR / "mcjuice.py"
         )
     gen.run()
