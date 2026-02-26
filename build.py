@@ -36,6 +36,7 @@ def rebuild():
     gen = ApiGenerator(
         MC_DATA_DIR / "mcjuice_api.yaml",
         MC_JUICE_SRC_DIR / "main/java/org/mcshell/mcjuice/GeneratedCommandRegistry.java",
+        MC_JUICE_SRC_DIR / "main/java/org/mcshell/mcjuice/GeneratedEventListener.java",
         MC_SHELL_DIR / "mcjuice.py"
         )
 
