@@ -5,8 +5,8 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent))
 
 from mcshell.mcscraper import make_materials, make_entity_id_map, make_item_id_map
-from mcshell.registry_builder import RegistryBuilder,JavaGenerator
-from mcshell.constants import MC_APP_SRC_DIR, MC_DATA_DIR, MC_JUICE_SRC_DIR,subprocess,shutil
+from mcshell.registry_builder import RegistryBuilder,ApiGenerator
+from mcshell.constants import MC_APP_SRC_DIR, MC_DATA_DIR, MC_JUICE_SRC_DIR,MC_SHELL_DIR,subprocess,shutil
 
 def rebuild():
     """
@@ -33,12 +33,14 @@ def rebuild():
     builder.build_all()
 
     print("\nStep 3: Building mcjuice Command Registry...")
-    gen = JavaGenerator(
+    gen = ApiGenerator(
         MC_DATA_DIR / "mcjuice_api.yaml",
-        MC_JUICE_SRC_DIR / "main/java/org/mcshell/mcjuice/GeneratedCommandRegistry.java")
+        MC_JUICE_SRC_DIR / "main/java/org/mcshell/mcjuice/GeneratedCommandRegistry.java",
+        MC_SHELL_DIR / "mcjuice.py"
+        )
 
-    # generate the command registry Java class for the mcjuice plugin
-    gen.generate()
+    # generate the command registry Java class for the mcjuice plugin and a python client
+    gen.run()
 
     # 2. Compile via Maven
     print("Building McJuice JAR...")
