@@ -15,6 +15,7 @@ import asyncio
 import requests
 import shutil
 import pathlib
+from pathlib import Path # this needs better consistency
 import subprocess
 import yarl
 import inspect
@@ -67,6 +68,7 @@ MC_SERVER_DATA = {
     'password': None,
 }
 
+MC_SHELL_DIR = pathlib.Path(__file__).parent
 
 MC_DATA_DIR = pathlib.Path(__file__).parent.joinpath('data')
 MC_PAPER_GLOBAL_TEMPLATE = MC_DATA_DIR / 'paper-global-template.yaml'
