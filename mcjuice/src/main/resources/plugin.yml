@@ -1,0 +1,8 @@
+author: [jeff@thinkae.org]
+database: false
+description: Implementation of the Minecraft Python API
+main: org.mcshell.mcjuice.McJuicePlugin
+name: McJuice
+startup: postworld
+version: '0.1.0'
+api-version: 1.21
