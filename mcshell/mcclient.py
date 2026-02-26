@@ -1,5 +1,6 @@
 from mcshell.vendored.pyncraft.minecraft import Minecraft
 from mcshell.constants import *
+from mcshell.mcjuice import MCJuiceClient
 
 from functools import lru_cache
 class _DEBUG:
@@ -7,6 +8,11 @@ class _DEBUG:
 
 class MCClientException(Exception):
     pass
+
+# ------------------------------------------------------
+# for testing until we can completely replace fruit juice
+MJ_PORT = 4721
+# ------------------------------------------------------
 
 class MCClient:
     def __init__(self, host=MC_SERVER_HOST, port=MC_SERVER_PORT,rcon_port=MC_RCON_PORT, fj_port=FJ_PLUGIN_PORT, app_port=MC_APP_PORT, password='' ):
@@ -54,6 +60,11 @@ class MCClient:
     def py_client(self,player_name=None):
         player_name = '' if player_name is None else player_name
         return Minecraft.create(address=self.host,port=self.fruit_juice_port,playerName=player_name)
+
+    @lru_cache(maxsize=1)
+    def mj_client(self,player_name=None):
+        player_name = '' if player_name is None else player_name
+        return MCJuiceClient.create(address=self.host,port=MJ_PORT,playerName=player_name)
 
     def help(self,*args):
         if not self.password:
