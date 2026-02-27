@@ -77,6 +77,18 @@ class PlayerNamespace:
         res = self.conn.sendReceive('player.setHealth', eid, health)
         return res
 
+    def getFoodLevel(self, entity_id=None):
+        eid = entity_id if entity_id is not None else self.entity_id
+        if eid is None: raise ValueError('No entity_id')
+        res = self.conn.sendReceive('player.getFoodLevel', eid)
+        return int(res)
+
+    def sendTitle(self, title, subtitle, stay, entity_id=None):
+        eid = entity_id if entity_id is not None else self.entity_id
+        if eid is None: raise ValueError('No entity_id')
+        res = self.conn.sendReceive('player.sendTitle', eid, title, subtitle, stay)
+        return res
+
 class WorldNamespace:
     def __init__(self, conn, entity_id):
         self.conn = conn
@@ -110,8 +122,20 @@ class WorldNamespace:
         res = self.conn.sendReceive('world.spawnEntity', x, y, z, type)
         return int(res)
 
+    def removeEntity(self, id):
+        res = self.conn.sendReceive('world.removeEntity', id)
+        return res
+
+    def getEntitiesInRadius(self, x, y, z, r):
+        res = self.conn.sendReceive('world.getEntitiesInRadius', x, y, z, r)
+        return res.split(',')
+
     def createExplosion(self, x, y, z, power):
         res = self.conn.sendReceive('world.createExplosion', x, y, z, power)
+        return res
+
+    def setSign(self, x, y, z, sign_type, direction, l1, l2, l3, l4):
+        res = self.conn.sendReceive('world.setSign', x, y, z, sign_type, direction, l1, l2, l3, l4)
         return res
 
     def saveCheckpoint(self):
