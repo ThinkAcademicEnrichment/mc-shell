@@ -6,33 +6,101 @@ namespaces:
       - name: getPos
         bukkit: getLocation()
         returns: Location
+        blockly:
+          label: "Get Position"
+          tooltip: "Gets the exact XYZ position of the player."
+          call_args: []
+
       - name: setPos
         bukkit: teleport(new Location(player.getWorld(), {x}, {y}, {z}, player.getLocation().getYaw(), player.getLocation().getPitch()))
         args: [{ name: x, type: double }, { name: y, type: double }, { name: z, type: double }]
         returns: void
+        blockly:
+          label: "Set Position to [pos]"
+          args:
+            pos: { type: Vec3, label: "Position" }
+          call_args: [float(pos.x), float(pos.y), float(pos.z)]
+
       - name: getTilePos
         bukkit: getLocation()
         returns: TileLocation
+        blockly:
+          label: "Get Tile Position"
+          tooltip: "Gets the integer block position of the player."
+          call_args: []
+
       - name: setTilePos
         bukkit: teleport(new Location(player.getWorld(), Math.floor({x}) + 0.5, Math.floor({y}), Math.floor({z}) + 0.5, player.getLocation().getYaw(), player.getLocation().getPitch()))
         args: [{ name: x, type: double }, { name: y, type: double }, { name: z, type: double }]
         returns: void
+        blockly:
+          label: "Set Tile Position to [pos]"
+          args:
+            pos: { type: Vec3, label: "Position" }
+          call_args: [float(pos.x), float(pos.y), float(pos.z)]
+
       - name: getDirection
         bukkit: getEyeLocation().getDirection()
         returns: Vector
+        blockly:
+          label: "Get Direction"
+          call_args: []
+
       - name: getRotation
         bukkit: getLocation().getYaw()
         returns: double
+        blockly:
+          label: "Get Rotation"
+          call_args: []
+
       - name: getPitch
         bukkit: getLocation().getPitch()
         returns: double
+        blockly:
+          label: "Get Pitch"
+          call_args: []
+
       - name: getHealth
         bukkit: getHealth()
         returns: double
+        blockly:
+          label: "Get Health"
+          tooltip: "Returns the health of the player."
+          call_args: []
+
       - name: setHealth
         bukkit: setHealth({health})
         args: [{ name: health, type: double }]
         returns: void
+        blockly:
+          label: "Set Health to [health]"
+          args:
+            health: { type: float, label: "Health" }
+          call_args: [float(health)]
+
+      - name: getFoodLevel
+        bukkit: getFoodLevel()
+        returns: int
+        blockly:
+          label: "Get Food Level"
+          tooltip: "Returns the food level of the player."
+          call_args: []
+
+      - name: sendTitle
+        bukkit: sendTitle({title}, {subtitle}, 10, {stay}, 20)
+        args:
+          - { name: title, type: String }
+          - { name: subtitle, type: String }
+          - { name: stay, type: int }
+        returns: void
+        blockly:
+          label: "Send Title to Screen"
+          tooltip: "Sends a title and subtitle to the player's screen."
+          args:
+            title: { type: str, label: "Title" }
+            subtitle: { type: str, label: "Subtitle" }
+            stay: { type: int, label: "Stay (Ticks)", shadow: '<shadow type="math_number"><field name="NUM">70</field></shadow>' }
+          call_args: [str(title), str(subtitle), int(stay)]
 
   world:
     target: World
@@ -42,11 +110,25 @@ namespaces:
         bukkit: getBlockAt({x}, {y}, {z}).getType().name()
         args: [{ name: x, type: int }, { name: y, type: int }, { name: z, type: int }]
         returns: string
+        blockly:
+          label: "Get Block at [position]"
+          tooltip: "Returns the Block ID at the specified position."
+          returns: Block
+          args:
+            position: { type: Vec3, label: "Position" }
+          call_args: [int(position.x), int(position.y), int(position.z)]
 
       - name: setBlock
         bukkit: getBlockAt({x}, {y}, {z}).setType(org.bukkit.Material.valueOf({block}.toUpperCase()))
         args: [{ name: x, type: int }, { name: y, type: int }, { name: z, type: int }, { name: block, type: String }]
         returns: void
+        blockly:
+          label: "Set Block [block_type] at [position]"
+          tooltip: "Sets a block at the specified position."
+          args:
+            position: { type: Vec3, label: "Position" }
+            block_type: { type: Block, label: "Block" }
+          call_args: [int(position.x), int(position.y), int(position.z), str(block_type)]
 
       - name: getBlocks
         bukkit: |
@@ -68,6 +150,13 @@ namespaces:
           }
         args: [{ name: x1, type: int }, { name: y1, type: int }, { name: z1, type: int }, { name: x2, type: int }, { name: y2, type: int }, { name: z2, type: int }]
         returns: string_list
+        blockly:
+          label: "Get Blocks from [pos1] to [pos2]"
+          tooltip: "Returns a list of Block IDs in the specified area."
+          args:
+            pos1: { type: Vec3, label: "From Position" }
+            pos2: { type: Vec3, label: "To Position" }
+          call_args: [int(pos1.x), int(pos1.y), int(pos1.z), int(pos2.x), int(pos2.y), int(pos2.z)]
 
       - name: setBlocks
         bukkit: |
@@ -86,12 +175,27 @@ namespaces:
           }
         args: [{ name: x1, type: int }, { name: y1, type: int }, { name: z1, type: int }, { name: x2, type: int }, { name: y2, type: int }, { name: z2, type: int }, { name: block, type: String }]
         returns: void
+        blockly:
+          label: "Set Blocks [block_type] from [pos1] to [pos2]"
+          tooltip: "Fills a cuboid area with the specified block."
+          args:
+            pos1: { type: Vec3, label: "From Position" }
+            pos2: { type: Vec3, label: "To Position" }
+            block_type: { type: Block, label: "Block" }
+          call_args: [int(pos1.x), int(pos1.y), int(pos1.z), int(pos2.x), int(pos2.y), int(pos2.z), str(block_type)]
 
       # --- Metadata & Entities ---
       - name: getHeight
         bukkit: getHighestBlockYAt({x}, {z})
         args: [{ name: x, type: int }, { name: z, type: int }]
         returns: int
+        blockly:
+          label: "Get Highest Block Y at X: [x] Z: [z]"
+          tooltip: "Gets the Y coordinate of the highest solid block at X, Z."
+          args:
+            x: { type: float, label: "X" }
+            z: { type: float, label: "Z" }
+          call_args: [int(x), int(z)]
 
       - name: getPlayerId
         bukkit: Bukkit.getPlayer({name}).getEntityId()
@@ -106,6 +210,29 @@ namespaces:
           - { name: z, type: double }
           - { name: type, type: String }
         returns: int
+        blockly:
+          label: "Spawn [entity_id] at [position]"
+          tooltip: "Spawns an entity at a given position and returns its unique ID."
+          args:
+            position: { type: Vec3, label: "Position" }
+            entity_id: { type: Entity, label: "Entity" }
+          call_args: [float(position.x), float(position.y), float(position.z), str(entity_id)]
+
+      - name: getEntitiesInRadius
+        bukkit: getNearbyEntities(new Location(world, {x}, {y}, {z}), {r}, {r}, {r}).stream().map(e -> String.valueOf(e.getEntityId())).collect(java.util.stream.Collectors.joining(","))
+        args:
+          - { name: x, type: double }
+          - { name: y, type: double }
+          - { name: z, type: double }
+          - { name: r, type: double }
+        returns: string_list
+        blockly:
+          label: "Get Entities in [radius] block radius from [position]"
+          tooltip: "Returns a list of entity IDs within a radius of a position."
+          args:
+            position: { type: Vec3, label: "Position" }
+            radius: { type: float, label: "Radius" }
+          call_args: [float(position.x), float(position.y), float(position.z), float(radius)]
 
       - name: createExplosion
         bukkit: createExplosion({x}, {y}, {z}, (float){power})
@@ -115,6 +242,53 @@ namespaces:
           - { name: z, type: double }
           - { name: power, type: double }
         returns: void
+        blockly:
+          label: "Create Explosion power [power] at [pos]"
+          args:
+            pos: { type: Vec3, label: "Position" }
+            power: { type: float, label: "Power" }
+          call_args: [float(pos.x), float(pos.y), float(pos.z), float(power)]
+
+      - name: setSign
+        bukkit: |
+          {
+            org.bukkit.block.Block b = world.getBlockAt({x}, {y}, {z});
+            b.setType(org.bukkit.Material.valueOf({sign_type}.toUpperCase()));
+            if (b.getBlockData() instanceof org.bukkit.block.data.Rotatable) {
+                org.bukkit.block.data.Rotatable rot = (org.bukkit.block.data.Rotatable) b.getBlockData();
+                org.bukkit.block.BlockFace[] faces = {org.bukkit.block.BlockFace.SOUTH, org.bukkit.block.BlockFace.SOUTH_SOUTH_WEST, org.bukkit.block.BlockFace.SOUTH_WEST, org.bukkit.block.BlockFace.WEST_SOUTH_WEST, org.bukkit.block.BlockFace.WEST, org.bukkit.block.BlockFace.WEST_NORTH_WEST, org.bukkit.block.BlockFace.NORTH_WEST, org.bukkit.block.BlockFace.NORTH_NORTH_WEST, org.bukkit.block.BlockFace.NORTH, org.bukkit.block.BlockFace.NORTH_NORTH_EAST, org.bukkit.block.BlockFace.NORTH_EAST, org.bukkit.block.BlockFace.EAST_NORTH_EAST, org.bukkit.block.BlockFace.EAST, org.bukkit.block.BlockFace.EAST_SOUTH_EAST, org.bukkit.block.BlockFace.SOUTH_EAST, org.bukkit.block.BlockFace.SOUTH_SOUTH_EAST};
+                rot.setRotation(faces[{direction} % 16]);
+                b.setBlockData(rot);
+            }
+            if (b.getState() instanceof org.bukkit.block.Sign) {
+                org.bukkit.block.Sign sign = (org.bukkit.block.Sign) b.getState();
+                sign.setLine(0, {l1}); sign.setLine(1, {l2}); sign.setLine(2, {l3}); sign.setLine(3, {l4});
+                sign.update();
+            }
+          }
+        args:
+          - { name: x, type: int }
+          - { name: y, type: int }
+          - { name: z, type: int }
+          - { name: sign_type, type: String }
+          - { name: direction, type: int }
+          - { name: l1, type: String }
+          - { name: l2, type: String }
+          - { name: l3, type: String }
+          - { name: l4, type: String }
+        returns: void
+        blockly:
+          label: "Set Sign Text"
+          tooltip: "Sets the text and type of a sign at the specified position."
+          args:
+            position: { type: Vec3, label: "At Position" }
+            line1: { type: str, label: "Line 1" }
+            line2: { type: str, label: "Line 2" }
+            line3: { type: str, label: "Line 3" }
+            line4: { type: str, label: "Line 4" }
+            sign_type: { type: Block, label: "Sign Material", shadow: "minecraft_log_picker" }
+            direction: { type: int, label: "Direction (0-15)" }
+          call_args: [int(position.x), int(position.y), int(position.z), str(sign_type), int(direction), str(line1), str(line2), str(line3), str(line4)]
 
       # --- State ---
       - name: saveCheckpoint
@@ -128,18 +302,21 @@ namespaces:
         bukkit: broadcastMessage({message})
         args: [{ name: message, type: String }]
         returns: void
+        blockly:
+          label: "Post to Chat"
+          args:
+            message: { type: str, label: "Message" }
+          call_args: [str(message)]
 
-# --- NEW EVENT SUBSCRIPTION SECTION ---
+# --- EVENT SUBSCRIPTION SECTION ---
 events:
   - name: rightBlockHit
     bukkit_event: org.bukkit.event.player.PlayerInteractEvent
-    # We only care if they right-clicked a block
     condition: "event.getAction() == org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null"
     data: "event.getClickedBlock().getX() + \",\" + event.getClickedBlock().getY() + \",\" + event.getClickedBlock().getZ() + \",\" + event.getBlockFace().ordinal() + \",\" + event.getPlayer().getEntityId()"
 
   - name: leftBlockHit
     bukkit_event: org.bukkit.event.player.PlayerInteractEvent
-    # We only care if they right-clicked a block
     condition: "event.getAction() == org.bukkit.event.block.Action.LEFT_CLICK_BLOCK && event.getClickedBlock() != null"
     data: "event.getClickedBlock().getX() + \",\" + event.getClickedBlock().getY() + \",\" + event.getClickedBlock().getZ() + \",\" + event.getBlockFace().ordinal() + \",\" + event.getPlayer().getEntityId()"
 
@@ -155,19 +332,16 @@ events:
     bukkit_event: org.bukkit.event.player.AsyncPlayerChatEvent
     data: "event.getPlayer().getEntityId() + \",\" + event.getMessage()"
 
-  # Fires when any projectile (arrow, snowball, etc) hits a block
   - name: projectileHitBlock
     bukkit_event: org.bukkit.event.entity.ProjectileHitEvent
     condition: "event.getHitBlock() != null"
     data: "event.getHitBlock().getX() + \",\" + event.getHitBlock().getY() + \",\" + event.getHitBlock().getZ() + \",\" + event.getEntity().getType().name()"
 
-  # Fires when an arrow hits another player or mob
   - name: projectileHitEntity
     bukkit_event: org.bukkit.event.entity.ProjectileHitEvent
     condition: "event.getHitEntity() != null"
     data: "event.getHitEntity().getEntityId() + \",\" + event.getEntity().getType().name() + \",\" + event.getHitEntity().getLocation().getX() + \",\" + event.getHitEntity().getLocation().getY() + \",\" + event.getHitEntity().getLocation().getZ()"
 
-  # Fires when a player launches a projectile
   - name: projectileLaunch
     bukkit_event: org.bukkit.event.entity.ProjectileLaunchEvent
     condition: "event.getEntity().getShooter() instanceof org.bukkit.entity.Player"
