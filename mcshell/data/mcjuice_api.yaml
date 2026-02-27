@@ -218,6 +218,17 @@ namespaces:
             entity_id: { type: Entity, label: "Entity" }
           call_args: [float(position.x), float(position.y), float(position.z), str(entity_id)]
 
+      - name: removeEntity
+        bukkit: getEntities().stream().filter(e -> e.getEntityId() == {id}).forEach(org.bukkit.entity.Entity::remove)
+        args: [{ name: id, type: int }]
+        returns: void
+        blockly:
+          label: "Remove Entity [entity_id]"
+          tooltip: "Removes the entity with the specified ID from the world."
+          args:
+            entity_id: { type: int, label: "Entity ID" }
+          call_args: [int(entity_id)]
+
       - name: getEntitiesInRadius
         bukkit: getNearbyEntities(new Location(world, {x}, {y}, {z}), {r}, {r}, {r}).stream().map(e -> String.valueOf(e.getEntityId())).collect(java.util.stream.Collectors.joining(","))
         args:
