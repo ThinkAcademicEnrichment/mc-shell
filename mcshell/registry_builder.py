@@ -899,7 +899,7 @@ class ApiGenerator:
                 continue
 
             class_name = f"Generated{ns_name.capitalize()}Actions"
-            code.append(f"class {class_name}(MCActionsBase):")
+            code.append(f"\nclass {class_name}(MCActionsBase):")
             code.append(f"    def __init__(self, mc_player_instance, delay_between_blocks=0):")
             code.append(f"        super().__init__(mc_player_instance, delay_between_blocks)")
 
