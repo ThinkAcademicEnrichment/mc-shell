@@ -6,10 +6,17 @@ import org.bukkit.event.EventPriority;
 public class GeneratedEventListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onBlockhit(org.bukkit.event.player.PlayerInteractEvent event) {
+    public void onRightblockhit(org.bukkit.event.player.PlayerInteractEvent event) {
         if (!(event.getAction() == org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null)) return;
         String data = event.getClickedBlock().getX() + "," + event.getClickedBlock().getY() + "," + event.getClickedBlock().getZ() + "," + event.getBlockFace().ordinal() + "," + event.getPlayer().getEntityId();
-        McJuicePlugin.getInstance().recordEvent("blockHit", data);
+        McJuicePlugin.getInstance().recordEvent("rightBlockHit", data);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onLeftblockhit(org.bukkit.event.player.PlayerInteractEvent event) {
+        if (!(event.getAction() == org.bukkit.event.block.Action.LEFT_CLICK_BLOCK && event.getClickedBlock() != null)) return;
+        String data = event.getClickedBlock().getX() + "," + event.getClickedBlock().getY() + "," + event.getClickedBlock().getZ() + "," + event.getBlockFace().ordinal() + "," + event.getPlayer().getEntityId();
+        McJuicePlugin.getInstance().recordEvent("leftBlockHit", data);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -28,5 +35,26 @@ public class GeneratedEventListener implements Listener {
     public void onChat(org.bukkit.event.player.AsyncPlayerChatEvent event) {
         String data = event.getPlayer().getEntityId() + "," + event.getMessage();
         McJuicePlugin.getInstance().recordEvent("chat", data);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onProjectilehitblock(org.bukkit.event.entity.ProjectileHitEvent event) {
+        if (!(event.getHitBlock() != null)) return;
+        String data = event.getHitBlock().getX() + "," + event.getHitBlock().getY() + "," + event.getHitBlock().getZ() + "," + event.getEntity().getType().name();
+        McJuicePlugin.getInstance().recordEvent("projectileHitBlock", data);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onProjectilehitentity(org.bukkit.event.entity.ProjectileHitEvent event) {
+        if (!(event.getHitEntity() != null)) return;
+        String data = event.getHitEntity().getEntityId() + "," + event.getEntity().getType().name() + "," + event.getHitEntity().getLocation().getX() + "," + event.getHitEntity().getLocation().getY() + "," + event.getHitEntity().getLocation().getZ();
+        McJuicePlugin.getInstance().recordEvent("projectileHitEntity", data);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onProjectilelaunch(org.bukkit.event.entity.ProjectileLaunchEvent event) {
+        if (!(event.getEntity().getShooter() instanceof org.bukkit.entity.Player)) return;
+        String data = ((org.bukkit.entity.Player)event.getEntity().getShooter()).getEntityId() + "," + event.getEntity().getType().name();
+        McJuicePlugin.getInstance().recordEvent("projectileLaunch", data);
     }
 }

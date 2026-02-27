@@ -123,6 +123,30 @@ public class GeneratedCommandRegistry {
                 session.send("OK");
             });
         });
+        registry.put("player.getFoodLevel", (args, session) -> {
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                int eid = Integer.parseInt(args[0]);
+                Player player = session.getPlayerById(eid);
+                if (player == null) { session.send("Fail,No Player"); return; }
+                Object res = player.getFoodLevel();
+                if (res == null) { session.send("null"); }
+                else if (res instanceof Location) { Location l = (Location)res; session.send(l.getX()+","+l.getY()+","+l.getZ()); }
+                else if (res instanceof Vector) { Vector v = (Vector)res; session.send(v.getX()+","+v.getY()+","+v.getZ()); }
+                else { session.send(String.valueOf(res)); }
+            });
+        });
+        registry.put("player.sendTitle", (args, session) -> {
+            final String _arg_title = args[1];
+            final String _arg_subtitle = args[2];
+            final int _arg_stay = Integer.parseInt(args[3]);
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                int eid = Integer.parseInt(args[0]);
+                Player player = session.getPlayerById(eid);
+                if (player == null) { session.send("Fail,No Player"); return; }
+                player.sendTitle(_arg_title, _arg_subtitle, 10, _arg_stay, 20);
+                session.send("OK");
+            });
+        });
         registry.put("world.getBlock", (args, session) -> {
             final int _arg_x = Integer.parseInt(args[0]);
             final int _arg_y = Integer.parseInt(args[1]);
@@ -239,6 +263,28 @@ public class GeneratedCommandRegistry {
                 else { session.send(String.valueOf(res)); }
             });
         });
+        registry.put("world.removeEntity", (args, session) -> {
+            final int _arg_id = Integer.parseInt(args[0]);
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                World world = Bukkit.getWorlds().get(0);
+                world.getEntities().stream().filter(e -> e.getEntityId() == _arg_id).forEach(org.bukkit.entity.Entity::remove);
+                session.send("OK");
+            });
+        });
+        registry.put("world.getEntitiesInRadius", (args, session) -> {
+            final double _arg_x = Double.parseDouble(args[0]);
+            final double _arg_y = Double.parseDouble(args[1]);
+            final double _arg_z = Double.parseDouble(args[2]);
+            final double _arg_r = Double.parseDouble(args[3]);
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                World world = Bukkit.getWorlds().get(0);
+                Object res = world.getNearbyEntities(new Location(world, _arg_x, _arg_y, _arg_z), _arg_r, _arg_r, _arg_r).stream().map(e -> String.valueOf(e.getEntityId())).collect(java.util.stream.Collectors.joining(","));
+                if (res == null) { session.send("null"); }
+                else if (res instanceof Location) { Location l = (Location)res; session.send(l.getX()+","+l.getY()+","+l.getZ()); }
+                else if (res instanceof Vector) { Vector v = (Vector)res; session.send(v.getX()+","+v.getY()+","+v.getZ()); }
+                else { session.send(String.valueOf(res)); }
+            });
+        });
         registry.put("world.createExplosion", (args, session) -> {
             final double _arg_x = Double.parseDouble(args[0]);
             final double _arg_y = Double.parseDouble(args[1]);
@@ -247,6 +293,37 @@ public class GeneratedCommandRegistry {
             Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
                 World world = Bukkit.getWorlds().get(0);
                 world.createExplosion(_arg_x, _arg_y, _arg_z, (float)_arg_power);
+                session.send("OK");
+            });
+        });
+        registry.put("world.setSign", (args, session) -> {
+            final int _arg_x = Integer.parseInt(args[0]);
+            final int _arg_y = Integer.parseInt(args[1]);
+            final int _arg_z = Integer.parseInt(args[2]);
+            final String _arg_sign_type = args[3];
+            final int _arg_direction = Integer.parseInt(args[4]);
+            final String _arg_l1 = args[5];
+            final String _arg_l2 = args[6];
+            final String _arg_l3 = args[7];
+            final String _arg_l4 = args[8];
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                World world = Bukkit.getWorlds().get(0);
+                {
+  org.bukkit.block.Block b = world.getBlockAt(_arg_x, _arg_y, _arg_z);
+  b.setType(org.bukkit.Material.valueOf(_arg_sign_type.toUpperCase()));
+  if (b.getBlockData() instanceof org.bukkit.block.data.Rotatable) {
+      org.bukkit.block.data.Rotatable rot = (org.bukkit.block.data.Rotatable) b.getBlockData();
+      org.bukkit.block.BlockFace[] faces = {org.bukkit.block.BlockFace.SOUTH, org.bukkit.block.BlockFace.SOUTH_SOUTH_WEST, org.bukkit.block.BlockFace.SOUTH_WEST, org.bukkit.block.BlockFace.WEST_SOUTH_WEST, org.bukkit.block.BlockFace.WEST, org.bukkit.block.BlockFace.WEST_NORTH_WEST, org.bukkit.block.BlockFace.NORTH_WEST, org.bukkit.block.BlockFace.NORTH_NORTH_WEST, org.bukkit.block.BlockFace.NORTH, org.bukkit.block.BlockFace.NORTH_NORTH_EAST, org.bukkit.block.BlockFace.NORTH_EAST, org.bukkit.block.BlockFace.EAST_NORTH_EAST, org.bukkit.block.BlockFace.EAST, org.bukkit.block.BlockFace.EAST_SOUTH_EAST, org.bukkit.block.BlockFace.SOUTH_EAST, org.bukkit.block.BlockFace.SOUTH_SOUTH_EAST};
+      rot.setRotation(faces[_arg_direction % 16]);
+      b.setBlockData(rot);
+  }
+  if (b.getState() instanceof org.bukkit.block.Sign) {
+      org.bukkit.block.Sign sign = (org.bukkit.block.Sign) b.getState();
+      sign.setLine(0, _arg_l1); sign.setLine(1, _arg_l2); sign.setLine(2, _arg_l3); sign.setLine(3, _arg_l4);
+      sign.update();
+  }
+}
+
                 session.send("OK");
             });
         });
