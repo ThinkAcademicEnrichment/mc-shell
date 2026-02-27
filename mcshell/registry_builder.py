@@ -14,7 +14,9 @@ try:
         TurtleShapes, LSystemShapes
     )
     # test
-    from mcshell.generated_actions import GeneratedPlayerActions
+    from mcshell.generated_actions import (
+        GeneratedPlayerActions, GeneratedChatActions, GeneratedWorldActions
+    )
 
     HAS_ALL_ACTIONS = True
 except ImportError as e:
@@ -56,7 +58,11 @@ class RegistryBuilder:
             "Player": "#61A1B0",    # Muted Cyan / Teal
             "Events": "#D68C45",    # Muted Orange / Copper
             "Server": "#5C7457",    # Muted Forest / Dark Green
-            "Digital Set": "#A57582", # Muted Mauve / Rose   <-- New Addition
+            "Digital Set": "#A57582", # Muted Mauve / Rose
+            # new generated action classes
+            "J-Player": "#61A1B0",  # Muted Cyan / Teal
+            "J-World": "#5C7457",  # Muted Forest / Dark Green
+            "J-Chat": "#D68C45",  # Muted Orange / Copper
         }
 
         self.TYPE_MAP = {
@@ -110,7 +116,6 @@ class RegistryBuilder:
             self.ACTION_CLASSES.extend([
                 (ServerActions, "Server", self.COLORS["Server"]),
                 (PyncraftActions, "Pyncraft", "#252E28"),
-                (GeneratedPlayerActions, "GenPlayerActions", "#252E28"),
                 (PlayerActions, "Player", self.COLORS["Player"]),
                 (TurtleShapes, "Turtle", self.COLORS["Turtle"]),
                 (LSystemShapes, "LSystem", self.COLORS["LSystem"]),
@@ -118,6 +123,9 @@ class RegistryBuilder:
                 (QTurtleActions, "Q-Turtle", self.COLORS["Turtle"]),
                 (EventActions, "Event", self.COLORS["Events"]),
                 (DigitalSetActions, "Digital Set", self.COLORS["Digital Set"]),
+                (GeneratedPlayerActions, "J-Player", self.COLORS["J-Player"]),
+                (GeneratedChatActions, "J-Chat", self.COLORS["J-Chat"]),
+                (GeneratedWorldActions, "J-World", self.COLORS["J-World"]),
             ])
 
         # --- Utility Picker Options ---
