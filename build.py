@@ -19,7 +19,18 @@ def rebuild():
     make_entity_id_map()
     make_item_id_map()
 
-    print("\nStep 2: Building Blockly Registries...")
+    print("\nStep 2: Building mcjuice Command Registry...")
+    gen = ApiGenerator(
+        MC_DATA_DIR / "mcjuice_api.yaml",
+        MC_JUICE_SRC_DIR / "main/java/org/mcshell/mcjuice/GeneratedCommandRegistry.java",
+        MC_JUICE_SRC_DIR / "main/java/org/mcshell/mcjuice/GeneratedEventListener.java",
+        MC_SHELL_DIR / "mcjuice.py"
+        )
+
+    # generate the command registry Java class for the mcjuice plugin and a python client
+    gen.run()
+
+    print("\nStep 3: Building Blockly Registries...")
     builder = RegistryBuilder(
         toolbox_path=MC_APP_SRC_DIR / 'toolbox.xml',
         blocks_dir=MC_APP_SRC_DIR / 'blocks',
@@ -32,16 +43,6 @@ def rebuild():
     # 3. Updates toolbox.xml via blockapily's structured XML injection
     builder.build_all()
 
-    print("\nStep 3: Building mcjuice Command Registry...")
-    gen = ApiGenerator(
-        MC_DATA_DIR / "mcjuice_api.yaml",
-        MC_JUICE_SRC_DIR / "main/java/org/mcshell/mcjuice/GeneratedCommandRegistry.java",
-        MC_JUICE_SRC_DIR / "main/java/org/mcshell/mcjuice/GeneratedEventListener.java",
-        MC_SHELL_DIR / "mcjuice.py"
-        )
-
-    # generate the command registry Java class for the mcjuice plugin and a python client
-    gen.run()
 
     # 2. Compile via Maven
     print("Building McJuice JAR...")
