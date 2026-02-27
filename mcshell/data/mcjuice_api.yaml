@@ -131,10 +131,16 @@ namespaces:
 
 # --- NEW EVENT SUBSCRIPTION SECTION ---
 events:
-  - name: blockHit
+  - name: rightBlockHit
     bukkit_event: org.bukkit.event.player.PlayerInteractEvent
     # We only care if they right-clicked a block
     condition: "event.getAction() == org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null"
+    data: "event.getClickedBlock().getX() + \",\" + event.getClickedBlock().getY() + \",\" + event.getClickedBlock().getZ() + \",\" + event.getBlockFace().ordinal() + \",\" + event.getPlayer().getEntityId()"
+
+  - name: leftBlockHit
+    bukkit_event: org.bukkit.event.player.PlayerInteractEvent
+    # We only care if they right-clicked a block
+    condition: "event.getAction() == org.bukkit.event.block.Action.LEFT_CLICK_BLOCK && event.getClickedBlock() != null"
     data: "event.getClickedBlock().getX() + \",\" + event.getClickedBlock().getY() + \",\" + event.getClickedBlock().getZ() + \",\" + event.getBlockFace().ordinal() + \",\" + event.getPlayer().getEntityId()"
 
   - name: blockPlace
@@ -148,3 +154,21 @@ events:
   - name: chat
     bukkit_event: org.bukkit.event.player.AsyncPlayerChatEvent
     data: "event.getPlayer().getEntityId() + \",\" + event.getMessage()"
+
+  # Fires when any projectile (arrow, snowball, etc) hits a block
+  - name: projectileHitBlock
+    bukkit_event: org.bukkit.event.entity.ProjectileHitEvent
+    condition: "event.getHitBlock() != null"
+    data: "event.getHitBlock().getX() + \",\" + event.getHitBlock().getY() + \",\" + event.getHitBlock().getZ() + \",\" + event.getEntity().getType().name()"
+
+  # Fires when an arrow hits another player or mob
+  - name: projectileHitEntity
+    bukkit_event: org.bukkit.event.entity.ProjectileHitEvent
+    condition: "event.getHitEntity() != null"
+    data: "event.getHitEntity().getEntityId() + \",\" + event.getEntity().getType().name() + \",\" + event.getHitEntity().getLocation().getX() + \",\" + event.getHitEntity().getLocation().getY() + \",\" + event.getHitEntity().getLocation().getZ()"
+
+  # Fires when a player launches a projectile
+  - name: projectileLaunch
+    bukkit_event: org.bukkit.event.entity.ProjectileLaunchEvent
+    condition: "event.getEntity().getShooter() instanceof org.bukkit.entity.Player"
+    data: "((org.bukkit.entity.Player)event.getEntity().getShooter()).getEntityId() + \",\" + event.getEntity().getType().name()"
