@@ -431,7 +431,8 @@
 <block type="serveractions_server_damage"><value name="target"><shadow type="text"><field name="TEXT">SELF</field></shadow></value> <value name="amount"><shadow type="math_number"><field name="NUM">1.0</field></shadow></value></block>
 <block type="serveractions_server_execute_command"><value name="command"><shadow type="text"><field name="TEXT" /></shadow></value></block>
 <block type="serveractions_server_gamemode_set"><value name="gamemode"><shadow type="picker_gamemode"><field name="VALUE">creative</field></shadow></value> <value name="target"><shadow type="text"><field name="TEXT">SELF</field></shadow></value></block>
-<block type="serveractions_server_gamerule_set"><value name="rule"><shadow type="picker_gamerule"><field name="VALUE">advance_time</field></shadow></value> <value name="value"><shadow type="text"><field name="TEXT" /></shadow></value></block>
+<block type="serveractions_server_gamerule_integer_set"><value name="rule"><shadow type="picker_integergamerule"><field name="VALUE">respawn_radius</field></shadow></value> <value name="value"><shadow type="math_number"><field name="NUM">1</field></shadow></value></block>
+<block type="serveractions_server_gamerule_set"><value name="rule"><shadow type="picker_gamerule"><field name="VALUE">advance_time</field></shadow></value> <value name="value"><shadow type="logic_boolean"><field name="BOOL">TRUE</field></shadow></value></block>
 <block type="serveractions_server_give_item"><value name="item">minecraft_picker_world</value> <value name="count"><shadow type="math_number"><field name="NUM">1</field></shadow></value> <value name="target"><shadow type="text"><field name="TEXT">SELF</field></shadow></value></block>
 <block type="serveractions_server_list" />
 <block type="serveractions_server_locate_structure"><value name="structure"><shadow type="picker_structure"><field name="VALUE">ancient_city</field></shadow></value></block>
