@@ -67,11 +67,20 @@ class ServerActions(MCActionsBase):
         self._run_command(f"gamemode {gamemode} {target_name}")
 
     @mced_block(
+        label="Set Gamerule [rule] to True/False",
+        rule={'label': 'Game Rule'},
+        value={'label': 'Value'}
+    )
+    def server_gamerule_set(self, rule: 'GameRule', value: bool):
+        """Modifies a server game rule."""
+        self._run_command(f"gamerule {rule} {value}")
+
+    @mced_block(
         label="Set Gamerule [rule] to [value]",
         rule={'label': 'Game Rule'},
-        value={'label': 'Value', 'shadow': 'text'}
+        value={'label': 'Value'}
     )
-    def server_gamerule_set(self, rule: 'GameRule', value: Union[bool, int, str]):
+    def server_gamerule_integer_set(self, rule: 'IntegerGameRule', value: int):
         """Modifies a server game rule."""
         self._run_command(f"gamerule {rule} {value}")
 
