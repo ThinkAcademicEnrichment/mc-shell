@@ -44,7 +44,7 @@ class ServerActions(MCActionsBase):
         label="Set Time to [time]",
         time={'label': 'Time', 'shadow': 'math_number'}
     )
-    def server_time_set(self, time: int):
+    def server_set_time(self, time: int):
         """Sets the server time."""
         self._run_command(f"time set {time}")
 
@@ -256,3 +256,11 @@ class ServerActions(MCActionsBase):
     def server_time_query(self,time_type:'TimeType') -> int:
         """Query the world time."""
         return self._parse_minecraft_time_query(self._run_command(f"time query {time_type}"))
+
+    @mced_block(
+        label="Set the world time",
+        time_of_day={'label':'Time'}
+    )
+    def server_time_set(self,time_of_day:'Time'):
+        """Set the world time."""
+        self._run_command(f"time set {time_of_day}")
