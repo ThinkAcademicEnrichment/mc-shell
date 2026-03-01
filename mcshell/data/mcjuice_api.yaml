@@ -302,9 +302,79 @@ namespaces:
           call_args: [int(position.x), int(position.y), int(position.z), str(sign_type), int(direction), str(line1), str(line2), str(line3), str(line4)]
 
       # --- State ---
-      - name: saveCheckpoint
-        bukkit: { Bukkit.savePlayers(); world.save(); }
+#      - name: saveCheckpoint
+#        bukkit: { Bukkit.savePlayers(); world.save(); }
+#        returns: void
+
+      # --- Loot & Items ---
+      - name: dropItem
+        bukkit: dropItemNaturally(new org.bukkit.Location(world, {x}, {y}, {z}), new org.bukkit.inventory.ItemStack(org.bukkit.Material.valueOf({item}.toUpperCase()), {amount}))
+        args:
+          - { name: x, type: double }
+          - { name: y, type: double }
+          - { name: z, type: double }
+          - { name: item, type: String }
+          - { name: amount, type: int }
         returns: void
+        blockly:
+          label: "Drop [amount] [item] at [pos]"
+          tooltip: "Drops a specific item on the ground at the position."
+          args:
+            pos: { type: Vec3, label: "Position" }
+            item: { type: Item, label: "Item" }
+            amount: { type: int, label: "Amount" }
+          call_args: [float(pos.x), float(pos.y), float(pos.z), str(item), int(amount)]
+
+      - name: dropRandomLoot
+        bukkit: |
+          {
+            org.bukkit.Material[] pool = {
+              org.bukkit.Material.DIAMOND, org.bukkit.Material.GOLD_INGOT, org.bukkit.Material.IRON_INGOT, 
+              org.bukkit.Material.EMERALD, org.bukkit.Material.ENCHANTED_GOLDEN_APPLE, 
+              org.bukkit.Material.ENDER_PEARL, org.bukkit.Material.TOTEM_OF_UNDYING, 
+              org.bukkit.Material.EXPERIENCE_BOTTLE, org.bukkit.Material.SADDLE
+            };
+            org.bukkit.Material choice = pool[new java.util.Random().nextInt(pool.length)];
+            world.dropItemNaturally(new org.bukkit.Location(world, {x}, {y}, {z}), new org.bukkit.inventory.ItemStack(choice, 1));
+          }
+        args:
+          - { name: x, type: double }
+          - { name: y, type: double }
+          - { name: z, type: double }
+        returns: void
+        blockly:
+          label: "Drop Random Loot at [pos]"
+          tooltip: "Drops a random high-value item at the specified position."
+          args:
+            pos: { type: Vec3, label: "Position" }
+          call_args: [float(pos.x), float(pos.y), float(pos.z)]
+
+      - name: setContainerItem
+        bukkit: |
+          {
+            org.bukkit.block.Block b = world.getBlockAt({x}, {y}, {z});
+            if (b.getState() instanceof org.bukkit.inventory.InventoryHolder) {
+                org.bukkit.inventory.Inventory inv = ((org.bukkit.inventory.InventoryHolder)b.getState()).getInventory();
+                inv.setItem({slot}, new org.bukkit.inventory.ItemStack(org.bukkit.Material.valueOf({item}.toUpperCase()), {amount}));
+            }
+          }
+        args:
+          - { name: x, type: int }
+          - { name: y, type: int }
+          - { name: z, type: int }
+          - { name: slot, type: int }
+          - { name: item, type: String }
+          - { name: amount, type: int }
+        returns: void
+        blockly:
+          label: "In container at [pos] set slot [slot] to [amount] [item]"
+          tooltip: "Sets an item in a chest, barrel, or hopper inventory slot."
+          args:
+            pos: { type: Vec3, label: "Position" }
+            slot: { type: int, label: "Slot (0-26)" }
+            item: { type: Item, label: "Item" }
+            amount: { type: int, label: "Amount" }
+          call_args: [int(pos.x), int(pos.y), int(pos.z), int(slot), str(item), int(amount)]
 
   chat:
     target: Server
