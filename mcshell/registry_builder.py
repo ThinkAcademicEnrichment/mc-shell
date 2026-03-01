@@ -123,8 +123,8 @@ class RegistryBuilder:
     ]
 
     TIMES = [
-        ("Day (1000)", "day"), ("Noon (6000)", "noon"), ("Sunset (12000)", "sunset"),
-        ("Night (13000)", "night"), ("Midnight (18000)", "midnight"), ("Sunrise (23000)", "sunrise")
+        ("Day (1000)", "day"), ("Noon (6000)", "noon"),
+        ("Night (13000)", "night"), ("Midnight (18000)", "midnight")
     ]
 
     TIMETYPES = [("Day Time", "daytime"), ("Game Time", "gametime"), ("Day", "day")]
