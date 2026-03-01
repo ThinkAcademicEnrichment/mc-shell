@@ -7,6 +7,20 @@ const power = generator.valueToCode(block, 'power', pythonGenerator.ORDER_ATOMIC
         return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
     };
 
+    pythonGenerator.forBlock['generatedworldactions_drop_item'] = function(block, generator) {
+        const pos = generator.valueToCode(block, 'pos', pythonGenerator.ORDER_ATOMIC) || 'None';
+const item = generator.valueToCode(block, 'item', pythonGenerator.ORDER_ATOMIC) || 'None';
+const amount = generator.valueToCode(block, 'amount', pythonGenerator.ORDER_ATOMIC) || 'None';
+        const code = `GeneratedWorldActions.drop_item(${pos}, ${item}, ${amount})\n`;
+        return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
+    };
+
+    pythonGenerator.forBlock['generatedworldactions_drop_random_loot'] = function(block, generator) {
+        const pos = generator.valueToCode(block, 'pos', pythonGenerator.ORDER_ATOMIC) || 'None';
+        const code = `GeneratedWorldActions.drop_random_loot(${pos})\n`;
+        return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
+    };
+
     pythonGenerator.forBlock['generatedworldactions_get_block'] = function(block, generator) {
         const position = generator.valueToCode(block, 'position', pythonGenerator.ORDER_ATOMIC) || 'None';
         const code = `GeneratedWorldActions.get_block(${position})\n`;
@@ -52,6 +66,15 @@ const block_type = generator.valueToCode(block, 'block_type', pythonGenerator.OR
 const pos2 = generator.valueToCode(block, 'pos2', pythonGenerator.ORDER_ATOMIC) || 'None';
 const block_type = generator.valueToCode(block, 'block_type', pythonGenerator.ORDER_ATOMIC) || 'None';
         const code = `GeneratedWorldActions.set_blocks(${pos1}, ${pos2}, ${block_type})\n`;
+        return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
+    };
+
+    pythonGenerator.forBlock['generatedworldactions_set_container_item'] = function(block, generator) {
+        const pos = generator.valueToCode(block, 'pos', pythonGenerator.ORDER_ATOMIC) || 'None';
+const slot = generator.valueToCode(block, 'slot', pythonGenerator.ORDER_ATOMIC) || 'None';
+const item = generator.valueToCode(block, 'item', pythonGenerator.ORDER_ATOMIC) || 'None';
+const amount = generator.valueToCode(block, 'amount', pythonGenerator.ORDER_ATOMIC) || 'None';
+        const code = `GeneratedWorldActions.set_container_item(${pos}, ${slot}, ${item}, ${amount})\n`;
         return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
     };
 

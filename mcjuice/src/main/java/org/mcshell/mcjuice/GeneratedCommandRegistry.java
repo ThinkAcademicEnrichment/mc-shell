@@ -327,10 +327,55 @@ public class GeneratedCommandRegistry {
                 session.send("OK");
             });
         });
-        registry.put("world.saveCheckpoint", (args, session) -> {
+        registry.put("world.dropItem", (args, session) -> {
+            final double _arg_x = Double.parseDouble(args[0]);
+            final double _arg_y = Double.parseDouble(args[1]);
+            final double _arg_z = Double.parseDouble(args[2]);
+            final String _arg_item = args[3];
+            final int _arg_amount = Integer.parseInt(args[4]);
             Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
                 World world = Bukkit.getWorlds().get(0);
-                {Bukkit.savePlayers(); world.save();}
+                world.dropItemNaturally(new org.bukkit.Location(world, _arg_x, _arg_y, _arg_z), new org.bukkit.inventory.ItemStack(org.bukkit.Material.valueOf(_arg_item.toUpperCase()), _arg_amount));
+                session.send("OK");
+            });
+        });
+        registry.put("world.dropRandomLoot", (args, session) -> {
+            final double _arg_x = Double.parseDouble(args[0]);
+            final double _arg_y = Double.parseDouble(args[1]);
+            final double _arg_z = Double.parseDouble(args[2]);
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                World world = Bukkit.getWorlds().get(0);
+                {
+  org.bukkit.Material[] pool = {
+    org.bukkit.Material.DIAMOND, org.bukkit.Material.GOLD_INGOT, org.bukkit.Material.IRON_INGOT, 
+    org.bukkit.Material.EMERALD, org.bukkit.Material.ENCHANTED_GOLDEN_APPLE, 
+    org.bukkit.Material.ENDER_PEARL, org.bukkit.Material.TOTEM_OF_UNDYING, 
+    org.bukkit.Material.EXPERIENCE_BOTTLE, org.bukkit.Material.SADDLE
+  };
+  org.bukkit.Material choice = pool[new java.util.Random().nextInt(pool.length)];
+  world.dropItemNaturally(new org.bukkit.Location(world, _arg_x, _arg_y, _arg_z), new org.bukkit.inventory.ItemStack(choice, 1));
+}
+
+                session.send("OK");
+            });
+        });
+        registry.put("world.setContainerItem", (args, session) -> {
+            final int _arg_x = Integer.parseInt(args[0]);
+            final int _arg_y = Integer.parseInt(args[1]);
+            final int _arg_z = Integer.parseInt(args[2]);
+            final int _arg_slot = Integer.parseInt(args[3]);
+            final String _arg_item = args[4];
+            final int _arg_amount = Integer.parseInt(args[5]);
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                World world = Bukkit.getWorlds().get(0);
+                {
+  org.bukkit.block.Block b = world.getBlockAt(_arg_x, _arg_y, _arg_z);
+  if (b.getState() instanceof org.bukkit.inventory.InventoryHolder) {
+      org.bukkit.inventory.Inventory inv = ((org.bukkit.inventory.InventoryHolder)b.getState()).getInventory();
+      inv.setItem(_arg_slot, new org.bukkit.inventory.ItemStack(org.bukkit.Material.valueOf(_arg_item.toUpperCase()), _arg_amount));
+  }
+}
+
                 session.send("OK");
             });
         });

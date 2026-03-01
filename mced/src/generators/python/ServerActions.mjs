@@ -103,6 +103,13 @@ const target = generator.valueToCode(block, 'target', pythonGenerator.ORDER_ATOM
         return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
     };
 
+    pythonGenerator.forBlock['serveractions_server_gamerule_integer_set'] = function(block, generator) {
+        const rule = generator.valueToCode(block, 'rule', pythonGenerator.ORDER_ATOMIC) || 'None';
+const value = generator.valueToCode(block, 'value', pythonGenerator.ORDER_ATOMIC) || 'None';
+        const code = `ServerActions.server_gamerule_integer_set(${rule}, ${value})\n`;
+        return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
+    };
+
     pythonGenerator.forBlock['serveractions_server_gamerule_set'] = function(block, generator) {
         const rule = generator.valueToCode(block, 'rule', pythonGenerator.ORDER_ATOMIC) || 'None';
 const value = generator.valueToCode(block, 'value', pythonGenerator.ORDER_ATOMIC) || 'None';

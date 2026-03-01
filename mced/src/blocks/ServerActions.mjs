@@ -514,11 +514,22 @@ this.appendValueInput('target').appendField('Target Player').setCheck('String');
         }
     };
 
-    Blockly.Blocks['serveractions_server_gamerule_set'] = {
+    Blockly.Blocks['serveractions_server_gamerule_integer_set'] = {
         init: function() {
             this.appendDummyInput().appendField("Set Gamerule [rule] to [value]");
+            this.appendValueInput('rule').appendField('Game Rule').setCheck('IntegerGameRule');
+this.appendValueInput('value').appendField('Value').setCheck('Number');
+            this.setPreviousStatement(true); this.setNextStatement(true);
+            this.setColour("#5C7457");
+            this.setTooltip("Modifies a server game rule.");
+        }
+    };
+
+    Blockly.Blocks['serveractions_server_gamerule_set'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Set Gamerule [rule] to True/False");
             this.appendValueInput('rule').appendField('Game Rule').setCheck('GameRule');
-this.appendValueInput('value').appendField('Value').setCheck(['Boolean', 'Number', 'String']);
+this.appendValueInput('value').appendField('Value').setCheck('Boolean');
             this.setPreviousStatement(true); this.setNextStatement(true);
             this.setColour("#5C7457");
             this.setTooltip("Modifies a server game rule.");

@@ -138,8 +138,16 @@ class WorldNamespace:
         res = self.conn.sendReceive('world.setSign', x, y, z, sign_type, direction, l1, l2, l3, l4)
         return res
 
-    def saveCheckpoint(self):
-        res = self.conn.sendReceive('world.saveCheckpoint', )
+    def dropItem(self, x, y, z, item, amount):
+        res = self.conn.sendReceive('world.dropItem', x, y, z, item, amount)
+        return res
+
+    def dropRandomLoot(self, x, y, z):
+        res = self.conn.sendReceive('world.dropRandomLoot', x, y, z)
+        return res
+
+    def setContainerItem(self, x, y, z, slot, item, amount):
+        res = self.conn.sendReceive('world.setContainerItem', x, y, z, slot, item, amount)
         return res
 
 class ChatNamespace:

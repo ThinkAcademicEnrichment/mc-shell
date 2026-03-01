@@ -13,6 +13,28 @@ this.appendValueInput('power').appendField('Power').setCheck('Number');
         }
     };
 
+    Blockly.Blocks['generatedworldactions_drop_item'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Drop [amount] [item] at [pos]");
+            this.appendValueInput('pos').appendField('Position').setCheck('3DVector');
+this.appendValueInput('item').appendField('Item').setCheck('Item');
+this.appendValueInput('amount').appendField('Amount').setCheck('Number');
+            this.setPreviousStatement(true); this.setNextStatement(true);
+            this.setColour("#5C7457");
+            this.setTooltip("Drops a specific item on the ground at the position.");
+        }
+    };
+
+    Blockly.Blocks['generatedworldactions_drop_random_loot'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Drop Random Loot at [pos]");
+            this.appendValueInput('pos').appendField('Position').setCheck('3DVector');
+            this.setPreviousStatement(true); this.setNextStatement(true);
+            this.setColour("#5C7457");
+            this.setTooltip("Drops a random high-value item at the specified position.");
+        }
+    };
+
     Blockly.Blocks['generatedworldactions_get_block'] = {
         init: function() {
             this.appendDummyInput().appendField("Get Block at [position]");
@@ -86,6 +108,19 @@ this.appendValueInput('block_type').appendField('Block').setCheck('Block');
             this.setPreviousStatement(true); this.setNextStatement(true);
             this.setColour("#5C7457");
             this.setTooltip("Fills a cuboid area with the specified block.");
+        }
+    };
+
+    Blockly.Blocks['generatedworldactions_set_container_item'] = {
+        init: function() {
+            this.appendDummyInput().appendField("In container at [pos] set slot [slot] to [amount] [item]");
+            this.appendValueInput('pos').appendField('Position').setCheck('3DVector');
+this.appendValueInput('slot').appendField('Slot (0-26)').setCheck('Number');
+this.appendValueInput('item').appendField('Item').setCheck('Item');
+this.appendValueInput('amount').appendField('Amount').setCheck('Number');
+            this.setPreviousStatement(true); this.setNextStatement(true);
+            this.setColour("#5C7457");
+            this.setTooltip("Sets an item in a chest, barrel, or hopper inventory slot.");
         }
     };
 
