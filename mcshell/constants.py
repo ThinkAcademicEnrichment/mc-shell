@@ -27,6 +27,7 @@ import sys
 import uuid
 from typing import List,Optional,Dict,Any
 import threading
+import random
 
 import xml.etree.ElementTree as ET
 import numpy as np
@@ -47,6 +48,12 @@ try:
     ic.configureOutput(includeContext=False)
 except ImportError:  # Graceful fallback if IceCream isn't installed.
     ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
+
+# helper function required by Blockly list getter
+def lists_remove_random_item(l):
+    random_item = random.choice(l)
+    l.pop(l.index(random_item))
+    return random_item
 
 # the default version when using %pp_create_world
 MC_VERSION = '1.21.11' # this must match the client version
