@@ -73,7 +73,7 @@ class ServerActions(MCActionsBase):
     )
     def server_gamerule_set(self, rule: 'GameRule', value: bool):
         """Modifies a server game rule."""
-        self._run_command(f"gamerule {rule} {value}")
+        self._run_command(f"gamerule {rule} {str(value).lower()}")
 
     @mced_block(
         label="Set Gamerule [rule] to [value]",
@@ -264,3 +264,10 @@ class ServerActions(MCActionsBase):
     def server_time_set(self,time_of_day:'Time'):
         """Set the world time."""
         self._run_command(f"time set {time_of_day}")
+
+    @mced_block(
+        label="Get a Player's position",
+        player_name={'label':'Player Name'}
+    )
+    def server_player_data_get_pos(self,player_name:str) -> Vec3:
+        return Vec3(*self.mcplayer.data('get',f"entity @p[name={player_name}] Pos"))
