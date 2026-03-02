@@ -33,7 +33,7 @@ public class GeneratedEventListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onChat(org.bukkit.event.player.AsyncPlayerChatEvent event) {
-        String data = event.getPlayer().getEntityId() + "," + event.getMessage();
+        String data = event.getPlayer().getEntityId() + "," + event.getPlayer().getName() + "," + event.getMessage();
         McJuicePlugin.getInstance().recordEvent("chat", data);
     }
 
@@ -47,14 +47,26 @@ public class GeneratedEventListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onProjectilehitentity(org.bukkit.event.entity.ProjectileHitEvent event) {
         if (!(event.getHitEntity() != null)) return;
-        String data = event.getHitEntity().getEntityId() + "," + event.getEntity().getType().name() + "," + event.getHitEntity().getLocation().getX() + "," + event.getHitEntity().getLocation().getY() + "," + event.getHitEntity().getLocation().getZ();
+        String data = event.getHitEntity().getEntityId() + "," + event.getHitEntity().getName() + "," + event.getEntity().getType().name() + "," + event.getHitEntity().getLocation().getX() + "," + event.getHitEntity().getLocation().getY() + "," + event.getHitEntity().getLocation().getZ();
         McJuicePlugin.getInstance().recordEvent("projectileHitEntity", data);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onProjectilelaunch(org.bukkit.event.entity.ProjectileLaunchEvent event) {
         if (!(event.getEntity().getShooter() instanceof org.bukkit.entity.Player)) return;
-        String data = ((org.bukkit.entity.Player)event.getEntity().getShooter()).getEntityId() + "," + event.getEntity().getType().name();
+        String data = ((org.bukkit.entity.Player)event.getEntity().getShooter()).getEntityId() + "," + ((org.bukkit.entity.Player)event.getEntity().getShooter()).getName() + "," + event.getEntity().getType().name();
         McJuicePlugin.getInstance().recordEvent("projectileLaunch", data);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerdeath(org.bukkit.event.entity.PlayerDeathEvent event) {
+        String data = event.getEntity().getEntityId() + "," + event.getEntity().getName() + "," + event.getEntity().getLocation().getX() + "," + event.getEntity().getLocation().getY() + "," + event.getEntity().getLocation().getZ();
+        McJuicePlugin.getInstance().recordEvent("playerDeath", data);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerrespawn(org.bukkit.event.player.PlayerRespawnEvent event) {
+        String data = event.getPlayer().getEntityId() + "," + event.getPlayer().getName() + "," + event.getRespawnLocation().getX() + "," + event.getRespawnLocation().getY() + "," + event.getRespawnLocation().getZ();
+        McJuicePlugin.getInstance().recordEvent("playerRespawn", data);
     }
 }

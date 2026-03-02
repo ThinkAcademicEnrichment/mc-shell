@@ -15,9 +15,9 @@ public class GeneratedCommandRegistry {
     public GeneratedCommandRegistry() {
         // Root level helper
         registry.put("ping", (args, session) -> session.send("pong"));
-        // Event Polling Commands
-        registry.put("events.poll", (args, session) -> session.send(McJuicePlugin.getInstance().pollEvents(args[0])));
-        registry.put("events.clear", (args, session) -> { McJuicePlugin.getInstance().clearEvents(); session.send("OK"); });
+        // FIX: Event Polling now targets the SESSION-specific queue
+        registry.put("events.poll", (args, session) -> session.send(session.pollEvents(args[0])));
+        registry.put("events.clear", (args, session) -> { session.clearEvents(); session.send("OK"); });
 
         registry.put("player.getPos", (args, session) -> {
             Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
@@ -185,6 +185,18 @@ public class GeneratedCommandRegistry {
                 if (player == null) { session.send("Fail,No Player"); return; }
                 player.setFoodLevel(_arg_level);
                 // No response for void to enable async speed
+            });
+        });
+        registry.put("player.getDeaths", (args, session) -> {
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                int eid = Integer.parseInt(args[0]);
+                Player player = session.getPlayerById(eid);
+                if (player == null) { session.send("Fail,No Player"); return; }
+                Object res = player.getStatistic(org.bukkit.Statistic.DEATHS);
+                if (res == null) { session.send("null"); }
+                else if (res instanceof Location) { Location l = (Location)res; session.send(l.getX()+","+l.getY()+","+l.getZ()); }
+                else if (res instanceof Vector) { Vector v = (Vector)res; session.send(v.getX()+","+v.getY()+","+v.getZ()); }
+                else { session.send(String.valueOf(res)); }
             });
         });
         registry.put("player.sendTitle", (args, session) -> {
@@ -429,6 +441,23 @@ public class GeneratedCommandRegistry {
 }
 
                 // No response for void to enable async speed
+            });
+        });
+        registry.put("world.getEntityName", (args, session) -> {
+            final int _arg_id = Integer.parseInt(args[0]);
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                World world = Bukkit.getWorlds().get(0);
+                {
+  org.bukkit.entity.Entity e = null;
+  for (org.bukkit.World w : Bukkit.getWorlds()) {
+      for (org.bukkit.entity.Entity ent : w.getEntities()) {
+          if (ent.getEntityId() == _arg_id) { e = ent; break; }
+      }
+      if (e != null) break;
+  }
+  session.send(e != null ? e.getName() : "Unknown");
+}
+
             });
         });
         registry.put("chat.post", (args, session) -> {
