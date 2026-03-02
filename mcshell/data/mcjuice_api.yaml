@@ -46,6 +46,16 @@ namespaces:
           label: "Get Direction"
           call_args: []
 
+      - name: setDirection
+        bukkit: teleport(player.getLocation().setDirection(new org.bukkit.util.Vector({x}, {y}, {z})))
+        args: [{ name: x, type: double }, { name: y, type: double }, { name: z, type: double }]
+        returns: void
+        blockly:
+          label: "Set Direction to [dir]"
+          args:
+            dir: { type: Vec3, label: "Direction Vector" }
+          call_args: [float(dir.x), float(dir.y), float(dir.z)]
+
       - name: getRotation
         bukkit: getLocation().getYaw()
         returns: double
@@ -53,12 +63,42 @@ namespaces:
           label: "Get Rotation"
           call_args: []
 
+      - name: setRotation
+        bukkit: |
+          {
+            org.bukkit.Location l = player.getLocation();
+            l.setYaw((float){yaw});
+            player.teleport(l);
+          }
+        args: [{ name: yaw, type: double }]
+        returns: void
+        blockly:
+          label: "Set Rotation to [yaw]"
+          args:
+            yaw: { type: float, label: "Yaw" }
+          call_args: [float(yaw)]
+
       - name: getPitch
         bukkit: getLocation().getPitch()
         returns: double
         blockly:
           label: "Get Pitch"
           call_args: []
+
+      - name: setPitch
+        bukkit: |
+          {
+            org.bukkit.Location l = player.getLocation();
+            l.setPitch((float){pitch});
+            player.teleport(l);
+          }
+        args: [{ name: pitch, type: double }]
+        returns: void
+        blockly:
+          label: "Set Pitch to [pitch]"
+          args:
+            pitch: { type: float, label: "Pitch" }
+          call_args: [float(pitch)]
 
       - name: getHealth
         bukkit: getHealth()
@@ -85,6 +125,16 @@ namespaces:
           label: "Get Food Level"
           tooltip: "Returns the food level of the player."
           call_args: []
+
+      - name: setFoodLevel
+        bukkit: setFoodLevel({level})
+        args: [{ name: level, type: int }]
+        returns: void
+        blockly:
+          label: "Set Food Level to [level]"
+          args:
+            level: { type: int, label: "Food Level" }
+          call_args: [int(level)]
 
       - name: sendTitle
         bukkit: sendTitle({title}, {subtitle}, 10, {stay}, 20)
@@ -300,11 +350,6 @@ namespaces:
             sign_type: { type: Block, label: "Sign Material", shadow: "minecraft_log_picker" }
             direction: { type: int, label: "Direction (0-15)" }
           call_args: [int(position.x), int(position.y), int(position.z), str(sign_type), int(direction), str(line1), str(line2), str(line3), str(line4)]
-
-      # --- State ---
-#      - name: saveCheckpoint
-#        bukkit: { Bukkit.savePlayers(); world.save(); }
-#        returns: void
 
       # --- Loot & Items ---
       - name: dropItem
