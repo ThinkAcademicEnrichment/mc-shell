@@ -49,6 +49,9 @@ class Vec3:
     def __iter__(self):
         return iter((self.x, self.y, self.z))
 
+    def clone(self):
+        return Vec3(self.x, self.y, self.z)
+
     def to_tuple(self):
         return self.x,self.y,self.z
 
