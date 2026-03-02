@@ -1,6 +1,5 @@
 import socket
 from pprint import pprint
-from threading import Thread,Event
 
 import IPython
 import getpass
@@ -21,6 +20,7 @@ from mcshell.mcserver import stop_app_server
 from mcshell.mcplayer import MCPlayer
 
 import atexit
+from threading import Thread,Event
 
 @magics_class
 class MCShell(Magics):
