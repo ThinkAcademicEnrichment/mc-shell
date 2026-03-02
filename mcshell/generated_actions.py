@@ -46,16 +46,37 @@ class GeneratedPlayerActions(MCActionsBase):
         return self.mcplayer.mj.player.getDirection()
 
     @mced_block(
+        label="Set Direction to [dir]",
+        dir={'label': 'Direction Vector'}
+    )
+    def set_direction(self, dir: 'Vec3'):
+        self.mcplayer.mj.player.setDirection(float(dir.x), float(dir.y), float(dir.z))
+
+    @mced_block(
         label="Get Rotation"
     )
     def get_rotation(self) -> 'float':
         return self.mcplayer.mj.player.getRotation()
 
     @mced_block(
+        label="Set Rotation to [yaw]",
+        yaw={'label': 'Yaw'}
+    )
+    def set_rotation(self, yaw: 'float'):
+        self.mcplayer.mj.player.setRotation(float(yaw))
+
+    @mced_block(
         label="Get Pitch"
     )
     def get_pitch(self) -> 'float':
         return self.mcplayer.mj.player.getPitch()
+
+    @mced_block(
+        label="Set Pitch to [pitch]",
+        pitch={'label': 'Pitch'}
+    )
+    def set_pitch(self, pitch: 'float'):
+        self.mcplayer.mj.player.setPitch(float(pitch))
 
     @mced_block(
         label="Get Health"
@@ -77,6 +98,13 @@ class GeneratedPlayerActions(MCActionsBase):
     def get_food_level(self) -> 'int':
         """Returns the food level of the player."""
         return self.mcplayer.mj.player.getFoodLevel()
+
+    @mced_block(
+        label="Set Food Level to [level]",
+        level={'label': 'Food Level'}
+    )
+    def set_food_level(self, level: 'int'):
+        self.mcplayer.mj.player.setFoodLevel(int(level))
 
     @mced_block(
         label="Send Title to Screen",

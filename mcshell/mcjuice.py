@@ -32,8 +32,8 @@ class PlayerNamespace:
     def setPos(self, x, y, z, entity_id=None):
         eid = entity_id if entity_id is not None else self.entity_id
         if eid is None: raise ValueError('No entity_id')
-        res = self.conn.sendReceive('player.setPos', eid, x, y, z)
-        return res
+        self.conn.send('player.setPos', eid, x, y, z)
+        return 'OK'
 
     def getTilePos(self, entity_id=None):
         eid = entity_id if entity_id is not None else self.entity_id
@@ -44,8 +44,8 @@ class PlayerNamespace:
     def setTilePos(self, x, y, z, entity_id=None):
         eid = entity_id if entity_id is not None else self.entity_id
         if eid is None: raise ValueError('No entity_id')
-        res = self.conn.sendReceive('player.setTilePos', eid, x, y, z)
-        return res
+        self.conn.send('player.setTilePos', eid, x, y, z)
+        return 'OK'
 
     def getDirection(self, entity_id=None):
         eid = entity_id if entity_id is not None else self.entity_id
@@ -53,17 +53,35 @@ class PlayerNamespace:
         res = self.conn.sendReceive('player.getDirection', eid)
         return Vec3(*list(map(float, res.split(','))))
 
+    def setDirection(self, x, y, z, entity_id=None):
+        eid = entity_id if entity_id is not None else self.entity_id
+        if eid is None: raise ValueError('No entity_id')
+        self.conn.send('player.setDirection', eid, x, y, z)
+        return 'OK'
+
     def getRotation(self, entity_id=None):
         eid = entity_id if entity_id is not None else self.entity_id
         if eid is None: raise ValueError('No entity_id')
         res = self.conn.sendReceive('player.getRotation', eid)
         return float(res)
 
+    def setRotation(self, yaw, entity_id=None):
+        eid = entity_id if entity_id is not None else self.entity_id
+        if eid is None: raise ValueError('No entity_id')
+        self.conn.send('player.setRotation', eid, yaw)
+        return 'OK'
+
     def getPitch(self, entity_id=None):
         eid = entity_id if entity_id is not None else self.entity_id
         if eid is None: raise ValueError('No entity_id')
         res = self.conn.sendReceive('player.getPitch', eid)
         return float(res)
+
+    def setPitch(self, pitch, entity_id=None):
+        eid = entity_id if entity_id is not None else self.entity_id
+        if eid is None: raise ValueError('No entity_id')
+        self.conn.send('player.setPitch', eid, pitch)
+        return 'OK'
 
     def getHealth(self, entity_id=None):
         eid = entity_id if entity_id is not None else self.entity_id
@@ -74,8 +92,8 @@ class PlayerNamespace:
     def setHealth(self, health, entity_id=None):
         eid = entity_id if entity_id is not None else self.entity_id
         if eid is None: raise ValueError('No entity_id')
-        res = self.conn.sendReceive('player.setHealth', eid, health)
-        return res
+        self.conn.send('player.setHealth', eid, health)
+        return 'OK'
 
     def getFoodLevel(self, entity_id=None):
         eid = entity_id if entity_id is not None else self.entity_id
@@ -83,11 +101,17 @@ class PlayerNamespace:
         res = self.conn.sendReceive('player.getFoodLevel', eid)
         return int(res)
 
+    def setFoodLevel(self, level, entity_id=None):
+        eid = entity_id if entity_id is not None else self.entity_id
+        if eid is None: raise ValueError('No entity_id')
+        self.conn.send('player.setFoodLevel', eid, level)
+        return 'OK'
+
     def sendTitle(self, title, subtitle, stay, entity_id=None):
         eid = entity_id if entity_id is not None else self.entity_id
         if eid is None: raise ValueError('No entity_id')
-        res = self.conn.sendReceive('player.sendTitle', eid, title, subtitle, stay)
-        return res
+        self.conn.send('player.sendTitle', eid, title, subtitle, stay)
+        return 'OK'
 
 class WorldNamespace:
     def __init__(self, conn, entity_id):
@@ -99,16 +123,16 @@ class WorldNamespace:
         return res
 
     def setBlock(self, x, y, z, block):
-        res = self.conn.sendReceive('world.setBlock', x, y, z, block)
-        return res
+        self.conn.send('world.setBlock', x, y, z, block)
+        return 'OK'
 
     def getBlocks(self, x1, y1, z1, x2, y2, z2):
         res = self.conn.sendReceive('world.getBlocks', x1, y1, z1, x2, y2, z2)
         return res.split(',')
 
     def setBlocks(self, x1, y1, z1, x2, y2, z2, block):
-        res = self.conn.sendReceive('world.setBlocks', x1, y1, z1, x2, y2, z2, block)
-        return res
+        self.conn.send('world.setBlocks', x1, y1, z1, x2, y2, z2, block)
+        return 'OK'
 
     def getHeight(self, x, z):
         res = self.conn.sendReceive('world.getHeight', x, z)
@@ -123,32 +147,32 @@ class WorldNamespace:
         return int(res)
 
     def removeEntity(self, id):
-        res = self.conn.sendReceive('world.removeEntity', id)
-        return res
+        self.conn.send('world.removeEntity', id)
+        return 'OK'
 
     def getEntitiesInRadius(self, x, y, z, r):
         res = self.conn.sendReceive('world.getEntitiesInRadius', x, y, z, r)
         return res.split(',')
 
     def createExplosion(self, x, y, z, power):
-        res = self.conn.sendReceive('world.createExplosion', x, y, z, power)
-        return res
+        self.conn.send('world.createExplosion', x, y, z, power)
+        return 'OK'
 
     def setSign(self, x, y, z, sign_type, direction, l1, l2, l3, l4):
-        res = self.conn.sendReceive('world.setSign', x, y, z, sign_type, direction, l1, l2, l3, l4)
-        return res
+        self.conn.send('world.setSign', x, y, z, sign_type, direction, l1, l2, l3, l4)
+        return 'OK'
 
     def dropItem(self, x, y, z, item, amount):
-        res = self.conn.sendReceive('world.dropItem', x, y, z, item, amount)
-        return res
+        self.conn.send('world.dropItem', x, y, z, item, amount)
+        return 'OK'
 
     def dropRandomLoot(self, x, y, z):
-        res = self.conn.sendReceive('world.dropRandomLoot', x, y, z)
-        return res
+        self.conn.send('world.dropRandomLoot', x, y, z)
+        return 'OK'
 
     def setContainerItem(self, x, y, z, slot, item, amount):
-        res = self.conn.sendReceive('world.setContainerItem', x, y, z, slot, item, amount)
-        return res
+        self.conn.send('world.setContainerItem', x, y, z, slot, item, amount)
+        return 'OK'
 
 class ChatNamespace:
     def __init__(self, conn, entity_id):
@@ -156,8 +180,8 @@ class ChatNamespace:
         self.entity_id = entity_id
 
     def post(self, message):
-        res = self.conn.sendReceive('chat.post', message)
-        return res
+        self.conn.send('chat.post', message)
+        return 'OK'
 
 class EventsNamespace:
     def __init__(self, conn):
@@ -165,18 +189,34 @@ class EventsNamespace:
 
     def poll(self, event_name: str):
         res = self.conn.sendReceive('events.poll', event_name)
+        if res == 'OK' or not res: return []
         from mcshell.event import EventFactory
-        events = [e for e in res.split('|') if e]
+        events = [e for e in res.split('|') if e and ',' in e]
         return [EventFactory.create(event_name, e) for e in events]
 
     def clearAll(self):
         self.conn.sendReceive('events.clear')
 
-    def pollBlockHits(self):
-        return self.poll('blockHit')
+    def pollRightBlockHits(self):
+        return self.poll('rightBlockHit')
 
-    def pollChatPosts(self):
+    def pollLeftBlockHits(self):
+        return self.poll('leftBlockHit')
+
+    def pollBlockPlaces(self):
+        return self.poll('blockPlace')
+
+    def pollBlockBreaks(self):
+        return self.poll('blockBreak')
+
+    def pollChats(self):
         return self.poll('chat')
 
-    def pollArrowHits(self):
-        return self.poll('arrowHit')
+    def pollProjectileHitBlocks(self):
+        return self.poll('projectileHitBlock')
+
+    def pollProjectileHitEntitys(self):
+        return self.poll('projectileHitEntity')
+
+    def pollProjectileLaunchs(self):
+        return self.poll('projectileLaunch')
