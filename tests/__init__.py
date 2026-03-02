@@ -1,16 +1,26 @@
-from copy import deepcopy
-import pathlib
 import sys
 import pdb
 import functools
 import traceback
 import pathlib
+
+# from mcshell.constants import *
+# from mcshell.mcplayer import *
+# from mcshell.mcactions import *
+
 import unittest
+import time
+import shutil
+import os
+from unittest.mock import patch
+import IPython.testing.globalipapp
+from mcshell.constants import MC_WORLDS_BASE_DIR
 
-from mcshell.constants import *
-from mcshell.mcplayer import *
-from mcshell.mcactions import *
-
+import unittest
+import threading
+import time
+from mcshell.mcplayer import MCPlayer
+from mcshell.mcactions import MCActions
 
 try:
     from icecream import ic
@@ -39,10 +49,10 @@ def debug_on(*exceptions):
     return decorator
 
 
-from tests.mcactions import TestMCActions
-from tests.mcplayer import TestMCPLayer
-
-if __name__ == '__main__':
-    _tl = unittest.TestLoader()
-    _tl.discover('.')
-    unittest.main()
+# from tests.mcactions import TestMCActions
+# from tests.mcplayer import TestMCPLayer
+#
+# if __name__ == '__main__':
+#     _tl = unittest.TestLoader()
+#     _tl.discover('.')
+#     unittest.main()
