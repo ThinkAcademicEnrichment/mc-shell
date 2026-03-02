@@ -136,6 +136,14 @@ namespaces:
             level: { type: int, label: "Food Level" }
           call_args: [int(level)]
 
+      - name: getDeaths
+        bukkit: getStatistic(org.bukkit.Statistic.DEATHS)
+        returns: int
+        blockly:
+          label: "Get Death Count"
+          tooltip: "Returns the total number of times the player has died."
+          call_args: []
+
       - name: sendTitle
         bukkit: sendTitle({title}, {subtitle}, 10, {stay}, 20)
         args:
@@ -421,6 +429,26 @@ namespaces:
             amount: { type: int, label: "Amount" }
           call_args: [int(pos.x), int(pos.y), int(pos.z), int(slot), str(item), int(amount)]
 
+      - name: getEntityName
+        bukkit: |
+          {
+            org.bukkit.entity.Entity e = null;
+            for (org.bukkit.World w : Bukkit.getWorlds()) {
+                for (org.bukkit.entity.Entity ent : w.getEntities()) {
+                    if (ent.getEntityId() == {id}) { e = ent; break; }
+                }
+                if (e != null) break;
+            }
+            session.send(e != null ? e.getName() : "Unknown");
+          }
+        args: [{ name: id, type: int }]
+        returns: string
+        blockly:
+          label: "Get Name of Entity ID [id]"
+          args:
+            id: { type: int, label: "Entity ID" }
+          call_args: [int(id)]
+
   chat:
     target: Server
     commands:
@@ -456,7 +484,8 @@ events:
 
   - name: chat
     bukkit_event: org.bukkit.event.player.AsyncPlayerChatEvent
-    data: "event.getPlayer().getEntityId() + \",\" + event.getMessage()"
+    # ENRICHED: Added player name (index 1)
+    data: "event.getPlayer().getEntityId() + \",\" + event.getPlayer().getName() + \",\" + event.getMessage()"
 
   - name: projectileHitBlock
     bukkit_event: org.bukkit.event.entity.ProjectileHitEvent
@@ -466,9 +495,21 @@ events:
   - name: projectileHitEntity
     bukkit_event: org.bukkit.event.entity.ProjectileHitEvent
     condition: "event.getHitEntity() != null"
-    data: "event.getHitEntity().getEntityId() + \",\" + event.getEntity().getType().name() + \",\" + event.getHitEntity().getLocation().getX() + \",\" + event.getHitEntity().getLocation().getY() + \",\" + event.getHitEntity().getLocation().getZ()"
+    # ENRICHED: Added target name (index 1)
+    data: "event.getHitEntity().getEntityId() + \",\" + event.getHitEntity().getName() + \",\" + event.getEntity().getType().name() + \",\" + event.getHitEntity().getLocation().getX() + \",\" + event.getHitEntity().getLocation().getY() + \",\" + event.getHitEntity().getLocation().getZ()"
 
   - name: projectileLaunch
     bukkit_event: org.bukkit.event.entity.ProjectileLaunchEvent
     condition: "event.getEntity().getShooter() instanceof org.bukkit.entity.Player"
-    data: "((org.bukkit.entity.Player)event.getEntity().getShooter()).getEntityId() + \",\" + event.getEntity().getType().name()"
+    # ENRICHED: Added shooter name (index 1)
+    data: "((org.bukkit.entity.Player)event.getEntity().getShooter()).getEntityId() + \",\" + ((org.bukkit.entity.Player)event.getEntity().getShooter()).getName() + \",\" + event.getEntity().getType().name()"
+
+  - name: playerDeath
+    bukkit_event: org.bukkit.event.entity.PlayerDeathEvent
+    # ENRICHED: Added player name (index 1)
+    data: "event.getEntity().getEntityId() + \",\" + event.getEntity().getName() + \",\" + event.getEntity().getLocation().getX() + \",\" + event.getEntity().getLocation().getY() + \",\" + event.getEntity().getLocation().getZ()"
+
+  - name: playerRespawn
+    bukkit_event: org.bukkit.event.player.PlayerRespawnEvent
+    # ENRICHED: Added player name (index 1)
+    data: "event.getPlayer().getEntityId() + \",\" + event.getPlayer().getName() + \",\" + event.getRespawnLocation().getX() + \",\" + event.getRespawnLocation().getY() + \",\" + event.getRespawnLocation().getZ()"
