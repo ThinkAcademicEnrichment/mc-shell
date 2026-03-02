@@ -1,5 +1,6 @@
-from tests import *
-from mcshell.mcplayer import MCPlayer
+import asyncio
+from tests.config import *
+from mcshell.constants import DATA_PATHS,RECIPE_BOOK_DATA_PATHS
 
 # TODO: incorporate these tests
 def test_async_data_size(player_name,**server_data):
@@ -56,19 +57,3 @@ def test_data_size(player_name,**server_data):
             print(e)
             print(f"{_data_path} is too long")
             continue
-
-
-class TestMCPLayer(unittest.TestCase):
-    def setUp(self):
-        """Setup method to create MCPlayer and MCActionBase instances for each test."""
-        self.mcp = MCPlayer(TEST_PLAYER_NAME, MC_SERVER_HOST, MC_RCON_PORT, FJ_PLUGIN_PORT)
-        # You can add more common mappings to self.mca.block_id_map here if needed for extensive testing,
-        # or ensure _initialize_block_id_maps is comprehensive enough.
-
-    def test_init(self):
-        self.assertIsNotNone(self.mcp)
-        self.assertEqual(self.mcp.name,TEST_PLAYER_NAME)
-
-
-if __name__ == '__main__':
-    unittest.main()

@@ -9,6 +9,8 @@ from pathlib import Path
 import IPython.testing.globalipapp
 
 from mcshell.constants import MC_WORLDS_BASE_DIR, MC_SERVER_DATA
+from tests.config import *
+
 TEMP_PASSWORD='temporarypassword'
 
 class MagicTest(unittest.TestCase):

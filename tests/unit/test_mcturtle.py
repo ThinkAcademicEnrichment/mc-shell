@@ -1,7 +1,7 @@
 import unittest
 # Updated Import: Robust functions from mcturtle
 from mcshell.mcturtle import generate_digital_plane_coordinates, generate_metric_ball, DigitalSet
-from tests.dg_validator import DigitalGeometryValidator
+from tests.utils.dg_validator import DigitalGeometryValidator
 
 class TestMcvoxelFunctions(unittest.TestCase):
     """

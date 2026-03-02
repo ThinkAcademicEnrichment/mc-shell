@@ -1,5 +1,6 @@
-from tests import *
-from tests.base_magic import BaseMagicTest
+from tests.config import *
+from tests.integration.base_magic import BaseMagicTest
+
 class ThreadingTest(BaseMagicTest):
     """
     Validation suite for concurrent execution and cancellation

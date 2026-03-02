@@ -1,4 +1,4 @@
-from tests import *
+from tests.config import *
 
 
 class TestMCActions(unittest.TestCase):
