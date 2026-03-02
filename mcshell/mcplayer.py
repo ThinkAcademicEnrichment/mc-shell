@@ -61,6 +61,10 @@ class MCPlayer(MCClient):
         return self.py_client(self.name)
 
     @property
+    def mj(self):
+        return self.mj_client(self.name)
+
+    @property
     def position(self):
         return Vec3(*self.pc.player.getPos())
 

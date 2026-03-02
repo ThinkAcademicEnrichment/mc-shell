@@ -103,6 +103,13 @@ const target = generator.valueToCode(block, 'target', pythonGenerator.ORDER_ATOM
         return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
     };
 
+    pythonGenerator.forBlock['serveractions_server_gamerule_integer_set'] = function(block, generator) {
+        const rule = generator.valueToCode(block, 'rule', pythonGenerator.ORDER_ATOMIC) || 'None';
+const value = generator.valueToCode(block, 'value', pythonGenerator.ORDER_ATOMIC) || 'None';
+        const code = `ServerActions.server_gamerule_integer_set(${rule}, ${value})\n`;
+        return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
+    };
+
     pythonGenerator.forBlock['serveractions_server_gamerule_set'] = function(block, generator) {
         const rule = generator.valueToCode(block, 'rule', pythonGenerator.ORDER_ATOMIC) || 'None';
 const value = generator.valueToCode(block, 'value', pythonGenerator.ORDER_ATOMIC) || 'None';
@@ -127,6 +134,12 @@ const target = generator.valueToCode(block, 'target', pythonGenerator.ORDER_ATOM
     pythonGenerator.forBlock['serveractions_server_locate_structure'] = function(block, generator) {
         const structure = generator.valueToCode(block, 'structure', pythonGenerator.ORDER_ATOMIC) || 'None';
         const code = `ServerActions.server_locate_structure(${structure})\n`;
+        return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
+    };
+
+    pythonGenerator.forBlock['serveractions_server_set_time'] = function(block, generator) {
+        const time = generator.valueToCode(block, 'time', pythonGenerator.ORDER_ATOMIC) || 'None';
+        const code = `ServerActions.server_set_time(${time})\n`;
         return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
     };
 
@@ -166,8 +179,8 @@ const pos = generator.valueToCode(block, 'pos', pythonGenerator.ORDER_ATOMIC) ||
     };
 
     pythonGenerator.forBlock['serveractions_server_time_set'] = function(block, generator) {
-        const time = generator.valueToCode(block, 'time', pythonGenerator.ORDER_ATOMIC) || 'None';
-        const code = `ServerActions.server_time_set(${time})\n`;
+        const time_of_day = generator.valueToCode(block, 'time_of_day', pythonGenerator.ORDER_ATOMIC) || 'None';
+        const code = `ServerActions.server_time_set(${time_of_day})\n`;
         return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
     };
 

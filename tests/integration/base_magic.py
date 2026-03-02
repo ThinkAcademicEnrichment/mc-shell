@@ -1,11 +1,4 @@
-import unittest
-import time
-import shutil
-import os
-from unittest.mock import patch
-import IPython.testing.globalipapp
-from mcshell.constants import MC_WORLDS_BASE_DIR
-from tests import TEST_PLAYER_NAME
+from tests.config import *
 
 class BaseMagicTest(unittest.TestCase):
     """

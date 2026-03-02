@@ -35,7 +35,7 @@ export function defineMineCraftGenerators(pythonGenerator) {
         let actionClasses = [
             'PlayerActions', 'ServerActions', 'QTurtleActions', 'LSystemShapes',
             'TurtleShapes', 'DigitalGeometryActions', 'WorldActions', 'PyncraftActions', 'EventActions',
-            'DigitalSetActions'
+            'DigitalSetActions','GeneratedPlayerActions','GeneratedWorldActions','GeneratedChatActions',
         ];
 
         // Dynamically extract action class names from the Toolbox categories

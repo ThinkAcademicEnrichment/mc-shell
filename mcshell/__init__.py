@@ -1,6 +1,5 @@
 import socket
 from pprint import pprint
-from threading import Thread,Event
 
 import IPython
 import getpass
@@ -21,6 +20,7 @@ from mcshell.mcserver import stop_app_server
 from mcshell.mcplayer import MCPlayer
 
 import atexit
+from threading import Thread,Event
 
 @magics_class
 class MCShell(Magics):
@@ -31,7 +31,8 @@ class MCShell(Magics):
         self.ip = IPython.get_ipython()
 
         try:
-            _mc_cmd_docs = pickle.load(MC_DOC_PATH.open('rb'))
+            with MC_DOC_PATH.open('rb') as f:
+                _mc_cmd_docs = pickle.load(f)
         except FileNotFoundError:
             from mcshell.mcscraper import make_docs
             _mc_cmd_docs = make_docs()
@@ -259,6 +260,9 @@ class MCShell(Magics):
 
         # Always install FruitJuice from bundled version
         plugins_dir.joinpath(FJ_JAR_PATH.name).symlink_to(FJ_JAR_PATH)
+
+        # Always install McJuice from bundled version
+        plugins_dir.joinpath(MC_JUICE_JAR_PATH.name).symlink_to(MC_JUICE_JAR_PATH)
 
         # Install the plugins listed in the manifest
         plugin_urls = manifest.get("plugins", [])
