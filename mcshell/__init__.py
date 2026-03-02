@@ -31,7 +31,8 @@ class MCShell(Magics):
         self.ip = IPython.get_ipython()
 
         try:
-            _mc_cmd_docs = pickle.load(MC_DOC_PATH.open('rb'))
+            with MC_DOC_PATH.open('rb') as f:
+                _mc_cmd_docs = pickle.load(f)
         except FileNotFoundError:
             from mcshell.mcscraper import make_docs
             _mc_cmd_docs = make_docs()
