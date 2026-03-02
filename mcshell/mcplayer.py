@@ -1,10 +1,5 @@
 from mcshell.mcclient import MCClient
 from mcshell.constants import *
-import time
-import numpy as np
-import re
-import json
-import asyncio
 
 # Define a tolerance for floating-point comparisons near zero
 DEFAULT_TOLERANCE = 1e-9
@@ -55,37 +50,32 @@ class MCPlayer(MCClient):
         asyncio.run(self.build_player_data_async())
         return self
 
-
-    @property
-    def pc(self):
-        return self.py_client(self.name)
-
     @property
     def mj(self):
         return self.mj_client(self.name)
 
     @property
     def position(self):
-        return Vec3(*self.pc.player.getPos())
+        return Vec3(*self.mj.player.getPos())
 
     def set_position(self, pos:Vec3):
-        return self.pc.player.setPos(*pos)
+        return self.mj.player.setPos(*pos)
 
     @property
     def tile_position(self):
-        return Vec3(*self.pc.player.getTilePos())
+        return Vec3(*self.mj.player.getTilePos())
 
     def set_tile_position(self,pos:Vec3):
-        self.pc.cmdplayer.setTilePos(*tuple(map(int,pos.to_tuple())))
+        self.mj.player.setTilePos(*tuple(map(int,pos.to_tuple())))
 
     @property
     def direction(self):
         # note the cast from pyncraft.vec3.Vec3 to mcshell.Vec3.Vec3
         # this is an arbitrary direction vector
-        return Vec3(*self.pc.player.getDirection())
+        return Vec3(*self.mj.player.getDirection())
 
     def set_direction(self,direction:Vec3):
-        self.pc.player.setDirection(*direction)
+        self.mj.player.setDirection(*direction)
 
     @property
     def q_direction(self):
@@ -95,94 +85,35 @@ class MCPlayer(MCClient):
     @property
     def set_q_direction(self,direction:Vec3):
         # this is a quantized direction vector
-        self.pc.player.setDirection(*direction)
+        self.mj.player.setDirection(*direction)
 
     @property
     def q_compass_direction(self):
         return self._get_q_compass_direction(self.direction.to_tuple())
 
     def set_q_compass_direction(self, dir: str):
-        return self.pc.player.setDirection(*self._get_q_direction_vector(dir).to_tuple())
-
-    # moved to eventactions.py
-    # @property
-    # def here(self):
-    #     return Vec3(*self.get_sword_hit_position())
-
-    # @property
-    # def compass_direction(self):
-    #     return self._get_compass_direction(self.direction.to_tuple())
-    # def set_compass_direction(self,dir:str):
-    #     return self.pc.player.setDirection(*self._get_direction_vector(dir).to_tuple())
-
-
-    # --- New Methods for Event Actions ---
+        return self.mj.player.setDirection(*self._get_q_direction_vector(dir).to_tuple())
 
     def clear_events(self):
         """Clears all queued events on the server for this client."""
-        self.pc.events.clearAll()
+        self.mj.events.clearAll()
 
-    def get_sword_hit_position(self):
-        '''
-            The following sword hits will all be detected:
-            DIAMOND_SWORD,
-            GOLDEN_SWORD,
-            IRON_SWORD,
-            STONE_SWORD,
-            WOODEN_SWORD
-        '''
-        print('Waiting for a sword strike...')
+    def wait_for_left_block_hit(self):
+        print('Waiting for a left block hit...')
         while True:
 
             if self.cancel_event and self.cancel_event.isSet():
                 raise PowerCancelledException
 
-            _hits = self.pc.events.pollBlockHits()
-            if _hits:
-                _hit = _hits[0]
+            _events = self.mj.events.pollLeftBlockHits()
+            if _events:
+                _event = _events[0]
                 # We must check that our player did the strike!
-                if not _hit.entityId == self.pc.playerId:
+                if not _event.entityId == self.mj.entity_id:
                     continue
-                _v0 = _hit.pos.clone()
+                _v0 = _event.pos.clone()
 
-                return _hit.pos.clone()
-
-            time.sleep(0.1)
-
-    def wait_for_chat_post(self, entity_id=None):
-        """
-        Polls for chat posts. If entity_id is provided, filters for that player.
-        Returns the message string.
-        """
-        print('Waiting for chat post...')
-        while True:
-            if self.cancel_event and self.cancel_event.isSet():
-                raise PowerCancelledException
-
-            posts = self.pc.events.pollChatPosts()
-            if posts:
-                for post in posts:
-                    if entity_id is None or post.entityId == entity_id:
-                        return post.message
-
-            time.sleep(0.1)
-
-    def wait_for_projectile_hit(self):
-        """
-        Polls for projectile hits.
-        Returns the Vec3 position of the hit.
-        """
-        print('Waiting for projectile hit...')
-        while True:
-            if self.cancel_event and self.cancel_event.isSet():
-                raise PowerCancelledException
-
-            hits = self.pc.events.pollArrowHits()
-            if hits:
-                # Return the position of the first hit detected
-                return hits[0].pos
-
-            time.sleep(0.1)
+                return _event.pos.clone()
 
     def _get_compass_direction(self,direction_vector: tuple[float, float, float]) -> str:
         """
