@@ -68,6 +68,10 @@ export function defineServerActionsGenerators(pythonGenerator) {
         return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
     };
 
+    pythonGenerator.forBlock['picker_datapath'] = function(block, generator) {
+        return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
+    };
+
     pythonGenerator.forBlock['serveractions_server_apply_effect'] = function(block, generator) {
         const effect = generator.valueToCode(block, 'effect', pythonGenerator.ORDER_ATOMIC) || 'None';
 const target = generator.valueToCode(block, 'target', pythonGenerator.ORDER_ATOMIC) || 'None';
@@ -134,6 +138,12 @@ const target = generator.valueToCode(block, 'target', pythonGenerator.ORDER_ATOM
     pythonGenerator.forBlock['serveractions_server_locate_structure'] = function(block, generator) {
         const structure = generator.valueToCode(block, 'structure', pythonGenerator.ORDER_ATOMIC) || 'None';
         const code = `ServerActions.server_locate_structure(${structure})\n`;
+        return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
+    };
+
+    pythonGenerator.forBlock['serveractions_server_player_data_get_pos'] = function(block, generator) {
+        const player_name = generator.valueToCode(block, 'player_name', pythonGenerator.ORDER_ATOMIC) || 'None';
+        const code = `ServerActions.server_player_data_get_pos(${player_name})\n`;
         return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
     };
 

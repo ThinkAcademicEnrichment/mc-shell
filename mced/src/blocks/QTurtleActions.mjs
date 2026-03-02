@@ -2,6 +2,36 @@ import { MCED } from "../lib/constants.mjs";
 
 export function defineQTurtleActionsBlocks(Blockly) {
 
+    Blockly.Blocks['qturtleactions_get_height_at'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Get Height");
+            this.appendValueInput('position').appendField('At Position [(X,Y,Z)]').setCheck('3DVector');
+            this.setOutput(true, 'Number');
+            this.setColour("#C9A65B");
+            this.setTooltip("Gets the Y coordinate of the highest block at the X,Z of the given position.");
+        }
+    };
+
+    Blockly.Blocks['qturtleactions_get_q_compass_direction'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Get Player Q-Compass Direction");
+            
+            this.setOutput(true, 'QCompass');
+            this.setColour("#C9A65B");
+            this.setTooltip("");
+        }
+    };
+
+    Blockly.Blocks['qturtleactions_get_q_direction'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Get Player Q-Direction");
+            
+            this.setOutput(true, '3DVector');
+            this.setColour("#C9A65B");
+            this.setTooltip("Returns the quantized direction the player is looking as a unit vector.");
+        }
+    };
+
     Blockly.Blocks['qturtleactions_reset'] = {
         init: function() {
             this.appendDummyInput().appendField("QTurtle: Reset to");
@@ -10,6 +40,16 @@ this.appendValueInput('heading_q_str').appendField('Facing').setCheck('QCompass'
             this.setPreviousStatement(true); this.setNextStatement(true);
             this.setColour("#C9A65B");
             this.setTooltip("Resets the turtle to a specific position and aligns its Forward vector with the specified Global Q-Direction (e.g., 'N', 'NE', 'SWU').  It automatically recalculates the orthogonal(ish) Right and Up vectors to form a consistent basis frame.");
+        }
+    };
+
+    Blockly.Blocks['qturtleactions_set_q_compass_direction'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Set Player Q-Compass Direction");
+            this.appendValueInput('direction').appendField('Q-Compass Direction').setCheck('QCompass');
+            this.setPreviousStatement(true); this.setNextStatement(true);
+            this.setColour("#C9A65B");
+            this.setTooltip("");
         }
     };
 

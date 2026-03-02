@@ -84,6 +84,26 @@ this.appendValueInput('stay').appendField('Stay (Ticks)').setCheck('Number');
         }
     };
 
+    Blockly.Blocks['generatedplayeractions_set_direction'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Set Direction to [dir]");
+            this.appendValueInput('dir').appendField('Direction Vector').setCheck('3DVector');
+            this.setPreviousStatement(true); this.setNextStatement(true);
+            this.setColour("#61A1B0");
+            this.setTooltip("");
+        }
+    };
+
+    Blockly.Blocks['generatedplayeractions_set_food_level'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Set Food Level to [level]");
+            this.appendValueInput('level').appendField('Food Level').setCheck('Number');
+            this.setPreviousStatement(true); this.setNextStatement(true);
+            this.setColour("#61A1B0");
+            this.setTooltip("");
+        }
+    };
+
     Blockly.Blocks['generatedplayeractions_set_health'] = {
         init: function() {
             this.appendDummyInput().appendField("Set Health to [health]");
@@ -94,10 +114,30 @@ this.appendValueInput('stay').appendField('Stay (Ticks)').setCheck('Number');
         }
     };
 
+    Blockly.Blocks['generatedplayeractions_set_pitch'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Set Pitch to [pitch]");
+            this.appendValueInput('pitch').appendField('Pitch').setCheck('Number');
+            this.setPreviousStatement(true); this.setNextStatement(true);
+            this.setColour("#61A1B0");
+            this.setTooltip("");
+        }
+    };
+
     Blockly.Blocks['generatedplayeractions_set_pos'] = {
         init: function() {
             this.appendDummyInput().appendField("Set Position to [pos]");
             this.appendValueInput('pos').appendField('Position').setCheck('3DVector');
+            this.setPreviousStatement(true); this.setNextStatement(true);
+            this.setColour("#61A1B0");
+            this.setTooltip("");
+        }
+    };
+
+    Blockly.Blocks['generatedplayeractions_set_rotation'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Set Rotation to [yaw]");
+            this.appendValueInput('yaw').appendField('Yaw').setCheck('Number');
             this.setPreviousStatement(true); this.setNextStatement(true);
             this.setColour("#61A1B0");
             this.setTooltip("");
