@@ -137,6 +137,12 @@ const target = generator.valueToCode(block, 'target', pythonGenerator.ORDER_ATOM
         return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
     };
 
+    pythonGenerator.forBlock['serveractions_server_set_time'] = function(block, generator) {
+        const time = generator.valueToCode(block, 'time', pythonGenerator.ORDER_ATOMIC) || 'None';
+        const code = `ServerActions.server_set_time(${time})\n`;
+        return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
+    };
+
     pythonGenerator.forBlock['serveractions_server_show_title'] = function(block, generator) {
         const text = generator.valueToCode(block, 'text', pythonGenerator.ORDER_ATOMIC) || 'None';
 const action = generator.valueToCode(block, 'action', pythonGenerator.ORDER_ATOMIC) || 'None';
@@ -173,8 +179,8 @@ const pos = generator.valueToCode(block, 'pos', pythonGenerator.ORDER_ATOMIC) ||
     };
 
     pythonGenerator.forBlock['serveractions_server_time_set'] = function(block, generator) {
-        const time = generator.valueToCode(block, 'time', pythonGenerator.ORDER_ATOMIC) || 'None';
-        const code = `ServerActions.server_time_set(${time})\n`;
+        const time_of_day = generator.valueToCode(block, 'time_of_day', pythonGenerator.ORDER_ATOMIC) || 'None';
+        const code = `ServerActions.server_time_set(${time_of_day})\n`;
         return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
     };
 

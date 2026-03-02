@@ -24,10 +24,8 @@ export function defineServerActionsBlocks(Blockly) {
                 .appendField(new Blockly.FieldDropdown([
                 ["Day (1000)", "day"],
                 ["Noon (6000)", "noon"],
-                ["Sunset (12000)", "sunset"],
                 ["Night (13000)", "night"],
-                ["Midnight (18000)", "midnight"],
-                ["Sunrise (23000)", "sunrise"]
+                ["Midnight (18000)", "midnight"]
                 ]), "VALUE");
             this.setOutput(true, "Time");
             this.setColour("#95A5A6");
@@ -568,6 +566,16 @@ this.appendValueInput('target').appendField('Target Player').setCheck('String');
         }
     };
 
+    Blockly.Blocks['serveractions_server_set_time'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Set Time to [time]");
+            this.appendValueInput('time').appendField('Time').setCheck('Number');
+            this.setPreviousStatement(true); this.setNextStatement(true);
+            this.setColour("#5C7457");
+            this.setTooltip("Sets the server time.");
+        }
+    };
+
     Blockly.Blocks['serveractions_server_show_title'] = {
         init: function() {
             this.appendDummyInput().appendField("Show Title [text] as [action] for [target]");
@@ -625,11 +633,11 @@ this.appendValueInput('pos').appendField('Position').setCheck('3DVector');
 
     Blockly.Blocks['serveractions_server_time_set'] = {
         init: function() {
-            this.appendDummyInput().appendField("Set Time to [time]");
-            this.appendValueInput('time').appendField('Time').setCheck('Number');
+            this.appendDummyInput().appendField("Set the world time");
+            this.appendValueInput('time_of_day').appendField('Time').setCheck('Time');
             this.setPreviousStatement(true); this.setNextStatement(true);
             this.setColour("#5C7457");
-            this.setTooltip("Sets the server time.");
+            this.setTooltip("Set the world time.");
         }
     };
 
