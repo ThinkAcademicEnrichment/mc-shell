@@ -1,4 +1,3 @@
-from mcshell.constants import *
 from blockapily import BlocklyGenerator
 import yaml
 from pathlib import Path
@@ -315,19 +314,19 @@ class RegistryBuilder:
         "utility": ["ARMOR_STAND", "END_CRYSTAL", "EXPERIENCE_ORB", "FALLING_BLOCK", "ITEM_FRAME", "PAINTING", "PLAYER"]
     }
 
-    def __init__(self, toolbox_path: pathlib.Path, blocks_dir: pathlib.Path, gens_dir: pathlib.Path):
+    def __init__(self, toolbox_path: pathlib.Path, blocks_dir: pathlib.Path, gens_dir: pathlib.Path,materials_path:pathlib.Path,entity_id_map_path:pathlib.Path):
         self.toolbox_path = toolbox_path
         self.blocks_dir = blocks_dir
         self.gens_dir = gens_dir
 
         try:
-            with MC_MATERIALS_PATH.open('rb') as f:
+            with materials_path.open('rb') as f:
                 self.materials_data = pickle.load(f)
         except (FileNotFoundError, EOFError):
             self.materials_data = {}
 
         try:
-            with MC_ENTITY_ID_MAP_PATH.open('rb') as f:
+            with entity_id_map_path.open('rb') as f:
                 self.entity_data = pickle.load(f)
         except (FileNotFoundError, EOFError):
             self.entity_data = {}
@@ -355,7 +354,6 @@ class RegistryBuilder:
 
     def build_all(self):
         """Executes the complete build pipeline."""
-        self.ensure_toolbox(clean_toolbox=True)
         self.build_blocks()
         self.build_items()
         self.build_entities()
@@ -370,15 +368,6 @@ class RegistryBuilder:
             js.append(res['js']); py.append(res['py'])
         return {"js": "\n".join(js), "py": "\n".join(py)}
 
-    def ensure_toolbox(self, clean_toolbox=False):
-        """Ensures the toolbox.xml exists and is valid."""
-        output_toolbox_path = MC_APP_SRC_DIR / 'toolbox.xml'
-        if clean_toolbox:
-            output_toolbox_path.unlink(missing_ok=True)
-        if not output_toolbox_path.exists():
-            toolbox_template_path = MC_DATA_DIR / 'toolbox_template.xml'
-            with output_toolbox_path.open('w') as f:
-                f.write(toolbox_template_path.read_text())
 
     def build_blocks(self):
         """Processes blocks and organizes them into thematic groups."""
@@ -542,9 +531,9 @@ class ApiGenerator:
             "    public GeneratedCommandRegistry() {",
             "        // Root level helper",
             "        registry.put(\"ping\", (args, session) -> session.send(\"pong\"));",
-            "        // Event Polling Commands",
-            "        registry.put(\"events.poll\", (args, session) -> session.send(McJuicePlugin.getInstance().pollEvents(args[0])));",
-            "        registry.put(\"events.clear\", (args, session) -> { McJuicePlugin.getInstance().clearEvents(); session.send(\"OK\"); });",
+            "        // FIX: Event Polling now targets the SESSION-specific queue",
+            "        registry.put(\"events.poll\", (args, session) -> session.send(session.pollEvents(args[0])));",
+            "        registry.put(\"events.clear\", (args, session) -> { session.clearEvents(); session.send(\"OK\"); });",
             ""
         ]
 
@@ -567,7 +556,6 @@ class ApiGenerator:
             f.write("\n".join(code))
 
     def generate_java_listener(self):
-        """Generates the Bukkit Listener from the events schema section."""
         code = [
             "package org.mcshell.mcjuice;",
             "import org.bukkit.event.Listener;",
@@ -591,38 +579,26 @@ class ApiGenerator:
         self.listener_output_path.write_text("\n".join(code))
 
     def _build_java_lambda(self, name, cmd, target_type):
-        """Creates the registry.put("name", (args, session) -> { ... }) block"""
         lines = [f'        registry.put("{name}", (args, session) -> {{']
 
-        # 1. Parameter extraction
         offset = 1 if target_type == "Player" else 0
         bukkit_call = cmd["bukkit"]
 
-        # Handle YAML parsing quirks for blocks (where { code } becomes a dict)
         if isinstance(bukkit_call, dict):
             bukkit_call = "{" + list(bukkit_call.keys())[0] + "}"
 
         yaml_args = cmd.get("args", [])
         for i, arg in enumerate(yaml_args):
             t, n, idx = arg["type"], arg["name"], i + offset
-            # USE PREFIX to avoid collision with variables declared inside bukkit_call blocks
             arg_var = f"_arg_{n}"
-
-            if t == "double":
-                lines.append(f'            final double {arg_var} = Double.parseDouble(args[{idx}]);')
-            elif t == "int":
-                lines.append(f'            final int {arg_var} = Integer.parseInt(args[{idx}]);')
-            elif t == "String":
-                lines.append(f'            final String {arg_var} = args[{idx}];')
-
-            # Replace placeholder in the bukkit string with our safe variable name
+            if t == "double": lines.append(f'            final double {arg_var} = Double.parseDouble(args[{idx}]);')
+            elif t == "int": lines.append(f'            final int {arg_var} = Integer.parseInt(args[{idx}]);')
+            elif t == "String": lines.append(f'            final String {arg_var} = args[{idx}];')
             bukkit_call = bukkit_call.replace(f"{{{n}}}", arg_var)
 
-        # 2. Main Thread Execution
         lines.append('            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {')
 
         if target_type == "Player":
-            # Player ID is always args[0] for player-target namespaces
             lines.append('                int eid = Integer.parseInt(args[0]);')
             lines.append('                Player player = session.getPlayerById(eid);')
             lines.append('                if (player == null) { session.send("Fail,No Player"); return; }')
@@ -633,20 +609,16 @@ class ApiGenerator:
         else:
             exec_on = "Bukkit"
 
-        # Determine if this is a block or a static call
         stripped_call = bukkit_call.strip()
         is_block = stripped_call.startswith("{")
-        # Matches strings starting with Bukkit., McJuicePlugin., org.bukkit., or a CapitalizedClass
         is_static = re.match(r'^(Bukkit|McJuicePlugin|org\.bukkit|[A-Z])', stripped_call)
 
         full_expr = bukkit_call if (is_block or is_static) else f"{exec_on}.{bukkit_call}"
         ret_type = cmd.get('returns', 'void')
 
         if is_block:
-            # Code blocks are executed directly
             lines.append(f'                {full_expr}')
         else:
-            # Standard single-line expressions
             if ret_type == 'void':
                 lines.append(f'                {full_expr};')
             else:
@@ -659,39 +631,28 @@ class ApiGenerator:
                     lines.append('                else if (res instanceof Vector) { Vector v = (Vector)res; session.send(v.getX()+","+v.getY()+","+v.getZ()); }')
                     lines.append('                else { session.send(String.valueOf(res)); }')
 
-        # OPTIMIZATION: If ret_type is void, we stop sending "OK" from Java to enable true async speed in Python
         if ret_type == 'void':
             lines.append('                // No response for void to enable async speed');
 
-        lines.append('            });')
-        lines.append('        });')
+        lines.append('            });'); lines.append('        });')
         return "\n".join(lines)
 
     def generate_python_client(self):
-        """Generates the Python Client with full pyncraft compatibility."""
         code = [
             "from mcshell.mcjuiceconn import MCJuiceConnection",
             "from mcshell.Vec3 import Vec3",
-            "",
-            "# --- THIS FILE IS GENERATED BY THE REGISTRY BUILDER ---",
             "",
             "class MCJuiceClient:",
             "    def __init__(self, conn, entity_id=None):",
             "        self.conn = conn",
             "        self.entity_id = entity_id"
         ]
-
         namespaces = self.schema.get('namespaces', {})
-        # Pop 'events' from namespaces if present, to avoid generation collisions
-        if 'events' in namespaces:
-            namespaces.pop('events', None)
+        if 'events' in namespaces: namespaces.pop('events', None)
 
         for ns in namespaces.keys():
             code.append(f"        self.{ns} = {ns.capitalize()}Namespace(conn, entity_id)")
-
-        # Add the dynamic events namespace if events are defined
-        if 'events' in self.schema:
-            code.append("        self.events = EventsNamespace(conn)")
+        if 'events' in self.schema: code.append("        self.events = EventsNamespace(conn)")
 
         code.append("\n    @staticmethod\n    def create(address='localhost', port=4721, playerName=''):")
         code.append("        conn = MCJuiceConnection(address, port); eid = None")
@@ -701,73 +662,49 @@ class ApiGenerator:
         for ns, data in namespaces.items():
             target = data.get('target', 'Player')
             code.append(f"\nclass {ns.capitalize()}Namespace:")
-            code.append("    def __init__(self, conn, entity_id):")
-            code.append("        self.conn = conn")
-            code.append("        self.entity_id = entity_id")
-
+            code.append("    def __init__(self, conn, entity_id): self.conn = conn; self.entity_id = entity_id")
             for cmd in data.get('commands', []):
                 args = [a["name"] for a in cmd.get("args", [])]
-                # Maintain python syntax: entity_id=None must be the LAST argument
                 sig = ", ".join(["self"] + args + (["entity_id=None"] if target == "Player" else []))
                 code.append(f"\n    def {cmd['name']}({sig}):")
-
                 payload_parts = []
                 if target == "Player":
                     code.append("        eid = entity_id if entity_id is not None else self.entity_id")
                     code.append("        if eid is None: raise ValueError('No entity_id')")
                     payload_parts.append("eid")
                 payload_parts.extend(args)
-
                 payload = ", ".join(payload_parts)
-
-                # OPTIMIZATION: Use .send() for void functions to skip waiting for round-trip confirm
                 r = cmd.get('returns', 'void')
                 if r == 'void':
                     code.append(f"        self.conn.send('{ns}.{cmd['name']}', {payload})")
                     code.append("        return 'OK'")
                 else:
                     code.append(f"        res = self.conn.sendReceive('{ns}.{cmd['name']}', {payload})")
-                    if r in ('Location', 'Vector'):
-                        code.append("        return Vec3(*list(map(float, res.split(','))))")
-                    elif r == 'TileLocation':
-                        code.append("        return Vec3(*list(map(int, res.split(','))))")
-                    elif r == 'string_list':
-                        code.append("        return res.split(',')")
-                    elif r == 'double':
-                        code.append("        return float(res)")
-                    elif r == 'int':
-                        code.append("        return int(res)")
-                    else:
-                        code.append("        return res")
+                    if r in ('Location', 'Vector'): code.append("        return Vec3(*list(map(float, res.split(','))))")
+                    elif r == 'TileLocation': code.append("        return Vec3(*list(map(int, res.split(','))))")
+                    elif r == 'string_list': code.append("        return res.split(',')")
+                    elif r == 'double': code.append("        return float(res)")
+                    elif r == 'int': code.append("        return int(res)")
+                    else: code.append("        return res")
 
-        # Generate the dedicated dynamic Event namespace
         if 'events' in self.schema:
             code.append("\nclass EventsNamespace:")
-            code.append("    def __init__(self, conn):")
-            code.append("        self.conn = conn")
+            code.append("    def __init__(self, conn): self.conn = conn")
             code.append("\n    def poll(self, event_name: str):")
             code.append("        res = self.conn.sendReceive('events.poll', event_name)")
-            # ROBUSTNESS: Correctly wrap these in code.append so they are generated, not executed by Python here
             code.append("        if res == 'OK' or not res: return []")
             code.append("        from mcshell.event import EventFactory")
             code.append("        events = [e for e in res.split('|') if e and ',' in e]")
             code.append("        return [EventFactory.create(event_name, e) for e in events]")
-
-            code.append("\n    def clearAll(self):")
-            code.append("        self.conn.sendReceive('events.clear')")
-
-            # Dynamically generate helper methods for each event in the schema
+            code.append("\n    def clearAll(self): self.conn.sendReceive('events.clear')")
             for event in self.schema.get('events', []):
                 e_name = event['name']
-                # Create CamelCase helper name: poll + CapitalizedEventName + s
                 method_name = f"poll{e_name[0].upper()}{e_name[1:]}s"
-                code.append(f"\n    def {method_name}(self):")
-                code.append(f"        return self.poll('{e_name}')")
+                code.append(f"\n    def {method_name}(self): return self.poll('{e_name}')")
 
         self.python_out.write_text("\n".join(code))
 
     def _camel_to_snake(self, name):
-        """Helper to convert Java camelCase names to Python snake_case"""
         s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
         return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
@@ -865,16 +802,3 @@ class ApiGenerator:
 
         self.python_actions_out.parent.mkdir(parents=True, exist_ok=True)
         self.python_actions_out.write_text("\n".join(code))
-
-if __name__ == "__main__":
-    builder = RegistryBuilder(MC_APP_SRC_DIR / 'toolbox.xml', MC_APP_SRC_DIR / 'blocks', MC_APP_SRC_DIR / 'generators' / 'python')
-    builder.build_all()
-
-    gen = ApiGenerator(
-        MC_DATA_DIR / "mcjuice_api.yaml",
-        MC_JUICE_SRC_DIR / "main/java/org/mcshell/mcjuice/GeneratedCommandRegistry.java",
-        MC_JUICE_SRC_DIR / "main/java/org/mcshell/mcjuice/GeneratedEventListener.java",
-        MC_SHELL_DIR / "mcjuice.py",
-        MC_SHELL_DIR / "generated_actions.py"
-        )
-    gen.run()

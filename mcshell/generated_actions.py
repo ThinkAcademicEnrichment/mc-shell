@@ -107,6 +107,13 @@ class GeneratedPlayerActions(MCActionsBase):
         self.mcplayer.mj.player.setFoodLevel(int(level))
 
     @mced_block(
+        label="Get Death Count"
+    )
+    def get_deaths(self) -> 'int':
+        """Returns the total number of times the player has died."""
+        return self.mcplayer.mj.player.getDeaths()
+
+    @mced_block(
         label="Send Title to Screen",
         title={'label': 'Title'},
         subtitle={'label': 'Subtitle'},
@@ -242,13 +249,9 @@ class GeneratedWorldActions(MCActionsBase):
         """Sets an item in a chest, barrel, or hopper inventory slot."""
         self.mcplayer.mj.world.setContainerItem(int(pos.x), int(pos.y), int(pos.z), int(slot), str(item), int(amount))
 
-class GeneratedChatActions(MCActionsBase):
-    def __init__(self, mc_player_instance, delay_between_blocks=0):
-        super().__init__(mc_player_instance, delay_between_blocks)
-
     @mced_block(
-        label="Post to Chat",
-        message={'label': 'Message'}
+        label="Get Name of Entity ID [id]",
+        id={'label': 'Entity ID'}
     )
-    def post(self, message: 'str'):
-        self.mcplayer.mj.chat.post(str(message))
+    def get_entity_name(self, id: 'int') -> 'str':
+        return self.mcplayer.mj.world.getEntityName(int(id))
