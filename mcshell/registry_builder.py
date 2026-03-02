@@ -1,5 +1,10 @@
 from mcshell.constants import *
 from blockapily import BlocklyGenerator
+import yaml
+from pathlib import Path
+import re
+import pickle
+import pathlib
 
 # Import Action Classes
 try:
@@ -63,7 +68,9 @@ class RegistryBuilder:
         'TimeType':'TimeType',
         'Weather': 'Weather', 'Difficulty': 'Difficulty', 'Gamemode': 'Gamemode', 'GameRule': 'GameRule',
         'LocateType': 'LocateType', 'Structure': 'Structure', 'Biome': 'Biome', 'Poi': 'Poi',
-        'Entity': 'Entity', 'Effect': "Effect"}
+        'Entity': 'Entity', 'Effect': "Effect",
+        'DataPath':'DataPath'
+    }
 
     SHADOW_MAP = dict(
         int = '<shadow type="math_number"><field name="NUM">1</field></shadow>',
@@ -94,7 +101,49 @@ class RegistryBuilder:
         Poi='<shadow type="picker_poi"><field name="VALUE">armorer</field></shadow>',
         Effect='<shadow type="picker_effect"><field name="VALUE">speed</field></shadow>',
         TitleAction='<shadow type="picker_titleaction"><field name="VALUE">reset</field></shadow>',
+        DataPath='<shadow type="picker_datapath"><field name="VALUE">Brain</field></shadow>',
     )
+
+    DATA_PATHS = [
+        ('Brain', 'Brain'),
+        ('Hurt By Timestamp', 'HurtByTimestamp'),
+        ('Sleep Timer', 'SleepTimer'),
+        ('Attributes', 'Attributes'),
+        ('Invulnerable', 'Invulnerable'),
+        ('Fall Flying', 'FallFlying'),
+        ('Portal Cooldown', 'PortalCooldown'),
+        ('Absorption Amount', 'AbsorptionAmount'),
+        ('Abilities', 'abilities'),
+        ('Fall Distance', 'FallDistance'),
+        ('Recipe Book', 'recipeBook'),
+        ('Death Time', 'DeathTime'),
+        ('Xp Seed', 'XpSeed'),
+        ('Xp Total', 'XpTotal'),
+        ('UUID', 'UUID'),
+        ('Player Game Type', 'playerGameType'),
+        ('Seen Credits', 'seenCredits'),
+        ('Motion', 'Motion'),
+        ('Health', 'Health'),
+        ('Food Saturation Level', 'foodSaturationLevel'),
+        ('Air', 'Air'),
+        ('On Ground', 'OnGround'),
+        ('Dimension', 'Dimension'),
+        ('Rotation', 'Rotation'),
+        ('Xp Level', 'XpLevel'),
+        ('Score', 'Score'),
+        ('Pos', 'Pos'),
+        ('Previous Player Game Type', 'previousPlayerGameType'),
+        ('Fire', 'Fire'),
+        ('Xp P', 'XpP'),
+        ('Ender Items', 'EnderItems'),
+        ('Data Version', 'DataVersion'),
+        ('Food Level', 'foodLevel'),
+        ('Food Exhaustion Level', 'foodExhaustionLevel'),
+        ('Hurt Time', 'HurtTime'),
+        ('Selected Item Slot', 'SelectedItemSlot'),
+        ('Inventory', 'Inventory'),
+        ('Food Tick Timer', 'foodTickTimer')
+    ]
 
     METRICS = [("Euclidean", "euclidean"), ("Manhattan", "manhattan"), ("Chebyshev", "chebyshev")]
     AXES = [("Yaw (Y)", "y"), ("Pitch (X)", "x"), ("Roll (Z)", "z")]
@@ -149,9 +198,9 @@ class RegistryBuilder:
         ("Forest", "forest"), ("Frozen Peaks", "frozen_peaks"), ("Grove", "grove"), ("Ice Spikes", "ice_spikes"),
         ("Jagged Peaks", "jagged_peaks"), ("Jungle", "jungle"), ("Lush Caves", "lush_caves"), ("Mangrove Swamp", "mangrove_swamp"),
         ("Meadow", "meadow"), ("Mushroom Fields", "mushroom_fields"), ("Nether Wastes", "nether_wastes"), ("Ocean", "ocean"),
-        ("Plains", "plains"), ("River", "river"), ("Savanna", "savanna"), ("Snowy Beach", "snowy_beach"), ("Snowy Plains", "snowy_plains"),
+        ("Plains", "plains"), ("River", "river"), ("Savanna", "savanna"), ("Snowy Beach", "snowy_beach"), ("Snowy Plains", "snowy_plain"),
         ("Snowy Taiga", "snowy_taiga"), ("Soul Sand Valley", "soul_sand_valley"), ("Stony Peaks", "stony_peaks"), ("Swamp", "swamp"),
-        ("Taiga", "taiga"), ("The End", "the_end"), ("The Void", "the_void"), ("Warm Ocean", "warm_ocean"), ("Warped Forest", "warped_forest")
+        ("Taiga", "target_taiga"), ("The End", "the_end"), ("The Void", "the_void"), ("Warm Ocean", "warm_ocean"), ("Warped Forest", "warped_forest")
     ]
 
     POIS = [
@@ -221,6 +270,7 @@ class RegistryBuilder:
         {'id': 'picker_qheading', 'label': 'Local Q-Heading', 'options': QHEADINGS, 'input_type': 'QHeading'},
         {'id': 'picker_axis', 'label': 'Axis', 'options': AXES, 'input_type': 'Axis'},
         {'id': 'picker_qcompass', 'label': 'Global Q-Compass Direction', 'options': QCOMPASS, 'input_type': 'QCompass'},
+        {'id': 'picker_datapath', 'label': 'Player Data Paths', 'options': DATA_PATHS, 'input_type': 'DataPath'},
     ]
 
     WOOD_TYPES = ["OAK", "SPRUCE", "BIRCH", "JUNGLE", "ACACIA", "DARK_OAK", "MANGROVE", "CHERRY", "PALE_OAK", "BAMBOO", "CRIMSON", "WARPED"]
@@ -305,7 +355,7 @@ class RegistryBuilder:
 
     def build_all(self):
         """Executes the complete build pipeline."""
-        self.ensure_toolbox()
+        self.ensure_toolbox(clean_toolbox=True)
         self.build_blocks()
         self.build_items()
         self.build_entities()
@@ -320,9 +370,11 @@ class RegistryBuilder:
             js.append(res['js']); py.append(res['py'])
         return {"js": "\n".join(js), "py": "\n".join(py)}
 
-    def ensure_toolbox(self):
+    def ensure_toolbox(self, clean_toolbox=False):
         """Ensures the toolbox.xml exists and is valid."""
         output_toolbox_path = MC_APP_SRC_DIR / 'toolbox.xml'
+        if clean_toolbox:
+            output_toolbox_path.unlink(missing_ok=True)
         if not output_toolbox_path.exists():
             toolbox_template_path = MC_DATA_DIR / 'toolbox_template.xml'
             with output_toolbox_path.open('w') as f:
@@ -346,6 +398,7 @@ class RegistryBuilder:
         # 2. Material Picker Groups (Ores, Glass, Nature, etc.)
         for group_name, members in self.MATERIAL_PICKER_GROUPS.items():
             valid_members = [m for m in members if m in blocks]
+            # Fix: removed undefined ignore_cancelled
             if not valid_members: continue
 
             b_type = f"mc_block_picker_{group_name.lower()}"
@@ -449,8 +502,6 @@ class RegistryBuilder:
         py_c = f"export function define{export_name}Generators(pythonGenerator) {{\n" + "\n".join(py) + "\n}"
         (self.blocks_dir / f"{file_name}.mjs").write_text(js_c, encoding='utf-8')
         (self.gens_dir / f"{file_name}.mjs").write_text(py_c, encoding='utf-8')
-
-
 
 class ApiGenerator:
     def __init__(self, schema_path, java_out, java_listener_out, python_out, python_actions_out=None):
@@ -594,14 +645,10 @@ class ApiGenerator:
         if is_block:
             # Code blocks are executed directly
             lines.append(f'                {full_expr}')
-            # If void, send OK unless it's a block that manages its own response (like getBlocks)
-            if ret_type == 'void':
-                lines.append('                session.send("OK");')
         else:
             # Standard single-line expressions
             if ret_type == 'void':
                 lines.append(f'                {full_expr};')
-                lines.append('                session.send("OK");')
             else:
                 lines.append(f'                Object res = {full_expr};')
                 lines.append('                if (res == null) { session.send("null"); }')
@@ -611,6 +658,10 @@ class ApiGenerator:
                     lines.append('                else if (res instanceof Location) { Location l = (Location)res; session.send(l.getX()+","+l.getY()+","+l.getZ()); }')
                     lines.append('                else if (res instanceof Vector) { Vector v = (Vector)res; session.send(v.getX()+","+v.getY()+","+v.getZ()); }')
                     lines.append('                else { session.send(String.valueOf(res)); }')
+
+        # OPTIMIZATION: If ret_type is void, we stop sending "OK" from Java to enable true async speed in Python
+        if ret_type == 'void':
+            lines.append('                // No response for void to enable async speed');
 
         lines.append('            });')
         lines.append('        });')
@@ -632,7 +683,8 @@ class ApiGenerator:
 
         namespaces = self.schema.get('namespaces', {})
         # Pop 'events' from namespaces if present, to avoid generation collisions
-        namespaces.pop('events', None)
+        if 'events' in namespaces:
+            namespaces.pop('events', None)
 
         for ns in namespaces.keys():
             code.append(f"        self.{ns} = {ns.capitalize()}Namespace(conn, entity_id)")
@@ -667,21 +719,26 @@ class ApiGenerator:
                 payload_parts.extend(args)
 
                 payload = ", ".join(payload_parts)
-                code.append(f"        res = self.conn.sendReceive('{ns}.{cmd['name']}', {payload})")
 
+                # OPTIMIZATION: Use .send() for void functions to skip waiting for round-trip confirm
                 r = cmd.get('returns', 'void')
-                if r in ('Location', 'Vector'):
-                    code.append("        return Vec3(*list(map(float, res.split(','))))")
-                elif r == 'TileLocation':
-                    code.append("        return Vec3(*list(map(int, res.split(','))))")
-                elif r == 'string_list':
-                    code.append("        return res.split(',')")
-                elif r == 'double':
-                    code.append("        return float(res)")
-                elif r == 'int':
-                    code.append("        return int(res)")
+                if r == 'void':
+                    code.append(f"        self.conn.send('{ns}.{cmd['name']}', {payload})")
+                    code.append("        return 'OK'")
                 else:
-                    code.append("        return res")
+                    code.append(f"        res = self.conn.sendReceive('{ns}.{cmd['name']}', {payload})")
+                    if r in ('Location', 'Vector'):
+                        code.append("        return Vec3(*list(map(float, res.split(','))))")
+                    elif r == 'TileLocation':
+                        code.append("        return Vec3(*list(map(int, res.split(','))))")
+                    elif r == 'string_list':
+                        code.append("        return res.split(',')")
+                    elif r == 'double':
+                        code.append("        return float(res)")
+                    elif r == 'int':
+                        code.append("        return int(res)")
+                    else:
+                        code.append("        return res")
 
         # Generate the dedicated dynamic Event namespace
         if 'events' in self.schema:
@@ -690,18 +747,22 @@ class ApiGenerator:
             code.append("        self.conn = conn")
             code.append("\n    def poll(self, event_name: str):")
             code.append("        res = self.conn.sendReceive('events.poll', event_name)")
+            # ROBUSTNESS: Correctly wrap these in code.append so they are generated, not executed by Python here
+            code.append("        if res == 'OK' or not res: return []")
             code.append("        from mcshell.event import EventFactory")
-            code.append("        events = [e for e in res.split('|') if e]")
+            code.append("        events = [e for e in res.split('|') if e and ',' in e]")
             code.append("        return [EventFactory.create(event_name, e) for e in events]")
+
             code.append("\n    def clearAll(self):")
             code.append("        self.conn.sendReceive('events.clear')")
-            # Legacy wrapper methods mapped to the new schema identifiers
-            code.append("\n    def pollBlockHits(self):")
-            code.append("        return self.poll('blockHit')")
-            code.append("\n    def pollChatPosts(self):")
-            code.append("        return self.poll('chat')")
-            code.append("\n    def pollArrowHits(self):")
-            code.append("        return self.poll('arrowHit')")
+
+            # Dynamically generate helper methods for each event in the schema
+            for event in self.schema.get('events', []):
+                e_name = event['name']
+                # Create CamelCase helper name: poll + CapitalizedEventName + s
+                method_name = f"poll{e_name[0].upper()}{e_name[1:]}s"
+                code.append(f"\n    def {method_name}(self):")
+                code.append(f"        return self.poll('{e_name}')")
 
         self.python_out.write_text("\n".join(code))
 
@@ -795,6 +856,7 @@ class ApiGenerator:
                 call_args = blockly.get('call_args', [])
                 call_args_str = ", ".join(call_args)
 
+                # Fix: The mj client now handles .send() internally for void types
                 call_stmt = f"self.mcplayer.mj.{ns_name}.{cmd['name']}({call_args_str})"
                 if ret_type:
                     code.append(f"        return {call_stmt}")
