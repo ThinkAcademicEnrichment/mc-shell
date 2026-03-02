@@ -1,4 +1,3 @@
-from mcshell.vendored.pyncraft.minecraft import Minecraft
 from mcshell.constants import *
 from mcshell.mcjuice import MCJuiceClient
 
@@ -55,11 +54,6 @@ class MCClient:
                 return "Authentication failed."
         finally:
             rcon.stop()
-
-    @lru_cache(maxsize=1)
-    def py_client(self,player_name=None):
-        player_name = '' if player_name is None else player_name
-        return Minecraft.create(address=self.host,port=self.fruit_juice_port,playerName=player_name)
 
     @lru_cache(maxsize=1)
     def mj_client(self,player_name=None):
