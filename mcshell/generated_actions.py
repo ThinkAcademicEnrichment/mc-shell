@@ -255,3 +255,14 @@ class GeneratedWorldActions(MCActionsBase):
     )
     def get_entity_name(self, id: 'int') -> 'str':
         return self.mcplayer.mj.world.getEntityName(int(id))
+
+class GeneratedChatActions(MCActionsBase):
+    def __init__(self, mc_player_instance, delay_between_blocks=0):
+        super().__init__(mc_player_instance, delay_between_blocks)
+
+    @mced_block(
+        label="Post to Chat",
+        message={'label': 'Message'}
+    )
+    def post(self, message: 'str'):
+        self.mcplayer.mj.chat.post(str(message))

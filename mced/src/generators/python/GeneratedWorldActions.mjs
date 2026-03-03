@@ -41,6 +41,12 @@ const radius = generator.valueToCode(block, 'radius', pythonGenerator.ORDER_ATOM
         return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
     };
 
+    pythonGenerator.forBlock['generatedworldactions_get_entity_name'] = function(block, generator) {
+        const id = generator.valueToCode(block, 'id', pythonGenerator.ORDER_ATOMIC) || 'None';
+        const code = `GeneratedWorldActions.get_entity_name(${id})\n`;
+        return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
+    };
+
     pythonGenerator.forBlock['generatedworldactions_get_height'] = function(block, generator) {
         const x = generator.valueToCode(block, 'x', pythonGenerator.ORDER_ATOMIC) || 'None';
 const z = generator.valueToCode(block, 'z', pythonGenerator.ORDER_ATOMIC) || 'None';

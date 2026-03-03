@@ -1,5 +1,11 @@
 export function defineGeneratedPlayerActionsGenerators(pythonGenerator) {
 
+    pythonGenerator.forBlock['generatedplayeractions_get_deaths'] = function(block, generator) {
+        
+        const code = `GeneratedPlayerActions.get_deaths()\n`;
+        return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
+    };
+
     pythonGenerator.forBlock['generatedplayeractions_get_direction'] = function(block, generator) {
         
         const code = `GeneratedPlayerActions.get_direction()\n`;

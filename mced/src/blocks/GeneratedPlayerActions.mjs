@@ -2,6 +2,16 @@ import { MCED } from "../lib/constants.mjs";
 
 export function defineGeneratedPlayerActionsBlocks(Blockly) {
 
+    Blockly.Blocks['generatedplayeractions_get_deaths'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Get Death Count");
+            
+            this.setOutput(true, 'Number');
+            this.setColour("#61A1B0");
+            this.setTooltip("Returns the total number of times the player has died.");
+        }
+    };
+
     Blockly.Blocks['generatedplayeractions_get_direction'] = {
         init: function() {
             this.appendDummyInput().appendField("Get Direction");

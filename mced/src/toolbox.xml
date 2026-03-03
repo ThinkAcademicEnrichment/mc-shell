@@ -479,6 +479,7 @@
 </category><category name="Event" colour="#D68C45">
 <block type="eventactions_clear_events" />
 <block type="eventactions_wait_for_left_block_hit_by_player"><value name="player_name"><shadow type="text"><field name="TEXT">SELF</field></shadow></value></block>
+<block type="eventactions_wait_for_player_death"><value name="player_name"><shadow type="text"><field name="TEXT">ALL</field></shadow></value></block>
 </category><category name="Digital Set" colour="#A57582">
 <block type="digitalsetactions_add_voxel"><value name="x"><shadow type="math_number"><field name="NUM">1</field></shadow></value> <value name="y"><shadow type="math_number"><field name="NUM">1</field></shadow></value> <value name="z"><shadow type="math_number"><field name="NUM">1</field></shadow></value></block>
 <block type="digitalsetactions_difference" />
@@ -498,6 +499,7 @@
 <block type="digitalsetactions_union_all" />
 <block type="digitalsetactions_voxel_count" />
 </category><category name="J-Player" colour="#61A1B0">
+<block type="generatedplayeractions_get_deaths" />
 <block type="generatedplayeractions_get_direction" />
 <block type="generatedplayeractions_get_food_level" />
 <block type="generatedplayeractions_get_health" />
@@ -522,6 +524,7 @@
 <block type="generatedworldactions_get_block"><value name="position"><shadow type="minecraft_vector_3d"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow></value></block>
 <block type="generatedworldactions_get_blocks"><value name="pos1"><shadow type="minecraft_vector_3d"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow></value> <value name="pos2"><shadow type="minecraft_vector_3d"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow></value></block>
 <block type="generatedworldactions_get_entities_in_radius"><value name="position"><shadow type="minecraft_vector_3d"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow></value> <value name="radius"><shadow type="math_number"><field name="NUM">1.0</field></shadow></value></block>
+<block type="generatedworldactions_get_entity_name"><value name="id"><shadow type="math_number"><field name="NUM">1</field></shadow></value></block>
 <block type="generatedworldactions_get_height"><value name="x"><shadow type="math_number"><field name="NUM">1.0</field></shadow></value> <value name="z"><shadow type="math_number"><field name="NUM">1.0</field></shadow></value></block>
 <block type="generatedworldactions_remove_entity"><value name="entity_id"><shadow type="math_number"><field name="NUM">1</field></shadow></value></block>
 <block type="generatedworldactions_set_block"><value name="position"><shadow type="minecraft_vector_3d"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow></value> <value name="block_type"><shadow type="mc_block_picker_world"><field name="VALUE">STONE</field></shadow></value></block>

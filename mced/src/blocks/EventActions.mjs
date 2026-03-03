@@ -21,4 +21,14 @@ export function defineEventActionsBlocks(Blockly) {
             this.setTooltip("");
         }
     };
+
+    Blockly.Blocks['eventactions_wait_for_player_death'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Wait for a Player death");
+            this.appendValueInput('player_name').appendField('Player name').setCheck('String');
+            this.setOutput(true, 'String');
+            this.setColour("#D68C45");
+            this.setTooltip("");
+        }
+    };
 }
