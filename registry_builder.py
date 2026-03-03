@@ -445,7 +445,7 @@ class RegistryBuilder:
 class ApiGenerator:
     """
     Generates the Java Registry, Event Listener, and Python Client.
-    Includes the robust Java compilation fix and the Push Architecture.
+    Includes the Push Architecture with an infinite-timeout background router.
     """
     def __init__(self, schema_path, java_out, java_listener_out, python_out, python_actions_out=None):
         try:
@@ -542,8 +542,6 @@ class ApiGenerator:
         yaml_args = cmd.get("args", [])
         for i, arg in enumerate(yaml_args):
             t, n, idx = arg["type"], arg["name"], i + offset
-            # CRITICAL FIX: Prefix arg_var to prevent shadowing/redeclaring java variables
-            # inside multi-line blocks (e.g. setBlocks -> { int x1 = x1; })
             arg_var = f"_arg_{n}"
 
             if t == "double": lines.append(f'            final double {arg_var} = Double.parseDouble(args[{idx}]);')
@@ -571,15 +569,11 @@ class ApiGenerator:
 
         ret_type = cmd.get('returns', 'void')
 
-        # CRITICAL FIX: Handle blocks {} vs expressions correctly to avoid assigning a block to an Object.
         if is_block:
             lines.append(f'                {full_expr}')
-            if ret_type == 'void':
-                lines.append('                // No response for void to enable async speed')
         else:
             if ret_type == 'void':
                 lines.append(f'                {full_expr};')
-                lines.append('                // No response for void to enable async speed')
             else:
                 lines.append(f'                Object res = {full_expr};')
                 lines.append('                if (res == null) { session.send("null"); }')
@@ -611,6 +605,8 @@ class ApiGenerator:
             "        self.event_queues = {} # event_name -> list of queues",
             "",
             "        # --- PUSH ARCHITECTURE: Dedicated Event Router ---",
+            "        # CRITICAL: Disable timeout on the background socket so it blocks indefinitely",
+            "        self.event_conn.socket.settimeout(None)",
             "        self.event_conn.send('events.subscribe')",
             "        self.reader_thread = threading.Thread(target=self._event_reader_loop, daemon=True)",
             "        self.reader_thread.start()"
@@ -618,7 +614,8 @@ class ApiGenerator:
 
         namespaces = dict(self.schema.get('namespaces', {}))
         for ns in namespaces.keys():
-            code.append(f"        self.{ns} = {ns.capitalize()}Namespace(self.conn, self.entity_id)")
+            if ns != 'events':
+                code.append(f"        self.{ns} = {ns.capitalize()}Namespace(self.conn, self.entity_id)")
 
         if 'events' in self.schema:
             code.append("        self.events = EventsNamespace(self)")
@@ -630,7 +627,12 @@ class ApiGenerator:
             "        while True:",
             "            try:",
             "                line = self.event_conn.receive()",
-            "                if not line or line == 'OK': continue",
+            "                if not line:",
+            "                    # Socket gracefully closed by Java server",
+            "                    break",
+            "                if line == 'OK':",
+            "                    # Ignore the handshake acknowledgement",
+            "                    continue",
             "                ",
             "                # The Java plugin pushes: eventName,data...",
             "                parts = line.split(',', 1)",
@@ -644,10 +646,8 @@ class ApiGenerator:
             "                if event_name in self.event_queues:",
             "                    for q in self.event_queues[event_name]:",
             "                        q.put(event_obj)",
-            "            except (socket.timeout, TimeoutError):",
-            "                continue",
             "            except Exception as e:",
-            "                # Socket closed or timed out",
+            "                # Socket abruptly closed or disconnected",
             "                break",
             "",
             "    @staticmethod",
@@ -662,6 +662,7 @@ class ApiGenerator:
         ])
 
         for ns, data in namespaces.items():
+            if ns == 'events': continue
             target = data.get('target', 'Player')
             code.append(f"\nclass {ns.capitalize()}Namespace:")
             code.append("    def __init__(self, conn, entity_id): self.conn = conn; self.entity_id = entity_id")
@@ -751,21 +752,22 @@ class ApiGenerator:
                     continue
 
                 # 1. Generate the @mced_block Decorator
-                code.append("\n    @mced_block(")
-
-                decorator_args = [f"        label=\"{blockly.get('label', cmd['name'])}\""]
+                # Python 3.10 Fix: Avoid nested f-strings with backslashes in expression parts
+                label_val = blockly.get('label', cmd['name'])
+                dec_parts = [f"        label=\"{label_val}\""]
 
                 b_args = blockly.get('args', {})
-                for arg_name, arg_data in b_args.items():
-                    # Format: {'label': '...', 'shadow': '...'}
-                    arg_dict_str = f"{{'label': '{arg_data.get('label', arg_name)}'"
-                    if 'shadow' in arg_data:
-                        arg_dict_str += f", 'shadow': '{arg_data['shadow']}'"
-                    arg_dict_str += "}"
-                    decorator_args.append(f"        {arg_name}={arg_dict_str}")
+                for k, v in b_args.items():
+                    l_val = v.get('label', k)
+                    s_val = v.get('shadow')
+                    if s_val:
+                        dec_parts.append(f"        {k}={{'label': '{l_val}', 'shadow': '{s_val}'}}")
+                    else:
+                        dec_parts.append(f"        {k}={{'label': '{l_val}'}}")
 
-                code.append(",\n".join(decorator_args))
-                code.append("    )")
+                args_dec = ",\n".join(dec_parts)
+
+                code.append(f"\n    @mced_block(\n{args_dec}\n    )")
 
                 # 2. Generate the Method Signature
                 sig_parts = ["self"]
