@@ -1,4 +1,3 @@
-import eventlet
 from mctools import RCONClient, AsyncRCONClient
 from mctools.errors import RCONAuthenticationError
 
