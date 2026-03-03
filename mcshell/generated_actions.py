@@ -7,7 +7,7 @@ from typing import Optional, Any
 # --- Do not edit directly! Inherit from these classes instead. ---
 
 
-class GeneratedPlayerActions(MCActionsBase):
+class PlayerActions(MCActionsBase):
     def __init__(self, mc_player_instance, delay_between_blocks=0):
         super().__init__(mc_player_instance, delay_between_blocks)
 
@@ -123,7 +123,7 @@ class GeneratedPlayerActions(MCActionsBase):
         """Sends a title and subtitle to the player's screen."""
         self.mcplayer.mj.player.sendTitle(str(title), str(subtitle), int(stay))
 
-class GeneratedWorldActions(MCActionsBase):
+class WorldActions(MCActionsBase):
     def __init__(self, mc_player_instance, delay_between_blocks=0):
         super().__init__(mc_player_instance, delay_between_blocks)
 
@@ -256,7 +256,7 @@ class GeneratedWorldActions(MCActionsBase):
     def get_entity_name(self, id: 'int') -> 'str':
         return self.mcplayer.mj.world.getEntityName(int(id))
 
-class GeneratedChatActions(MCActionsBase):
+class ChatActions(MCActionsBase):
     def __init__(self, mc_player_instance, delay_between_blocks=0):
         super().__init__(mc_player_instance, delay_between_blocks)
 

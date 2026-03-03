@@ -1,8 +1,8 @@
 import { MCED } from "../lib/constants.mjs";
 
-export function defineGeneratedChatActionsBlocks(Blockly) {
+export function defineChatActionsBlocks(Blockly) {
 
-    Blockly.Blocks['generatedchatactions_post'] = {
+    Blockly.Blocks['chatactions_post'] = {
         init: function() {
             this.appendDummyInput().appendField("Post to Chat");
             this.appendValueInput('message').appendField('Message').setCheck('String');

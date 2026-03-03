@@ -6,7 +6,6 @@ from mcshell.mcactions_base import MCActionsBase
 
 from mcshell.eventactions import EventActions
 from mcshell.serveractions import ServerActions
-from mcshell.playeractions import PlayerActions
 from mcshell.qturtleactions import QTurtleActions
 from mcshell.digitalgeometryactions import DigitalGeometryActions
 from mcshell.digitalsetactions import DigitalSetActions
@@ -15,12 +14,12 @@ from mcshell.mclsystem import LSystem
 # FIX: Robustly import generated actions to prevent build-time crashes
 try:
     from mcshell.generated_actions import (
-        GeneratedPlayerActions, GeneratedChatActions, GeneratedWorldActions
+        PlayerActions, ChatActions, WorldActions
     )
 except ImportError:
-    GeneratedPlayerActions = None
-    GeneratedChatActions = None
-    GeneratedWorldActions = None
+    PlayerActions = None
+    ChatActions = None
+    WorldActions = None
 
 # Advanced Digital Geometry and Turtle
 from mcshell.mcturtle import (
@@ -104,19 +103,18 @@ class LSystemShapes(MCActionsBase):
         return accumulated_shape
 
 class MCActions(
-    GeneratedPlayerActions, GeneratedWorldActions,GeneratedChatActions,
-    PlayerActions,EventActions,ServerActions,QTurtleActions,DigitalGeometryActions,DigitalSetActions,
+    PlayerActions, WorldActions,ChatActions,
+    EventActions,ServerActions,QTurtleActions,DigitalGeometryActions,DigitalSetActions,
     TurtleShapes,LSystemShapes):
     """
     Unified API for Blockly combining all action groups.
     """
     def __init__(self, mc_player_instance, delay_between_blocks=0.0001):
         # Initialize all parent classes properly
-        GeneratedPlayerActions.__init__(self, mc_player_instance, delay_between_blocks)
-        GeneratedWorldActions.__init__(self, mc_player_instance, delay_between_blocks)
-        GeneratedChatActions.__init__(self, mc_player_instance, delay_between_blocks)
+        PlayerActions.__init__(self, mc_player_instance, delay_between_blocks)
+        WorldActions.__init__(self, mc_player_instance, delay_between_blocks)
+        ChatActions.__init__(self, mc_player_instance, delay_between_blocks)
         EventActions.__init__(self, mc_player_instance, delay_between_blocks)
-        PlayerActions.__init__(self,mc_player_instance,delay_between_blocks)
         ServerActions.__init__(self, mc_player_instance, delay_between_blocks)
         QTurtleActions.__init__(self, mc_player_instance, delay_between_blocks)
         DigitalGeometryActions.__init__(self,mc_player_instance, delay_between_blocks)

@@ -42,17 +42,10 @@ jobs:
           virtualenvs-path: ~/.virtualenvs
           installer-parallel: true
 
-
       - name: Install all dependencies
         run: |
           poetry install --no-interaction
           npm --prefix mced ci
-
-      - name: Vendor pyncraft library
-        run: |
-          git clone https://github.com/d4g33z/pyncraft.git ../pyncraft
-          mkdir -p ./mcshell/vendored
-          cp -R ../pyncraft/pyncraft ./mcshell/vendored/pyncraft
 
       - name: Build frontend application
         working-directory: ./mced
