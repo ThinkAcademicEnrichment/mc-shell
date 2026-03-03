@@ -1,15 +1,15 @@
 package org.mcshell.mcjuice;
 
 import org.bukkit.plugin.java.JavaPlugin;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class McJuicePlugin extends JavaPlugin {
     private static McJuicePlugin instance;
     private ServerListenerThread listenerThread;
 
-    // Track active sessions to enable broadcasting events to all clients
-    private final List<RemoteSession> activeSessions = new CopyOnWriteArrayList<>();
+    // The thread-safe list of active event subscribers
+    private final List<RemoteSession> eventSubscribers = new CopyOnWriteArrayList<>();
 
     @Override
     public void onEnable() {
@@ -22,7 +22,7 @@ public class McJuicePlugin extends JavaPlugin {
         listenerThread = new ServerListenerThread(this, "0.0.0.0", port);
         listenerThread.start();
 
-        getLogger().info("McJuice Plugin Enabled. Broadcasting events to Python sessions on port " + port);
+        getLogger().info("McJuice Plugin Enabled. Push Architecture Active on port " + port);
     }
 
     @Override
@@ -32,29 +32,27 @@ public class McJuicePlugin extends JavaPlugin {
 
     public static McJuicePlugin getInstance() { return instance; }
 
-    public void registerSession(RemoteSession session) {
-        activeSessions.add(session);
-    }
-
-    public void unregisterSession(RemoteSession session) {
-        activeSessions.remove(session);
-    }
-
-    /**
-     * Broadcasts a new event to EVERY active Python session.
-     */
-    public void recordEvent(String eventName, String data) {
-        for (RemoteSession session : activeSessions) {
-            session.enqueueEvent(eventName, data);
+    public void addEventSubscriber(RemoteSession session) {
+        if (!eventSubscribers.contains(session)) {
+            eventSubscribers.add(session);
         }
     }
 
+    public void removeEventSubscriber(RemoteSession session) {
+        eventSubscribers.remove(session);
+    }
+
     /**
-     * Clears event queues for all sessions.
+     * Pushes an event directly to all subscribed Python sessions instantaneously.
      */
-    public void clearEvents() {
-        for (RemoteSession session : activeSessions) {
-            session.clearEvents();
+    public void recordEvent(String eventName, String data) {
+        String payload = eventName + "," + data;
+        for (RemoteSession session : eventSubscribers) {
+            if (session.isRunning()) {
+                session.send(payload);
+            } else {
+                removeEventSubscriber(session);
+            }
         }
     }
 }

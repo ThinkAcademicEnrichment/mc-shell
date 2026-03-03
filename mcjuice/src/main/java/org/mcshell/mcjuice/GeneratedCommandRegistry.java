@@ -15,9 +15,8 @@ public class GeneratedCommandRegistry {
     public GeneratedCommandRegistry() {
         // Root level helper
         registry.put("ping", (args, session) -> session.send("pong"));
-        // FIX: Event Polling now targets the SESSION-specific queue
-        registry.put("events.poll", (args, session) -> session.send(session.pollEvents(args[0])));
-        registry.put("events.clear", (args, session) -> { session.clearEvents(); session.send("OK"); });
+        // --- PUSH ARCHITECTURE: Register event subscription ---
+        registry.put("events.subscribe", (args, session) -> { McJuicePlugin.getInstance().addEventSubscriber(session); session.send("OK"); });
 
         registry.put("player.getPos", (args, session) -> {
             Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
@@ -40,7 +39,6 @@ public class GeneratedCommandRegistry {
                 Player player = session.getPlayerById(eid);
                 if (player == null) { session.send("Fail,No Player"); return; }
                 player.teleport(new Location(player.getWorld(), _arg_x, _arg_y, _arg_z, player.getLocation().getYaw(), player.getLocation().getPitch()));
-                // No response for void to enable async speed
             });
         });
         registry.put("player.getTilePos", (args, session) -> {
@@ -62,7 +60,6 @@ public class GeneratedCommandRegistry {
                 Player player = session.getPlayerById(eid);
                 if (player == null) { session.send("Fail,No Player"); return; }
                 player.teleport(new Location(player.getWorld(), Math.floor(_arg_x) + 0.5, Math.floor(_arg_y), Math.floor(_arg_z) + 0.5, player.getLocation().getYaw(), player.getLocation().getPitch()));
-                // No response for void to enable async speed
             });
         });
         registry.put("player.getDirection", (args, session) -> {
@@ -86,7 +83,6 @@ public class GeneratedCommandRegistry {
                 Player player = session.getPlayerById(eid);
                 if (player == null) { session.send("Fail,No Player"); return; }
                 player.teleport(player.getLocation().setDirection(new org.bukkit.util.Vector(_arg_x, _arg_y, _arg_z)));
-                // No response for void to enable async speed
             });
         });
         registry.put("player.getRotation", (args, session) -> {
@@ -113,7 +109,6 @@ public class GeneratedCommandRegistry {
   player.teleport(l);
 }
 
-                // No response for void to enable async speed
             });
         });
         registry.put("player.getPitch", (args, session) -> {
@@ -140,7 +135,6 @@ public class GeneratedCommandRegistry {
   player.teleport(l);
 }
 
-                // No response for void to enable async speed
             });
         });
         registry.put("player.getHealth", (args, session) -> {
@@ -162,7 +156,6 @@ public class GeneratedCommandRegistry {
                 Player player = session.getPlayerById(eid);
                 if (player == null) { session.send("Fail,No Player"); return; }
                 player.setHealth(_arg_health);
-                // No response for void to enable async speed
             });
         });
         registry.put("player.getFoodLevel", (args, session) -> {
@@ -184,7 +177,6 @@ public class GeneratedCommandRegistry {
                 Player player = session.getPlayerById(eid);
                 if (player == null) { session.send("Fail,No Player"); return; }
                 player.setFoodLevel(_arg_level);
-                // No response for void to enable async speed
             });
         });
         registry.put("player.getDeaths", (args, session) -> {
@@ -208,7 +200,6 @@ public class GeneratedCommandRegistry {
                 Player player = session.getPlayerById(eid);
                 if (player == null) { session.send("Fail,No Player"); return; }
                 player.sendTitle(_arg_title, _arg_subtitle, 10, _arg_stay, 20);
-                // No response for void to enable async speed
             });
         });
         registry.put("world.getBlock", (args, session) -> {
@@ -232,7 +223,6 @@ public class GeneratedCommandRegistry {
             Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
                 World world = Bukkit.getWorlds().get(0);
                 world.getBlockAt(_arg_x, _arg_y, _arg_z).setType(org.bukkit.Material.valueOf(_arg_block.toUpperCase()));
-                // No response for void to enable async speed
             });
         });
         registry.put("world.getBlocks", (args, session) -> {
@@ -287,7 +277,6 @@ public class GeneratedCommandRegistry {
   }
 }
 
-                // No response for void to enable async speed
             });
         });
         registry.put("world.getHeight", (args, session) -> {
@@ -332,7 +321,6 @@ public class GeneratedCommandRegistry {
             Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
                 World world = Bukkit.getWorlds().get(0);
                 world.getEntities().stream().filter(e -> e.getEntityId() == _arg_id).forEach(org.bukkit.entity.Entity::remove);
-                // No response for void to enable async speed
             });
         });
         registry.put("world.getEntitiesInRadius", (args, session) -> {
@@ -357,7 +345,6 @@ public class GeneratedCommandRegistry {
             Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
                 World world = Bukkit.getWorlds().get(0);
                 world.createExplosion(_arg_x, _arg_y, _arg_z, (float)_arg_power);
-                // No response for void to enable async speed
             });
         });
         registry.put("world.setSign", (args, session) -> {
@@ -388,7 +375,6 @@ public class GeneratedCommandRegistry {
   }
 }
 
-                // No response for void to enable async speed
             });
         });
         registry.put("world.dropItem", (args, session) -> {
@@ -400,7 +386,6 @@ public class GeneratedCommandRegistry {
             Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
                 World world = Bukkit.getWorlds().get(0);
                 world.dropItemNaturally(new org.bukkit.Location(world, _arg_x, _arg_y, _arg_z), new org.bukkit.inventory.ItemStack(org.bukkit.Material.valueOf(_arg_item.toUpperCase()), _arg_amount));
-                // No response for void to enable async speed
             });
         });
         registry.put("world.dropRandomLoot", (args, session) -> {
@@ -420,7 +405,6 @@ public class GeneratedCommandRegistry {
   world.dropItemNaturally(new org.bukkit.Location(world, _arg_x, _arg_y, _arg_z), new org.bukkit.inventory.ItemStack(choice, 1));
 }
 
-                // No response for void to enable async speed
             });
         });
         registry.put("world.setContainerItem", (args, session) -> {
@@ -440,7 +424,6 @@ public class GeneratedCommandRegistry {
   }
 }
 
-                // No response for void to enable async speed
             });
         });
         registry.put("world.getEntityName", (args, session) -> {
@@ -464,7 +447,6 @@ public class GeneratedCommandRegistry {
             final String _arg_message = args[0];
             Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
                 Bukkit.broadcastMessage(_arg_message);
-                // No response for void to enable async speed
             });
         });
     }

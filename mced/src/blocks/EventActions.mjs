@@ -8,7 +8,7 @@ export function defineEventActionsBlocks(Blockly) {
             
             this.setPreviousStatement(true); this.setNextStatement(true);
             this.setColour("#D68C45");
-            this.setTooltip("Directly calls the player's clear_events method to flush the buffer.");
+            this.setTooltip("No longer required with Push architecture, kept for backwards compatibility.");
         }
     };
 
