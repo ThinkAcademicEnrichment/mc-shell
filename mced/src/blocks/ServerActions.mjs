@@ -241,12 +241,12 @@ export function defineServerActionsBlocks(Blockly) {
                 ["River", "river"],
                 ["Savanna", "savanna"],
                 ["Snowy Beach", "snowy_beach"],
-                ["Snowy Plains", "snowy_plains"],
+                ["Snowy Plains", "snowy_plain"],
                 ["Snowy Taiga", "snowy_taiga"],
                 ["Soul Sand Valley", "soul_sand_valley"],
                 ["Stony Peaks", "stony_peaks"],
                 ["Swamp", "swamp"],
-                ["Taiga", "taiga"],
+                ["Taiga", "target_taiga"],
                 ["The End", "the_end"],
                 ["The Void", "the_void"],
                 ["Warm Ocean", "warm_ocean"],
@@ -457,6 +457,56 @@ export function defineServerActionsBlocks(Blockly) {
         }
     };
 
+    Blockly.Blocks['picker_datapath'] = {
+        init: function() {
+            this.appendDummyInput()
+                .appendField("Player Data Paths")
+                .appendField(new Blockly.FieldDropdown([
+                ["Brain", "Brain"],
+                ["Hurt By Timestamp", "HurtByTimestamp"],
+                ["Sleep Timer", "SleepTimer"],
+                ["Attributes", "Attributes"],
+                ["Invulnerable", "Invulnerable"],
+                ["Fall Flying", "FallFlying"],
+                ["Portal Cooldown", "PortalCooldown"],
+                ["Absorption Amount", "AbsorptionAmount"],
+                ["Abilities", "abilities"],
+                ["Fall Distance", "FallDistance"],
+                ["Recipe Book", "recipeBook"],
+                ["Death Time", "DeathTime"],
+                ["Xp Seed", "XpSeed"],
+                ["Xp Total", "XpTotal"],
+                ["UUID", "UUID"],
+                ["Player Game Type", "playerGameType"],
+                ["Seen Credits", "seenCredits"],
+                ["Motion", "Motion"],
+                ["Health", "Health"],
+                ["Food Saturation Level", "foodSaturationLevel"],
+                ["Air", "Air"],
+                ["On Ground", "OnGround"],
+                ["Dimension", "Dimension"],
+                ["Rotation", "Rotation"],
+                ["Xp Level", "XpLevel"],
+                ["Score", "Score"],
+                ["Pos", "Pos"],
+                ["Previous Player Game Type", "previousPlayerGameType"],
+                ["Fire", "Fire"],
+                ["Xp P", "XpP"],
+                ["Ender Items", "EnderItems"],
+                ["Data Version", "DataVersion"],
+                ["Food Level", "foodLevel"],
+                ["Food Exhaustion Level", "foodExhaustionLevel"],
+                ["Hurt Time", "HurtTime"],
+                ["Selected Item Slot", "SelectedItemSlot"],
+                ["Inventory", "Inventory"],
+                ["Food Tick Timer", "foodTickTimer"]
+                ]), "VALUE");
+            this.setOutput(true, "DataPath");
+            this.setColour("#95A5A6");
+            this.setTooltip("");
+        }
+    };
+
     Blockly.Blocks['serveractions_server_apply_effect'] = {
         init: function() {
             this.appendDummyInput().appendField("Apply [effect] to [target] for [seconds]s (Level [amplifier])");
@@ -563,6 +613,16 @@ this.appendValueInput('target').appendField('Target Player').setCheck('String');
             this.setOutput(true, '3DVector');
             this.setColour("#5C7457");
             this.setTooltip("Locates a structure and returns its coordinates.");
+        }
+    };
+
+    Blockly.Blocks['serveractions_server_player_data_get_pos'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Get a Player's position");
+            this.appendValueInput('player_name').appendField('Player Name').setCheck('String');
+            this.setOutput(true, '3DVector');
+            this.setColour("#5C7457");
+            this.setTooltip("");
         }
     };
 

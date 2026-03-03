@@ -46,6 +46,16 @@ namespaces:
           label: "Get Direction"
           call_args: []
 
+      - name: setDirection
+        bukkit: teleport(player.getLocation().setDirection(new org.bukkit.util.Vector({x}, {y}, {z})))
+        args: [{ name: x, type: double }, { name: y, type: double }, { name: z, type: double }]
+        returns: void
+        blockly:
+          label: "Set Direction to [dir]"
+          args:
+            dir: { type: Vec3, label: "Direction Vector" }
+          call_args: [float(dir.x), float(dir.y), float(dir.z)]
+
       - name: getRotation
         bukkit: getLocation().getYaw()
         returns: double
@@ -53,12 +63,42 @@ namespaces:
           label: "Get Rotation"
           call_args: []
 
+      - name: setRotation
+        bukkit: |
+          {
+            org.bukkit.Location l = player.getLocation();
+            l.setYaw((float){yaw});
+            player.teleport(l);
+          }
+        args: [{ name: yaw, type: double }]
+        returns: void
+        blockly:
+          label: "Set Rotation to [yaw]"
+          args:
+            yaw: { type: float, label: "Yaw" }
+          call_args: [float(yaw)]
+
       - name: getPitch
         bukkit: getLocation().getPitch()
         returns: double
         blockly:
           label: "Get Pitch"
           call_args: []
+
+      - name: setPitch
+        bukkit: |
+          {
+            org.bukkit.Location l = player.getLocation();
+            l.setPitch((float){pitch});
+            player.teleport(l);
+          }
+        args: [{ name: pitch, type: double }]
+        returns: void
+        blockly:
+          label: "Set Pitch to [pitch]"
+          args:
+            pitch: { type: float, label: "Pitch" }
+          call_args: [float(pitch)]
 
       - name: getHealth
         bukkit: getHealth()
@@ -84,6 +124,24 @@ namespaces:
         blockly:
           label: "Get Food Level"
           tooltip: "Returns the food level of the player."
+          call_args: []
+
+      - name: setFoodLevel
+        bukkit: setFoodLevel({level})
+        args: [{ name: level, type: int }]
+        returns: void
+        blockly:
+          label: "Set Food Level to [level]"
+          args:
+            level: { type: int, label: "Food Level" }
+          call_args: [int(level)]
+
+      - name: getDeaths
+        bukkit: getStatistic(org.bukkit.Statistic.DEATHS)
+        returns: int
+        blockly:
+          label: "Get Death Count"
+          tooltip: "Returns the total number of times the player has died."
           call_args: []
 
       - name: sendTitle
@@ -301,11 +359,6 @@ namespaces:
             direction: { type: int, label: "Direction (0-15)" }
           call_args: [int(position.x), int(position.y), int(position.z), str(sign_type), int(direction), str(line1), str(line2), str(line3), str(line4)]
 
-      # --- State ---
-#      - name: saveCheckpoint
-#        bukkit: { Bukkit.savePlayers(); world.save(); }
-#        returns: void
-
       # --- Loot & Items ---
       - name: dropItem
         bukkit: dropItemNaturally(new org.bukkit.Location(world, {x}, {y}, {z}), new org.bukkit.inventory.ItemStack(org.bukkit.Material.valueOf({item}.toUpperCase()), {amount}))
@@ -376,6 +429,26 @@ namespaces:
             amount: { type: int, label: "Amount" }
           call_args: [int(pos.x), int(pos.y), int(pos.z), int(slot), str(item), int(amount)]
 
+      - name: getEntityName
+        bukkit: |
+          {
+            org.bukkit.entity.Entity e = null;
+            for (org.bukkit.World w : Bukkit.getWorlds()) {
+                for (org.bukkit.entity.Entity ent : w.getEntities()) {
+                    if (ent.getEntityId() == {id}) { e = ent; break; }
+                }
+                if (e != null) break;
+            }
+            session.send(e != null ? e.getName() : "Unknown");
+          }
+        args: [{ name: id, type: int }]
+        returns: string
+        blockly:
+          label: "Get Name of Entity ID [id]"
+          args:
+            id: { type: int, label: "Entity ID" }
+          call_args: [int(id)]
+
   chat:
     target: Server
     commands:
@@ -394,24 +467,29 @@ events:
   - name: rightBlockHit
     bukkit_event: org.bukkit.event.player.PlayerInteractEvent
     condition: "event.getAction() == org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null"
-    data: "event.getClickedBlock().getX() + \",\" + event.getClickedBlock().getY() + \",\" + event.getClickedBlock().getZ() + \",\" + event.getBlockFace().ordinal() + \",\" + event.getPlayer().getEntityId()"
+    # ENRICHED: Added player name (index 5)
+    data: "event.getClickedBlock().getX() + \",\" + event.getClickedBlock().getY() + \",\" + event.getClickedBlock().getZ() + \",\" + event.getBlockFace().ordinal() + \",\" + event.getPlayer().getEntityId() + \",\" + event.getPlayer().getName()"
 
   - name: leftBlockHit
     bukkit_event: org.bukkit.event.player.PlayerInteractEvent
     condition: "event.getAction() == org.bukkit.event.block.Action.LEFT_CLICK_BLOCK && event.getClickedBlock() != null"
-    data: "event.getClickedBlock().getX() + \",\" + event.getClickedBlock().getY() + \",\" + event.getClickedBlock().getZ() + \",\" + event.getBlockFace().ordinal() + \",\" + event.getPlayer().getEntityId()"
+    # ENRICHED: Added player name (index 5)
+    data: "event.getClickedBlock().getX() + \",\" + event.getClickedBlock().getY() + \",\" + event.getClickedBlock().getZ() + \",\" + event.getBlockFace().ordinal() + \",\" + event.getPlayer().getEntityId() + \",\" + event.getPlayer().getName()"
 
   - name: blockPlace
     bukkit_event: org.bukkit.event.block.BlockPlaceEvent
-    data: "event.getBlock().getX() + \",\" + event.getBlock().getY() + \",\" + event.getBlock().getZ() + \",\" + event.getBlock().getType().name() + \",\" + event.getPlayer().getEntityId()"
+    # ENRICHED: Added player name (index 5)
+    data: "event.getBlock().getX() + \",\" + event.getBlock().getY() + \",\" + event.getBlock().getZ() + \",\" + event.getBlock().getType().name() + \",\" + event.getPlayer().getEntityId() + \",\" + event.getPlayer().getName()"
 
   - name: blockBreak
     bukkit_event: org.bukkit.event.block.BlockBreakEvent
-    data: "event.getBlock().getX() + \",\" + event.getBlock().getY() + \",\" + event.getBlock().getZ() + \",\" + event.getPlayer().getEntityId()"
+    # ENRICHED: Added player name (index 4)
+    data: "event.getBlock().getX() + \",\" + event.getBlock().getY() + \",\" + event.getBlock().getZ() + \",\" + event.getPlayer().getEntityId() + \",\" + event.getPlayer().getName()"
 
   - name: chat
     bukkit_event: org.bukkit.event.player.AsyncPlayerChatEvent
-    data: "event.getPlayer().getEntityId() + \",\" + event.getMessage()"
+    # ENRICHED: Added player name (index 1)
+    data: "event.getPlayer().getEntityId() + \",\" + event.getPlayer().getName() + \",\" + event.getMessage()"
 
   - name: projectileHitBlock
     bukkit_event: org.bukkit.event.entity.ProjectileHitEvent
@@ -421,9 +499,21 @@ events:
   - name: projectileHitEntity
     bukkit_event: org.bukkit.event.entity.ProjectileHitEvent
     condition: "event.getHitEntity() != null"
-    data: "event.getHitEntity().getEntityId() + \",\" + event.getEntity().getType().name() + \",\" + event.getHitEntity().getLocation().getX() + \",\" + event.getHitEntity().getLocation().getY() + \",\" + event.getHitEntity().getLocation().getZ()"
+    # ENRICHED: Added target name (index 1)
+    data: "event.getHitEntity().getEntityId() + \",\" + event.getHitEntity().getName() + \",\" + event.getEntity().getType().name() + \",\" + event.getHitEntity().getLocation().getX() + \",\" + event.getHitEntity().getLocation().getY() + \",\" + event.getHitEntity().getLocation().getZ()"
 
   - name: projectileLaunch
     bukkit_event: org.bukkit.event.entity.ProjectileLaunchEvent
     condition: "event.getEntity().getShooter() instanceof org.bukkit.entity.Player"
-    data: "((org.bukkit.entity.Player)event.getEntity().getShooter()).getEntityId() + \",\" + event.getEntity().getType().name()"
+    # ENRICHED: Added shooter name (index 1)
+    data: "((org.bukkit.entity.Player)event.getEntity().getShooter()).getEntityId() + \",\" + ((org.bukkit.entity.Player)event.getEntity().getShooter()).getName() + \",\" + event.getEntity().getType().name()"
+
+  - name: playerDeath
+    bukkit_event: org.bukkit.event.entity.PlayerDeathEvent
+    # ENRICHED: Added player name (index 1)
+    data: "event.getEntity().getEntityId() + \",\" + event.getEntity().getName() + \",\" + event.getEntity().getLocation().getX() + \",\" + event.getEntity().getLocation().getY() + \",\" + event.getEntity().getLocation().getZ()"
+
+  - name: playerRespawn
+    bukkit_event: org.bukkit.event.player.PlayerRespawnEvent
+    # ENRICHED: Added player name (index 1)
+    data: "event.getPlayer().getEntityId() + \",\" + event.getPlayer().getName() + \",\" + event.getRespawnLocation().getX() + \",\" + event.getRespawnLocation().getY() + \",\" + event.getRespawnLocation().getZ()"

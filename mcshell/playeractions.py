@@ -64,12 +64,24 @@ class PlayerActions(MCActionsBase):
 
     @mced_block(
         label="Get Height",
-        position={'label': 'At Position (X,Z)'}
+        position={'label': 'At Position [(X,Y,Z)]'}
+    )
+    def get_height_at(self, position: Vec3) -> int:
+        """
+        Gets the Y coordinate of the highest block at the X,Z of the given position.
+        """
+        x, z = (int(position.x), int(position.z))
+        height = self.mcplayer.mj.world.getHeight(x, z)
+        return int(height)
+
+    @mced_block(
+        label="Get Height",
+        position={'label': 'At Position [(X,Y,Z)]'}
     )
     def get_height(self, position: Vec3) -> int:
         """
         Gets the Y coordinate of the highest block at the X,Z of the given position.
         """
         x, z = (int(position.x), int(position.z))
-        height = self.mcplayer.pc.getHeight(x, z)
+        height = self.mcplayer.mj.world.getHeight(x, z)
         return int(height)

@@ -67,6 +67,16 @@ this.appendValueInput('radius').appendField('Radius').setCheck('Number');
         }
     };
 
+    Blockly.Blocks['generatedworldactions_get_entity_name'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Get Name of Entity ID [id]");
+            this.appendValueInput('id').appendField('Entity ID').setCheck('Number');
+            this.setOutput(true, 'String');
+            this.setColour("#5C7457");
+            this.setTooltip("");
+        }
+    };
+
     Blockly.Blocks['generatedworldactions_get_height'] = {
         init: function() {
             this.appendDummyInput().appendField("Get Highest Block Y at X: [x] Z: [z]");

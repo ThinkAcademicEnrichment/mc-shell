@@ -4,15 +4,24 @@ from pathlib import Path
 # Ensure we can import from mcshell
 sys.path.append(str(Path(__file__).parent))
 
+from registry_builder import RegistryBuilder,ApiGenerator
+
 from mcshell.mcscraper import make_materials, make_entity_id_map, make_item_id_map
-from mcshell.registry_builder import RegistryBuilder,ApiGenerator
-from mcshell.constants import MC_APP_SRC_DIR, MC_DATA_DIR, MC_JUICE_SRC_DIR,MC_SHELL_DIR,subprocess,shutil
+from mcshell.constants import MC_MATERIALS_PATH,MC_ENTITY_ID_MAP_PATH,MC_APP_SRC_DIR, MC_DATA_DIR, MC_JUICE_SRC_DIR,MC_SHELL_DIR,subprocess,shutil
 
 def rebuild():
     """
     Primary orchestration script to rebuild the Minecraft Blockly registry.
     This serves as a full-pipeline test for the data-driven migration.
     """
+
+    print("Step 0: Remove the existing toolbox.xml file...")
+    output_toolbox_path = MC_APP_SRC_DIR / 'toolbox.xml'
+    output_toolbox_path.unlink(missing_ok=True)
+    toolbox_template_path = MC_DATA_DIR / 'toolbox_template.xml'
+    with output_toolbox_path.open('w') as f:
+        f.write(toolbox_template_path.read_text())
+
     print("Step 1: Scraping latest Minecraft data...")
     # These functions now produce structured dictionaries for Blocks/Items/Entities
     make_materials()
@@ -35,7 +44,9 @@ def rebuild():
     builder = RegistryBuilder(
         toolbox_path=MC_APP_SRC_DIR / 'toolbox.xml',
         blocks_dir=MC_APP_SRC_DIR / 'blocks',
-        gens_dir=MC_APP_SRC_DIR / 'generators' / 'python'
+        gens_dir=MC_APP_SRC_DIR / 'generators' / 'python',
+        materials_path=MC_MATERIALS_PATH,
+        entity_id_map_path=MC_ENTITY_ID_MAP_PATH
     )
 
     # This generates:

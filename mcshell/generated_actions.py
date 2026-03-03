@@ -46,16 +46,37 @@ class GeneratedPlayerActions(MCActionsBase):
         return self.mcplayer.mj.player.getDirection()
 
     @mced_block(
+        label="Set Direction to [dir]",
+        dir={'label': 'Direction Vector'}
+    )
+    def set_direction(self, dir: 'Vec3'):
+        self.mcplayer.mj.player.setDirection(float(dir.x), float(dir.y), float(dir.z))
+
+    @mced_block(
         label="Get Rotation"
     )
     def get_rotation(self) -> 'float':
         return self.mcplayer.mj.player.getRotation()
 
     @mced_block(
+        label="Set Rotation to [yaw]",
+        yaw={'label': 'Yaw'}
+    )
+    def set_rotation(self, yaw: 'float'):
+        self.mcplayer.mj.player.setRotation(float(yaw))
+
+    @mced_block(
         label="Get Pitch"
     )
     def get_pitch(self) -> 'float':
         return self.mcplayer.mj.player.getPitch()
+
+    @mced_block(
+        label="Set Pitch to [pitch]",
+        pitch={'label': 'Pitch'}
+    )
+    def set_pitch(self, pitch: 'float'):
+        self.mcplayer.mj.player.setPitch(float(pitch))
 
     @mced_block(
         label="Get Health"
@@ -77,6 +98,20 @@ class GeneratedPlayerActions(MCActionsBase):
     def get_food_level(self) -> 'int':
         """Returns the food level of the player."""
         return self.mcplayer.mj.player.getFoodLevel()
+
+    @mced_block(
+        label="Set Food Level to [level]",
+        level={'label': 'Food Level'}
+    )
+    def set_food_level(self, level: 'int'):
+        self.mcplayer.mj.player.setFoodLevel(int(level))
+
+    @mced_block(
+        label="Get Death Count"
+    )
+    def get_deaths(self) -> 'int':
+        """Returns the total number of times the player has died."""
+        return self.mcplayer.mj.player.getDeaths()
 
     @mced_block(
         label="Send Title to Screen",
@@ -213,6 +248,13 @@ class GeneratedWorldActions(MCActionsBase):
     def set_container_item(self, pos: 'Vec3', slot: 'int', item: 'Item', amount: 'int'):
         """Sets an item in a chest, barrel, or hopper inventory slot."""
         self.mcplayer.mj.world.setContainerItem(int(pos.x), int(pos.y), int(pos.z), int(slot), str(item), int(amount))
+
+    @mced_block(
+        label="Get Name of Entity ID [id]",
+        id={'label': 'Entity ID'}
+    )
+    def get_entity_name(self, id: 'int') -> 'str':
+        return self.mcplayer.mj.world.getEntityName(int(id))
 
 class GeneratedChatActions(MCActionsBase):
     def __init__(self, mc_player_instance, delay_between_blocks=0):

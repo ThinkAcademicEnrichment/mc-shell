@@ -15,7 +15,17 @@ export function definePlayerActionsBlocks(Blockly) {
     Blockly.Blocks['playeractions_get_height'] = {
         init: function() {
             this.appendDummyInput().appendField("Get Height");
-            this.appendValueInput('position').appendField('At Position (X,Z)').setCheck('3DVector');
+            this.appendValueInput('position').appendField('At Position [(X,Y,Z)]').setCheck('3DVector');
+            this.setOutput(true, 'Number');
+            this.setColour("#61A1B0");
+            this.setTooltip("Gets the Y coordinate of the highest block at the X,Z of the given position.");
+        }
+    };
+
+    Blockly.Blocks['playeractions_get_height_at'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Get Height");
+            this.appendValueInput('position').appendField('At Position [(X,Y,Z)]').setCheck('3DVector');
             this.setOutput(true, 'Number');
             this.setColour("#61A1B0");
             this.setTooltip("Gets the Y coordinate of the highest block at the X,Z of the given position.");

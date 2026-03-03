@@ -1,5 +1,11 @@
 export function defineGeneratedPlayerActionsGenerators(pythonGenerator) {
 
+    pythonGenerator.forBlock['generatedplayeractions_get_deaths'] = function(block, generator) {
+        
+        const code = `GeneratedPlayerActions.get_deaths()\n`;
+        return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
+    };
+
     pythonGenerator.forBlock['generatedplayeractions_get_direction'] = function(block, generator) {
         
         const code = `GeneratedPlayerActions.get_direction()\n`;
@@ -50,15 +56,39 @@ const stay = generator.valueToCode(block, 'stay', pythonGenerator.ORDER_ATOMIC) 
         return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
     };
 
+    pythonGenerator.forBlock['generatedplayeractions_set_direction'] = function(block, generator) {
+        const dir = generator.valueToCode(block, 'dir', pythonGenerator.ORDER_ATOMIC) || 'None';
+        const code = `GeneratedPlayerActions.set_direction(${dir})\n`;
+        return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
+    };
+
+    pythonGenerator.forBlock['generatedplayeractions_set_food_level'] = function(block, generator) {
+        const level = generator.valueToCode(block, 'level', pythonGenerator.ORDER_ATOMIC) || 'None';
+        const code = `GeneratedPlayerActions.set_food_level(${level})\n`;
+        return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
+    };
+
     pythonGenerator.forBlock['generatedplayeractions_set_health'] = function(block, generator) {
         const health = generator.valueToCode(block, 'health', pythonGenerator.ORDER_ATOMIC) || 'None';
         const code = `GeneratedPlayerActions.set_health(${health})\n`;
         return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
     };
 
+    pythonGenerator.forBlock['generatedplayeractions_set_pitch'] = function(block, generator) {
+        const pitch = generator.valueToCode(block, 'pitch', pythonGenerator.ORDER_ATOMIC) || 'None';
+        const code = `GeneratedPlayerActions.set_pitch(${pitch})\n`;
+        return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
+    };
+
     pythonGenerator.forBlock['generatedplayeractions_set_pos'] = function(block, generator) {
         const pos = generator.valueToCode(block, 'pos', pythonGenerator.ORDER_ATOMIC) || 'None';
         const code = `GeneratedPlayerActions.set_pos(${pos})\n`;
+        return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
+    };
+
+    pythonGenerator.forBlock['generatedplayeractions_set_rotation'] = function(block, generator) {
+        const yaw = generator.valueToCode(block, 'yaw', pythonGenerator.ORDER_ATOMIC) || 'None';
+        const code = `GeneratedPlayerActions.set_rotation(${yaw})\n`;
         return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
     };
 

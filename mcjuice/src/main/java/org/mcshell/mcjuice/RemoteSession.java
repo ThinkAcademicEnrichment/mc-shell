@@ -1,16 +1,14 @@
 package org.mcshell.mcjuice;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.World;
 import org.bukkit.entity.Player;
 import java.io.*;
 import java.net.Socket;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
-/**
- * RemoteSession handles a single TCP connection from a Python client.
- */
 public class RemoteSession implements Runnable {
     private final Socket socket;
     private final McJuicePlugin plugin;
@@ -18,6 +16,8 @@ public class RemoteSession implements Runnable {
     private PrintWriter out;
     private volatile boolean running = true;
 
+    // Private event buffer for this specific TCP connection
+    private final Map<String, ConcurrentLinkedQueue<String>> eventQueues = new ConcurrentHashMap<>();
     private final GeneratedCommandRegistry registry = new GeneratedCommandRegistry();
 
     public RemoteSession(McJuicePlugin plugin, Socket socket) {
@@ -25,13 +25,35 @@ public class RemoteSession implements Runnable {
         this.socket = socket;
     }
 
-    public boolean isRunning() {
-        return running;
+    public boolean isRunning() { return running; }
+
+    /**
+     * Adds an event to this session's specific queue.
+     */
+    public void enqueueEvent(String eventName, String data) {
+        eventQueues.computeIfAbsent(eventName, k -> new ConcurrentLinkedQueue<>()).add(data);
     }
+
+    /**
+     * Retreives and clears events for this session.
+     */
+    public String pollEvents(String eventName) {
+        ConcurrentLinkedQueue<String> queue = eventQueues.get(eventName);
+        if (queue == null || queue.isEmpty()) return "";
+
+        StringBuilder sb = new StringBuilder();
+        while (!queue.isEmpty()) {
+            sb.append(queue.poll()).append("|");
+        }
+        return sb.toString();
+    }
+
+    public void clearEvents() { eventQueues.clear(); }
 
     @Override
     public void run() {
         try {
+            plugin.registerSession(this);
             this.in = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
             this.out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), "UTF-8")), true);
 
@@ -72,19 +94,16 @@ public class RemoteSession implements Runnable {
         return null;
     }
 
-    /**
-     * Sends data back to Python. Synchronized to prevent interleaving lines.
-     */
     public synchronized void send(Object obj) {
         if (out != null) {
-            String msg = (obj == null) ? "" : obj.toString();
-            out.println(msg);
+            out.println((obj == null) ? "" : obj.toString());
             out.flush();
         }
     }
 
     public void close() {
         running = false;
+        plugin.unregisterSession(this);
         try {
             if (socket != null && !socket.isClosed()) socket.close();
         } catch (IOException ignored) {}

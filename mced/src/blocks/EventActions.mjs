@@ -12,33 +12,23 @@ export function defineEventActionsBlocks(Blockly) {
         }
     };
 
-    Blockly.Blocks['eventactions_wait_for_chat_by_name'] = {
+    Blockly.Blocks['eventactions_wait_for_left_block_hit_by_player'] = {
         init: function() {
-            this.appendDummyInput().appendField("Wait for Chat from [player]");
-            this.appendValueInput('player_name').appendField('Player').setCheck('String');
+            this.appendDummyInput().appendField("Wait for left block hit by a Player");
+            this.appendValueInput('player_name').appendField('Player name').setCheck('String');
+            this.setOutput(true, '3DVector');
+            this.setColour("#D68C45");
+            this.setTooltip("");
+        }
+    };
+
+    Blockly.Blocks['eventactions_wait_for_player_death'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Wait for a Player death");
+            this.appendValueInput('player_name').appendField('Player name').setCheck('String');
             this.setOutput(true, 'String');
             this.setColour("#D68C45");
-            this.setTooltip("Resolves the target player and waits for a chat message from them.");
-        }
-    };
-
-    Blockly.Blocks['eventactions_wait_for_projectile_by_name'] = {
-        init: function() {
-            this.appendDummyInput().appendField("Wait for Arrow Hit from [player]");
-            this.appendValueInput('player_name').appendField('Player').setCheck('String');
-            this.setOutput(true, '3DVector');
-            this.setColour("#D68C45");
-            this.setTooltip("Resolves the target player and waits for a projectile hit event.");
-        }
-    };
-
-    Blockly.Blocks['eventactions_wait_for_sword_strike_by_name'] = {
-        init: function() {
-            this.appendDummyInput().appendField("Wait for Sword Strike from [player]");
-            this.appendValueInput('player_name').appendField('Player').setCheck('String');
-            this.setOutput(true, '3DVector');
-            this.setColour("#D68C45");
-            this.setTooltip("Resolves the target player and waits for them to strike a block.");
+            this.setTooltip("");
         }
     };
 }

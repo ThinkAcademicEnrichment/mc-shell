@@ -1,30 +1,28 @@
 package org.mcshell.mcjuice;
 
 import org.bukkit.plugin.java.JavaPlugin;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.List;
 
 public class McJuicePlugin extends JavaPlugin {
     private static McJuicePlugin instance;
     private ServerListenerThread listenerThread;
 
-    // Dynamic Event Queues map event names to their specific queue
-    private final Map<String, ConcurrentLinkedQueue<String>> eventQueues = new ConcurrentHashMap<>();
+    // Track active sessions to enable broadcasting events to all clients
+    private final List<RemoteSession> activeSessions = new CopyOnWriteArrayList<>();
 
     @Override
     public void onEnable() {
         instance = this;
         saveDefaultConfig();
 
-        // Register the dynamically generated event listener
         getServer().getPluginManager().registerEvents(new GeneratedEventListener(), this);
 
         int port = getConfig().getInt("port", 4721);
         listenerThread = new ServerListenerThread(this, "0.0.0.0", port);
         listenerThread.start();
 
-        getLogger().info("McJuice Plugin Enabled. Listening for Python connections on port " + port);
+        getLogger().info("McJuice Plugin Enabled. Broadcasting events to Python sessions on port " + port);
     }
 
     @Override
@@ -34,33 +32,29 @@ public class McJuicePlugin extends JavaPlugin {
 
     public static McJuicePlugin getInstance() { return instance; }
 
-    // --- Dynamic Event Polling Methods ---
+    public void registerSession(RemoteSession session) {
+        activeSessions.add(session);
+    }
+
+    public void unregisterSession(RemoteSession session) {
+        activeSessions.remove(session);
+    }
 
     /**
-     * Called by GeneratedEventListener to store new events
+     * Broadcasts a new event to EVERY active Python session.
      */
     public void recordEvent(String eventName, String data) {
-        eventQueues.computeIfAbsent(eventName, k -> new ConcurrentLinkedQueue<>()).add(data);
-    }
-
-    /**
-     * Called by GeneratedCommandRegistry to retrieve events for Python
-     */
-    public String pollEvents(String eventName) {
-        ConcurrentLinkedQueue<String> queue = eventQueues.get(eventName);
-        if (queue == null || queue.isEmpty()) return "";
-
-        StringBuilder sb = new StringBuilder();
-        while (!queue.isEmpty()) {
-            sb.append(queue.poll()).append("|");
+        for (RemoteSession session : activeSessions) {
+            session.enqueueEvent(eventName, data);
         }
-        return sb.toString();
     }
 
     /**
-     * Clears all event queues
+     * Clears event queues for all sessions.
      */
     public void clearEvents() {
-        eventQueues.clear();
+        for (RemoteSession session : activeSessions) {
+            session.clearEvents();
+        }
     }
 }
