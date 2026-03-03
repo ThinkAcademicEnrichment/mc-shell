@@ -1,7 +1,5 @@
-from mcshell.mcplayer import MCPlayer
-# Use new file for base class import
 from mcshell.mcactions_base import MCActionsBase
-from mcshell.constants import Vec3
+from mcshell.constants import *
 from blockapily import mced_block
 
 class EventActions(MCActionsBase):

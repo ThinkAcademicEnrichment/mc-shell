@@ -1,8 +1,8 @@
+from blockapily import mced_block
+
 from mcshell.constants import *
 
 from mcshell.mcactions_base import MCActionsBase
-
-from mcshell.pyncraftcactions import PyncraftActions
 
 from mcshell.eventactions import EventActions
 from mcshell.serveractions import ServerActions
@@ -10,6 +10,17 @@ from mcshell.playeractions import PlayerActions
 from mcshell.qturtleactions import QTurtleActions
 from mcshell.digitalgeometryactions import DigitalGeometryActions
 from mcshell.digitalsetactions import DigitalSetActions
+from mcshell.mclsystem import LSystem
+
+# FIX: Robustly import generated actions to prevent build-time crashes
+try:
+    from mcshell.generated_actions import (
+        GeneratedPlayerActions, GeneratedChatActions, GeneratedWorldActions
+    )
+except ImportError:
+    GeneratedPlayerActions = None
+    GeneratedChatActions = None
+    GeneratedWorldActions = None
 
 # Advanced Digital Geometry and Turtle
 from mcshell.mcturtle import (
@@ -20,10 +31,7 @@ from mcshell.mcturtle import (
     QTurtle,
 )
 
-# L-System Logic
-from mcshell.mclsystem import LSystem
 
-from blockapily import mced_block
 
 class TurtleShapes(MCActionsBase):
     def __init__(self, mc_player_instance, delay_between_blocks=0.01):
