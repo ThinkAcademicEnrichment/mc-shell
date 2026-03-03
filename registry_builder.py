@@ -1,74 +1,67 @@
-from blockapily import BlocklyGenerator
+import sys
 import yaml
-from pathlib import Path
-import re
 import pickle
 import pathlib
+import re
+from pathlib import Path
 
-# Import Action Classes
+# --- STANDALONE PATH CONFIGURATION ---
+# We define these locally to avoid importing mcshell.constants,
+# which would trigger the problematic mcshell/__init__.py circular imports.
+BASE_DIR = Path(__file__).parent.resolve()
+MC_SHELL_DIR = BASE_DIR / "mcshell"
+MC_DATA_DIR = MC_SHELL_DIR / "data"
+MC_APP_SRC_DIR = MC_DATA_DIR / "app_src"
+MC_JUICE_DIR = BASE_DIR / "mcjuice"
+MC_JUICE_SRC_DIR = MC_JUICE_DIR / "src"
+
+# Scraper data paths
+MC_MATERIALS_PATH = MC_DATA_DIR / "materials.pkl"
+MC_ENTITY_ID_MAP_PATH = MC_DATA_DIR / "entity_id_map.pkl"
+
+# Add project root to sys.path to allow module lookups
+if str(BASE_DIR) not in sys.path:
+    sys.path.append(str(BASE_DIR))
+
+# Import blockapily
 try:
-    from mcshell.serveractions import ServerActions
-    from mcshell.pyncraftcactions import PyncraftActions
-    from mcshell.playeractions import PlayerActions
-    from mcshell.qturtleactions import QTurtleActions
-    from mcshell.digitalgeometryactions import DigitalGeometryActions
-    from mcshell.digitalsetactions import DigitalSetActions
-    from mcshell.eventactions import EventActions
-    from mcshell.mcactions import (
-        TurtleShapes, LSystemShapes
-    )
-    # test
-    from mcshell.generated_actions import (
-        GeneratedPlayerActions, GeneratedChatActions, GeneratedWorldActions
-    )
+    from blockapily import BlocklyGenerator, mced_block
+except ImportError:
+    BlocklyGenerator = None
+    print("Warning: blockapily not found. Block generation will be skipped.")
 
-    HAS_ALL_ACTIONS = True
-except ImportError as e:
-    print(f"Warning: Some action classes could not be imported: {e}")
-    HAS_ALL_ACTIONS = False
+def get_action_class(module_name, class_name):
+    """Imports a class without relying on the mcshell package root init."""
+    import importlib
+    try:
+        module = importlib.import_module(f"mcshell.{module_name}")
+        return getattr(module, class_name)
+    except (ImportError, AttributeError):
+        return None
 
 class RegistryBuilder:
     """
-    Orchestrates the generation of Minecraft-specific Blockly blocks
-    using structured data and the blockapily generation engine.
+    Generates Minecraft Blockly blocks and registries.
     """
 
-    # --- Class Level Constants & Data Structures ---
-
-    # Muted Primary & Secondary Palette
+    # --- UI & Design Tokens ---
     COLORS = {
-        "Block": "#B06161",     # Muted Red / Terracotta
-        "Item": "#D4A373",      # Muted Gold / Tan
-        "Entity": "#8D7EB5",    # Muted Purple / Lavender
-        "Picker": "#95A5A6",    # Muted Slate / Gray
-        "Geometry": "#5B7BA1",  # Muted Blue / Steel
-        "Turtle": "#C9A65B",    # Muted Yellow / Amber
-        "LSystem": "#7A9473",   # Muted Green / Sage
-        "Player": "#61A1B0",    # Muted Cyan / Teal
-        "Events": "#D68C45",    # Muted Orange / Copper
-        "Server": "#5C7457",    # Muted Forest / Dark Green
-        "Digital Set": "#A57582", # Muted Mauve / Rose
-        # new generated action classes
-        "J-Player": "#61A1B0",  # Muted Cyan / Teal
-        "J-World": "#5C7457",  # Muted Forest / Dark Green
-        "J-Chat": "#D68C45",  # Muted Orange / Copper
+        "Block": "#B06161", "Item": "#D4A373", "Entity": "#8D7EB5",
+        "Picker": "#95A5A6", "Geometry": "#5B7BA1", "Turtle": "#C9A65B",
+        "LSystem": "#7A9473", "Player": "#61A1B0", "Events": "#D68C45",
+        "Server": "#5C7457", "Digital Set": "#A57582",
+        "J-Player": "#61A1B0", "J-World": "#5C7457", "J-Chat": "#D68C45",
     }
 
     TYPE_MAP = {
-        'str': 'String',
-        'int': 'Number',
-        'float': 'Number',
-        'bool': 'Boolean',
-        'list': 'Array',
-        'tuple': 'List',
-        'Vec3': "3DVector", 'Matrix3': "3DMatrix", 'Block': "Block", 'DigitalSet': "Digital_Set",
-        'Metric': 'Metric', 'QDirection': 'QDirection', 'Axis': 'Axis', 'QCompass': 'QCompass',
-        'Time': 'Time',
-        'TimeType':'TimeType',
-        'Weather': 'Weather', 'Difficulty': 'Difficulty', 'Gamemode': 'Gamemode', 'GameRule': 'GameRule',
-        'LocateType': 'LocateType', 'Structure': 'Structure', 'Biome': 'Biome', 'Poi': 'Poi',
-        'Entity': 'Entity', 'Effect': "Effect",
-        'DataPath':'DataPath'
+        'str': 'String', 'int': 'Number', 'float': 'Number', 'bool': 'Boolean',
+        'list': 'Array', 'tuple': 'List', 'Vec3': "3DVector", 'Matrix3': "3DMatrix",
+        'Block': "Block", 'DigitalSet': "Digital_Set", 'Metric': 'Metric',
+        'QDirection': 'QDirection', 'Axis': 'Axis', 'QCompass': 'QCompass',
+        'Time': 'Time', 'TimeType':'TimeType', 'Weather': 'Weather',
+        'Difficulty': 'Difficulty', 'Gamemode': 'Gamemode', 'GameRule': 'GameRule',
+        'LocateType': 'LocateType', 'Structure': 'Structure', 'Biome': 'Biome',
+        'Poi': 'Poi', 'Entity': 'Entity', 'Effect': "Effect", 'DataPath': 'DataPath'
     }
 
     SHADOW_MAP = dict(
@@ -100,50 +93,31 @@ class RegistryBuilder:
         Poi='<shadow type="picker_poi"><field name="VALUE">armorer</field></shadow>',
         Effect='<shadow type="picker_effect"><field name="VALUE">speed</field></shadow>',
         TitleAction='<shadow type="picker_titleaction"><field name="VALUE">reset</field></shadow>',
-        DataPath='<shadow type="picker_datapath"><field name="VALUE">Brain</field></shadow>',
+        DataPath='<shadow type="picker_data_path"><field name="VALUE">Pos</field></shadow>',
     )
 
+    # --- Picker Data Structures ---
+
     DATA_PATHS = [
-        ('Brain', 'Brain'),
-        ('Hurt By Timestamp', 'HurtByTimestamp'),
-        ('Sleep Timer', 'SleepTimer'),
-        ('Attributes', 'Attributes'),
-        ('Invulnerable', 'Invulnerable'),
-        ('Fall Flying', 'FallFlying'),
-        ('Portal Cooldown', 'PortalCooldown'),
-        ('Absorption Amount', 'AbsorptionAmount'),
-        ('Abilities', 'abilities'),
-        ('Fall Distance', 'FallDistance'),
-        ('Recipe Book', 'recipeBook'),
-        ('Death Time', 'DeathTime'),
-        ('Xp Seed', 'XpSeed'),
-        ('Xp Total', 'XpTotal'),
-        ('UUID', 'UUID'),
-        ('Player Game Type', 'playerGameType'),
-        ('Seen Credits', 'seenCredits'),
-        ('Motion', 'Motion'),
-        ('Health', 'Health'),
-        ('Food Saturation Level', 'foodSaturationLevel'),
-        ('Air', 'Air'),
-        ('On Ground', 'OnGround'),
-        ('Dimension', 'Dimension'),
-        ('Rotation', 'Rotation'),
-        ('Xp Level', 'XpLevel'),
-        ('Score', 'Score'),
-        ('Pos', 'Pos'),
-        ('Previous Player Game Type', 'previousPlayerGameType'),
-        ('Fire', 'Fire'),
-        ('Xp P', 'XpP'),
-        ('Ender Items', 'EnderItems'),
-        ('Data Version', 'DataVersion'),
-        ('Food Level', 'foodLevel'),
-        ('Food Exhaustion Level', 'foodExhaustionLevel'),
-        ('Hurt Time', 'HurtTime'),
-        ('Selected Item Slot', 'SelectedItemSlot'),
-        ('Inventory', 'Inventory'),
-        ('Food Tick Timer', 'foodTickTimer')
+        ('Brain', 'Brain'), ('Hurt By Timestamp', 'HurtByTimestamp'), ('Sleep Timer', 'SleepTimer'),
+        ('Attributes', 'Attributes'), ('Invulnerable', 'Invulnerable'), ('Fall Flying', 'FallFlying'),
+        ('Portal Cooldown', 'PortalCooldown'), ('Absorption Amount', 'AbsorptionAmount'), ('Abilities', 'abilities'),
+        ('Fall Distance', 'FallDistance'), ('Recipe Book', 'recipeBook'), ('Death Time', 'DeathTime'),
+        ('Xp Seed', 'XpSeed'), ('Xp Total', 'XpTotal'), ('UUID', 'UUID'), ('Player Game Type', 'playerGameType'),
+        ('Seen Credits', 'seenCredits'), ('Motion', 'Motion'), ('Health', 'Health'),
+        ('Food Saturation Level', 'foodSaturationLevel'), ('Air', 'Air'), ('On Ground', 'OnGround'),
+        ('Dimension', 'Dimension'), ('Rotation', 'Rotation'), ('Xp Level', 'XpLevel'), ('Score', 'Score'),
+        ('Pos', 'Pos'), ('Previous Player Game Type', 'previousPlayerGameType'), ('Fire', 'Fire'),
+        ('Xp P', 'XpP'), ('Ender Items', 'EnderItems'), ('Data Version', 'DataVersion'),
+        ('Food Level', 'foodLevel'), ('Food Exhaustion Level', 'foodExhaustionLevel'), ('Hurt Time', 'HurtTime'),
+        ('Selected Item Slot', 'SelectedItemSlot'), ('Inventory', 'Inventory'), ('Food Tick Timer', 'foodTickTimer')
     ]
 
+    TIMETYPES = [("Day Time", "daytime"), ("Game Time", "gametime"), ("Day", "day")]
+    WEATHERS = [("Clear", "clear"), ("Rain", "rain"), ("Thunder", "thunder")]
+    DIFFICULTYS = [("Peaceful", "peaceful"), ("Easy", "easy"), ("Normal", "normal"), ("Hard", "hard")]
+    GAMEMODES = [("Survival", "survival"), ("Creative", "creative"), ("Adventure", "adventure"), ("Spectator", "spectator")]
+    LOCATETYPES = [("Structure", "structure"), ("Biome", "biome"), ("Point of Interest (POI)", "poi")]
     METRICS = [("Euclidean", "euclidean"), ("Manhattan", "manhattan"), ("Chebyshev", "chebyshev")]
     AXES = [("Yaw (Y)", "y"), ("Pitch (X)", "x"), ("Roll (Z)", "z")]
     COMPASS = [
@@ -170,16 +144,7 @@ class RegistryBuilder:
         ("South-East-Up", "SEU"), ("South-East-Down", "SED"), ("South-West-Up", "SWU"), ("South-West-Down", "SWD")
     ]
 
-    TIMES = [
-        ("Day (1000)", "day"), ("Noon (6000)", "noon"),
-        ("Night (13000)", "night"), ("Midnight (18000)", "midnight")
-    ]
-
-    TIMETYPES = [("Day Time", "daytime"), ("Game Time", "gametime"), ("Day", "day")]
-    WEATHERS = [("Clear", "clear"), ("Rain", "rain"), ("Thunder", "thunder")]
-    DIFFICULTYS = [("Peaceful", "peaceful"), ("Easy", "easy"), ("Normal", "normal"), ("Hard", "hard")]
-    GAMEMODES = [("Survival", "survival"), ("Creative", "creative"), ("Adventure", "adventure"), ("Spectator", "spectator")]
-    LOCATETYPES = [("Structure", "structure"), ("Biome", "biome"), ("Point of Interest (POI)", "poi")]
+    TIMES = [("Day (1000)", "day"), ("Noon (6000)", "noon"), ("Night (13000)", "night"), ("Midnight (18000)", "midnight")]
 
     STRUCTURES = [
         ("Ancient City", "ancient_city"), ("Bastion Remnant", "bastion_remnant"), ("Buried Treasure", "buried_treasure"),
@@ -197,9 +162,9 @@ class RegistryBuilder:
         ("Forest", "forest"), ("Frozen Peaks", "frozen_peaks"), ("Grove", "grove"), ("Ice Spikes", "ice_spikes"),
         ("Jagged Peaks", "jagged_peaks"), ("Jungle", "jungle"), ("Lush Caves", "lush_caves"), ("Mangrove Swamp", "mangrove_swamp"),
         ("Meadow", "meadow"), ("Mushroom Fields", "mushroom_fields"), ("Nether Wastes", "nether_wastes"), ("Ocean", "ocean"),
-        ("Plains", "plains"), ("River", "river"), ("Savanna", "savanna"), ("Snowy Beach", "snowy_beach"), ("Snowy Plains", "snowy_plain"),
+        ("Plains", "plains"), ("River", "river"), ("Savanna", "savanna"), ("Snowy Beach", "snowy_beach"), ("Snowy Plains", "snowy_plains"),
         ("Snowy Taiga", "snowy_taiga"), ("Soul Sand Valley", "soul_sand_valley"), ("Stony Peaks", "stony_peaks"), ("Swamp", "swamp"),
-        ("Taiga", "target_taiga"), ("The End", "the_end"), ("The Void", "the_void"), ("Warm Ocean", "warm_ocean"), ("Warped Forest", "warped_forest")
+        ("Taiga", "taiga"), ("The End", "the_end"), ("The Void", "the_void"), ("Warm Ocean", "warm_ocean"), ("Warped Forest", "warped_forest")
     ]
 
     POIS = [
@@ -269,27 +234,15 @@ class RegistryBuilder:
         {'id': 'picker_qheading', 'label': 'Local Q-Heading', 'options': QHEADINGS, 'input_type': 'QHeading'},
         {'id': 'picker_axis', 'label': 'Axis', 'options': AXES, 'input_type': 'Axis'},
         {'id': 'picker_qcompass', 'label': 'Global Q-Compass Direction', 'options': QCOMPASS, 'input_type': 'QCompass'},
-        {'id': 'picker_datapath', 'label': 'Player Data Paths', 'options': DATA_PATHS, 'input_type': 'DataPath'},
+        {'id': 'picker_data_path', 'label': 'Data Path', 'options': DATA_PATHS, 'input_type': 'DataPath'},
     ]
 
     WOOD_TYPES = ["OAK", "SPRUCE", "BIRCH", "JUNGLE", "ACACIA", "DARK_OAK", "MANGROVE", "CHERRY", "PALE_OAK", "BAMBOO", "CRIMSON", "WARPED"]
     COLORS_LIST = ["WHITE", "ORANGE", "MAGENTA", "LIGHT_BLUE", "YELLOW", "LIME", "PINK", "GRAY", "LIGHT_GRAY", "CYAN", "PURPLE", "BLUE", "BROWN", "GREEN", "RED", "BLACK"]
 
     VARIANT_MAP = {
-        'WOOD': {
-            'id': 'picker_wood_types',
-            'label': 'Wood Type',
-            'options': [(w.replace('_', ' ').title(), w) for w in WOOD_TYPES],
-            'input_type': 'MinecraftWood',
-            'shadow': 'picker_wood_types'
-        },
-        'COLOR': {
-            'id': 'picker_colours',
-            'label': 'Color',
-            'options': [(c.replace('_', ' ').title(), c) for c in COLORS_LIST],
-            'input_type': 'MinecraftColour',
-            'shadow': 'picker_colours'
-        }
+        'WOOD': {'id': 'picker_wood_types', 'label': 'Wood Type', 'options': [(w.replace('_', ' ').title(), w) for w in WOOD_TYPES], 'input_type': 'MinecraftWood', 'shadow': 'picker_wood_types'},
+        'COLOR': {'id': 'picker_colours', 'label': 'Color', 'options': [(c.replace('_', ' ').title(), c) for c in COLORS_LIST], 'input_type': 'MinecraftColour', 'shadow': 'picker_colours'}
     }
 
     MATERIAL_PICKER_GROUPS = {
@@ -314,7 +267,7 @@ class RegistryBuilder:
         "utility": ["ARMOR_STAND", "END_CRYSTAL", "EXPERIENCE_ORB", "FALLING_BLOCK", "ITEM_FRAME", "PAINTING", "PLAYER"]
     }
 
-    def __init__(self, toolbox_path: pathlib.Path, blocks_dir: pathlib.Path, gens_dir: pathlib.Path,materials_path:pathlib.Path,entity_id_map_path:pathlib.Path):
+    def __init__(self, toolbox_path: pathlib.Path, blocks_dir: pathlib.Path, gens_dir: pathlib.Path, materials_path: pathlib.Path, entity_id_map_path: pathlib.Path):
         self.toolbox_path = toolbox_path
         self.blocks_dir = blocks_dir
         self.gens_dir = gens_dir
@@ -332,45 +285,68 @@ class RegistryBuilder:
             self.entity_data = {}
 
         self.ACTION_CLASSES = []
-        if HAS_ALL_ACTIONS:
-            self.ACTION_CLASSES.extend([
-                (ServerActions, "Server", self.COLORS["Server"]),
-                (PyncraftActions, "Pyncraft", "#252E28"),
-                (PlayerActions, "Player", self.COLORS["Player"]),
-                (TurtleShapes, "Turtle", self.COLORS["Turtle"]),
-                (LSystemShapes, "LSystem", self.COLORS["LSystem"]),
-                (DigitalGeometryActions, "Digital Geometry", self.COLORS["Geometry"]),
-                (QTurtleActions, "Q-Turtle", self.COLORS["Turtle"]),
-                (EventActions, "Event", self.COLORS["Events"]),
-                (DigitalSetActions, "Digital Set", self.COLORS["Digital Set"]),
-                (GeneratedPlayerActions, "J-Player", self.COLORS["J-Player"]),
-                (GeneratedChatActions, "J-Chat", self.COLORS["J-Chat"]),
-                (GeneratedWorldActions, "J-World", self.COLORS["J-World"]),
-            ])
+        if BlocklyGenerator is not None:
+            classes = [
+                (get_action_class("serveractions", "ServerActions"), "Server", self.COLORS["Server"]),
+                (get_action_class("pyncraftcactions", "PyncraftActions"), "Pyncraft", "#252E28"),
+                (get_action_class("playeractions", "PlayerActions"), "Player", self.COLORS["Player"]),
+                (get_action_class("mcactions", "TurtleShapes"), "Turtle", self.COLORS["Turtle"]),
+                (get_action_class("mcactions", "LSystemShapes"), "LSystem", self.COLORS["LSystem"]),
+                (get_action_class("digitalgeometryactions", "DigitalGeometryActions"), "Digital Geometry", self.COLORS["Geometry"]),
+                (get_action_class("qturtleactions", "QTurtleActions"), "Q-Turtle", self.COLORS["Turtle"]),
+                (get_action_class("eventactions", "EventActions"), "Event", self.COLORS["Events"]),
+                (get_action_class("digitalsetactions", "DigitalSetActions"), "Digital Set", self.COLORS["Digital Set"]),
+                (get_action_class("generated_actions", "GeneratedPlayerActions"), "J-Player", self.COLORS["J-Player"]),
+                (get_action_class("generated_actions", "GeneratedChatActions"), "J-Chat", self.COLORS["J-Chat"]),
+                (get_action_class("generated_actions", "GeneratedWorldActions"), "J-World", self.COLORS["J-World"]),
+            ]
+            self.ACTION_CLASSES.extend([(c, n, col) for c, n, col in classes if c is not None])
 
     def _normalize_name(self, name: str) -> str:
         return name.replace('_', ' ').title()
 
-
     def build_all(self):
         """Executes the complete build pipeline."""
+        if BlocklyGenerator is None: return
+        self.ensure_toolbox(clean_toolbox=True)
         self.build_blocks()
         self.build_items()
         self.build_entities()
         self.build_actions()
         self.build_pickers_category()
 
-    def _generate_base_pickers(self) -> dict[str, str]:
-        """Generates the shared Wood and Color pickers used as shadows."""
+    def _generate_base_pickers(self) -> dict:
         js, py = [], []
         for info in self.VARIANT_MAP.values():
             res = BlocklyGenerator.generate_picker(info['id'], info['label'], info['options'], info['input_type'], self.COLORS["Picker"])
             js.append(res['js']); py.append(res['py'])
         return {"js": "\n".join(js), "py": "\n".join(py)}
 
+    def ensure_toolbox(self, clean_toolbox=False):
+        if clean_toolbox:
+            self.toolbox_path.unlink(missing_ok=True)
+        if not self.toolbox_path.exists():
+            template = MC_DATA_DIR / 'toolbox_template.xml'
+            if template.exists():
+                self.toolbox_path.write_text(template.read_text())
+
+    def _classify_variants(self, material_list):
+        parameterized, consumed = {}, set()
+        suffixes = {}
+        for mat in material_list:
+            parts = mat.split('_')
+            if len(parts) > 1:
+                prefix, suffix = parts[0], "_".join(parts[1:])
+                if prefix in self.WOOD_TYPES: suffixes.setdefault(f"{{}}_{suffix}", {"mats": [], "type": "WOOD"}).get("mats").append(mat)
+                elif prefix in self.COLORS_LIST: suffixes.setdefault(f"{{}}_{suffix}", {"mats": [], "type": "COLOR"}).get("mats").append(mat)
+        for t, info in suffixes.items():
+            if len(info["mats"]) > 3:
+                var = self.VARIANT_MAP[info["type"]]
+                parameterized[t] = {"template": t, "input_type": var["input_type"], "shadow": var["shadow"], "label": self._normalize_name(t.replace('{}_', ''))}
+                consumed.update(info["mats"])
+        return parameterized, consumed
 
     def build_blocks(self):
-        """Processes blocks and organizes them into thematic groups."""
         js, py, xml = [], [], []
         base = self._generate_base_pickers()
         js.append(base['js']); py.append(base['py'])
@@ -378,24 +354,19 @@ class RegistryBuilder:
         blocks = [k for k, v in self.materials_data.items() if v.get('is_block')]
         templates, consumed = self._classify_variants(blocks)
 
-        # 1. Parameterized Templates (Wood, Color variants)
         for t, info in templates.items():
             b_type = f"mc_block_{t.lower().replace('{}_', '').replace(' ', '_')}"
             res = BlocklyGenerator.generate_parameterized_block(b_type, info["label"], "VARIANT", info["input_type"], "Block", self.COLORS["Block"], t, info["shadow"])
             js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
 
-        # 2. Material Picker Groups (Ores, Glass, Nature, etc.)
         for group_name, members in self.MATERIAL_PICKER_GROUPS.items():
             valid_members = [m for m in members if m in blocks]
-            # Fix: removed undefined ignore_cancelled
             if not valid_members: continue
-
             b_type = f"mc_block_picker_{group_name.lower()}"
             res = BlocklyGenerator.generate_picker(b_type, self._normalize_name(group_name), [(self._normalize_name(m), m) for m in valid_members], "Block", self.COLORS["Picker"])
             js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
             consumed.update(valid_members)
 
-        # 3. Remaining General Blocks
         rem = sorted(list(set(blocks) - consumed))
         if rem:
             res = BlocklyGenerator.generate_picker("mc_block_picker_general", "Other Blocks", [(self._normalize_name(m), m) for m in rem], "Block", self.COLORS["Picker"])
@@ -405,28 +376,23 @@ class RegistryBuilder:
         BlocklyGenerator.update_toolbox(f'<category name="Blocks" colour="{self.COLORS["Block"]}">{"".join(xml)}</category>', self.toolbox_path)
 
     def build_items(self):
-        """Processes items and organizes them into thematic groups."""
         js, py, xml = [], [], []
         items = [k for k, v in self.materials_data.items() if v.get('is_item')]
         templates, consumed = self._classify_variants(items)
 
-        # 1. Parameterized Templates
         for t, info in templates.items():
             b_type = f"mc_item_{t.lower().replace('{}_', '').replace(' ', '_')}"
             res = BlocklyGenerator.generate_parameterized_block(b_type, info["label"], "VARIANT", info["input_type"], "Item", self.COLORS["Item"], t, info["shadow"])
             js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
 
-        # 2. Material Picker Groups for Items
         for group_name, members in self.MATERIAL_PICKER_GROUPS.items():
             valid_members = [m for m in members if m in items]
             if not valid_members: continue
-
             b_type = f"mc_item_picker_{group_name.lower()}"
             res = BlocklyGenerator.generate_picker(b_type, self._normalize_name(group_name), [(self._normalize_name(m), m) for m in valid_members], "Item", self.COLORS["Picker"])
             js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
             consumed.update(valid_members)
 
-        # 3. Remaining General Items
         rem = sorted(list(set(items) - consumed))
         if rem:
             res = BlocklyGenerator.generate_picker("mc_item_picker_general", "Other Items", [(self._normalize_name(m), m) for m in rem], "Item", self.COLORS["Picker"])
@@ -460,39 +426,27 @@ class RegistryBuilder:
             BlocklyGenerator.update_toolbox(c_xml, self.toolbox_path)
 
     def build_pickers_category(self):
-        """Creates a central category for all standalone pickers."""
         xml = [f'<block type="{info["id"]}"></block>' for info in self.VARIANT_MAP.values()]
         xml += [f'<block type="{p["id"]}"></block>' for p in self.ACTION_PICKERS]
-        # Add the thematic group pickers to the central Pickers category too
         for group_name in self.MATERIAL_PICKER_GROUPS.keys():
             xml.append(f'<block type="mc_block_picker_{group_name.lower()}"></block>')
-
         BlocklyGenerator.update_toolbox(f'<category name="Pickers" colour="{self.COLORS["Picker"]}">{"".join(xml)}</category>', self.toolbox_path)
-
-    def _classify_variants(self, material_list):
-        parameterized, consumed = {}, set()
-        suffixes = {}
-        for mat in material_list:
-            parts = mat.split('_')
-            if len(parts) > 1:
-                prefix, suffix = parts[0], "_".join(parts[1:])
-                if prefix in self.WOOD_TYPES: suffixes.setdefault(f"{{}}_{suffix}", {"mats": [], "type": "WOOD"}).get("mats").append(mat)
-                elif prefix in self.COLORS_LIST: suffixes.setdefault(f"{{}}_{suffix}", {"mats": [], "type": "COLOR"}).get("mats").append(mat)
-        for t, info in suffixes.items():
-            if len(info["mats"]) > 3:
-                var = self.VARIANT_MAP[info["type"]]
-                parameterized[t] = {"template": t, "input_type": var["input_type"], "shadow": var["shadow"], "label": self._normalize_name(t.replace('{}_', ''))}
-                consumed.update(info["mats"])
-        return parameterized, consumed
 
     def _write_output(self, file_name, export_name, js, py):
         header = 'import { MCED } from "../lib/constants.mjs";\n\n'
         js_c = f"{header}export function define{export_name}Blocks(Blockly) {{\n" + "\n".join(js) + "\n}"
         py_c = f"export function define{export_name}Generators(pythonGenerator) {{\n" + "\n".join(py) + "\n}"
+        self.blocks_dir.mkdir(parents=True, exist_ok=True)
+        self.gens_dir.mkdir(parents=True, exist_ok=True)
         (self.blocks_dir / f"{file_name}.mjs").write_text(js_c, encoding='utf-8')
         (self.gens_dir / f"{file_name}.mjs").write_text(py_c, encoding='utf-8')
 
+
 class ApiGenerator:
+    """
+    Generates the Java Registry, Event Listener, and Python Client.
+    Includes the robust Java compilation fix and the Push Architecture.
+    """
     def __init__(self, schema_path, java_out, java_listener_out, python_out, python_actions_out=None):
         try:
             with open(schema_path, 'r') as f:
@@ -500,7 +454,7 @@ class ApiGenerator:
         except Exception as e:
             print(f"Error loading YAML schema: {e}")
             self.schema = {}
-        self.output_path = Path(java_out)
+        self.java_out = Path(java_out)
         self.listener_output_path = Path(java_listener_out)
         self.python_out = Path(python_out)
         self.python_actions_out = Path(python_actions_out) if python_actions_out else None
@@ -531,18 +485,15 @@ class ApiGenerator:
             "    public GeneratedCommandRegistry() {",
             "        // Root level helper",
             "        registry.put(\"ping\", (args, session) -> session.send(\"pong\"));",
-            "        // FIX: Event Polling now targets the SESSION-specific queue",
-            "        registry.put(\"events.poll\", (args, session) -> session.send(session.pollEvents(args[0])));",
-            "        registry.put(\"events.clear\", (args, session) -> { session.clearEvents(); session.send(\"OK\"); });",
+            "        // --- PUSH ARCHITECTURE: Register event subscription ---",
+            "        registry.put(\"events.subscribe\", (args, session) -> { McJuicePlugin.getInstance().addEventSubscriber(session); session.send(\"OK\"); });",
             ""
         ]
 
-        namespaces = self.schema.get('namespaces', {})
-        for ns_name, ns_data in namespaces.items():
-            target_type = ns_data.get('target', 'Player')
-            for cmd in ns_data.get('commands', []):
-                cmd_full_name = f"{ns_name}.{cmd['name']}"
-                code.append(self._build_java_lambda(cmd_full_name, cmd, target_type))
+        for ns, data in self.schema.get('namespaces', {}).items():
+            target = data.get('target', 'Player')
+            for cmd in data.get('commands', []):
+                code.append(self._build_java_lambda(f"{ns}.{cmd['name']}", cmd, target))
 
         code.extend([
             "    }",
@@ -551,11 +502,11 @@ class ApiGenerator:
             "}"
         ])
 
-        self.output_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.output_path, "w") as f:
-            f.write("\n".join(code))
+        self.java_out.parent.mkdir(parents=True, exist_ok=True)
+        self.java_out.write_text("\n".join(code))
 
     def generate_java_listener(self):
+        """Generates the Bukkit Listener from the events schema section."""
         code = [
             "package org.mcshell.mcjuice;",
             "import org.bukkit.event.Listener;",
@@ -579,6 +530,7 @@ class ApiGenerator:
         self.listener_output_path.write_text("\n".join(code))
 
     def _build_java_lambda(self, name, cmd, target_type):
+        """Creates the Java registry lambda, ensuring variable names are unique and scoped correctly."""
         lines = [f'        registry.put("{name}", (args, session) -> {{']
 
         offset = 1 if target_type == "Player" else 0
@@ -590,10 +542,14 @@ class ApiGenerator:
         yaml_args = cmd.get("args", [])
         for i, arg in enumerate(yaml_args):
             t, n, idx = arg["type"], arg["name"], i + offset
+            # CRITICAL FIX: Prefix arg_var to prevent shadowing/redeclaring java variables
+            # inside multi-line blocks (e.g. setBlocks -> { int x1 = x1; })
             arg_var = f"_arg_{n}"
+
             if t == "double": lines.append(f'            final double {arg_var} = Double.parseDouble(args[{idx}]);')
             elif t == "int": lines.append(f'            final int {arg_var} = Integer.parseInt(args[{idx}]);')
             elif t == "String": lines.append(f'            final String {arg_var} = args[{idx}];')
+
             bukkit_call = bukkit_call.replace(f"{{{n}}}", arg_var)
 
         lines.append('            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {')
@@ -609,18 +565,21 @@ class ApiGenerator:
         else:
             exec_on = "Bukkit"
 
-        stripped_call = bukkit_call.strip()
-        is_block = stripped_call.startswith("{")
-        is_static = re.match(r'^(Bukkit|McJuicePlugin|org\.bukkit|[A-Z])', stripped_call)
-
+        is_block = bukkit_call.strip().startswith("{")
+        is_static = re.match(r'^(Bukkit|McJuicePlugin|org\.bukkit|[A-Z])', bukkit_call.strip())
         full_expr = bukkit_call if (is_block or is_static) else f"{exec_on}.{bukkit_call}"
+
         ret_type = cmd.get('returns', 'void')
 
+        # CRITICAL FIX: Handle blocks {} vs expressions correctly to avoid assigning a block to an Object.
         if is_block:
             lines.append(f'                {full_expr}')
+            if ret_type == 'void':
+                lines.append('                // No response for void to enable async speed')
         else:
             if ret_type == 'void':
                 lines.append(f'                {full_expr};')
+                lines.append('                // No response for void to enable async speed')
             else:
                 lines.append(f'                Object res = {full_expr};')
                 lines.append('                if (res == null) { session.send("null"); }')
@@ -631,33 +590,73 @@ class ApiGenerator:
                     lines.append('                else if (res instanceof Vector) { Vector v = (Vector)res; session.send(v.getX()+","+v.getY()+","+v.getZ()); }')
                     lines.append('                else { session.send(String.valueOf(res)); }')
 
-        if ret_type == 'void':
-            lines.append('                // No response for void to enable async speed');
-
-        lines.append('            });'); lines.append('        });')
+        lines.append('            });')
+        lines.append('        });')
         return "\n".join(lines)
 
     def generate_python_client(self):
+        """Generates the dual-socket Python Client for the Push architecture."""
         code = [
+            "import threading",
+            "import queue",
             "from mcshell.mcjuiceconn import MCJuiceConnection",
             "from mcshell.Vec3 import Vec3",
             "",
             "class MCJuiceClient:",
-            "    def __init__(self, conn, entity_id=None):",
+            "    def __init__(self, conn, event_conn, entity_id=None):",
             "        self.conn = conn",
-            "        self.entity_id = entity_id"
+            "        self.event_conn = event_conn",
+            "        self.entity_id = entity_id",
+            "        self.event_queues = {} # event_name -> list of queues",
+            "",
+            "        # --- PUSH ARCHITECTURE: Dedicated Event Router ---",
+            "        self.event_conn.send('events.subscribe')",
+            "        self.reader_thread = threading.Thread(target=self._event_reader_loop, daemon=True)",
+            "        self.reader_thread.start()"
         ]
-        namespaces = self.schema.get('namespaces', {})
-        if 'events' in namespaces: namespaces.pop('events', None)
 
+        namespaces = dict(self.schema.get('namespaces', {}))
         for ns in namespaces.keys():
-            code.append(f"        self.{ns} = {ns.capitalize()}Namespace(conn, entity_id)")
-        if 'events' in self.schema: code.append("        self.events = EventsNamespace(conn)")
+            code.append(f"        self.{ns} = {ns.capitalize()}Namespace(self.conn, self.entity_id)")
 
-        code.append("\n    @staticmethod\n    def create(address='localhost', port=4721, playerName=''):")
-        code.append("        conn = MCJuiceConnection(address, port); eid = None")
-        code.append("        if playerName: eid = int(conn.sendReceive('world.getPlayerId', playerName))")
-        code.append("        return MCJuiceClient(conn, eid)")
+        if 'events' in self.schema:
+            code.append("        self.events = EventsNamespace(self)")
+
+        code.extend([
+            "",
+            "    def _event_reader_loop(self):",
+            "        from mcshell.event import EventFactory",
+            "        while True:",
+            "            try:",
+            "                line = self.event_conn.receive()",
+            "                if not line: continue",
+            "                ",
+            "                # The Java plugin pushes: eventName,data...",
+            "                parts = line.split(',', 1)",
+            "                if len(parts) < 2: continue",
+            "                event_name, raw_data = parts[0], parts[1]",
+            "                ",
+            "                event_obj = EventFactory.create(event_name, raw_data)",
+            "                if not event_obj: continue",
+            "                ",
+            "                # Dispatch the parsed event to all registered local queues",
+            "                if event_name in self.event_queues:",
+            "                    for q in self.event_queues[event_name]:",
+            "                        q.put(event_obj)",
+            "            except Exception as e:",
+            "                # Socket closed or timed out",
+            "                break",
+            "",
+            "    @staticmethod",
+            "    def create(address='localhost', port=4721, playerName=''):",
+            "        # Open dual sockets to prevent command vs event collisions",
+            "        conn = MCJuiceConnection(address, port)",
+            "        event_conn = MCJuiceConnection(address, port)",
+            "        eid = None",
+            "        if playerName:",
+            "            eid = int(conn.sendReceive('world.getPlayerId', playerName))",
+            "        return MCJuiceClient(conn, event_conn, eid)"
+        ])
 
         for ns, data in namespaces.items():
             target = data.get('target', 'Player')
@@ -666,7 +665,7 @@ class ApiGenerator:
             for cmd in data.get('commands', []):
                 args = [a["name"] for a in cmd.get("args", [])]
                 sig = ", ".join(["self"] + args + (["entity_id=None"] if target == "Player" else []))
-                code.append(f"\n    def {cmd['name']}({sig}):")
+                code.append(f"    def {cmd['name']}({sig}):")
                 payload_parts = []
                 if target == "Player":
                     code.append("        eid = entity_id if entity_id is not None else self.entity_id")
@@ -674,6 +673,7 @@ class ApiGenerator:
                     payload_parts.append("eid")
                 payload_parts.extend(args)
                 payload = ", ".join(payload_parts)
+
                 r = cmd.get('returns', 'void')
                 if r == 'void':
                     code.append(f"        self.conn.send('{ns}.{cmd['name']}', {payload})")
@@ -687,24 +687,33 @@ class ApiGenerator:
                     elif r == 'int': code.append("        return int(res)")
                     else: code.append("        return res")
 
+        # New Events Namespace logic mapping purely to local memory queues
         if 'events' in self.schema:
-            code.append("\nclass EventsNamespace:")
-            code.append("    def __init__(self, conn): self.conn = conn")
-            code.append("\n    def poll(self, event_name: str):")
-            code.append("        res = self.conn.sendReceive('events.poll', event_name)")
-            code.append("        if res == 'OK' or not res: return []")
-            code.append("        from mcshell.event import EventFactory")
-            code.append("        events = [e for e in res.split('|') if e and ',' in e]")
-            code.append("        return [EventFactory.create(event_name, e) for e in events]")
-            code.append("\n    def clearAll(self): self.conn.sendReceive('events.clear')")
-            for event in self.schema.get('events', []):
-                e_name = event['name']
-                method_name = f"poll{e_name[0].upper()}{e_name[1:]}s"
-                code.append(f"\n    def {method_name}(self): return self.poll('{e_name}')")
+            code.extend([
+                "\nclass EventsNamespace:",
+                "    def __init__(self, client):",
+                "        self.client = client",
+                "",
+                "    def subscribe_local(self, event_name: str, target_queue: 'queue.Queue'):",
+                "        \"\"\"Registers a python queue to receive a specific event stream\"\"\"",
+                "        if event_name not in self.client.event_queues:",
+                "            self.client.event_queues[event_name] = []",
+                "        self.client.event_queues[event_name].append(target_queue)",
+                "",
+                "    def unsubscribe_local(self, event_name: str, target_queue: 'queue.Queue'):",
+                "        \"\"\"Unregisters a queue\"\"\"",
+                "        if event_name in self.client.event_queues:",
+                "            try:",
+                "                self.client.event_queues[event_name].remove(target_queue)",
+                "            except ValueError:",
+                "                pass"
+            ])
 
+        self.python_out.parent.mkdir(parents=True, exist_ok=True)
         self.python_out.write_text("\n".join(code))
 
     def _camel_to_snake(self, name):
+        """Helper to convert Java camelCase names to Python snake_case"""
         s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
         return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
@@ -793,7 +802,6 @@ class ApiGenerator:
                 call_args = blockly.get('call_args', [])
                 call_args_str = ", ".join(call_args)
 
-                # Fix: The mj client now handles .send() internally for void types
                 call_stmt = f"self.mcplayer.mj.{ns_name}.{cmd['name']}({call_args_str})"
                 if ret_type:
                     code.append(f"        return {call_stmt}")
@@ -802,3 +810,22 @@ class ApiGenerator:
 
         self.python_actions_out.parent.mkdir(parents=True, exist_ok=True)
         self.python_actions_out.write_text("\n".join(code))
+
+if __name__ == "__main__":
+    builder = RegistryBuilder(
+        MC_APP_SRC_DIR / 'toolbox.xml',
+        MC_APP_SRC_DIR / 'blocks',
+        MC_APP_SRC_DIR / 'generators' / 'python',
+        MC_MATERIALS_PATH,
+        MC_ENTITY_ID_MAP_PATH
+    )
+    builder.build_all()
+
+    gen = ApiGenerator(
+        MC_DATA_DIR / "mcjuice_api.yaml",
+        MC_JUICE_SRC_DIR / "main/java/org/mcshell/mcjuice/GeneratedCommandRegistry.java",
+        MC_JUICE_SRC_DIR / "main/java/org/mcshell/mcjuice/GeneratedEventListener.java",
+        MC_SHELL_DIR / "mcjuice.py",
+        MC_SHELL_DIR / "generated_actions.py"
+    )
+    gen.run()
