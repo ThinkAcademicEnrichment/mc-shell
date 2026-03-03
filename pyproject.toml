@@ -37,7 +37,6 @@ requests = "*"
 numpy = "*"
 yarl = "==1.20.1"
 beautifulsoup4 = "*"
-eventlet = "^0.40.2"
 pyyaml = "^6.0.2"
 
 # IPython Shell Dependencies
@@ -49,7 +48,7 @@ click = "*" # For the mcshell CLI entry point
 # Minecraft-specific Libraries
 
 # We now use blockapily.BlockGenerator !
-blockapily = "*"
+blockapily = "^0.3.1"
 voxelmap = "^5.1.1"
 pytest = "^9.0.2"
 mctools = "^1.4.1"
