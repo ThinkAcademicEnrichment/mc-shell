@@ -56,23 +56,21 @@ class MCPlayer(MCClient):
 
     @property
     def position(self):
-        return Vec3(*self.mj.player.getPos())
+        return self.mj.player.getPos()
 
     def set_position(self, pos:Vec3):
         return self.mj.player.setPos(*pos)
 
     @property
     def tile_position(self):
-        return Vec3(*self.mj.player.getTilePos())
+        return self.mj.player.getTilePos()
 
     def set_tile_position(self,pos:Vec3):
         self.mj.player.setTilePos(*tuple(map(int,pos.to_tuple())))
 
     @property
     def direction(self):
-        # note the cast from pyncraft.vec3.Vec3 to mcshell.Vec3.Vec3
-        # this is an arbitrary direction vector
-        return Vec3(*self.mj.player.getDirection())
+        return self.mj.player.getDirection()
 
     def set_direction(self,direction:Vec3):
         self.mj.player.setDirection(*direction)

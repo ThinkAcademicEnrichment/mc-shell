@@ -94,11 +94,9 @@ MC_SINGLE_MATERIALS_DATA_PATH = MC_DATA_DIR.joinpath('materials/singles.json')
 
 MC_ITEM_ID_MAP_PATH = MC_DATA_DIR.joinpath('materials/item_id_map.pkl')
 
-# here is the source of truth for Entity IDs like in pyncraft.entity
 MC_ENTITY_TYPE_URL = yarl.URL("https://raw.githubusercontent.com/PaperMC/Paper/refs/heads/main/paper-api/src/main/java/org/bukkit/entity/EntityType.java")
 MC_ENTITY_ID_MAP_PATH = MC_DATA_DIR.joinpath('entities/entity_id_map.pkl')
 MC_ENTITY_PICKERS_PATH = MC_DATA_DIR.joinpath('entities/pickers.json')
-
 
 MC_APP_DIR = MC_DATA_DIR.joinpath('app')
 

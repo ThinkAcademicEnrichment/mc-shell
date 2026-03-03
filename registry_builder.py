@@ -48,9 +48,9 @@ class RegistryBuilder:
     COLORS = {
         "Block": "#B06161", "Item": "#D4A373", "Entity": "#8D7EB5",
         "Picker": "#95A5A6", "Geometry": "#5B7BA1", "Turtle": "#C9A65B",
-        "LSystem": "#7A9473", "Player": "#61A1B0", "Events": "#D68C45",
+        "LSystem": "#7A9473", "Events": "#D68C45",
         "Server": "#5C7457", "Digital Set": "#A57582",
-        "J-Player": "#61A1B0", "J-World": "#5C7457", "J-Chat": "#D68C45",
+        "Player": "#61A1B0", "World": "#5C7457", "Chat": "#D68C45",
     }
 
     TYPE_MAP = {
@@ -288,17 +288,16 @@ class RegistryBuilder:
         if BlocklyGenerator is not None:
             classes = [
                 (get_action_class("serveractions", "ServerActions"), "Server", self.COLORS["Server"]),
-                (get_action_class("pyncraftcactions", "PyncraftActions"), "Pyncraft", "#252E28"),
-                (get_action_class("playeractions", "PlayerActions"), "Player", self.COLORS["Player"]),
+                # (get_action_class("playeractions", "PlayerActions"), "Player", self.COLORS["Player"]),
                 (get_action_class("mcactions", "TurtleShapes"), "Turtle", self.COLORS["Turtle"]),
                 (get_action_class("mcactions", "LSystemShapes"), "LSystem", self.COLORS["LSystem"]),
                 (get_action_class("digitalgeometryactions", "DigitalGeometryActions"), "Digital Geometry", self.COLORS["Geometry"]),
                 (get_action_class("qturtleactions", "QTurtleActions"), "Q-Turtle", self.COLORS["Turtle"]),
                 (get_action_class("eventactions", "EventActions"), "Event", self.COLORS["Events"]),
                 (get_action_class("digitalsetactions", "DigitalSetActions"), "Digital Set", self.COLORS["Digital Set"]),
-                (get_action_class("generated_actions", "GeneratedPlayerActions"), "J-Player", self.COLORS["J-Player"]),
-                (get_action_class("generated_actions", "GeneratedChatActions"), "J-Chat", self.COLORS["J-Chat"]),
-                (get_action_class("generated_actions", "GeneratedWorldActions"), "J-World", self.COLORS["J-World"]),
+                (get_action_class("generated_actions", "PlayerActions"), "Player", self.COLORS["Player"]),
+                (get_action_class("generated_actions", "ChatActions"), "Chat", self.COLORS["Chat"]),
+                (get_action_class("generated_actions", "WorldActions"), "World", self.COLORS["World"]),
             ]
             self.ACTION_CLASSES.extend([(c, n, col) for c, n, col in classes if c is not None])
 
@@ -741,7 +740,7 @@ class ApiGenerator:
             if not has_blockly:
                 continue
 
-            class_name = f"Generated{ns_name.capitalize()}Actions"
+            class_name = f"{ns_name.capitalize()}Actions"
             code.append(f"\nclass {class_name}(MCActionsBase):")
             code.append(f"    def __init__(self, mc_player_instance, delay_between_blocks=0):")
             code.append(f"        super().__init__(mc_player_instance, delay_between_blocks)")

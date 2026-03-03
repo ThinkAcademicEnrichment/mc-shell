@@ -57,12 +57,6 @@ jobs:
           poetry install --no-interaction
           npm --prefix mced ci
 
-      - name: Vendor pyncraft library
-        run: |
-          git clone https://github.com/d4g33z/pyncraft.git ../pyncraft
-          mkdir -p ./mcshell/vendored
-          cp -R ../pyncraft/pyncraft ./mcshell/vendored/pyncraft
-
       - name: Build application (includes Maven build via build.py)
         run: |
           # Ensure current directory is correct or navigate to build.py location
