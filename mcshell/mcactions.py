@@ -103,30 +103,24 @@ class LSystemShapes(MCActionsBase):
                 accumulated_shape = accumulated_shape.union(shape_segment)
         return accumulated_shape
 
-
-
-from mcshell.generated_actions import GeneratedPlayerActions,GeneratedWorldActions,GeneratedChatActions
-
 class MCActions(
     GeneratedPlayerActions, GeneratedWorldActions,GeneratedChatActions,
-    EventActions,PlayerActions,ServerActions,QTurtleActions,DigitalGeometryActions,DigitalSetActions,PyncraftActions,
+    PlayerActions,EventActions,ServerActions,QTurtleActions,DigitalGeometryActions,DigitalSetActions,
     TurtleShapes,LSystemShapes):
     """
     Unified API for Blockly combining all action groups.
     """
     def __init__(self, mc_player_instance, delay_between_blocks=0.0001):
         # Initialize all parent classes properly
-        # MCActionsBase.__init__(self, mc_player_instance, delay_between_blocks)
-        QTurtleActions.__init__(self, mc_player_instance, delay_between_blocks)
-        TurtleShapes.__init__(self,mc_player_instance,delay_between_blocks)
-        LSystemShapes.__init__(self, mc_player_instance,delay_between_blocks)
-        PyncraftActions.__init__(self, mc_player_instance, delay_between_blocks)
+        GeneratedPlayerActions.__init__(self, mc_player_instance, delay_between_blocks)
+        GeneratedWorldActions.__init__(self, mc_player_instance, delay_between_blocks)
+        GeneratedChatActions.__init__(self, mc_player_instance, delay_between_blocks)
         EventActions.__init__(self, mc_player_instance, delay_between_blocks)
-        ServerActions.__init__(self, mc_player_instance, delay_between_blocks)
         PlayerActions.__init__(self,mc_player_instance,delay_between_blocks)
+        ServerActions.__init__(self, mc_player_instance, delay_between_blocks)
+        QTurtleActions.__init__(self, mc_player_instance, delay_between_blocks)
         DigitalGeometryActions.__init__(self,mc_player_instance, delay_between_blocks)
         DigitalSetActions.__init__(self,mc_player_instance, delay_between_blocks)
-        GeneratedPlayerActions.__init__(self,mc_player_instance,delay_between_blocks)
-        GeneratedWorldActions.__init__(self,mc_player_instance, delay_between_blocks)
-        GeneratedChatActions.__init__(self, mc_player_instance, delay_between_blocks)
+        TurtleShapes.__init__(self,mc_player_instance,delay_between_blocks)
+        LSystemShapes.__init__(self, mc_player_instance,delay_between_blocks)
 
