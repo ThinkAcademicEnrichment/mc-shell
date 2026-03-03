@@ -78,13 +78,13 @@ jobs:
           # Scheduled runs run on 'main' by default, so they will run all tests.
           if [[ "${{ github.ref_name }}" == "main" || "${{ github.base_ref }}" == "main" || "${{ github.event_name }}" == "schedule" ]]; then
             echo "Running all tests (including integration)..."
-            poetry run PYTHONPATH=. pytest tests
+            poetry run pytest tests
           else
             echo "Running fast tests only (skipping integration)..."
             # Discover and run tests in specific directories to exclude 'integration'
-            poetry run PYTHONPATH=. pytest tests/unit
-            poetry run PYTHONPATH=. pytest tests/mock
-            poetry run PYTHONPATH=. pytest tests/utils
+            poetry run pytest tests/unit
+            poetry run pytest tests/mock
+            poetry run pytest tests/utils
           fi
 
       - name: Verify package build
