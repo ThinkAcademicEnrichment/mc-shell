@@ -467,20 +467,24 @@ events:
   - name: rightBlockHit
     bukkit_event: org.bukkit.event.player.PlayerInteractEvent
     condition: "event.getAction() == org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null"
-    data: "event.getClickedBlock().getX() + \",\" + event.getClickedBlock().getY() + \",\" + event.getClickedBlock().getZ() + \",\" + event.getBlockFace().ordinal() + \",\" + event.getPlayer().getEntityId()"
+    # ENRICHED: Added player name (index 5)
+    data: "event.getClickedBlock().getX() + \",\" + event.getClickedBlock().getY() + \",\" + event.getClickedBlock().getZ() + \",\" + event.getBlockFace().ordinal() + \",\" + event.getPlayer().getEntityId() + \",\" + event.getPlayer().getName()"
 
   - name: leftBlockHit
     bukkit_event: org.bukkit.event.player.PlayerInteractEvent
     condition: "event.getAction() == org.bukkit.event.block.Action.LEFT_CLICK_BLOCK && event.getClickedBlock() != null"
-    data: "event.getClickedBlock().getX() + \",\" + event.getClickedBlock().getY() + \",\" + event.getClickedBlock().getZ() + \",\" + event.getBlockFace().ordinal() + \",\" + event.getPlayer().getEntityId()"
+    # ENRICHED: Added player name (index 5)
+    data: "event.getClickedBlock().getX() + \",\" + event.getClickedBlock().getY() + \",\" + event.getClickedBlock().getZ() + \",\" + event.getBlockFace().ordinal() + \",\" + event.getPlayer().getEntityId() + \",\" + event.getPlayer().getName()"
 
   - name: blockPlace
     bukkit_event: org.bukkit.event.block.BlockPlaceEvent
-    data: "event.getBlock().getX() + \",\" + event.getBlock().getY() + \",\" + event.getBlock().getZ() + \",\" + event.getBlock().getType().name() + \",\" + event.getPlayer().getEntityId()"
+    # ENRICHED: Added player name (index 5)
+    data: "event.getBlock().getX() + \",\" + event.getBlock().getY() + \",\" + event.getBlock().getZ() + \",\" + event.getBlock().getType().name() + \",\" + event.getPlayer().getEntityId() + \",\" + event.getPlayer().getName()"
 
   - name: blockBreak
     bukkit_event: org.bukkit.event.block.BlockBreakEvent
-    data: "event.getBlock().getX() + \",\" + event.getBlock().getY() + \",\" + event.getBlock().getZ() + \",\" + event.getPlayer().getEntityId()"
+    # ENRICHED: Added player name (index 4)
+    data: "event.getBlock().getX() + \",\" + event.getBlock().getY() + \",\" + event.getBlock().getZ() + \",\" + event.getPlayer().getEntityId() + \",\" + event.getPlayer().getName()"
 
   - name: chat
     bukkit_event: org.bukkit.event.player.AsyncPlayerChatEvent

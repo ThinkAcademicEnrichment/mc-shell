@@ -16,11 +16,17 @@ class BlockEvent(Event):
         if subtype in ("RIGHT_HIT", "LEFT_HIT"):
             self.face = int(data[3])
             self.entityId = int(data[4])
+            self.name = data[5]
         elif subtype == "PLACE":
             self.blockType = data[3]
             self.entityId = int(data[4])
+            self.name = data[5]
         elif subtype == "BREAK":
             self.entityId = int(data[3])
+            self.name = data[4]
+
+    def __repr__(self):
+        return f"BlockEvent({self.subtype}, {self.name}({self.entityId}), {self.pos})"
 
 class ProjectileEvent(Event):
     """Encapsulates projectile hits on blocks, entities, or launch events."""
