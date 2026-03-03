@@ -68,7 +68,7 @@ export function defineServerActionsGenerators(pythonGenerator) {
         return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
     };
 
-    pythonGenerator.forBlock['picker_datapath'] = function(block, generator) {
+    pythonGenerator.forBlock['picker_data_path'] = function(block, generator) {
         return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
     };
 

@@ -241,12 +241,12 @@ export function defineServerActionsBlocks(Blockly) {
                 ["River", "river"],
                 ["Savanna", "savanna"],
                 ["Snowy Beach", "snowy_beach"],
-                ["Snowy Plains", "snowy_plain"],
+                ["Snowy Plains", "snowy_plains"],
                 ["Snowy Taiga", "snowy_taiga"],
                 ["Soul Sand Valley", "soul_sand_valley"],
                 ["Stony Peaks", "stony_peaks"],
                 ["Swamp", "swamp"],
-                ["Taiga", "target_taiga"],
+                ["Taiga", "taiga"],
                 ["The End", "the_end"],
                 ["The Void", "the_void"],
                 ["Warm Ocean", "warm_ocean"],
@@ -457,10 +457,10 @@ export function defineServerActionsBlocks(Blockly) {
         }
     };
 
-    Blockly.Blocks['picker_datapath'] = {
+    Blockly.Blocks['picker_data_path'] = {
         init: function() {
             this.appendDummyInput()
-                .appendField("Player Data Paths")
+                .appendField("Data Path")
                 .appendField(new Blockly.FieldDropdown([
                 ["Brain", "Brain"],
                 ["Hurt By Timestamp", "HurtByTimestamp"],
