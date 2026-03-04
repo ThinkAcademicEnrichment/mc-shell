@@ -41,7 +41,6 @@ export async function getExistingCategories() {
 /**
  * Enhanced Metadata extraction:
  * Now attempts to predict a sub-category based on the blocks present.
- * This is async because it now fetches the list of existing categories for the UI.
  */
 export async function getPowerMetadata(workspace) {
     let powerName = '';
@@ -70,7 +69,6 @@ export async function getPowerMetadata(workspace) {
         }
     }
 
-    // Fetch existing categories to populate the dropdown
     const existingCategories = await getExistingCategories();
 
     return {
@@ -115,27 +113,63 @@ export async function savePower(workspace, formData) {
     };
 
     if (funcDefBlock) {
-        const powerFunctionName = funcDefBlock.getFieldValue('NAME');
-        const argNames = funcDefBlock.getVars();
-        const funcNameForCode = pythonGenerator.nameDB_.getName(powerFunctionName, MCED.BlocklyNameTypes.PROCEDURE);
-        const argsForDef = argNames.map(name => pythonGenerator.nameDB_.getName(name, MCED.BlocklyNameTypes.VARIABLE));
+        // 1. Generate the fully translated code natively via Blockly
+        const fullCode = pythonGenerator.workspaceToCode(workspace);
 
-        let funcBody = pythonGenerator.statementToCode(funcDefBlock, 'STACK') || (pythonGenerator.INDENT + 'pass\n');
-        if (funcDefBlock.type === 'procedures_defreturn') {
-            const ret = pythonGenerator.valueToCode(funcDefBlock, 'RETURN', pythonGenerator.ORDER_NONE) || 'None';
-            funcBody += pythonGenerator.INDENT + 'return ' + ret + '\n';
+        // 2. Extract ONLY the custom method definitions (Slicing between __init__ and run_program)
+        // This ensures we get the translated code without double-wrapping the class!
+        const lines = fullCode.split('\n');
+        let inInit = false;
+        let extractedLines = [];
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+
+            if (line.startsWith('    def __init__')) {
+                inInit = true;
+                continue;
+            }
+
+            if (inInit) {
+                // Stay inside __init__ as long as lines are double-indented or empty
+                if (line.startsWith('        ') || line.trim() === '') {
+                    continue;
+                } else {
+                    inInit = false;
+                }
+            }
+
+            if (!inInit) {
+                // Stop extracting once we hit the execution runner
+                if (line.startsWith('    def run_program')) {
+                    break;
+                }
+
+                // Only capture the actual methods
+                if (line.startsWith('    def ') || extractedLines.length > 0) {
+                    extractedLines.push(line);
+                }
+            }
         }
 
-        powerDataObject.function_name = powerFunctionName;
-        powerDataObject.python_code = `def ${funcNameForCode}(self, ${argsForDef.join(', ')}):\n${funcBody}`;
+        // 3. Dedent the extracted lines.
+        // The backend dynamically injects this code into a class template and indents it by 4 spaces.
+        // By stripping the initial 4 spaces here, we prevent the "double indent" that breaks execution.
+        powerDataObject.python_code = extractedLines.map(line => {
+            return line.startsWith('    ') ? line.substring(4) : line;
+        }).join('\n').trimEnd() + '\n';
 
+        powerDataObject.function_name = funcDefBlock.getFieldValue('NAME');
+
+        // 4. Process Parameters using the Call block
+        const argNames = funcDefBlock.getVars();
         if (argNames.length > 0) {
             const callBlock = topBlocks.find(b =>
                 (b.type === 'procedures_callnoreturn' || b.type === 'procedures_callreturn') &&
-                b.getFieldValue('NAME') === powerFunctionName
+                b.getFieldValue('NAME') === powerDataObject.function_name
             );
 
-            if (!callBlock) throw new Error(`You must have a "call ${powerFunctionName}" block to define types.`);
+            if (!callBlock) throw new Error(`You must have a "call ${powerDataObject.function_name}" block to define types.`);
 
             powerDataObject.parameters = argNames.map((name, i) => {
                 const input = callBlock.getInput('ARG' + i);
@@ -144,6 +178,7 @@ export async function savePower(workspace, formData) {
             });
         }
     } else {
+        // Standalone scripts require the full class wrapper, so we send the whole thing!
         powerDataObject.python_code = pythonGenerator.workspaceToCode(workspace);
         powerDataObject.function_name = null;
         powerDataObject.parameters = [];
