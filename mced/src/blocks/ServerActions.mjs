@@ -24,10 +24,8 @@ export function defineServerActionsBlocks(Blockly) {
                 .appendField(new Blockly.FieldDropdown([
                 ["Day (1000)", "day"],
                 ["Noon (6000)", "noon"],
-                ["Sunset (12000)", "sunset"],
                 ["Night (13000)", "night"],
-                ["Midnight (18000)", "midnight"],
-                ["Sunrise (23000)", "sunrise"]
+                ["Midnight (18000)", "midnight"]
                 ]), "VALUE");
             this.setOutput(true, "Time");
             this.setColour("#95A5A6");
@@ -459,6 +457,56 @@ export function defineServerActionsBlocks(Blockly) {
         }
     };
 
+    Blockly.Blocks['picker_data_path'] = {
+        init: function() {
+            this.appendDummyInput()
+                .appendField("Data Path")
+                .appendField(new Blockly.FieldDropdown([
+                ["Brain", "Brain"],
+                ["Hurt By Timestamp", "HurtByTimestamp"],
+                ["Sleep Timer", "SleepTimer"],
+                ["Attributes", "Attributes"],
+                ["Invulnerable", "Invulnerable"],
+                ["Fall Flying", "FallFlying"],
+                ["Portal Cooldown", "PortalCooldown"],
+                ["Absorption Amount", "AbsorptionAmount"],
+                ["Abilities", "abilities"],
+                ["Fall Distance", "FallDistance"],
+                ["Recipe Book", "recipeBook"],
+                ["Death Time", "DeathTime"],
+                ["Xp Seed", "XpSeed"],
+                ["Xp Total", "XpTotal"],
+                ["UUID", "UUID"],
+                ["Player Game Type", "playerGameType"],
+                ["Seen Credits", "seenCredits"],
+                ["Motion", "Motion"],
+                ["Health", "Health"],
+                ["Food Saturation Level", "foodSaturationLevel"],
+                ["Air", "Air"],
+                ["On Ground", "OnGround"],
+                ["Dimension", "Dimension"],
+                ["Rotation", "Rotation"],
+                ["Xp Level", "XpLevel"],
+                ["Score", "Score"],
+                ["Pos", "Pos"],
+                ["Previous Player Game Type", "previousPlayerGameType"],
+                ["Fire", "Fire"],
+                ["Xp P", "XpP"],
+                ["Ender Items", "EnderItems"],
+                ["Data Version", "DataVersion"],
+                ["Food Level", "foodLevel"],
+                ["Food Exhaustion Level", "foodExhaustionLevel"],
+                ["Hurt Time", "HurtTime"],
+                ["Selected Item Slot", "SelectedItemSlot"],
+                ["Inventory", "Inventory"],
+                ["Food Tick Timer", "foodTickTimer"]
+                ]), "VALUE");
+            this.setOutput(true, "DataPath");
+            this.setColour("#95A5A6");
+            this.setTooltip("");
+        }
+    };
+
     Blockly.Blocks['serveractions_server_apply_effect'] = {
         init: function() {
             this.appendDummyInput().appendField("Apply [effect] to [target] for [seconds]s (Level [amplifier])");
@@ -514,11 +562,22 @@ this.appendValueInput('target').appendField('Target Player').setCheck('String');
         }
     };
 
-    Blockly.Blocks['serveractions_server_gamerule_set'] = {
+    Blockly.Blocks['serveractions_server_gamerule_integer_set'] = {
         init: function() {
             this.appendDummyInput().appendField("Set Gamerule [rule] to [value]");
+            this.appendValueInput('rule').appendField('Game Rule').setCheck('IntegerGameRule');
+this.appendValueInput('value').appendField('Value').setCheck('Number');
+            this.setPreviousStatement(true); this.setNextStatement(true);
+            this.setColour("#5C7457");
+            this.setTooltip("Modifies a server game rule.");
+        }
+    };
+
+    Blockly.Blocks['serveractions_server_gamerule_set'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Set Gamerule [rule] to True/False");
             this.appendValueInput('rule').appendField('Game Rule').setCheck('GameRule');
-this.appendValueInput('value').appendField('Value').setCheck(['Boolean', 'Number', 'String']);
+this.appendValueInput('value').appendField('Value').setCheck('Boolean');
             this.setPreviousStatement(true); this.setNextStatement(true);
             this.setColour("#5C7457");
             this.setTooltip("Modifies a server game rule.");
@@ -554,6 +613,26 @@ this.appendValueInput('target').appendField('Target Player').setCheck('String');
             this.setOutput(true, '3DVector');
             this.setColour("#5C7457");
             this.setTooltip("Locates a structure and returns its coordinates.");
+        }
+    };
+
+    Blockly.Blocks['serveractions_server_player_data_get_pos'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Get a Player's position");
+            this.appendValueInput('player_name').appendField('Player Name').setCheck('String');
+            this.setOutput(true, '3DVector');
+            this.setColour("#5C7457");
+            this.setTooltip("");
+        }
+    };
+
+    Blockly.Blocks['serveractions_server_set_time'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Set Time to [time]");
+            this.appendValueInput('time').appendField('Time').setCheck('Number');
+            this.setPreviousStatement(true); this.setNextStatement(true);
+            this.setColour("#5C7457");
+            this.setTooltip("Sets the server time.");
         }
     };
 
@@ -614,11 +693,11 @@ this.appendValueInput('pos').appendField('Position').setCheck('3DVector');
 
     Blockly.Blocks['serveractions_server_time_set'] = {
         init: function() {
-            this.appendDummyInput().appendField("Set Time to [time]");
-            this.appendValueInput('time').appendField('Time').setCheck('Number');
+            this.appendDummyInput().appendField("Set the world time");
+            this.appendValueInput('time_of_day').appendField('Time').setCheck('Time');
             this.setPreviousStatement(true); this.setNextStatement(true);
             this.setColour("#5C7457");
-            this.setTooltip("Sets the server time.");
+            this.setTooltip("Set the world time.");
         }
     };
 

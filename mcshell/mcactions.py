@@ -1,15 +1,25 @@
+from blockapily import mced_block
+
 from mcshell.constants import *
 
 from mcshell.mcactions_base import MCActionsBase
 
-from mcshell.pyncraftcactions import PyncraftActions
-
 from mcshell.eventactions import EventActions
 from mcshell.serveractions import ServerActions
-from mcshell.playeractions import PlayerActions
 from mcshell.qturtleactions import QTurtleActions
 from mcshell.digitalgeometryactions import DigitalGeometryActions
 from mcshell.digitalsetactions import DigitalSetActions
+from mcshell.mclsystem import LSystem
+
+# FIX: Robustly import generated actions to prevent build-time crashes
+try:
+    from mcshell.generated_actions import (
+        PlayerActions, ChatActions, WorldActions
+    )
+except ImportError:
+    PlayerActions = None
+    ChatActions = None
+    WorldActions = None
 
 # Advanced Digital Geometry and Turtle
 from mcshell.mcturtle import (
@@ -20,10 +30,7 @@ from mcshell.mcturtle import (
     QTurtle,
 )
 
-# L-System Logic
-from mcshell.mclsystem import LSystem
 
-from blockapily import mced_block
 
 class TurtleShapes(MCActionsBase):
     def __init__(self, mc_player_instance, delay_between_blocks=0.01):
@@ -95,23 +102,23 @@ class LSystemShapes(MCActionsBase):
                 accumulated_shape = accumulated_shape.union(shape_segment)
         return accumulated_shape
 
-
-
-
-class MCActions(EventActions,PlayerActions,ServerActions,QTurtleActions,DigitalGeometryActions,DigitalSetActions,PyncraftActions,TurtleShapes,LSystemShapes):
+class MCActions(
+    PlayerActions, WorldActions,ChatActions,
+    EventActions,ServerActions,QTurtleActions,DigitalGeometryActions,DigitalSetActions,
+    TurtleShapes,LSystemShapes):
     """
     Unified API for Blockly combining all action groups.
     """
     def __init__(self, mc_player_instance, delay_between_blocks=0.0001):
         # Initialize all parent classes properly
-        MCActionsBase.__init__(self, mc_player_instance, delay_between_blocks)
-        QTurtleActions.__init__(self, mc_player_instance, delay_between_blocks)
-        TurtleShapes.__init__(self,mc_player_instance,delay_between_blocks)
-        LSystemShapes.__init__(self, mc_player_instance,delay_between_blocks)
-        PyncraftActions.__init__(self, mc_player_instance, delay_between_blocks)
+        PlayerActions.__init__(self, mc_player_instance, delay_between_blocks)
+        WorldActions.__init__(self, mc_player_instance, delay_between_blocks)
+        ChatActions.__init__(self, mc_player_instance, delay_between_blocks)
         EventActions.__init__(self, mc_player_instance, delay_between_blocks)
         ServerActions.__init__(self, mc_player_instance, delay_between_blocks)
-        PlayerActions.__init__(self,mc_player_instance,delay_between_blocks)
+        QTurtleActions.__init__(self, mc_player_instance, delay_between_blocks)
         DigitalGeometryActions.__init__(self,mc_player_instance, delay_between_blocks)
         DigitalSetActions.__init__(self,mc_player_instance, delay_between_blocks)
+        TurtleShapes.__init__(self,mc_player_instance,delay_between_blocks)
+        LSystemShapes.__init__(self, mc_player_instance,delay_between_blocks)
 

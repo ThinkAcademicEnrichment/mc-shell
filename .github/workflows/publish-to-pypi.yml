@@ -12,6 +12,14 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        
+      # --- Fix: Added Java 21 Setup ---
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -34,21 +42,19 @@ jobs:
           virtualenvs-path: ~/.virtualenvs
           installer-parallel: true
 
-
       - name: Install all dependencies
         run: |
           poetry install --no-interaction
           npm --prefix mced ci
 
-      - name: Vendor pyncraft library
-        run: |
-          git clone https://github.com/d4g33z/pyncraft.git ../pyncraft
-          mkdir -p ./mcshell/vendored
-          cp -R ../pyncraft/pyncraft ./mcshell/vendored/pyncraft
-
       - name: Build frontend application
         working-directory: ./mced
         run: npm run build
+
+      - name: Ensure JAR is in data directory
+        run: |
+          mkdir -p mcshell/data
+          cp mcjuice/target/mcjuice-0.1.0.jar mcshell/data/ || echo "JAR not found in target!"
 
       - name: Build Source Distribution (sdist)
         run: poetry build --format sdist
@@ -64,22 +70,3 @@ jobs:
       # Re-run the build to ensure the /dist directory exists before uploading to the release.
       - name: Rebuild package for release asset
         run: poetry build
-
-#       #Debugging
-#      - name: List files in the repository
-#        run: ls -R
-#
-# this section fails with ENOENT: no such file or directory, stat './dist/*.whl'
-#      - name: Upload wheel as a release asset
-#        uses: actions/upload-release-asset@v1
-#        with:
-#          # This is the URL provided by the 'release' event that triggered the workflow
-#          upload_url: ${{ github.event.release.upload_url }}
-#          # This specifies which file from the 'dist' directory to upload
-#          asset_path: ./dist/*.whl
-#          # This is the name the file will have in the release assets
-#          asset_name: mc_shell-${{ github.ref_name }}.whl
-#          asset_content_type: application/zip
-#        env:
-#          # The GITHUB_TOKEN is automatically provided by GitHub
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

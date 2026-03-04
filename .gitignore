@@ -42,3 +42,7 @@ mcshell/data/entities/toolbox.xml
 
 # Ignore Python build artifacts
 /dist/
+
+#ignore maven output
+mcjuice/target/
+mcshell/data/mcjuice-*.jar

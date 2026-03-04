@@ -44,7 +44,7 @@ class ServerActions(MCActionsBase):
         label="Set Time to [time]",
         time={'label': 'Time', 'shadow': 'math_number'}
     )
-    def server_time_set(self, time: int):
+    def server_set_time(self, time: int):
         """Sets the server time."""
         self._run_command(f"time set {time}")
 
@@ -67,11 +67,20 @@ class ServerActions(MCActionsBase):
         self._run_command(f"gamemode {gamemode} {target_name}")
 
     @mced_block(
+        label="Set Gamerule [rule] to True/False",
+        rule={'label': 'Game Rule'},
+        value={'label': 'Value'}
+    )
+    def server_gamerule_set(self, rule: 'GameRule', value: bool):
+        """Modifies a server game rule."""
+        self._run_command(f"gamerule {rule} {str(value).lower()}")
+
+    @mced_block(
         label="Set Gamerule [rule] to [value]",
         rule={'label': 'Game Rule'},
-        value={'label': 'Value', 'shadow': 'text'}
+        value={'label': 'Value'}
     )
-    def server_gamerule_set(self, rule: 'GameRule', value: Union[bool, int, str]):
+    def server_gamerule_integer_set(self, rule: 'IntegerGameRule', value: int):
         """Modifies a server game rule."""
         self._run_command(f"gamerule {rule} {value}")
 
@@ -247,3 +256,18 @@ class ServerActions(MCActionsBase):
     def server_time_query(self,time_type:'TimeType') -> int:
         """Query the world time."""
         return self._parse_minecraft_time_query(self._run_command(f"time query {time_type}"))
+
+    @mced_block(
+        label="Set the world time",
+        time_of_day={'label':'Time'}
+    )
+    def server_time_set(self,time_of_day:'Time'):
+        """Set the world time."""
+        self._run_command(f"time set {time_of_day}")
+
+    @mced_block(
+        label="Get a Player's position",
+        player_name={'label':'Player Name'}
+    )
+    def server_player_data_get_pos(self,player_name:str) -> Vec3:
+        return Vec3(*self.mcplayer.data('get',f"entity @p[name={player_name}] Pos"))

@@ -42,7 +42,7 @@ flask_logger.setLevel(logging.DEBUG) # Set Werkzeug logger level to ERROR or WAR
 # flask_logger.handlers = [] # Remove all handlers, including console
 
 socketio = SocketIO(
-    app, cors_allowed_origins="*", async_handlers=True, async_mode='eventlet',engineio_logger=flask_logger,logger=flask_logger)
+    app, cors_allowed_origins="*", async_handlers=True, async_mode='threading',engineio_logger=flask_logger,logger=flask_logger)
 
 # --- State Management for Running Powers ---
 # This dictionary will hold the state of each running power
