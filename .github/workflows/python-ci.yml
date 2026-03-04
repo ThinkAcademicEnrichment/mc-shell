@@ -58,11 +58,6 @@ jobs:
           npm --prefix mced ci
 
       - name: Build application (includes Maven build via build.py)
-        run: |
-          # Ensure current directory is correct or navigate to build.py location
-          poetry run python build.py
-
-      - name: Build frontend application
         working-directory: ./mced
         run: npm run build
 
