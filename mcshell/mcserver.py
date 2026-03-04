@@ -61,19 +61,53 @@ def start_app_server(server_data,mc_name,ipy_shell,power_repo):
     app.config['POWER_REPO'] = power_repo
 
 
-    global app_server_thread
-    if app_server_thread and app_server_thread.is_alive():
-        print("Application server is already running.")
-        return
+    # global app_server_thread
+    # if app_server_thread is not None and app_server_thread.is_alive():
+    #     print("Application server is already running.")
+    #     return
 
     # The target no longer needs a try/except block because socketio.stop()
     # provides a clean exit from the run() loop.
 
-    app_server_thread = threading.Thread(
-        target=lambda: socketio.run(app, host='0.0.0.0', port=server_data['app_port'], debug=False, use_reloader=False, allow_unsafe_werkzeug=False),
+    # app_server_thread = threading.Thread(
+    #     target=lambda: socketio.run(app, host='0.0.0.0', port=server_data['app_port'], debug=False, use_reloader=False, allow_unsafe_werkzeug=True),
+    #     daemon=True
+    # )
+    # app_server_thread.start()
+
+    def _start_flask_server():
+        import errno
+        import socket
+
+        # Suppress the Werkzeug HTTP request logs (GET / HTTP/1.1 200)
+        logging.getLogger('werkzeug').setLevel(logging.ERROR)
+
+        # Pre-flight check: if the port is already bound by a previous test's server, exit silently
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            if s.connect_ex(('127.0.0.1', server_data['app_port'])) == 0:
+                return
+
+        try:
+            socketio.run(app, host='0.0.0.0', port=server_data['app_port'], debug=False, use_reloader=False, allow_unsafe_werkzeug=True)
+        except OSError as e:
+            if getattr(e, 'errno', None) == errno.EADDRINUSE or 'Address already in use' in str(e):
+                pass
+            else:
+                raise
+        except SystemExit as e:
+            # Werkzeug catches Errno 98 internally and calls sys.exit(1) instead of propagating the OSError
+            if getattr(e, 'code', None) == 1:
+                pass
+            else:
+                raise
+
+    global app_server_thread
+    app_server_thread = Thread(
+        target=_start_flask_server,
         daemon=True
     )
     app_server_thread.start()
+
     time.sleep(1) # Give the server a moment to start
     if app_server_thread.is_alive():
         print(f"Flask-SocketIO application server started in thread: {app_server_thread.ident}")
@@ -143,9 +177,13 @@ def handle_shutdown_request():
     This is the clean way to stop the socketio.run() loop.
     """
     print("Shutdown request received via Socket.IO. Stopping server.")
-    with app.app_context():
-        socketio.stop() # This gracefully exits the socketio.run() loop.
-
+    try:
+        with app.app_context():
+            socketio.stop() # This gracefully exits the socketio.run() loop.
+    except RuntimeError:
+        # Werkzeug (threading mode) does not support programmatic shutdown.
+        # It's a daemon thread, so it's safe to let it run until the process dies.
+        pass
 # --- Helpers ---
 def get_code_with_dependencies(power_repo, power_id_or_name, processed_names=None) -> dict:
     """
