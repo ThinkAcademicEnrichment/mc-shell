@@ -160,9 +160,11 @@ html, body {
 }
 
 #pythonCodeDisplay {
-    white-space: pre;
+    white-space: pre-wrap;      /* Allows soft wrapping of code lines */
+    overflow-wrap: anywhere;   /* Ensures wrapping even within long strings */
+    word-break: break-word;    /* Better wrapping logic for code blocks */
     font-family: 'Fira Code', monospace;
-    color: #ffffff; /* White text for the black background */
+    color: #ffffff;            /* White text for the black background */
 }
 
 /* ==========================================================================
