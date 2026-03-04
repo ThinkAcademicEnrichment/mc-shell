@@ -1,5 +1,5 @@
 {
-    "version": 53,
+    "version": 55,
     "powers": [
         {
             "power_id": "3b9bcae8-1ad1-4722-8fe3-df57545c19c0",
@@ -10956,9 +10956,9 @@
             "updated_at": "2026-03-04T10:28:47.620175"
         },
         {
-            "power_id": "2544d7f1-ef88-4232-b6d5-d045f7ead1b7",
+            "power_id": "ee0ac8d0-e38b-442c-ab1e-d73f2909e20c",
             "name": "makeBigTree",
-            "description": "L-systems can be beautiful...",
+            "description": "L-systems can be beautiful...\n",
             "category": "Workspaces",
             "function_name": "makeLSystem",
             "parameters": [
@@ -11192,8 +11192,8 @@
                         {
                             "type": "procedures_callnoreturn",
                             "id": "v{iI+Wq;$;MzF.+D9ak%",
-                            "x": 65,
-                            "y": 143,
+                            "x": 91,
+                            "y": 273,
                             "extraState": {
                                 "name": "makeLSystem",
                                 "params": [
@@ -11384,8 +11384,11 @@
                                 },
                                 "ARG1": {
                                     "block": {
-                                        "type": "qturtleactions_get_q_compass_direction",
-                                        "id": ")}Zl2eH_}JD6a;+1P)H:"
+                                        "type": "picker_qcompass",
+                                        "id": "y9wHwC-O}n]]}`WdQX=2",
+                                        "fields": {
+                                            "VALUE": "U"
+                                        }
                                     }
                                 },
                                 "ARG2": {
@@ -11455,31 +11458,13 @@
                             },
                             "next": {
                                 "block": {
-                                    "type": "qturtleactions_turtle_extrude",
-                                    "id": "Zv!q1bgmAqdw?k9QA9K|",
+                                    "type": "qturtleactions_turtle_stamp",
+                                    "id": "lho1QJ7}QOSisxy)e:,_",
                                     "inputs": {
-                                        "length": {
-                                            "shadow": {
-                                                "type": "math_number",
-                                                "id": "ZM[eEbq%Dn9-8k-2G9BP",
-                                                "fields": {
-                                                    "NUM": 1
-                                                }
-                                            }
-                                        },
-                                        "direction": {
-                                            "shadow": {
-                                                "type": "picker_qheading",
-                                                "id": "y1UaLSp;TFRE/;bL9myW",
-                                                "fields": {
-                                                    "VALUE": "U"
-                                                }
-                                            }
-                                        },
                                         "block_type": {
                                             "shadow": {
                                                 "type": "mc_block_picker_world",
-                                                "id": "afai6:#pOp~^h_AQ=Wv@",
+                                                "id": "T2@Z-|.*;7zx$bpnQ^o2",
                                                 "fields": {
                                                     "VALUE": "ANDESITE"
                                                 }
@@ -11522,8 +11507,8 @@
             "schema_version": "1.0",
             "engine_version": null,
             "author": "System",
-            "created_at": "2026-03-04T10:30:05.205611",
-            "updated_at": "2026-03-04T10:30:05.205611"
+            "created_at": "2026-03-04T10:37:12.452169",
+            "updated_at": "2026-03-04T10:37:12.452169"
         }
     ]
 }
