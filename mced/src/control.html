@@ -2,135 +2,392 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>MC-ED Control</title>
-    <link rel="stylesheet" href="./control.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MC-ED Control Deck</title>
+
+    <!-- Prevent the favicon 404 error -->
+    <link rel="icon" href="data:,">
+
+    <!-- Socket.IO (Loads synchronously) -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+    <!-- Alpine JS (MUST have defer so it waits for the DOM and your inline script) -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <style>
+        /* Modern iOS-Style Base */
+        :root {
+            --bg-color: #000000;
+            --text-color: #ffffff;
+            --overlay-bg: rgba(28, 28, 30, 0.9);
+            --modal-bg: #2c2c2e;
+        }
+
+        body, html {
+            margin: 0; padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            height: 100vh; overflow: hidden;
+            user-select: none; /* Prevents text selection on mobile */
+            -webkit-touch-callout: none;
+        }
+
+        [x-cloak] { display: none !important; }
+
+        /* Header */
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 20px 24px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%);
+        }
+        h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+
+        .edit-btn {
+            background: rgba(255,255,255,0.15); border: none; border-radius: 20px;
+            color: white; padding: 8px 16px; font-weight: 600; cursor: pointer;
+            backdrop-filter: blur(10px); transition: transform 0.1s;
+        }
+        .edit-btn:active { transform: scale(0.95); }
+        .edit-btn.active { background: #B06161; }
+
+        /* Springboard Grid */
+        .springboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            gap: 24px 16px;
+            padding: 20px;
+            align-content: start;
+            height: calc(100vh - 80px);
+            overflow-y: auto;
+        }
+
+        /* App Icon */
+        .app-container {
+            display: flex; flex-direction: column; align-items: center;
+            position: relative;
+        }
+
+        .app-icon {
+            width: 76px; height: 76px;
+            border-radius: 18px; /* iOS standard curvature */
+            display: flex; justify-content: center; align-items: center;
+            font-size: 32px; font-weight: bold; color: white;
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.2), 0 4px 10px rgba(0,0,0,0.5);
+            cursor: pointer; transition: transform 0.1s, filter 0.2s;
+            position: relative;
+        }
+        .app-icon:active { filter: brightness(0.7); }
+
+        .app-name {
+            margin-top: 8px; font-size: 12px; font-weight: 500;
+            text-align: center; width: 90px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        }
+
+        /* Status Overlay */
+        .status-overlay {
+            position: absolute; inset: 0;
+            border-radius: 18px; background: rgba(0,0,0,0.6);
+            display: flex; justify-content: center; align-items: center;
+            backdrop-filter: blur(2px);
+        }
+        .spinner {
+            width: 24px; height: 24px;
+            border: 3px solid rgba(255,255,255,0.3); border-top-color: white;
+            border-radius: 50%; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Jiggle Mode (Edit) */
+        @keyframes jiggle {
+            0% { transform: rotate(-2deg); }
+            50% { transform: rotate(2deg); }
+            100% { transform: rotate(-2deg); }
+        }
+        .is-editing .app-icon { animation: jiggle 0.3s infinite; }
+
+        .delete-badge {
+            position: absolute; top: -6px; left: -6px;
+            width: 24px; height: 24px; border-radius: 50%;
+            background: #ff3b30; color: white; font-weight: bold; font-size: 14px;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5); border: 2px solid #000;
+            cursor: pointer; z-index: 10;
+        }
+
+        .add-app {
+            background: rgba(255,255,255,0.1); border: 2px dashed rgba(255,255,255,0.3);
+            box-shadow: none; color: rgba(255,255,255,0.5);
+        }
+
+        /* Modals & Action Drawers */
+        .drawer-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px); z-index: 100;
+            display: flex; flex-direction: column; justify-content: flex-end;
+        }
+        .drawer-content {
+            background: var(--modal-bg); border-radius: 24px 24px 0 0;
+            padding: 24px; box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+            max-height: 80vh; overflow-y: auto;
+        }
+
+        .drawer-header { margin-bottom: 20px; }
+        .drawer-header h2 { margin: 0 0 5px 0; font-size: 22px; }
+        .drawer-header p { margin: 0; color: #aaa; font-size: 14px; }
+
+        .param-group { margin-bottom: 16px; }
+        .param-group label { display: block; font-size: 13px; color: #ccc; margin-bottom: 6px; }
+        .param-group input {
+            width: 100%; padding: 12px; border-radius: 10px;
+            border: none; background: rgba(255,255,255,0.1); color: white;
+            font-size: 16px; box-sizing: border-box;
+        }
+        .param-group input:focus { outline: 2px solid #5B7BA1; }
+
+        .action-btn {
+            width: 100%; padding: 16px; border-radius: 14px; border: none;
+            font-size: 18px; font-weight: bold; color: white; cursor: pointer;
+            margin-top: 10px; transition: transform 0.1s;
+        }
+        .action-btn:active { transform: scale(0.98); }
+
+        /* Cancel specific modal overrides */
+        .btn-cancel { background: #3a3a3c; }
+
+        /* Category Palette Classes */
+        .cat-Block { background-color: #B06161; }
+        .cat-Item { background-color: #D4A373; }
+        .cat-Entity { background-color: #8D7EB5; }
+        .cat-Picker { background-color: #95A5A6; }
+        .cat-Geometry { background-color: #5B7BA1; }
+        .cat-Turtle { background-color: #C9A65B; }
+        .cat-LSystem { background-color: #7A9473; }
+        .cat-Events { background-color: #D68C45; }
+        .cat-DigitalSet { background-color: #A57582; }
+        .cat-Player { background-color: #61A1B0; }
+        .cat-Default { background-color: #4a4a4a; }
+    </style>
 </head>
-<body x-data="controlPanel()"
-      @add-widget-to-grid.window="addWidget($event.detail)"
-      @remove-widget-from-grid.window="removeWidget($event.detail.powerId)"  >
+<body x-data="controlApp">
 
     <header>
-        <h1>MC-ED Control Panel</h1>
-            <button x-show="isEditing" @click="refreshPowersData(); $dispatch('open-library-modal')">+ Add Widget</button>
-            <button @click="isEditing = !isEditing" x-text="isEditing ? 'Done' : 'Edit Layout'"></button>
+        <h1>Control Deck</h1>
+        <button class="edit-btn" :class="isEditing ? 'active' : ''" @click="isEditing = !isEditing" x-text="isEditing ? 'Done' : 'Edit Layout'"></button>
     </header>
 
-    <template x-teleport="body">
-        <div x-data="{ isOpen: false }"
-             @open-library-modal.window="isOpen = true"
-             @control-mode-changed.window="isOpen = false"
-             @keydown.escape.window="isOpen = false"
-             class="modal-root">
+    <!-- The Grid Springboard -->
+    <main class="springboard" :class="isEditing ? 'is-editing' : ''">
+        <template x-for="power in deckPowers" :key="power.power_id">
+            <div class="app-container">
+                <div class="app-icon" :class="getCategoryClass(power.category)" @click="handleAppTap(power)">
+                    <!-- Delete Badge -->
+                    <div class="delete-badge" x-show="isEditing" @click.stop="removeFromDeck(power.power_id)">×</div>
 
-            <div x-show="isOpen" x-cloak class="modal-overlay" @click="isOpen = false"></div>
-            <div x-show="isOpen" x-cloak class="modal-content" x-transition>
-                <h2>Add Power to Grid</h2>
-                <div id="control-library-list"
-                     hx-get="/api/control/powers_library" hx-trigger="open-library-modal from:window"
-                     hx-swap="innerHTML">
-                    <p>Loading...</p>
+                    <!-- Icon Letter -->
+                    <span x-text="power.name.charAt(0).toUpperCase()"></span>
+
+                    <!-- Loading State -->
+                    <div class="status-overlay" x-show="powerStatus[power.power_id] === 'running'">
+                        <div class="spinner"></div>
+                    </div>
                 </div>
-                <div class="modal-actions">
-                    <button class="btn-secondary" @click="isOpen = false">Close</button>
-                </div>
+                <div class="app-label app-name" x-text="power.name"></div>
             </div>
+        </template>
+
+        <!-- Add Button (Only visible in edit mode) -->
+        <div class="app-container" x-show="isEditing" x-cloak @click="openLibrarySelector()">
+            <div class="app-icon add-app">+</div>
+            <div class="app-label app-name">Add Power</div>
         </div>
-    </template>
-    <main>
-        <div id="power-grid" x-ref="powerGrid"  :style="`grid-template-columns: repeat(${layout.grid.columns}, 1fr)`">
-           <template x-for="widget in layout.widgets" :key="widget.power_id">
+    </main>
 
-                <div class="power-widget"
-                     :id="`widget-${widget.power_id}`"
-                     x-data="powerWidget(powers[widget.power_id])"
-                     :class="{
-                         'is-running': getStatusForWidget(widget.power_id).status === 'running',
-                         'has-error': getStatusForWidget(widget.power_id).status === 'error'
-                     }">
-
-                    <div class="power-header">
-                        <span class="power-name" x-text="power.name"></span>
-                        <button class="remove-widget-btn"
-                                x-show="isEditing"
-                                @click.stop="removeWidget()">
-                            &times;
-                        </button>
-                    </div>
-                    <form class="power-params" :id="`form-${power.power_id}`" x-ref="paramsForm">
-                        <template x-for="param in power.parameters" :key="param.name">
-                            <div class="param-control">
-                                <label x-text="param.name + ':'"></label>
-
-                                <template x-if="param.type === 'Number'">
-                                    <div class="param-slider">
-                                        <input type="range" :name="param.name" x-model="formValues[param.name]" min="1" max="100">
-                                        <output x-text="formValues[param.name]"></output>
-                                    </div>
-                                </template>
-
-                                <template x-if="param.type === 'Block'">
-                                    <div class="custom-picker"
-                                         x-data="materialPicker(param.default, param.name)"
-                                         @click.outside="isOpen = false">
-
-                                        <input type="hidden" :name="paramName" x-model="selected">
-
-                                        <button type="button" class="picker-trigger" @click="isOpen = !isOpen">
-                                            <span x-text="selected.replace(/_/g, ' ')"></span>
-                                            <span>&#9660;</span>
-                                        </button>
-
-                                        <div class="picker-dropdown" x-show="isOpen" x-transition x-cloak>
-                                            <input type="text" x-model="filter" placeholder="Filter blocks..." class="picker-filter">
-                                           <div class="picker-options">
-                                                <template x-for="category in Object.keys($store.materials.groups)" :key="category">
-                                                    <div class="picker-category"
-                                                         x-show="!filter || $store.materials.groups[category].some(b => b.toLowerCase().includes(filter.toLowerCase()))">
-
-                                                        <strong x-text="category.replace(/_/g, ' ')"></strong>
-                                                        <ul>
-                                                            <template x-for="block in $store.materials.groups[category]">
-                                                                <li x-show="!filter || block.toLowerCase().includes(filter.toLowerCase())">
-                                                                    <button type="button" @click="selected = block; isOpen = false;" x-text="block.replace(/_/g, ' ')"></button>
-                                                                </li>
-                                                            </template>
-                                                        </ul>
-                                                    </div>
-                                                </template>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </template>
-                                </div>
-                        </template>
-                    </form>
-
-                    <div class="power-status"
-                         x-text="getStatusForWidget(widget.power_id).status === 'error' ?
-                                 `Error: ${getStatusForWidget(widget.power_id).message}` :
-                                 `Status: ${getStatusForWidget(widget.power_id).status}`">
-                        Status: Idle
+    <!-- Execution/Parameters Drawer -->
+    <div class="drawer-overlay" x-show="activePower !== null" x-transition.opacity x-cloak>
+        <div class="drawer-content" @click.stop>
+            <template x-if="activePower">
+                <div>
+                    <div class="drawer-header">
+                        <h2 x-text="activePower.name"></h2>
+                        <p x-text="activePower.description || 'No description provided.'"></p>
                     </div>
 
-                       <div class="widget-main-actions">
-                                <template x-if="status !== 'running'">
-                                    <button class="execute-btn" @click="executePower()">
-                                        Execute
-                                    </button>
-                                </template>
-
-                                <template x-if="status === 'running' && currentExecutionId">
-                                    <button class="btn-small btn-danger cancel-btn" @click="cancelPower()">
-                                        Cancel
-                                    </button>
-                                </template>
+                    <!-- Generate Input fields for parameters -->
+                    <template x-for="param in activePower.parameters" :key="param.name">
+                        <div class="param-group">
+                            <label x-text="param.name"></label>
+                            <input type="text" x-model="executionParams[param.name]" :placeholder="'Enter ' + param.name">
                         </div>
+                    </template>
 
+                    <button class="action-btn" :class="getCategoryClass(activePower.category)" @click="executePower()">
+                        Run Power
+                    </button>
+                    <button class="action-btn btn-cancel" @click="activePower = null">
+                        Cancel
+                    </button>
                 </div>
             </template>
         </div>
-    </main>
-    <script type="module" src="./control.js"></script>
+    </div>
+
+    <!-- Library Selection Drawer (Add Power) -->
+    <div class="drawer-overlay" x-show="showLibrary" x-transition.opacity x-cloak>
+        <div class="drawer-content" style="height: 80vh; display: flex; flex-direction: column;" @click.stop>
+            <div class="drawer-header">
+                <h2>Power Library</h2>
+                <p>Select a power to add to your deck.</p>
+            </div>
+
+            <div style="flex: 1; overflow-y: auto; margin-bottom: 20px;">
+                <template x-for="p in allPowers" :key="p.power_id">
+                    <div style="display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #38383a; cursor: pointer;"
+                         @click="addToDeck(p.power_id)">
+                        <div class="app-icon" :class="getCategoryClass(p.category)" style="width: 40px; height: 40px; font-size: 18px; border-radius: 10px; margin-right: 15px;">
+                            <span x-text="p.name.charAt(0).toUpperCase()"></span>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600;" x-text="p.name"></div>
+                            <div style="font-size: 12px; color: #888;" x-text="p.category"></div>
+                        </div>
+                        <div style="color: #0a84ff; font-weight: bold;">+ Add</div>
+                    </div>
+                </template>
+            </div>
+
+            <button class="action-btn btn-cancel" @click="showLibrary = false">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // Registering Alpine Component properly to ensure safe initialization
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('controlApp', () => ({
+                isEditing: false,
+                allPowers: [],
+                deckLayout: [],
+                activePower: null,
+                showLibrary: false,
+                executionParams: {},
+                powerStatus: {},
+                socket: null,
+
+                async init() {
+                    const saved = localStorage.getItem('mced_deck_layout');
+                    if (saved) {
+                        this.deckLayout = JSON.parse(saved);
+                    }
+
+                    await this.fetchPowers();
+
+                    this.socket = io();
+                    this.socket.on('power_status', (data) => {
+                        console.log("Status Update:", data);
+                        this.powerStatus[data.id] = data.status;
+
+                        if(data.status === 'error') {
+                            alert(`Error in ${data.id}:\n${data.message}`);
+                        }
+                    });
+                },
+
+                async fetchPowers() {
+                    try {
+                        // and we use Object.values to turn it into an Array so Alpine's x-for and .find() work.
+                        const res = await fetch('/api/powers?view=control&format=json', {
+                            headers: { 'Accept': 'application/json' }
+                        });
+                        const data = await res.json();
+
+                        // Fallback gracefully: if it's already an array, use it. Otherwise, convert dictionary to array.
+                        this.allPowers = Array.isArray(data) ? data : Object.values(data);
+                    } catch (e) {
+                        console.error("Failed to load powers", e);
+                    }
+                },
+
+                get deckPowers() {
+                    return this.deckLayout
+                        .map(id => this.allPowers.find(p => p.power_id === id))
+                        .filter(p => p !== undefined);
+                },
+
+                getCategoryClass(category) {
+                    if (!category) return 'cat-Default';
+                    const catName = category.split('/')[0].replace(/\s+/g, '');
+                    return `cat-${catName}`;
+                },
+
+                handleAppTap(power) {
+                    if (this.isEditing) return;
+
+                    if (this.powerStatus[power.power_id] === 'running') {
+                         if(confirm(`Cancel ${power.name}?`)) {
+                             fetch(`/api/control/cancel/${power.power_id}`, { method: 'POST' });
+                             this.powerStatus[power.power_id] = 'idle';
+                         }
+                         return;
+                    }
+
+                    this.activePower = power;
+                    this.executionParams = {};
+                    if (power.parameters) {
+                        power.parameters.forEach(p => {
+                            this.executionParams[p.name] = '';
+                        });
+                    }
+                },
+
+                async executePower() {
+                    if (!this.activePower) return;
+
+                    const payload = {
+                        power_id: this.activePower.power_id,
+                        parameters: this.executionParams
+                    };
+
+                    this.powerStatus[this.activePower.power_id] = 'running';
+
+                    try {
+                        await fetch(`/api/control/execute/${this.activePower.power_id}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                    } catch (e) {
+                        console.error("Execution failed:", e);
+                        this.powerStatus[this.activePower.power_id] = 'error';
+                    }
+
+                    this.activePower = null;
+                },
+
+                openLibrarySelector() {
+                    this.fetchPowers();
+                    this.showLibrary = true;
+                },
+
+                addToDeck(powerId) {
+                    if (!this.deckLayout.includes(powerId)) {
+                        this.deckLayout.push(powerId);
+                        this.saveLayout();
+                    }
+                    this.showLibrary = false;
+                },
+
+                removeFromDeck(powerId) {
+                    this.deckLayout = this.deckLayout.filter(id => id !== powerId);
+                    this.saveLayout();
+                },
+
+                saveLayout() {
+                    localStorage.setItem('mced_deck_layout', JSON.stringify(this.deckLayout));
+                }
+            }));
+        });
+    </script>
 </body>
 </html>
