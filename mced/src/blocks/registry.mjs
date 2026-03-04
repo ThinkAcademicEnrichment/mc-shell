@@ -6,7 +6,6 @@ import { defineChatActionsBlocks } from "./ChatActions.mjs";
 import { defineDigitalGeometryActionsBlocks } from "./DigitalGeometryActions.mjs";
 import { defineDigitalSetActionsBlocks } from "./DigitalSetActions.mjs";
 import { defineEventActionsBlocks } from "./EventActions.mjs";
-import { defineGeneratedWorldActionsBlocks } from "./GeneratedWorldActions.mjs";
 import { defineLSystemShapesBlocks } from "./LSystemShapes.mjs";
 import { definePlayerActionsBlocks } from "./PlayerActions.mjs";
 import { defineQTurtleActionsBlocks } from "./QTurtleActions.mjs";
@@ -25,7 +24,6 @@ export function registerAllBlocks(Blockly) {
     defineDigitalGeometryActionsBlocks(Blockly);
     defineDigitalSetActionsBlocks(Blockly);
     defineEventActionsBlocks(Blockly);
-    defineGeneratedWorldActionsBlocks(Blockly);
     defineLSystemShapesBlocks(Blockly);
     definePlayerActionsBlocks(Blockly);
     defineQTurtleActionsBlocks(Blockly);

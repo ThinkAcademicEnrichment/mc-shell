@@ -12,7 +12,6 @@ class MCJuiceClient:
         self.event_queues = {} # event_name -> list of queues
 
         # --- PUSH ARCHITECTURE: Dedicated Event Router ---
-        # CRITICAL: Disable timeout on the background socket so it blocks indefinitely
         self.event_conn.socket.settimeout(None)
         self.event_conn.send('events.subscribe')
         self.reader_thread = threading.Thread(target=self._event_reader_loop, daemon=True)
@@ -27,14 +26,9 @@ class MCJuiceClient:
         while True:
             try:
                 line = self.event_conn.receive()
-                if not line:
-                    # Socket gracefully closed by Java server
-                    break
-                if line == 'OK':
-                    # Ignore the handshake acknowledgement
-                    continue
+                if not line: break
+                if line == 'OK': continue
                 
-                # The Java plugin pushes: eventName,data...
                 parts = line.split(',', 1)
                 if len(parts) < 2: continue
                 event_name, raw_data = parts[0], parts[1]
@@ -42,17 +36,16 @@ class MCJuiceClient:
                 event_obj = EventFactory.create(event_name, raw_data)
                 if not event_obj: continue
                 
-                # Dispatch the parsed event to all registered local queues
                 if event_name in self.event_queues:
                     for q in self.event_queues[event_name]:
                         q.put(event_obj)
+            except (socket.timeout, TimeoutError):
+                continue
             except Exception as e:
-                # Socket abruptly closed or disconnected
                 break
 
     @staticmethod
     def create(address='localhost', port=4721, playerName=''):
-        # Open dual sockets to prevent command vs event collisions
         conn = MCJuiceConnection(address, port)
         event_conn = MCJuiceConnection(address, port)
         eid = None
@@ -202,13 +195,11 @@ class EventsNamespace:
         self.client = client
 
     def subscribe_local(self, event_name: str, target_queue: 'queue.Queue'):
-        """Registers a python queue to receive a specific event stream"""
         if event_name not in self.client.event_queues:
             self.client.event_queues[event_name] = []
         self.client.event_queues[event_name].append(target_queue)
 
     def unsubscribe_local(self, event_name: str, target_queue: 'queue.Queue'):
-        """Unregisters a queue"""
         if event_name in self.client.event_queues:
             try:
                 self.client.event_queues[event_name].remove(target_queue)

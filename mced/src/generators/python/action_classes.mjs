@@ -1,0 +1,1 @@
+export const ACTION_CLASSES = ['ServerActions', 'PlayerActions', 'TurtleShapes', 'LSystemShapes', 'DigitalGeometryActions', 'QTurtleActions', 'EventActions', 'DigitalSetActions', 'PlayerActions', 'WorldActions', 'ChatActions'];
