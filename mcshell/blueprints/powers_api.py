@@ -37,22 +37,21 @@ def get_powers():
     """Returns powers either as JSON dict or as HTMX-ready HTML based on request args."""
     power_repo = current_app.config.get('POWER_REPO')
     player_id = current_app.config.get('MINECRAFT_PLAYER_NAME')
-
+    
     if not player_id or not power_repo:
         return "<p>Error: Not authorized</p>", 401
 
     view_type = request.args.get('view', 'editor')
 
     if view_type == 'control':
-        # Call the new method to get all data needed for the control UI
+        # Serve JSON payload for the Control Deck UI
         all_powers_list = power_repo.list_full_powers()
-        # Convert the list into a dictionary keyed by power_id for easy lookup on the client
         powers_dict = {p['power_id']: p for p in all_powers_list if 'power_id' in p}
-
         print(f"Serving full power data dictionary for player '{player_id}' for control UI.")
         return jsonify(powers_dict)
 
-    else:  # Default to the 'editor' view
+    else:
+        # Default to serving the detailed HTML list for the Editor Sidebar
         powers_summary_list = power_repo.list_powers()
 
         if not powers_summary_list:
@@ -68,43 +67,52 @@ def get_powers():
 
         template_string = """
         {% for category, powers in categories.items()|sort %}
-                <span class="power-toggle" x-text="open ? '▼' : '▶'"></span>
-                <span class="power-name">{{ power.name }}</span>
-              </div>
-              <div class="power-item-details" x-show="open" x-transition>
-                <p class="power-description">{{ power.description or 'No description.' }}</p>
-                <div class="power-item-actions">
+          <div class="power-category" x-data="{ open: true }">
+            <h3 @click="open = !open">
+              <span class="category-toggle" x-text="open ? '▼' : '▶'"></span>
+              {{ category }} ({{ powers|length }})
+            </h3>
+            <ul class="power-item-list" x-show="open" x-transition>
+              {% for power in powers %}
+                <li class="power-item" x-data="{ open: false }" id="power-item-{{ power.power_id }}">
+                  <div class="power-item-header" @click="open = !open">
+                    <span class="power-toggle" x-text="open ? '▼' : '▶'"></span>
+                    <span class="power-name">{{ power.name }}</span>
+                  </div>
+                  <div class="power-item-details" x-show="open" x-transition>
+                    <p class="power-description">{{ power.description or 'No description.' }}</p>
+                    <div class="power-item-actions">
 
-                  <button class="btn-small"
-                          hx-get="/api/power/{{ power.power_id }}?mode=replace"
-                          hx-swap="none"
-                          title="Clear workspace and load this power">
-                      Load (Replace)
-                  </button>
+                      <button class="btn-small"
+                              hx-get="/api/power/{{ power.power_id }}?mode=replace"
+                              hx-swap="none"
+                              title="Clear workspace and load this power">
+                          Load (Replace)
+                      </button>
 
-                  <button class="btn-small"
-                          hx-get="/api/power/{{ power.power_id }}?mode=add"
-                          hx-swap="none"
-                          title="Add this power's blocks to the current workspace">
-                      Add to Workspace
-                  </button>
+                      <button class="btn-small"
+                              hx-get="/api/power/{{ power.power_id }}?mode=add"
+                              hx-swap="none"
+                              title="Add this power's blocks to the current workspace">
+                          Add to Workspace
+                      </button>
 
-                  <button class="btn-small btn-danger"
-                          @click="$dispatch('open-delete-confirm', {
-                              powerId: '{{ power.power_id }}',
-                              powerName: '{{ power.name | replace(\"'\", \"\\\\'\") }}'
-                          })">
-                      Delete
-                  </button>
-                </div>
-              </div>
-            </li>
-          {% endfor %}
-        </ul>
-      </div>
-    {% endfor %}
-    """
-    return render_template_string(template_string, categories=categories)
+                      <button class="btn-small btn-danger"
+                              @click="$dispatch('open-delete-confirm', {
+                                  powerId: '{{ power.power_id }}',
+                                  powerName: '{{ power.name | replace(\"'\", \"\\\\'\") }}'
+                              })">
+                          Delete
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endfor %}
+        """
+        return render_template_string(template_string, categories=categories)
 
 @powers_bp.route('/power/<power_id>', methods=['GET'])
 def get_power_by_id(power_id):
@@ -118,7 +126,7 @@ def get_power_by_id(power_id):
         return jsonify({"error": "Power not found"}), 404
 
     mode = request.args.get('mode', 'replace')
-
+    
     # Send the full blockly data back as an HX-Trigger event parameter
     trigger_data = {
         "loadPower": {
@@ -153,7 +161,7 @@ def delete_power_by_id(power_id):
 
 @powers_bp.route('/powers/categories', methods=['GET'])
 def get_categories():
-    repo = current_app.config.get('POWER_REPO')
+    repo = current_app.config.get('POWER_REPO') 
     if not repo:
         return jsonify(["Powers", "Workspaces"])
     return jsonify(repo.list_categories())
