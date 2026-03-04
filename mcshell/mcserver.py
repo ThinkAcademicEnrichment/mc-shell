@@ -70,7 +70,7 @@ def start_app_server(server_data,mc_name,ipy_shell,power_repo):
     # provides a clean exit from the run() loop.
 
     app_server_thread = threading.Thread(
-        target=lambda: socketio.run(app, host='0.0.0.0', port=server_data['app_port'], debug=False, use_reloader=False, allow_unsafe_werkzeug=False),
+        target=lambda: socketio.run(app, host='0.0.0.0', port=server_data['app_port'], debug=False, use_reloader=False, allow_unsafe_werkzeug=True),
         daemon=True
     )
     app_server_thread.start()
