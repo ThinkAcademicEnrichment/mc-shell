@@ -44,8 +44,9 @@ click = "*" # For the mcshell CLI entry point
 
 # We now use blockapily.BlockGenerator !
 blockapily = "^0.3.1"
+pytest = "^9.0.2"
+mctools = "^1.4.1"
 voxelmap = "^5.1.1"
-pytest = "^9.0.0"
 
 [tool.poetry.scripts]
-mcshell = "mcshell.mcshell:main"
+mcshell = "mcshell.mcshell:cli"
