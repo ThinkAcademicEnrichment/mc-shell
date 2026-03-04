@@ -5,20 +5,15 @@ description = "An interactive shell and editor for controlling Minecraft servers
 authors = ["Jeff <jeff@thinkae.org>"]
 readme = "README.md"
 packages = [{include = "mcshell"}]
+
+# MERGED INCLUDE: Must be under [tool.poetry], overriding any .gitignore rules
 include = [
-    "mcshell/vendored",
-    "mcshell/data/app"
+    "mcshell/data/app/**/*",
+    "mcshell/data/*.jar"
 ]
 
 [virtualenvs]
 in-project = true
-
-# This section explicitly includes all necessary data files,
-# replacing the need for the custom package_files function in setup.py.
-include = [
-    "mcshell/data/app/**/*",
-    "mcshell/vendored/**/*"
-]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -50,9 +45,7 @@ click = "*" # For the mcshell CLI entry point
 # We now use blockapily.BlockGenerator !
 blockapily = "^0.3.1"
 voxelmap = "^5.1.1"
-pytest = "^9.0.2"
-mctools = "^1.4.1"
+pytest = "^9.0.0"
 
 [tool.poetry.scripts]
-# This defines the console script entry point, replacing 'entry_points'.
-mcshell = "mcshell.mcshell:cli"
+mcshell = "mcshell.mcshell:main"
