@@ -296,13 +296,11 @@
 
                 async fetchPowers() {
                     try {
-                        // and we use Object.values to turn it into an Array so Alpine's x-for and .find() work.
                         const res = await fetch('/api/powers?view=control&format=json', {
                             headers: { 'Accept': 'application/json' }
                         });
                         const data = await res.json();
 
-                        // Fallback gracefully: if it's already an array, use it. Otherwise, convert dictionary to array.
                         this.allPowers = Array.isArray(data) ? data : Object.values(data);
                     } catch (e) {
                         console.error("Failed to load powers", e);
@@ -326,7 +324,12 @@
 
                     if (this.powerStatus[power.power_id] === 'running') {
                          if(confirm(`Cancel ${power.name}?`)) {
-                             fetch(`/api/control/cancel/${power.power_id}`, { method: 'POST' });
+                             // Call the real /api/cancel_power endpoint with standard JSON POST
+                             fetch(`/api/cancel_power`, {
+                                 method: 'POST',
+                                 headers: { 'Content-Type': 'application/json' },
+                                 body: JSON.stringify({ power_id: power.power_id })
+                             });
                              this.powerStatus[power.power_id] = 'idle';
                          }
                          return;
@@ -344,15 +347,22 @@
                 async executePower() {
                     if (!this.activePower) return;
 
+                    // Flatten parameters into the root of the payload.
+                    // The Python backend pops 'power_id' and expands the rest with **kwargs.
                     const payload = {
-                        power_id: this.activePower.power_id,
-                        parameters: this.executionParams
+                        power_id: this.activePower.power_id
                     };
+
+                    // Ensure numbers are sent as numeric types, not strings
+                    for (const [key, value] of Object.entries(this.executionParams)) {
+                        payload[key] = (isNaN(value) || value.trim() === '') ? value : Number(value);
+                    }
 
                     this.powerStatus[this.activePower.power_id] = 'running';
 
                     try {
-                        await fetch(`/api/control/execute/${this.activePower.power_id}`, {
+                        // Call the real /api/execute_power endpoint using standard POST JSON
+                        await fetch(`/api/execute_power`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(payload)
