@@ -6,8 +6,6 @@ import re
 from pathlib import Path
 
 # --- STANDALONE PATH CONFIGURATION ---
-# We define these locally to avoid importing mcshell.constants,
-# which would trigger the problematic mcshell/__init__.py circular imports.
 BASE_DIR = Path(__file__).parent.resolve()
 MC_SHELL_DIR = BASE_DIR / "mcshell"
 MC_DATA_DIR = MC_SHELL_DIR / "data"
@@ -15,15 +13,12 @@ MC_APP_SRC_DIR = MC_DATA_DIR / "app_src"
 MC_JUICE_DIR = BASE_DIR / "mcjuice"
 MC_JUICE_SRC_DIR = MC_JUICE_DIR / "src"
 
-# Scraper data paths
 MC_MATERIALS_PATH = MC_DATA_DIR / "materials.pkl"
 MC_ENTITY_ID_MAP_PATH = MC_DATA_DIR / "entity_id_map.pkl"
 
-# Add project root to sys.path to allow module lookups
 if str(BASE_DIR) not in sys.path:
     sys.path.append(str(BASE_DIR))
 
-# Import blockapily
 try:
     from blockapily import BlocklyGenerator, mced_block
 except ImportError:
@@ -31,19 +26,16 @@ except ImportError:
     print("Warning: blockapily not found. Block generation will be skipped.")
 
 def get_action_class(module_name, class_name):
-    """Imports a class without relying on the mcshell package root init."""
+    """Imports a class and forces a reload to capture newly generated code."""
     import importlib
     try:
         module = importlib.import_module(f"mcshell.{module_name}")
+        importlib.reload(module) # Ensure fresh load after ApiGenerator runs
         return getattr(module, class_name)
     except (ImportError, AttributeError):
         return None
 
 class RegistryBuilder:
-    """
-    Generates Minecraft Blockly blocks and registries.
-    """
-
     # --- UI & Design Tokens ---
     COLORS = {
         "Block": "#B06161", "Item": "#D4A373", "Entity": "#8D7EB5",
@@ -96,8 +88,6 @@ class RegistryBuilder:
         DataPath='<shadow type="picker_data_path"><field name="VALUE">Pos</field></shadow>',
     )
 
-    # --- Picker Data Structures ---
-
     DATA_PATHS = [
         ('Brain', 'Brain'), ('Hurt By Timestamp', 'HurtByTimestamp'), ('Sleep Timer', 'SleepTimer'),
         ('Attributes', 'Attributes'), ('Invulnerable', 'Invulnerable'), ('Fall Flying', 'FallFlying'),
@@ -120,100 +110,17 @@ class RegistryBuilder:
     LOCATETYPES = [("Structure", "structure"), ("Biome", "biome"), ("Point of Interest (POI)", "poi")]
     METRICS = [("Euclidean", "euclidean"), ("Manhattan", "manhattan"), ("Chebyshev", "chebyshev")]
     AXES = [("Yaw (Y)", "y"), ("Pitch (X)", "x"), ("Roll (Z)", "z")]
-    COMPASS = [
-        ("North (-Z)", "N"), ("South (+Z)", "S"),
-        ("East (+X)", "E"), ("West (-X)", "W"),
-        ("North-East", "NE"), ("North-West", "NW"),
-        ("South-East", "SE"), ("South-West", "SW")]
-
-    QHEADINGS = [
-        ("Forward", "F"), ("Back", "B"), ("Right", "R"), ("Left", "L"), ("Up", "U"), ("Down", "D"),
-        ("Forward-Right", "FR"), ("Forward-Left", "FL"), ("Back-Right", "BR"), ("Back-Left", "BL"),
-        ("Forward-Up", "FU"), ("Forward-Down", "FD"), ("Back-Up", "BU"), ("Back-Down", "BD"),
-        ("Right-Up", "RU"), ("Right-Down", "RD"), ("Left-Up", "LU"), ("Left-Down", "LD"),
-        ("Forward-Right-Up", "FRU"), ("Forward-Right-Down", "FRD"), ("Forward-Left-Up", "FLU"), ("Forward-Left-Down", "FLD"),
-        ("Back-Right-Up", "BRU"), ("Back-Right-Down", "BRD"), ("Back-Left-Up", "BLU"), ("Back-Left-Down", "BLD")
-    ]
-
-    QCOMPASS = [
-        ("North (-Z)", "N"), ("South (+Z)", "S"), ("East (+X)", "E"), ("West (-X)", "W"), ("Up (+Y)", "U"), ("Down (-Y)", "D"),
-        ("North-East", "NE"), ("North-West", "NW"), ("South-East", "SE"), ("South-West", "SW"),
-        ("North-Up", "NU"), ("North-Down", "ND"), ("South-Up", "SU"), ("South-Down", "SD"),
-        ("East-Up", "EU"), ("East-Down", "ED"), ("West-Up", "WU"), ("West-Down", "WD"),
-        ("North-East-Up", "NEU"), ("North-East-Down", "NED"), ("North-West-Up", "NWU"), ("North-West-Down", "NWD"),
-        ("South-East-Up", "SEU"), ("South-East-Down", "SED"), ("South-West-Up", "SWU"), ("South-West-Down", "SWD")
-    ]
-
+    COMPASS = [("North (-Z)", "N"), ("South (+Z)", "S"), ("East (+X)", "E"), ("West (-X)", "W"), ("North-East", "NE"), ("North-West", "NW"), ("South-East", "SE"), ("South-West", "SW")]
+    QHEADINGS = [("Forward", "F"), ("Back", "B"), ("Right", "R"), ("Left", "L"), ("Up", "U"), ("Down", "D"), ("Forward-Right", "FR"), ("Forward-Left", "FL"), ("Back-Right", "BR"), ("Back-Left", "BL"), ("Forward-Up", "FU"), ("Forward-Down", "FD"), ("Back-Up", "BU"), ("Back-Down", "BD"), ("Right-Up", "RU"), ("Right-Down", "RD"), ("Left-Up", "LU"), ("Left-Down", "LD"), ("Forward-Right-Up", "FRU"), ("Forward-Right-Down", "FRD"), ("Forward-Left-Up", "FLU"), ("Forward-Left-Down", "FLD"), ("Back-Right-Up", "BRU"), ("Back-Right-Down", "BRD"), ("Back-Left-Up", "BLU"), ("Back-Left-Down", "BLD")]
+    QCOMPASS = [("North (-Z)", "N"), ("South (+Z)", "S"), ("East (+X)", "E"), ("West (-X)", "W"), ("Up (+Y)", "U"), ("Down (-Y)", "D"), ("North-East", "NE"), ("North-West", "NW"), ("South-East", "SE"), ("South-West", "SW"), ("North-Up", "NU"), ("North-Down", "ND"), ("South-Up", "SU"), ("South-Down", "SD"), ("East-Up", "EU"), ("East-Down", "ED"), ("West-Up", "WU"), ("West-Down", "WD"), ("North-East-Up", "NEU"), ("North-East-Down", "NED"), ("North-West-Up", "NWU"), ("North-West-Down", "NWD"), ("South-East-Up", "SEU"), ("South-East-Down", "SED"), ("South-West-Up", "SWU"), ("South-West-Down", "SWD")]
     TIMES = [("Day (1000)", "day"), ("Noon (6000)", "noon"), ("Night (13000)", "night"), ("Midnight (18000)", "midnight")]
 
-    STRUCTURES = [
-        ("Ancient City", "ancient_city"), ("Bastion Remnant", "bastion_remnant"), ("Buried Treasure", "buried_treasure"),
-        ("Desert Pyramid", "desert_pyramid"), ("End City", "end_city"), ("Fortress", "fortress"), ("Igloo", "igloo"),
-        ("Jungle Pyramid", "jungle_pyramid"), ("Mansion", "mansion"), ("Mineshaft", "mineshaft"), ("Monument", "monument"),
-        ("Nether Fossil", "nether_fossil"), ("Ocean Ruin", "ocean_ruin"), ("Pillager Outpost", "pillager_outpost"),
-        ("Ruined Portal", "ruined_portal"), ("Shipwreck", "shipwreck"), ("Stronghold", "stronghold"), ("Swamp Hut", "swamp_hut"),
-        ("Village", "village"), ("Woodland Mansion", "mansion")
-    ]
-
-    BIOMES = [
-        ("Badlands", "badlands"), ("Bamboo Jungle", "bamboo_jungle"), ("Beach", "beach"), ("Birch Forest", "birch_forest"),
-        ("Cherry Grove", "cherry_grove"), ("Dark Forest", "dark_forest"), ("Deep Dark", "deep_dark"), ("Desert", "desert"),
-        ("Dripstone Caves", "dripstone_caves"), ("End Highlands", "end_highlands"), ("End Midlands", "end_midlands"),
-        ("Forest", "forest"), ("Frozen Peaks", "frozen_peaks"), ("Grove", "grove"), ("Ice Spikes", "ice_spikes"),
-        ("Jagged Peaks", "jagged_peaks"), ("Jungle", "jungle"), ("Lush Caves", "lush_caves"), ("Mangrove Swamp", "mangrove_swamp"),
-        ("Meadow", "meadow"), ("Mushroom Fields", "mushroom_fields"), ("Nether Wastes", "nether_wastes"), ("Ocean", "ocean"),
-        ("Plains", "plains"), ("River", "river"), ("Savanna", "savanna"), ("Snowy Beach", "snowy_beach"), ("Snowy Plains", "snowy_plains"),
-        ("Snowy Taiga", "snowy_taiga"), ("Soul Sand Valley", "soul_sand_valley"), ("Stony Peaks", "stony_peaks"), ("Swamp", "swamp"),
-        ("Taiga", "taiga"), ("The End", "the_end"), ("The Void", "the_void"), ("Warm Ocean", "warm_ocean"), ("Warped Forest", "warped_forest")
-    ]
-
-    POIS = [
-        ("Armorer", "armorer"), ("Butcher", "butcher"), ("Cartographer", "cartographer"), ("Cleric", "cleric"),
-        ("Farmer", "farmer"), ("Fisherman", "fisherman"), ("Fletcher", "fletcher"), ("Leatherworker", "leatherworker"),
-        ("Librarian", "librarian"), ("Mason", "mason"), ("Shepherd", "shepherd"), ("Toolsmith", "toolsmith"),
-        ("Weaponsmith", "weaponsmith"), ("Beehive", "beehive"), ("Bee Nest", "bee_nest"), ("End Portal", "end_portal"),
-        ("Home", "home"), ("Lightning Rod", "lightning_rod"), ("Lodestone", "lodestone"), ("Meeting", "meeting"),
-        ("Nether Portal", "nether_portal")
-    ]
-
-    GAMERULES = [
-        ("Advance Time", "advance_time"), ("Advance Weather", "advance_weather"), ("Allow Entering Nether", "allow_entering_nether_using_portals"),
-        ("Block Drops", "block_drops"), ("Block Explosion Drop Decay", "block_explosion_drop_decay"), ("Command Block Output", "command_block_output"),
-        ("Command Blocks Work", "command_blocks_work"), ("Disable Elytra Movement Check", "elytra_movement_check"), ("Disable Raids", "raids"),
-        ("Do Entity Drops", "entity_drops"), ("Drowning Damage", "drowning_damage"), ("Ender Pearls Vanish On Death", "ender_pearls_vanish_on_death"),
-        ("Fall Damage", "fall_damage"), ("Fire Damage", "fire_damage"), ("Forgive Dead Players", "forgive_dead_players"), ("Freeze Damage", "freeze_damage"),
-        ("Global Sound Events", "global_sound_events"), ("Immediate Respawn", "immediate_respawn"), ("Keep Inventory", "keep_inventory"),
-        ("Lava Source Conversion", "lava_source_conversion"), ("Limit Crafting", "limited_crafting"), ("Locator Bar", "locator_bar"),
-        ("Log Admin Commands", "log_admin_commands"), ("Mob Drops", "mob_drops"), ("Mob Explosion Drop Decay", "mob_explosion_drop_decay"),
-        ("Mob Griefing", "mob_griefing"), ("Natural Health Regeneration", "natural_health_regeneration"), ("Player Movement Check", "player_movement_check"),
-        ("Projectiles Can Break Blocks", "projectiles_can_break_blocks"), ("PVP", "pvp"), ("Reduced Debug Info", "reduced_debug_info"),
-        ("Send Command Feedback", "send_command_feedback"), ("Show Advancement Messages", "show_advancement_messages"), ("Show Death Messages", "show_death_messages"),
-        ("Spawn Mobs", "spawn_mobs"), ("Spawn Monsters", "spawn_monsters"), ("Spawn Patrols", "spawn_patrols"), ("Spawn Phantoms", "spawn_phantoms"),
-        ("Spawn Wandering Traders", "spawn_wandering_traders"), ("Spawn Wardens", "spawn_wardens"), ("Spawner Blocks Work", "spawner_blocks_work"),
-        ("Spectators Generate Chunks", "spectators_generate_chunks"), ("Spread Vines", "spread_vines"), ("TNT Explodes", "tnt_explodes"),
-        ("TNT Explosion Drop Decay", "tnt_explosion_drop_decay"), ("Universal Anger", "universal_anger"), ("Water Source Conversion", "water_source_conversion")
-    ]
-
-    INTEGERGAMERULES = [
-        ("Fire Spread Radius", "fire_spread_radius_around_player"), ("Max Block Modifications", "max_block_modifications"),
-        ("Max Command Forks", "max_command_forks"), ("Max Command Sequence Length", "max_command_sequence_length"),
-        ("Max Entity Cramming", "max_entity_cramming"), ("Max Snow Accumulation Height", "max_snow_accumulation_height"),
-        ("Players Nether Portal Creative Delay", "players_nether_portal_creative_delay"), ("Players Nether Portal Default Delay", "players_nether_portal_default_delay"),
-        ("Players Sleeping Percentage", "players_sleeping_percentage"), ("Random Tick Speed", "random_tick_speed"), ("Respawn Radius", "respawn_radius")
-    ]
-
-    EFFECTS = [
-        ("Speed", "speed"), ("Slowness", "slowness"), ("Haste", "haste"), ("Strength", "strength"),
-        ("Instant Health", "instant_health"), ("Instant Damage", "instant_damage"), ("Jump Boost", "jump_boost"),
-        ("Regeneration", "regeneration"), ("Resistance", "resistance"), ("Fire Resistance", "fire_resistance"),
-        ("Water Breathing", "water_breathing"), ("Invisibility", "invisibility"), ("Blindness", "blindness"),
-        ("Night Vision", "night_vision"), ("Hunger", "hunger"), ("Weakness", "weakness"), ("Poison", "poison"),
-        ("Wither", "wither"), ("Health Boost", "health_boost"), ("Absorption", "absorption"), ("Saturation", "saturation"),
-        ("Glowing", "glowing"), ("Levitation", "levitation"), ("Luck", "luck"), ("Unluck", "unluck"), ("Slow Falling", "slow_falling"),
-        ("Conduit Power", "conduit_power"), ("Dolphins Grace", "dolphins_grace"), ("Bad Omen", "bad_omen"),
-        ("Hero of the Village", "hero_of_the_village"), ("Darkness", "darkness")
-    ]
-
+    STRUCTURES = [("Ancient City", "ancient_city"), ("Bastion Remnant", "bastion_remnant"), ("Buried Treasure", "buried_treasure"), ("Desert Pyramid", "desert_pyramid"), ("End City", "end_city"), ("Fortress", "fortress"), ("Igloo", "igloo"), ("Jungle Pyramid", "jungle_pyramid"), ("Mansion", "mansion"), ("Mineshaft", "mineshaft"), ("Monument", "monument"), ("Nether Fossil", "nether_fossil"), ("Ocean Ruin", "ocean_ruin"), ("Pillager Outpost", "pillager_outpost"), ("Ruined Portal", "ruined_portal"), ("Shipwreck", "shipwreck"), ("Stronghold", "stronghold"), ("Swamp Hut", "swamp_hut"), ("Village", "village"), ("Woodland Mansion", "mansion")]
+    BIOMES = [("Badlands", "badlands"), ("Bamboo Jungle", "bamboo_jungle"), ("Beach", "beach"), ("Birch Forest", "birch_forest"), ("Cherry Grove", "cherry_grove"), ("Dark Forest", "dark_forest"), ("Deep Dark", "deep_dark"), ("Desert", "desert"), ("Dripstone Caves", "dripstone_caves"), ("End Highlands", "end_highlands"), ("End Midlands", "end_midlands"), ("Forest", "forest"), ("Frozen Peaks", "frozen_peaks"), ("Grove", "grove"), ("Ice Spikes", "ice_spikes"), ("Jagged Peaks", "jagged_peaks"), ("Jungle", "jungle"), ("Lush Caves", "lush_caves"), ("Mangrove Swamp", "mangrove_swamp"), ("Meadow", "meadow"), ("Mushroom Fields", "mushroom_fields"), ("Nether Wastes", "nether_wastes"), ("Ocean", "ocean"), ("Plains", "plains"), ("River", "river"), ("Savanna", "savanna"), ("Snowy Beach", "snowy_beach"), ("Snowy Plains", "snowy_plains"), ("Snowy Taiga", "snowy_taiga"), ("Soul Sand Valley", "soul_sand_valley"), ("Stony Peaks", "stony_peaks"), ("Swamp", "swamp"), ("Taiga", "taiga"), ("The End", "the_end"), ("The Void", "the_void"), ("Warm Ocean", "warm_ocean"), ("Warped Forest", "warped_forest")]
+    POIS = [("Armorer", "armorer"), ("Butcher", "butcher"), ("Cartographer", "cartographer"), ("Cleric", "cleric"), ("Farmer", "farmer"), ("Fisherman", "fisherman"), ("Fletcher", "fletcher"), ("Leatherworker", "leatherworker"), ("Librarian", "librarian"), ("Mason", "mason"), ("Shepherd", "shepherd"), ("Toolsmith", "toolsmith"), ("Weaponsmith", "weaponsmith"), ("Beehive", "beehive"), ("Bee Nest", "bee_nest"), ("End Portal", "end_portal"), ("Home", "home"), ("Lightning Rod", "lightning_rod"), ("Lodestone", "lodestone"), ("Meeting", "meeting"), ("Nether Portal", "nether_portal")]
+    GAMERULES = [("Advance Time", "advance_time"), ("Advance Weather", "advance_weather"), ("Allow Entering Nether", "allow_entering_nether_using_portals"), ("Block Drops", "block_drops"), ("Block Explosion Drop Decay", "block_explosion_drop_decay"), ("Command Block Output", "command_block_output"), ("Command Blocks Work", "command_blocks_work"), ("Disable Elytra Movement Check", "elytra_movement_check"), ("Disable Raids", "raids"), ("Do Entity Drops", "entity_drops"), ("Drowning Damage", "drowning_damage"), ("Ender Pearls Vanish On Death", "ender_pearls_vanish_on_death"), ("Fall Damage", "fall_damage"), ("Fire Damage", "fire_damage"), ("Forgive Dead Players", "forgive_dead_players"), ("Freeze Damage", "freeze_damage"), ("Global Sound Events", "global_sound_events"), ("Immediate Respawn", "immediate_respawn"), ("Keep Inventory", "keep_inventory"), ("Lava Source Conversion", "lava_source_conversion"), ("Limit Crafting", "limited_crafting"), ("Locator Bar", "locator_bar"), ("Log Admin Commands", "log_admin_commands"), ("Mob Drops", "mob_drops"), ("Mob Explosion Drop Decay", "mob_explosion_drop_decay"), ("Mob Griefing", "mob_griefing"), ("Natural Health Regeneration", "natural_health_regeneration"), ("Player Movement Check", "player_movement_check"), ("Projectiles Can Break Blocks", "projectiles_can_break_blocks"), ("PVP", "pvp"), ("Reduced Debug Info", "reduced_debug_info"), ("Send Command Feedback", "send_command_feedback"), ("Show Advancement Messages", "show_advancement_messages"), ("Show Death Messages", "show_death_messages"), ("Spawn Mobs", "spawn_mobs"), ("Spawn Monsters", "spawn_monsters"), ("Spawn Patrols", "spawn_patrols"), ("Spawn Phantoms", "spawn_phantoms"), ("Spawn Wandering Traders", "spawn_wandering_traders"), ("Spawn Wardens", "spawn_wardens"), ("Spawner Blocks Work", "spawner_blocks_work"), ("Spectators Generate Chunks", "spectators_generate_chunks"), ("Spread Vines", "spread_vines"), ("TNT Explodes", "tnt_explodes"), ("TNT Explosion Drop Decay", "tnt_explosion_drop_decay"), ("Universal Anger", "universal_anger"), ("Water Source Conversion", "water_source_conversion")]
+    INTEGERGAMERULES = [("Fire Spread Radius", "fire_spread_radius_around_player"), ("Max Block Modifications", "max_block_modifications"), ("Max Command Forks", "max_command_forks"), ("Max Command Sequence Length", "max_command_sequence_length"), ("Max Entity Cramming", "max_entity_cramming"), ("Max Snow Accumulation Height", "max_snow_accumulation_height"), ("Players Nether Portal Creative Delay", "players_nether_portal_creative_delay"), ("Players Nether Portal Default Delay", "players_nether_portal_default_delay"), ("Players Sleeping Percentage", "players_sleeping_percentage"), ("Random Tick Speed", "random_tick_speed"), ("Respawn Radius", "respawn_radius")]
+    EFFECTS = [("Speed", "speed"), ("Slowness", "slowness"), ("Haste", "haste"), ("Strength", "strength"), ("Instant Health", "instant_health"), ("Instant Damage", "instant_damage"), ("Jump Boost", "jump_boost"), ("Regeneration", "regeneration"), ("Resistance", "resistance"), ("Fire Resistance", "fire_resistance"), ("Water Breathing", "water_breathing"), ("Invisibility", "invisibility"), ("Blindness", "blindness"), ("Night Vision", "night_vision"), ("Hunger", "hunger"), ("Weakness", "weakness"), ("Poison", "poison"), ("Wither", "wither"), ("Health Boost", "health_boost"), ("Absorption", "absorption"), ("Saturation", "saturation"), ("Glowing", "glowing"), ("Levitation", "levitation"), ("Luck", "luck"), ("Unluck", "unluck"), ("Slow Falling", "slow_falling"), ("Conduit Power", "conduit_power"), ("Dolphins Grace", "dolphins_grace"), ("Bad Omen", "bad_omen"), ("Hero of the Village", "hero_of_the_village"), ("Darkness", "darkness")]
     TITLEACTIONS = [("Main Title", "title"), ("Subtitle", "subtitle"), ("Action Bar", "actionbar"), ("Clear", "clear"), ("Reset", "reset")]
 
     ACTION_PICKERS = [
@@ -286,19 +193,32 @@ class RegistryBuilder:
 
         self.ACTION_CLASSES = []
         if BlocklyGenerator is not None:
+            # Base static classes (pyncraft removed!)
             classes = [
                 (get_action_class("serveractions", "ServerActions"), "Server", self.COLORS["Server"]),
-                # (get_action_class("playeractions", "PlayerActions"), "Player", self.COLORS["Player"]),
-                (get_action_class("mcactions", "TurtleShapes"), "Turtle", self.COLORS["Turtle"]),
-                (get_action_class("mcactions", "LSystemShapes"), "LSystem", self.COLORS["LSystem"]),
+                (get_action_class("playeractions", "PlayerActions"), "Player", self.COLORS["Player"]),
+                (get_action_class("mcactions", "TurtleShapes"), "Turtle Shapes", self.COLORS["Turtle"]),
+                (get_action_class("mcactions", "LSystemShapes"), "LSystem Shapes", self.COLORS["LSystem"]),
                 (get_action_class("digitalgeometryactions", "DigitalGeometryActions"), "Digital Geometry", self.COLORS["Geometry"]),
                 (get_action_class("qturtleactions", "QTurtleActions"), "Q-Turtle", self.COLORS["Turtle"]),
                 (get_action_class("eventactions", "EventActions"), "Event", self.COLORS["Events"]),
                 (get_action_class("digitalsetactions", "DigitalSetActions"), "Digital Set", self.COLORS["Digital Set"]),
-                (get_action_class("generated_actions", "PlayerActions"), "Player", self.COLORS["Player"]),
-                (get_action_class("generated_actions", "ChatActions"), "Chat", self.COLORS["Chat"]),
-                (get_action_class("generated_actions", "WorldActions"), "World", self.COLORS["World"]),
             ]
+
+            # DYNAMIC DISCOVERY: Read yaml and auto-append GeneratedXActions
+            yaml_path = MC_DATA_DIR / "mcjuice_api.yaml"
+            if yaml_path.exists():
+                try:
+                    with open(yaml_path, 'r') as f:
+                        schema = yaml.safe_load(f)
+                        for ns in schema.get('namespaces', {}).keys():
+                            class_name = f"{ns.capitalize()}Actions"
+                            label = f"{ns.capitalize()}"
+                            color = self.COLORS.get(label, self.COLORS["World"])
+                            classes.append((get_action_class("generated_actions", class_name), label, color))
+                except Exception as e:
+                    print(f"Warning: Failed to auto-discover generated classes: {e}")
+
             self.ACTION_CLASSES.extend([(c, n, col) for c, n, col in classes if c is not None])
 
     def _normalize_name(self, name: str) -> str:
@@ -313,6 +233,14 @@ class RegistryBuilder:
         self.build_entities()
         self.build_actions()
         self.build_pickers_category()
+        self.build_action_classes_export()
+
+    def build_action_classes_export(self):
+        """Generates a JS artifact exporting active Python action class names for frontend formatting."""
+        class_names = [cls.__name__ for cls, _, _ in self.ACTION_CLASSES]
+        js_content = f"export const ACTION_CLASSES = {class_names!r};\n"
+        out_path = self.gens_dir / "action_classes.mjs"
+        out_path.write_text(js_content, encoding='utf-8')
 
     def _generate_base_pickers(self) -> dict:
         js, py = [], []
@@ -444,7 +372,7 @@ class RegistryBuilder:
 class ApiGenerator:
     """
     Generates the Java Registry, Event Listener, and Python Client.
-    Includes the Push Architecture with an infinite-timeout background router.
+    Includes the robust Java compilation fix and the Push Architecture.
     """
     def __init__(self, schema_path, java_out, java_listener_out, python_out, python_actions_out=None):
         try:
@@ -604,7 +532,6 @@ class ApiGenerator:
             "        self.event_queues = {} # event_name -> list of queues",
             "",
             "        # --- PUSH ARCHITECTURE: Dedicated Event Router ---",
-            "        # CRITICAL: Disable timeout on the background socket so it blocks indefinitely",
             "        self.event_conn.socket.settimeout(None)",
             "        self.event_conn.send('events.subscribe')",
             "        self.reader_thread = threading.Thread(target=self._event_reader_loop, daemon=True)",
@@ -626,14 +553,9 @@ class ApiGenerator:
             "        while True:",
             "            try:",
             "                line = self.event_conn.receive()",
-            "                if not line:",
-            "                    # Socket gracefully closed by Java server",
-            "                    break",
-            "                if line == 'OK':",
-            "                    # Ignore the handshake acknowledgement",
-            "                    continue",
+            "                if not line: break",
+            "                if line == 'OK': continue",
             "                ",
-            "                # The Java plugin pushes: eventName,data...",
             "                parts = line.split(',', 1)",
             "                if len(parts) < 2: continue",
             "                event_name, raw_data = parts[0], parts[1]",
@@ -641,17 +563,16 @@ class ApiGenerator:
             "                event_obj = EventFactory.create(event_name, raw_data)",
             "                if not event_obj: continue",
             "                ",
-            "                # Dispatch the parsed event to all registered local queues",
             "                if event_name in self.event_queues:",
             "                    for q in self.event_queues[event_name]:",
             "                        q.put(event_obj)",
+            "            except (socket.timeout, TimeoutError):",
+            "                continue",
             "            except Exception as e:",
-            "                # Socket abruptly closed or disconnected",
             "                break",
             "",
             "    @staticmethod",
             "    def create(address='localhost', port=4721, playerName=''):",
-            "        # Open dual sockets to prevent command vs event collisions",
             "        conn = MCJuiceConnection(address, port)",
             "        event_conn = MCJuiceConnection(address, port)",
             "        eid = None",
@@ -690,7 +611,6 @@ class ApiGenerator:
                     elif r == 'int': code.append("        return int(res)")
                     else: code.append("        return res")
 
-        # New Events Namespace logic mapping purely to local memory queues
         if 'events' in self.schema:
             code.extend([
                 "\nclass EventsNamespace:",
@@ -698,13 +618,11 @@ class ApiGenerator:
                 "        self.client = client",
                 "",
                 "    def subscribe_local(self, event_name: str, target_queue: 'queue.Queue'):",
-                "        \"\"\"Registers a python queue to receive a specific event stream\"\"\"",
                 "        if event_name not in self.client.event_queues:",
                 "            self.client.event_queues[event_name] = []",
                 "        self.client.event_queues[event_name].append(target_queue)",
                 "",
                 "    def unsubscribe_local(self, event_name: str, target_queue: 'queue.Queue'):",
-                "        \"\"\"Unregisters a queue\"\"\"",
                 "        if event_name in self.client.event_queues:",
                 "            try:",
                 "                self.client.event_queues[event_name].remove(target_queue)",
@@ -716,12 +634,10 @@ class ApiGenerator:
         self.python_out.write_text("\n".join(code))
 
     def _camel_to_snake(self, name):
-        """Helper to convert Java camelCase names to Python snake_case"""
         s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
         return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
     def generate_action_classes(self):
-        """Generates the blockly-compatible Python action classes using UI metadata."""
         code = [
             "from mcshell.mcactions_base import MCActionsBase",
             "from blockapily import mced_block",
@@ -735,7 +651,6 @@ class ApiGenerator:
 
         namespaces = self.schema.get('namespaces', {})
         for ns_name, ns_data in namespaces.items():
-            # Only generate a class if at least one command has blockly metadata
             has_blockly = any('blockly' in cmd for cmd in ns_data.get('commands', []))
             if not has_blockly:
                 continue
@@ -750,8 +665,6 @@ class ApiGenerator:
                 if not blockly:
                     continue
 
-                # 1. Generate the @mced_block Decorator
-                # Python 3.10 Fix: Avoid nested f-strings with backslashes in expression parts
                 label_val = blockly.get('label', cmd['name'])
                 dec_parts = [f"        label=\"{label_val}\""]
 
@@ -765,66 +678,43 @@ class ApiGenerator:
                         dec_parts.append(f"        {k}={{'label': '{l_val}'}}")
 
                 args_dec = ",\n".join(dec_parts)
-
                 code.append(f"\n    @mced_block(\n{args_dec}\n    )")
 
-                # 2. Generate the Method Signature
                 sig_parts = ["self"]
                 for arg_name, arg_data in b_args.items():
                     sig_parts.append(f"{arg_name}: '{arg_data.get('type', 'Any')}'")
 
                 sig_str = ", ".join(sig_parts)
 
-                # Determine return type (Fallback to Bukkit returns)
                 ret_type = blockly.get('returns')
                 if not ret_type:
                     bukkit_r = cmd.get('returns', 'void')
-                    if bukkit_r in ('Location', 'Vector', 'TileLocation'):
-                        ret_type = 'Vec3'
-                    elif bukkit_r == 'double':
-                        ret_type = 'float'
-                    elif bukkit_r == 'int':
-                        ret_type = 'int'
-                    elif bukkit_r == 'string_list':
-                        ret_type = 'list'
-                    elif bukkit_r == 'string':
-                        ret_type = 'str'
-                    elif bukkit_r != 'void':
-                        ret_type = bukkit_r
+                    if bukkit_r in ('Location', 'Vector', 'TileLocation'): ret_type = 'Vec3'
+                    elif bukkit_r == 'double': ret_type = 'float'
+                    elif bukkit_r == 'int': ret_type = 'int'
+                    elif bukkit_r == 'string_list': ret_type = 'list'
+                    elif bukkit_r == 'string': ret_type = 'str'
+                    elif bukkit_r != 'void': ret_type = bukkit_r
 
                 ret_str = f" -> '{ret_type}'" if ret_type else ""
-
                 method_name = self._camel_to_snake(cmd['name'])
                 code.append(f"    def {method_name}({sig_str}){ret_str}:")
 
-                # 3. Generate the Docstring
                 tooltip = blockly.get('tooltip', '')
-                if tooltip:
-                    code.append(f"        \"\"\"{tooltip}\"\"\"")
+                if tooltip: code.append(f"        \"\"\"{tooltip}\"\"\"")
 
-                # 4. Generate the API Execution Body
                 call_args = blockly.get('call_args', [])
                 call_args_str = ", ".join(call_args)
 
                 call_stmt = f"self.mcplayer.mj.{ns_name}.{cmd['name']}({call_args_str})"
-                if ret_type:
-                    code.append(f"        return {call_stmt}")
-                else:
-                    code.append(f"        {call_stmt}")
+                if ret_type: code.append(f"        return {call_stmt}")
+                else: code.append(f"        {call_stmt}")
 
         self.python_actions_out.parent.mkdir(parents=True, exist_ok=True)
         self.python_actions_out.write_text("\n".join(code))
 
 if __name__ == "__main__":
-    builder = RegistryBuilder(
-        MC_APP_SRC_DIR / 'toolbox.xml',
-        MC_APP_SRC_DIR / 'blocks',
-        MC_APP_SRC_DIR / 'generators' / 'python',
-        MC_MATERIALS_PATH,
-        MC_ENTITY_ID_MAP_PATH
-    )
-    builder.build_all()
-
+    # 1. RUN API GENERATOR FIRST so generated_actions.py is fully populated and fresh on disk
     gen = ApiGenerator(
         MC_DATA_DIR / "mcjuice_api.yaml",
         MC_JUICE_SRC_DIR / "main/java/org/mcshell/mcjuice/GeneratedCommandRegistry.java",
@@ -833,3 +723,13 @@ if __name__ == "__main__":
         MC_SHELL_DIR / "generated_actions.py"
     )
     gen.run()
+
+    # 2. RUN REGISTRY BUILDER SECOND so it dynamically discovers the generated classes
+    builder = RegistryBuilder(
+        MC_APP_SRC_DIR / 'toolbox.xml',
+        MC_APP_SRC_DIR / 'blocks',
+        MC_APP_SRC_DIR / 'generators' / 'python',
+        MC_MATERIALS_PATH,
+        MC_ENTITY_ID_MAP_PATH
+    )
+    builder.build_all()
