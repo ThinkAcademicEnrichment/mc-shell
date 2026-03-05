@@ -145,7 +145,6 @@ class RegistryBuilder:
         {'id': 'picker_data_path', 'label': 'Data Path', 'options': DATA_PATHS, 'input_type': 'DataPath'},
     ]
 
-    # --- Generic Universal Variant Configuration ---
     VARIANT_CONFIG = {
         "WOOD": {
             "id": "picker_wood_types",
@@ -177,7 +176,6 @@ class RegistryBuilder:
         }
     }
 
-    # --- Expanded default mapping to elegantly capture variants ---
     MATERIAL_PICKER_GROUPS = {
         "world": ["AIR", "STONE", "GRANITE", "DIORITE", "ANDESITE", "DEEPSLATE", "CALCITE", "TUFF", "DIRT", "COARSE_DIRT", "ROOTED_DIRT", "GRASS_BLOCK", "PODZOL", "MYCELIUM", "DIRT_PATH", "SAND", "RED_SAND", "GRAVEL", "CLAY", "ICE", "PACKED_ICE", "BLUE_ICE", "SNOW", "SNOW_BLOCK", "WATER", "LAVA", "BEDROCK", "OBSIDIAN", "CRYING_OBSIDIAN", "MAGMA_BLOCK"],
         "ores": ["COAL_ORE", "DEEPSLATE_COAL_ORE", "IRON_ORE", "DEEPSLATE_IRON_ORE", "COPPER_ORE", "DEEPSLATE_COPPER_ORE", "GOLD_ORE", "DEEPSLATE_GOLD_ORE", "REDSTONE_ORE", "DEEPSLATE_REDSTONE_ORE", "EMERALD_ORE", "DEEPSLATE_EMERALD_ORE", "LAPIS_ORE", "DEEPSLATE_LAPIS_ORE", "DIAMOND_ORE", "DEEPSLATE_DIAMOND_ORE", "NETHER_GOLD_ORE", "NETHER_QUARTZ_ORE", "ANCIENT_DEBRIS"],
@@ -208,6 +206,7 @@ class RegistryBuilder:
         self.toolbox_path = toolbox_path
         self.blocks_dir = blocks_dir
         self.gens_dir = gens_dir
+        self.generated_block_pickers = [] # <--- NEW: Tracks exactly what pickers get generated
 
         try:
             with materials_path.open('rb') as f:
@@ -319,7 +318,8 @@ class RegistryBuilder:
                     "input_type": var_config["input_type"],
                     "shadow": var_config["shadow"],
                     "label": self._normalize_name(template_name),
-                    "available_variants": sorted(info["variants"])
+                    "available_variants": sorted(info["variants"]),
+                    "mats": info["mats"] # <--- NEW: Explicitly output the raw underlying materials
                 }
                 consumed.update(info["mats"])
 
@@ -330,12 +330,13 @@ class RegistryBuilder:
         return parameterized, consumed, suffix_map
 
     def build_blocks(self):
+        self.generated_block_pickers = [] # Reset block picker tracking
         js, py, xml = [], [], []
         base = self._generate_base_pickers()
         js.append(base['js']); py.append(base['py'])
 
         blocks = [k for k, v in self.materials_data.items() if v.get('is_block')]
-        templates, consumed, _ = self._classify_variants(blocks)
+        templates, consumed, suffix_map = self._classify_variants(blocks)
 
         for t_key, info in templates.items():
             b_type = f"mc_block_{t_key.lower().replace(' ', '_')}"
@@ -346,16 +347,33 @@ class RegistryBuilder:
             js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
 
         for group_name, members in self.MATERIAL_PICKER_GROUPS.items():
-            valid_members = [m for m in members if m in blocks]
+            valid_members = []
+            for m in members:
+                # 1. Grab Raw Blocks
+                if m in blocks:
+                    valid_members.append(m)
+                # 2. FIX: Dynamically unpack templates (e.g. "LOG") back into raw blocks for the picker!
+                if m in suffix_map:
+                    for t_key in suffix_map[m]:
+                        valid_members.extend(templates[t_key]["mats"])
+
+            # Remove duplicates and ensure everything is actually a block
+            valid_members = sorted(list(set([m for m in valid_members if m in blocks])))
+
             if not valid_members: continue
+
             b_type = f"mc_block_picker_{group_name.lower()}"
+            self.generated_block_pickers.append(b_type) # Track it!
+
             res = BlocklyGenerator.generate_picker(b_type, self._normalize_name(group_name), [(self._normalize_name(m), m) for m in valid_members], "Block", self.COLORS["Picker"])
             js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
             consumed.update(valid_members)
 
         rem = sorted(list(set(blocks) - consumed))
         if rem:
-            res = BlocklyGenerator.generate_picker("mc_block_picker_general", "Other Blocks", [(self._normalize_name(m), m) for m in rem], "Block", self.COLORS["Picker"])
+            b_type = "mc_block_picker_general"
+            self.generated_block_pickers.append(b_type) # Track fallback picker
+            res = BlocklyGenerator.generate_picker(b_type, "Other Blocks", [(self._normalize_name(m), m) for m in rem], "Block", self.COLORS["Picker"])
             js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
 
         self._write_output("blocks", "Blocks", js, py)
@@ -364,7 +382,7 @@ class RegistryBuilder:
     def build_items(self):
         js, py, xml = [], [], []
         items = [k for k, v in self.materials_data.items() if v.get('is_item')]
-        templates, consumed, _ = self._classify_variants(items)
+        templates, consumed, suffix_map = self._classify_variants(items)
 
         for t_key, info in templates.items():
             b_type = f"mc_item_{t_key.lower().replace(' ', '_')}"
@@ -375,8 +393,19 @@ class RegistryBuilder:
             js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
 
         for group_name, members in self.MATERIAL_PICKER_GROUPS.items():
-            valid_members = [m for m in members if m in items]
+            valid_members = []
+            for m in members:
+                # Identical Unpacking Fix for Items
+                if m in items:
+                    valid_members.append(m)
+                if m in suffix_map:
+                    for t_key in suffix_map[m]:
+                        valid_members.extend(templates[t_key]["mats"])
+
+            valid_members = sorted(list(set([m for m in valid_members if m in items])))
+
             if not valid_members: continue
+
             b_type = f"mc_item_picker_{group_name.lower()}"
             res = BlocklyGenerator.generate_picker(b_type, self._normalize_name(group_name), [(self._normalize_name(m), m) for m in valid_members], "Item", self.COLORS["Picker"])
             js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
@@ -415,10 +444,17 @@ class RegistryBuilder:
             BlocklyGenerator.update_toolbox(c_xml, self.toolbox_path)
 
     def build_pickers_category(self):
+        """
+        NEW: Safely builds the Pickers category in the toolbox by *only* inserting
+        blocks that were successfully generated and tracked in the previous steps.
+        """
         xml = [f'<block type="{info["id"]}"></block>' for info in self.VARIANT_CONFIG.values()]
         xml += [f'<block type="{p["id"]}"></block>' for p in self.ACTION_PICKERS]
-        for group_name in self.MATERIAL_PICKER_GROUPS.keys():
-            xml.append(f'<block type="mc_block_picker_{group_name.lower()}"></block>')
+
+        # Pull exactly what was verified and built in build_blocks()
+        for b_type in getattr(self, 'generated_block_pickers', []):
+            xml.append(f'<block type="{b_type}"></block>')
+
         BlocklyGenerator.update_toolbox(f'<category name="Pickers" colour="{self.COLORS["Picker"]}">{"".join(xml)}</category>', self.toolbox_path)
 
     def export_taxonomy(self):
@@ -429,8 +465,6 @@ class RegistryBuilder:
 
         def build_category(groups_dict, all_items, category_key):
             parameterized, consumed, suffix_map = self._classify_variants(all_items)
-
-            # FIX: Track added templates globally across all group iterations
             global_added_templates = set()
 
             for group_name, members in groups_dict.items():
@@ -455,8 +489,6 @@ class RegistryBuilder:
                     taxonomy[category_key].append(group_out)
 
             other_items = []
-
-            # 1. Add leftover raw blocks that weren't explicitly sorted
             rem = sorted(list(set(all_items) - consumed))
             grouped_raw = set(item for sublist in groups_dict.values() for item in sublist)
             rem = [x for x in rem if x not in grouped_raw]
@@ -464,7 +496,6 @@ class RegistryBuilder:
             for m in rem:
                 other_items.append({"name": self._normalize_name(m), "value": m})
 
-            # 2. FIX: Add leftover templates (variants) that weren't assigned to any specific group
             leftover_templates = set(parameterized.keys()) - global_added_templates
             for t_key in sorted(leftover_templates):
                 t_info = parameterized[t_key]
@@ -505,7 +536,6 @@ class RegistryBuilder:
         (self.blocks_dir / f"{file_name}.mjs").write_text(js_c, encoding='utf-8')
         (self.gens_dir / f"{file_name}.mjs").write_text(py_c, encoding='utf-8')
 
-# ... [ApiGenerator and __main__ block remain identical] ...
 class ApiGenerator:
     """
     Generates the Java Registry, Event Listener, and Python Client.
