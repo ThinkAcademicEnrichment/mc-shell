@@ -2,7 +2,7 @@ import os
 import json
 from flask import Blueprint, request, jsonify, make_response, current_app, render_template_string, session, send_file
 
-from mcshell.constants import MC_CONTROL_LAYOUT_PATH
+# from mcshell.constants import MC_CONTROL_LAYOUT_PATH
 
 # 1. Create a Blueprint instance.
 powers_bp = Blueprint('powers_api', __name__, url_prefix='/api')
