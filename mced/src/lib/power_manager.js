@@ -86,18 +86,32 @@ export async function savePower(workspace, formData) {
         category: formData.category || "Workspaces",
         power_id: formData.power_id || null,
         blockly_json: blocklyJson,
-        dependencies: []
+        dependencies: [],
+        parameters: []
     };
 
     if (funcDefBlock) {
         pythonGenerator.init(workspace);
         const fullCode = pythonGenerator.workspaceToCode(workspace);
         const lines = fullCode.split('\n');
+
         let inInit = false;
         let extractedLines = [];
+        let collectedImports = new Set();
 
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
+
+            // Harvest any required library imports Blockly generated
+            if (line.startsWith('import ') || line.startsWith('from ')) {
+                // FIXED: Wildcard imports (import *) are illegal inside Python functions.
+                // The mcserver.py execution wrapper already provides these globally anyway!
+                if (!line.includes('import *')) {
+                    collectedImports.add(line.trim());
+                }
+                continue;
+            }
+
             if (line.startsWith('    def __init__')) { inInit = true; continue; }
             if (inInit) {
                 if (line.startsWith('        ') || line.trim() === '') continue;
@@ -133,12 +147,10 @@ export async function savePower(workspace, formData) {
                 let pickerSource = null;
 
                 if (targetBlock) {
-                    // 1. Detect if a specific category picker was attached
                     if (targetBlock.type.match(/^mc_(block|item|entity)_picker_/)) {
                         pickerSource = targetBlock.type;
                     }
 
-                    // 2. Evaluate the block to get its explicit literal value
                     let codeTuple = pythonGenerator.blockToCode(targetBlock);
                     let pyCode = Array.isArray(codeTuple) ? codeTuple[0] : codeTuple;
 
@@ -153,7 +165,6 @@ export async function savePower(workspace, formData) {
                         } else if (pyCode === 'False') {
                             defaultValue = false;
                         } else if (pyCode.startsWith('Vec3(')) {
-                            // Extract static vector coordinates
                             const vecMatch = pyCode.match(/Vec3\(([^,]+),\s*([^,]+),\s*([^)]+)\)/);
                             if (vecMatch && !isNaN(Number(vecMatch[1])) && !isNaN(Number(vecMatch[2])) && !isNaN(Number(vecMatch[3]))) {
                                 defaultValue = { x: Number(vecMatch[1]), y: Number(vecMatch[2]), z: Number(vecMatch[3]) };
@@ -164,28 +175,63 @@ export async function savePower(workspace, formData) {
 
                 return { name, type: check ? check[0] : 'String', default: defaultValue, picker_source: pickerSource };
             });
+        }
 
-            // 3. Inject invisible Python Vector Type-Caster
-            // This allows the UI to send a simple JSON dict {x, y, z} and have it automatically
-            // convert to a Python Vec3 object at runtime!
-            let castingLogic = "";
-            powerDataObject.parameters.forEach(p => {
-                if (p.type === '3DVector') {
-                    castingLogic += `    if isinstance(${p.name}, dict) and 'x' in ${p.name}:\n`;
-                    castingLogic += `        from mcshell.Vec3 import Vec3\n`;
-                    castingLogic += `        ${p.name} = Vec3(float(${p.name}['x']), float(${p.name}['y']), float(${p.name}['z']))\n`;
+        // --- 3. Advanced Python String Surgery ---
+        const sigRegex = new RegExp(`^([ \\t]*)def ${powerDataObject.function_name}\\(.*?\\):`, 'm');
+        const match = powerDataObject.python_code.match(sigRegex);
+
+        if (match) {
+            const baseIndent = match[1] || "";
+            const innerIndent = baseIndent + "    ";
+
+            // A. Build the Header Injection (Imports, Type casting & Thread Init)
+            let headerLogic = `\n${innerIndent}import time\n`;
+
+            // INJECT HARVESTED IMPORTS (Safely bypassing duplicates)
+            collectedImports.forEach(imp => {
+                if (imp !== 'import time') {
+                    headerLogic += `${innerIndent}${imp}\n`;
                 }
             });
 
-            if (castingLogic !== "") {
-                const sigRegex = new RegExp(`^def ${powerDataObject.function_name}\\(self.*?\\):`, 'm');
-                const match = powerDataObject.python_code.match(sigRegex);
-                if (match) {
-                    const insertPos = powerDataObject.python_code.indexOf(match[0]) + match[0].length;
-                    powerDataObject.python_code = powerDataObject.python_code.slice(0, insertPos) + '\n' + castingLogic + powerDataObject.python_code.slice(insertPos);
+            headerLogic += `${innerIndent}if not hasattr(self, 'active_threads'):\n`;
+            headerLogic += `${innerIndent}    self.active_threads = []\n`;
+
+            powerDataObject.parameters.forEach(p => {
+                if (p.type === '3DVector') {
+                    headerLogic += `${innerIndent}if isinstance(${p.name}, dict) and 'x' in ${p.name}:\n`;
+                    headerLogic += `${innerIndent}    from mcshell.Vec3 import Vec3\n`;
+                    headerLogic += `${innerIndent}    ${p.name} = Vec3(float(${p.name}['x']), float(${p.name}['y']), float(${p.name}['z']))\n`;
                 }
+            });
+
+            // B. Build the Footer Injection (The Wait Loop)
+            let footerLogic = `\n${innerIndent}# --- Auto-Injected Thread Wait Loop ---\n`;
+            footerLogic += `${innerIndent}while hasattr(self, 'active_threads') and any(t.is_alive() for t in getattr(self, 'active_threads', [])):\n`;
+            footerLogic += `${innerIndent}    if getattr(self, 'cancel_event', None) and self.cancel_event.is_set(): break\n`;
+            footerLogic += `${innerIndent}    time.sleep(0.1)\n\n`;
+
+            // C. Locate the exact bounds of the main function
+            const insertPos = powerDataObject.python_code.indexOf(match[0]) + match[0].length;
+
+            const nextDefRegex = new RegExp(`^${baseIndent}def `, 'm');
+            const contentAfterSig = powerDataObject.python_code.slice(insertPos);
+            const nextDefMatch = contentAfterSig.match(nextDefRegex);
+
+            let splitPos = powerDataObject.python_code.length;
+            if (nextDefMatch) {
+                splitPos = insertPos + nextDefMatch.index;
             }
+
+            // D. Sandwich the injections into the code
+            const part1 = powerDataObject.python_code.slice(0, insertPos);
+            const part2 = powerDataObject.python_code.slice(insertPos, splitPos);
+            const part3 = powerDataObject.python_code.slice(splitPos);
+
+            powerDataObject.python_code = part1 + headerLogic + part2 + footerLogic + part3;
         }
+
     } else {
         powerDataObject.python_code = pythonGenerator.workspaceToCode(workspace);
         powerDataObject.function_name = null;
