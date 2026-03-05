@@ -3,6 +3,7 @@ import yaml
 import pickle
 import pathlib
 import re
+import json
 from pathlib import Path
 
 # --- STANDALONE PATH CONFIGURATION ---
@@ -144,12 +145,29 @@ class RegistryBuilder:
         {'id': 'picker_data_path', 'label': 'Data Path', 'options': DATA_PATHS, 'input_type': 'DataPath'},
     ]
 
-    WOOD_TYPES = ["OAK", "SPRUCE", "BIRCH", "JUNGLE", "ACACIA", "DARK_OAK", "MANGROVE", "CHERRY", "PALE_OAK", "BAMBOO", "CRIMSON", "WARPED"]
-    COLORS_LIST = ["WHITE", "ORANGE", "MAGENTA", "LIGHT_BLUE", "YELLOW", "LIME", "PINK", "GRAY", "LIGHT_GRAY", "CYAN", "PURPLE", "BLUE", "BROWN", "GREEN", "RED", "BLACK"]
-
-    VARIANT_MAP = {
-        'WOOD': {'id': 'picker_wood_types', 'label': 'Wood Type', 'options': [(w.replace('_', ' ').title(), w) for w in WOOD_TYPES], 'input_type': 'MinecraftWood', 'shadow': 'picker_wood_types'},
-        'COLOR': {'id': 'picker_colours', 'label': 'Color', 'options': [(c.replace('_', ' ').title(), c) for c in COLORS_LIST], 'input_type': 'MinecraftColour', 'shadow': 'picker_colours'}
+    # --- NEW: Generic Universal Variant Configuration ---
+    VARIANT_CONFIG = {
+        "WOOD": {
+            "id": "picker_wood_types",
+            "label": "Wood Type",
+            "prefixes": ["OAK", "SPRUCE", "BIRCH", "JUNGLE", "ACACIA", "DARK_OAK", "MANGROVE", "CHERRY", "PALE_OAK", "BAMBOO", "CRIMSON", "WARPED"],
+            "input_type": "MinecraftWood",
+            "shadow": "picker_wood_types"
+        },
+        "COLOR": {
+            "id": "picker_colours",
+            "label": "Color",
+            "prefixes": ["WHITE", "ORANGE", "MAGENTA", "LIGHT_BLUE", "YELLOW", "LIME", "PINK", "GRAY", "LIGHT_GRAY", "CYAN", "PURPLE", "BLUE", "BROWN", "GREEN", "RED", "BLACK"],
+            "input_type": "MinecraftColour",
+            "shadow": "picker_colours"
+        },
+        "ARMOR_TIER": {
+            "id": "picker_armor_tier",
+            "label": "Armor Tier",
+            "prefixes": ["LEATHER", "CHAINMAIL", "IRON", "GOLDEN", "DIAMOND", "NETHERITE", "TURTLE"],
+            "input_type": "MinecraftArmorTier",
+            "shadow": "picker_armor_tier"
+        }
     }
 
     MATERIAL_PICKER_GROUPS = {
@@ -193,7 +211,7 @@ class RegistryBuilder:
 
         self.ACTION_CLASSES = []
         if BlocklyGenerator is not None:
-            # Base static classes (pyncraft removed!)
+            # Base static classes
             classes = [
                 (get_action_class("serveractions", "ServerActions"), "Server", self.COLORS["Server"]),
                 (get_action_class("playeractions", "PlayerActions"), "Player", self.COLORS["Player"]),
@@ -234,6 +252,7 @@ class RegistryBuilder:
         self.build_actions()
         self.build_pickers_category()
         self.build_action_classes_export()
+        self.export_taxonomy()  # <-- NEW: Generates taxonomy.json
 
     def build_action_classes_export(self):
         """Generates a JS artifact exporting active Python action class names for frontend formatting."""
@@ -244,8 +263,10 @@ class RegistryBuilder:
 
     def _generate_base_pickers(self) -> dict:
         js, py = [], []
-        for info in self.VARIANT_MAP.values():
-            res = BlocklyGenerator.generate_picker(info['id'], info['label'], info['options'], info['input_type'], self.COLORS["Picker"])
+        for info in self.VARIANT_CONFIG.values():
+            # Build options dynamically from the prefixes
+            options = [(self._normalize_name(p), p) for p in info['prefixes']]
+            res = BlocklyGenerator.generate_picker(info['id'], info['label'], options, info['input_type'], self.COLORS["Picker"])
             js.append(res['js']); py.append(res['py'])
         return {"js": "\n".join(js), "py": "\n".join(py)}
 
@@ -258,20 +279,49 @@ class RegistryBuilder:
                 self.toolbox_path.write_text(template.read_text())
 
     def _classify_variants(self, material_list):
-        parameterized, consumed = {}, set()
-        suffixes = {}
+        """
+        NEW: A generic algorithm that detects variants, groups them by (Category, Suffix),
+        and inherently prevents mixed-type collisions.
+        """
+        parameterized = {}
+        consumed = set()
+        classified_groups = {}
+        suffix_map = {}
+
         for mat in material_list:
-            parts = mat.split('_')
-            if len(parts) > 1:
-                prefix, suffix = parts[0], "_".join(parts[1:])
-                if prefix in self.WOOD_TYPES: suffixes.setdefault(f"{{}}_{suffix}", {"mats": [], "type": "WOOD"}).get("mats").append(mat)
-                elif prefix in self.COLORS_LIST: suffixes.setdefault(f"{{}}_{suffix}", {"mats": [], "type": "COLOR"}).get("mats").append(mat)
-        for t, info in suffixes.items():
+            for var_key, var_info in self.VARIANT_CONFIG.items():
+                for prefix in var_info["prefixes"]:
+                    if mat.startswith(f"{prefix}_"):
+                        suffix = mat[len(prefix)+1:]
+                        group_key = (var_key, suffix)
+
+                        if group_key not in classified_groups:
+                            classified_groups[group_key] = {"mats": [], "type": var_key, "variants": [], "suffix": suffix}
+
+                        classified_groups[group_key]["mats"].append(mat)
+                        classified_groups[group_key]["variants"].append(self._normalize_name(prefix))
+                        break # Prevent double matching
+
+        for (var_key, suffix), info in classified_groups.items():
             if len(info["mats"]) > 3:
-                var = self.VARIANT_MAP[info["type"]]
-                parameterized[t] = {"template": t, "input_type": var["input_type"], "shadow": var["shadow"], "label": self._normalize_name(t.replace('{}_', ''))}
+                var_config = self.VARIANT_CONFIG[info["type"]]
+                template_name = f"{var_key}_{suffix}"
+                python_template = f"{{}}_{suffix}"
+
+                parameterized[template_name] = {
+                    "template": python_template,
+                    "input_type": var_config["input_type"],
+                    "shadow": var_config["shadow"],
+                    "label": self._normalize_name(template_name),
+                    "available_variants": sorted(info["variants"])
+                }
                 consumed.update(info["mats"])
-        return parameterized, consumed
+
+                if suffix not in suffix_map:
+                    suffix_map[suffix] = []
+                suffix_map[suffix].append(template_name)
+
+        return parameterized, consumed, suffix_map
 
     def build_blocks(self):
         js, py, xml = [], [], []
@@ -279,11 +329,15 @@ class RegistryBuilder:
         js.append(base['js']); py.append(base['py'])
 
         blocks = [k for k, v in self.materials_data.items() if v.get('is_block')]
-        templates, consumed = self._classify_variants(blocks)
+        templates, consumed, _ = self._classify_variants(blocks)
 
-        for t, info in templates.items():
-            b_type = f"mc_block_{t.lower().replace('{}_', '').replace(' ', '_')}"
-            res = BlocklyGenerator.generate_parameterized_block(b_type, info["label"], "VARIANT", info["input_type"], "Block", self.COLORS["Block"], t, info["shadow"])
+        for t_key, info in templates.items():
+            # Automatically generates a collision-free ID like "mc_block_color_stained_glass"
+            b_type = f"mc_block_{t_key.lower().replace(' ', '_')}"
+            res = BlocklyGenerator.generate_parameterized_block(
+                b_type, info["label"], "VARIANT", info["input_type"], "Block",
+                self.COLORS["Block"], info["template"], info["shadow"]
+            )
             js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
 
         for group_name, members in self.MATERIAL_PICKER_GROUPS.items():
@@ -305,11 +359,14 @@ class RegistryBuilder:
     def build_items(self):
         js, py, xml = [], [], []
         items = [k for k, v in self.materials_data.items() if v.get('is_item')]
-        templates, consumed = self._classify_variants(items)
+        templates, consumed, _ = self._classify_variants(items)
 
-        for t, info in templates.items():
-            b_type = f"mc_item_{t.lower().replace('{}_', '').replace(' ', '_')}"
-            res = BlocklyGenerator.generate_parameterized_block(b_type, info["label"], "VARIANT", info["input_type"], "Item", self.COLORS["Item"], t, info["shadow"])
+        for t_key, info in templates.items():
+            b_type = f"mc_item_{t_key.lower().replace(' ', '_')}"
+            res = BlocklyGenerator.generate_parameterized_block(
+                b_type, info["label"], "VARIANT", info["input_type"], "Item",
+                self.COLORS["Item"], info["template"], info["shadow"]
+            )
             js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
 
         for group_name, members in self.MATERIAL_PICKER_GROUPS.items():
@@ -353,11 +410,78 @@ class RegistryBuilder:
             BlocklyGenerator.update_toolbox(c_xml, self.toolbox_path)
 
     def build_pickers_category(self):
-        xml = [f'<block type="{info["id"]}"></block>' for info in self.VARIANT_MAP.values()]
+        xml = [f'<block type="{info["id"]}"></block>' for info in self.VARIANT_CONFIG.values()]
         xml += [f'<block type="{p["id"]}"></block>' for p in self.ACTION_PICKERS]
         for group_name in self.MATERIAL_PICKER_GROUPS.keys():
             xml.append(f'<block type="mc_block_picker_{group_name.lower()}"></block>')
         BlocklyGenerator.update_toolbox(f'<category name="Pickers" colour="{self.COLORS["Picker"]}">{"".join(xml)}</category>', self.toolbox_path)
+
+    def export_taxonomy(self):
+        """
+        NEW: Dumps the entire organizational brain to taxonomy.json.
+        This provides the Control Deck UI with a fully dynamic, collision-proof schema.
+        """
+        taxonomy = {"Block": [], "Item": [], "Entity": []}
+
+        # 1. Gather Action Pickers (Enums like Weather, Difficulty) at the root level
+        for p in self.ACTION_PICKERS:
+            taxonomy[p['input_type']] = [{"name": opt[0], "value": opt[1]} for opt in p['options']]
+
+        # 2. Helper to build generic smart categories (Blocks, Items, Entities)
+        def build_category(groups_dict, all_items, category_key):
+            parameterized, consumed, suffix_map = self._classify_variants(all_items)
+
+            for group_name, members in groups_dict.items():
+                group_out = {"name": self._normalize_name(group_name), "items": []}
+                added_templates = set()
+
+                for m in members:
+                    if m in all_items and m not in consumed:
+                        # Raw block (e.g., "STONE")
+                        group_out["items"].append({"name": self._normalize_name(m), "value": m})
+                    elif m in suffix_map:
+                        # A dynamically grouped template (e.g., "STAINED_GLASS")
+                        for t_key in suffix_map[m]:
+                            if t_key not in added_templates:
+                                t_info = parameterized[t_key]
+                                group_out["items"].append({
+                                    "name": t_info["label"],
+                                    "template": t_info["template"],
+                                    "variants": t_info["available_variants"],
+                                    "currentVariant": t_info["available_variants"][0] if t_info["available_variants"] else ""
+                                })
+                                added_templates.add(t_key)
+
+                if group_out["items"]:
+                    taxonomy[category_key].append(group_out)
+
+            # Handle anything left over
+            rem = sorted(list(set(all_items) - consumed))
+            grouped_raw = set(item for sublist in groups_dict.values() for item in sublist)
+            rem = [x for x in rem if x not in grouped_raw]
+
+            if rem:
+                taxonomy[category_key].append({
+                    "name": f"Other {category_key}s",
+                    "items": [{"name": self._normalize_name(m), "value": m} for m in rem]
+                })
+
+        # Process standard Minecraft families
+        blocks = [k for k, v in self.materials_data.items() if v.get('is_block')]
+        build_category(self.MATERIAL_PICKER_GROUPS, blocks, "Block")
+
+        items = [k for k, v in self.materials_data.items() if v.get('is_item')]
+        build_category(self.MATERIAL_PICKER_GROUPS, items, "Item")
+
+        # We assume entities use the raw keys of the parsed entity data
+        entities = [k for k in self.entity_data.keys()]
+        build_category(self.ENTITY_GROUPS, entities, "Entity")
+
+        # 3. Export!
+        out_path = MC_DATA_DIR / "taxonomy.json"
+        with open(out_path, "w") as f:
+            json.dump(taxonomy, f, indent=2)
+        print(f"Exported UI Taxonomy successfully to {out_path}")
 
     def _write_output(self, file_name, export_name, js, py):
         header = 'import { MCED } from "../lib/constants.mjs";\n\n'
@@ -369,6 +493,7 @@ class RegistryBuilder:
         (self.gens_dir / f"{file_name}.mjs").write_text(py_c, encoding='utf-8')
 
 
+# ... [ApiGenerator class remains unchanged here, it is standard] ...
 class ApiGenerator:
     """
     Generates the Java Registry, Event Listener, and Python Client.
@@ -714,7 +839,6 @@ class ApiGenerator:
         self.python_actions_out.write_text("\n".join(code))
 
 if __name__ == "__main__":
-    # 1. RUN API GENERATOR FIRST so generated_actions.py is fully populated and fresh on disk
     gen = ApiGenerator(
         MC_DATA_DIR / "mcjuice_api.yaml",
         MC_JUICE_SRC_DIR / "main/java/org/mcshell/mcjuice/GeneratedCommandRegistry.java",
@@ -724,7 +848,6 @@ if __name__ == "__main__":
     )
     gen.run()
 
-    # 2. RUN REGISTRY BUILDER SECOND so it dynamically discovers the generated classes
     builder = RegistryBuilder(
         MC_APP_SRC_DIR / 'toolbox.xml',
         MC_APP_SRC_DIR / 'blocks',
