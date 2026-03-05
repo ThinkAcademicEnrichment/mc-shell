@@ -145,7 +145,7 @@ class RegistryBuilder:
         {'id': 'picker_data_path', 'label': 'Data Path', 'options': DATA_PATHS, 'input_type': 'DataPath'},
     ]
 
-    # --- NEW: Generic Universal Variant Configuration ---
+    # --- Generic Universal Variant Configuration ---
     VARIANT_CONFIG = {
         "WOOD": {
             "id": "picker_wood_types",
@@ -167,21 +167,33 @@ class RegistryBuilder:
             "prefixes": ["LEATHER", "CHAINMAIL", "IRON", "GOLDEN", "DIAMOND", "NETHERITE", "TURTLE"],
             "input_type": "MinecraftArmorTier",
             "shadow": "picker_armor_tier"
+        },
+        "TOOL_TIER": {
+            "id": "picker_tool_tier",
+            "label": "Tool Tier",
+            "prefixes": ["WOODEN", "STONE", "IRON", "GOLDEN", "DIAMOND", "NETHERITE"],
+            "input_type": "MinecraftToolTier",
+            "shadow": "picker_tool_tier"
         }
     }
 
+    # --- Expanded default mapping to elegantly capture variants ---
     MATERIAL_PICKER_GROUPS = {
         "world": ["AIR", "STONE", "GRANITE", "DIORITE", "ANDESITE", "DEEPSLATE", "CALCITE", "TUFF", "DIRT", "COARSE_DIRT", "ROOTED_DIRT", "GRASS_BLOCK", "PODZOL", "MYCELIUM", "DIRT_PATH", "SAND", "RED_SAND", "GRAVEL", "CLAY", "ICE", "PACKED_ICE", "BLUE_ICE", "SNOW", "SNOW_BLOCK", "WATER", "LAVA", "BEDROCK", "OBSIDIAN", "CRYING_OBSIDIAN", "MAGMA_BLOCK"],
         "ores": ["COAL_ORE", "DEEPSLATE_COAL_ORE", "IRON_ORE", "DEEPSLATE_IRON_ORE", "COPPER_ORE", "DEEPSLATE_COPPER_ORE", "GOLD_ORE", "DEEPSLATE_GOLD_ORE", "REDSTONE_ORE", "DEEPSLATE_REDSTONE_ORE", "EMERALD_ORE", "DEEPSLATE_EMERALD_ORE", "LAPIS_ORE", "DEEPSLATE_LAPIS_ORE", "DIAMOND_ORE", "DEEPSLATE_DIAMOND_ORE", "NETHER_GOLD_ORE", "NETHER_QUARTZ_ORE", "ANCIENT_DEBRIS"],
+        "woods_and_logs": ["LOG", "WOOD", "PLANKS", "SAPLING", "LEAVES", "STRIPPED_LOG", "STRIPPED_WOOD"],
+        "colored_blocks": ["WOOL", "CARPET", "TERRACOTTA", "GLAZED_TERRACOTTA", "CONCRETE", "CONCRETE_POWDER", "BED", "BANNER", "SHULKER_BOX", "CANDLE"],
         "stone_bricks": ["BRICKS", "STONE_BRICKS", "MUD_BRICKS", "DEEPSLATE_BRICKS", "DEEPSLATE_TILES", "NETHER_BRICKS", "RED_NETHER_BRICKS", "POLISHED_BLACKSTONE_BRICKS", "END_STONE_BRICKS", "QUARTZ_BRICKS", "CHISELED_STONE_BRICKS", "CRACKED_STONE_BRICKS", "MOSSY_STONE_BRICKS", "CHISELED_NETHER_BRICKS", "CRACKED_NETHER_BRICKS", "CHISELED_POLISHED_BLACKSTONE", "CRACKED_POLISHED_BLACKSTONE_BRICKS", "CHISELED_DEEPSLATE", "CRACKED_DEEPSLATE_BRICKS", "CRACKED_DEEPSLATE_TILES", "CHISELED_TUFF_BRICKS"],
-        "glass": ["GLASS", "GLASS_PANE", "TINTED_GLASS"],
+        "glass": ["GLASS", "GLASS_PANE", "TINTED_GLASS", "STAINED_GLASS", "STAINED_GLASS_PANE"],
         "redstone_components": ["REDSTONE_WIRE", "REDSTONE_BLOCK", "REDSTONE_TORCH", "REPEATER", "COMPARATOR", "PISTON", "STICKY_PISTON", "SLIME_BLOCK", "HONEY_BLOCK", "OBSERVER", "DROPPER", "DISPENSER", "HOPPER", "LECTERN", "LEVER", "DAYLIGHT_DETECTOR", "TRIPWIRE_HOOK", "TARGET", "NOTE_BLOCK", "RAIL", "POWERED_RAIL", "DETECTOR_RAIL", "ACTIVATOR_RAIL", "REDSTONE_LAMP"],
         "lighting": ["TORCH", "SOUL_TORCH", "LANTERN", "SOUL_LANTERN", "GLOWSTONE", "SEA_LANTERN", "OCHRE_FROGLIGHT", "PEARLESCENT_FROGLIGHT", "VERDANT_FROGLIGHT", "COPPER_LANTERN", "SHROOMLIGHT", "JACK_O_LANTERN", "BEACON", "END_ROD"],
         "copper_variants": ["COPPER_BLOCK", "EXPOSED_COPPER", "WEATHERED_COPPER", "OXIDIZED_COPPER", "CUT_COPPER", "CHISELED_COPPER", "COPPER_GRATE", "COPPER_BULB"],
-        "nature": ["OAK_LEAVES", "SPRUCE_LEAVES", "BIRCH_LEAVES", "JUNGLE_LEAVES", "ACACIA_LEAVES", "DARK_OAK_LEAVES", "MANGROVE_LEAVES", "CHERRY_LEAVES", "AZALEA_LEAVES", "MOSS_BLOCK", "VINE", "CAVE_VINES", "TWISTING_VINES", "WEEPING_VINES"],
+        "nature": ["MOSS_BLOCK", "VINE", "CAVE_VINES", "TWISTING_VINES", "WEEPING_VINES", "LILY_PAD", "SUGAR_CANE", "BAMBOO", "CACTUS"],
         "flowers": ["DANDELION", "POPPY", "BLUE_ORCHID", "ALLIUM", "AZURE_BLUET", "RED_TULIP", "ORANGE_TULIP", "WHITE_TULIP", "PINK_TULIP", "OXEYE_DAISY", "CORNFLOWER", "LILY_OF_THE_VALLEY", "WITHER_ROSE", "SUNFLOWER", "LILAC", "ROSE_BUSH", "PEONY"],
         "functional_storage": ["CHEST", "TRAPPED_CHEST", "BARREL", "ENDER_CHEST", "CRAFTER", "FURNACE", "BLAST_FURNACE", "SMOKER"],
-        "spawning": ["SPAWNER", "TRIAL_SPAWNER", "FROGSPAWN", "RESPAWN_ANCHOR"]
+        "spawning": ["SPAWNER", "TRIAL_SPAWNER", "FROGSPAWN", "RESPAWN_ANCHOR"],
+        "tools": ["SWORD", "PICKAXE", "AXE", "SHOVEL", "HOE"],
+        "armour": ["HELMET", "CHESTPLATE", "LEGGINGS", "BOOTS", "HORSE_ARMOR"]
     }
 
     ENTITY_GROUPS = {
@@ -211,7 +223,6 @@ class RegistryBuilder:
 
         self.ACTION_CLASSES = []
         if BlocklyGenerator is not None:
-            # Base static classes
             classes = [
                 (get_action_class("serveractions", "ServerActions"), "Server", self.COLORS["Server"]),
                 (get_action_class("playeractions", "PlayerActions"), "Player", self.COLORS["Player"]),
@@ -223,7 +234,6 @@ class RegistryBuilder:
                 (get_action_class("digitalsetactions", "DigitalSetActions"), "Digital Set", self.COLORS["Digital Set"]),
             ]
 
-            # DYNAMIC DISCOVERY: Read yaml and auto-append GeneratedXActions
             yaml_path = MC_DATA_DIR / "mcjuice_api.yaml"
             if yaml_path.exists():
                 try:
@@ -243,7 +253,6 @@ class RegistryBuilder:
         return name.replace('_', ' ').title()
 
     def build_all(self):
-        """Executes the complete build pipeline."""
         if BlocklyGenerator is None: return
         self.ensure_toolbox(clean_toolbox=True)
         self.build_blocks()
@@ -252,10 +261,9 @@ class RegistryBuilder:
         self.build_actions()
         self.build_pickers_category()
         self.build_action_classes_export()
-        self.export_taxonomy()  # <-- NEW: Generates taxonomy.json
+        self.export_taxonomy()
 
     def build_action_classes_export(self):
-        """Generates a JS artifact exporting active Python action class names for frontend formatting."""
         class_names = [cls.__name__ for cls, _, _ in self.ACTION_CLASSES]
         js_content = f"export const ACTION_CLASSES = {class_names!r};\n"
         out_path = self.gens_dir / "action_classes.mjs"
@@ -264,7 +272,6 @@ class RegistryBuilder:
     def _generate_base_pickers(self) -> dict:
         js, py = [], []
         for info in self.VARIANT_CONFIG.values():
-            # Build options dynamically from the prefixes
             options = [(self._normalize_name(p), p) for p in info['prefixes']]
             res = BlocklyGenerator.generate_picker(info['id'], info['label'], options, info['input_type'], self.COLORS["Picker"])
             js.append(res['js']); py.append(res['py'])
@@ -279,17 +286,15 @@ class RegistryBuilder:
                 self.toolbox_path.write_text(template.read_text())
 
     def _classify_variants(self, material_list):
-        """
-        NEW: A generic algorithm that detects variants, groups them by (Category, Suffix),
-        and inherently prevents mixed-type collisions.
-        """
         parameterized = {}
         consumed = set()
         classified_groups = {}
         suffix_map = {}
 
         for mat in material_list:
+            matched = False
             for var_key, var_info in self.VARIANT_CONFIG.items():
+                if matched: break
                 for prefix in var_info["prefixes"]:
                     if mat.startswith(f"{prefix}_"):
                         suffix = mat[len(prefix)+1:]
@@ -300,7 +305,8 @@ class RegistryBuilder:
 
                         classified_groups[group_key]["mats"].append(mat)
                         classified_groups[group_key]["variants"].append(self._normalize_name(prefix))
-                        break # Prevent double matching
+                        matched = True
+                        break
 
         for (var_key, suffix), info in classified_groups.items():
             if len(info["mats"]) > 3:
@@ -332,7 +338,6 @@ class RegistryBuilder:
         templates, consumed, _ = self._classify_variants(blocks)
 
         for t_key, info in templates.items():
-            # Automatically generates a collision-free ID like "mc_block_color_stained_glass"
             b_type = f"mc_block_{t_key.lower().replace(' ', '_')}"
             res = BlocklyGenerator.generate_parameterized_block(
                 b_type, info["label"], "VARIANT", info["input_type"], "Block",
@@ -417,32 +422,26 @@ class RegistryBuilder:
         BlocklyGenerator.update_toolbox(f'<category name="Pickers" colour="{self.COLORS["Picker"]}">{"".join(xml)}</category>', self.toolbox_path)
 
     def export_taxonomy(self):
-        """
-        NEW: Dumps the entire organizational brain to taxonomy.json.
-        This provides the Control Deck UI with a fully dynamic, collision-proof schema.
-        """
         taxonomy = {"Block": [], "Item": [], "Entity": []}
 
-        # 1. Gather Action Pickers (Enums like Weather, Difficulty) at the root level
         for p in self.ACTION_PICKERS:
             taxonomy[p['input_type']] = [{"name": opt[0], "value": opt[1]} for opt in p['options']]
 
-        # 2. Helper to build generic smart categories (Blocks, Items, Entities)
         def build_category(groups_dict, all_items, category_key):
             parameterized, consumed, suffix_map = self._classify_variants(all_items)
 
+            # FIX: Track added templates globally across all group iterations
+            global_added_templates = set()
+
             for group_name, members in groups_dict.items():
                 group_out = {"name": self._normalize_name(group_name), "items": []}
-                added_templates = set()
 
                 for m in members:
                     if m in all_items and m not in consumed:
-                        # Raw block (e.g., "STONE")
                         group_out["items"].append({"name": self._normalize_name(m), "value": m})
                     elif m in suffix_map:
-                        # A dynamically grouped template (e.g., "STAINED_GLASS")
                         for t_key in suffix_map[m]:
-                            if t_key not in added_templates:
+                            if t_key not in global_added_templates:
                                 t_info = parameterized[t_key]
                                 group_out["items"].append({
                                     "name": t_info["label"],
@@ -450,34 +449,48 @@ class RegistryBuilder:
                                     "variants": t_info["available_variants"],
                                     "currentVariant": t_info["available_variants"][0] if t_info["available_variants"] else ""
                                 })
-                                added_templates.add(t_key)
+                                global_added_templates.add(t_key)
 
                 if group_out["items"]:
                     taxonomy[category_key].append(group_out)
 
-            # Handle anything left over
+            other_items = []
+
+            # 1. Add leftover raw blocks that weren't explicitly sorted
             rem = sorted(list(set(all_items) - consumed))
             grouped_raw = set(item for sublist in groups_dict.values() for item in sublist)
             rem = [x for x in rem if x not in grouped_raw]
 
-            if rem:
-                taxonomy[category_key].append({
-                    "name": f"Other {category_key}s",
-                    "items": [{"name": self._normalize_name(m), "value": m} for m in rem]
+            for m in rem:
+                other_items.append({"name": self._normalize_name(m), "value": m})
+
+            # 2. FIX: Add leftover templates (variants) that weren't assigned to any specific group
+            leftover_templates = set(parameterized.keys()) - global_added_templates
+            for t_key in sorted(leftover_templates):
+                t_info = parameterized[t_key]
+                other_items.append({
+                    "name": t_info["label"],
+                    "template": t_info["template"],
+                    "variants": t_info["available_variants"],
+                    "currentVariant": t_info["available_variants"][0] if t_info["available_variants"] else ""
                 })
 
-        # Process standard Minecraft families
+            if other_items:
+                other_items.sort(key=lambda x: x["name"])
+                taxonomy[category_key].append({
+                    "name": f"Other {category_key}s",
+                    "items": other_items
+                })
+
         blocks = [k for k, v in self.materials_data.items() if v.get('is_block')]
         build_category(self.MATERIAL_PICKER_GROUPS, blocks, "Block")
 
         items = [k for k, v in self.materials_data.items() if v.get('is_item')]
         build_category(self.MATERIAL_PICKER_GROUPS, items, "Item")
 
-        # We assume entities use the raw keys of the parsed entity data
         entities = [k for k in self.entity_data.keys()]
         build_category(self.ENTITY_GROUPS, entities, "Entity")
 
-        # 3. Export!
         out_path = MC_DATA_DIR / "taxonomy.json"
         with open(out_path, "w") as f:
             json.dump(taxonomy, f, indent=2)
@@ -492,8 +505,7 @@ class RegistryBuilder:
         (self.blocks_dir / f"{file_name}.mjs").write_text(js_c, encoding='utf-8')
         (self.gens_dir / f"{file_name}.mjs").write_text(py_c, encoding='utf-8')
 
-
-# ... [ApiGenerator class remains unchanged here, it is standard] ...
+# ... [ApiGenerator and __main__ block remain identical] ...
 class ApiGenerator:
     """
     Generates the Java Registry, Event Listener, and Python Client.
@@ -839,6 +851,7 @@ class ApiGenerator:
         self.python_actions_out.write_text("\n".join(code))
 
 if __name__ == "__main__":
+    # 1. RUN API GENERATOR FIRST so generated_actions.py is fully populated and fresh on disk
     gen = ApiGenerator(
         MC_DATA_DIR / "mcjuice_api.yaml",
         MC_JUICE_SRC_DIR / "main/java/org/mcshell/mcjuice/GeneratedCommandRegistry.java",
@@ -848,6 +861,7 @@ if __name__ == "__main__":
     )
     gen.run()
 
+    # 2. RUN REGISTRY BUILDER SECOND so it dynamically discovers the generated classes
     builder = RegistryBuilder(
         MC_APP_SRC_DIR / 'toolbox.xml',
         MC_APP_SRC_DIR / 'blocks',
