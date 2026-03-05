@@ -2,381 +2,501 @@ import { MCED } from "../lib/constants.mjs";
 
 export function defineItemsBlocks(Blockly) {
 
-    Blockly.Blocks['mc_item_boat'] = {
+    Blockly.Blocks['mc_item_wood_boat'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftWood')
-                .appendField('Boat');
+                .appendField('Wood Boat');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_button'] = {
+    Blockly.Blocks['mc_item_wood_button'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftWood')
-                .appendField('Button');
+                .appendField('Wood Button');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_chest_boat'] = {
+    Blockly.Blocks['mc_item_wood_chest_boat'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftWood')
-                .appendField('Chest Boat');
+                .appendField('Wood Chest Boat');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_door'] = {
+    Blockly.Blocks['mc_item_wood_door'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftWood')
-                .appendField('Door');
+                .appendField('Wood Door');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_fence'] = {
+    Blockly.Blocks['mc_item_wood_fence'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftWood')
-                .appendField('Fence');
+                .appendField('Wood Fence');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_fence_gate'] = {
+    Blockly.Blocks['mc_item_wood_fence_gate'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftWood')
-                .appendField('Fence Gate');
+                .appendField('Wood Fence Gate');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_hanging_sign'] = {
+    Blockly.Blocks['mc_item_wood_hanging_sign'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftWood')
-                .appendField('Hanging Sign');
+                .appendField('Wood Hanging Sign');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_leaves'] = {
+    Blockly.Blocks['mc_item_wood_leaves'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftWood')
-                .appendField('Leaves');
+                .appendField('Wood Leaves');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_log'] = {
+    Blockly.Blocks['mc_item_wood_log'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftWood')
-                .appendField('Log');
+                .appendField('Wood Log');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_planks'] = {
+    Blockly.Blocks['mc_item_wood_planks'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftWood')
-                .appendField('Planks');
+                .appendField('Wood Planks');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_pressure_plate'] = {
+    Blockly.Blocks['mc_item_wood_pressure_plate'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftWood')
-                .appendField('Pressure Plate');
+                .appendField('Wood Pressure Plate');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_sapling'] = {
+    Blockly.Blocks['mc_item_wood_sapling'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftWood')
-                .appendField('Sapling');
+                .appendField('Wood Sapling');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_shelf'] = {
+    Blockly.Blocks['mc_item_wood_shelf'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftWood')
-                .appendField('Shelf');
+                .appendField('Wood Shelf');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_sign'] = {
+    Blockly.Blocks['mc_item_wood_sign'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftWood')
-                .appendField('Sign');
+                .appendField('Wood Sign');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_slab'] = {
+    Blockly.Blocks['mc_item_wood_slab'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftWood')
-                .appendField('Slab');
+                .appendField('Wood Slab');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_stairs'] = {
+    Blockly.Blocks['mc_item_wood_stairs'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftWood')
-                .appendField('Stairs');
+                .appendField('Wood Stairs');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_trapdoor'] = {
+    Blockly.Blocks['mc_item_wood_trapdoor'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftWood')
-                .appendField('Trapdoor');
+                .appendField('Wood Trapdoor');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_wall_hanging_sign'] = {
+    Blockly.Blocks['mc_item_wood_wall_hanging_sign'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftWood')
-                .appendField('Wall Hanging Sign');
+                .appendField('Wood Wall Hanging Sign');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_wall_sign'] = {
+    Blockly.Blocks['mc_item_wood_wall_sign'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftWood')
-                .appendField('Wall Sign');
+                .appendField('Wood Wall Sign');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_wood'] = {
+    Blockly.Blocks['mc_item_wood_wood'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftWood')
-                .appendField('Wood');
+                .appendField('Wood Wood');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_banner'] = {
+    Blockly.Blocks['mc_item_color_banner'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftColour')
-                .appendField('Banner');
+                .appendField('Color Banner');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_bed'] = {
+    Blockly.Blocks['mc_item_color_bed'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftColour')
-                .appendField('Bed');
+                .appendField('Color Bed');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_bundle'] = {
+    Blockly.Blocks['mc_item_color_bundle'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftColour')
-                .appendField('Bundle');
+                .appendField('Color Bundle');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_candle'] = {
+    Blockly.Blocks['mc_item_color_candle'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftColour')
-                .appendField('Candle');
+                .appendField('Color Candle');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_candle_cake'] = {
+    Blockly.Blocks['mc_item_color_candle_cake'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftColour')
-                .appendField('Candle Cake');
+                .appendField('Color Candle Cake');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_carpet'] = {
+    Blockly.Blocks['mc_item_color_carpet'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftColour')
-                .appendField('Carpet');
+                .appendField('Color Carpet');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_concrete'] = {
+    Blockly.Blocks['mc_item_color_concrete'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftColour')
-                .appendField('Concrete');
+                .appendField('Color Concrete');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_concrete_powder'] = {
+    Blockly.Blocks['mc_item_color_concrete_powder'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftColour')
-                .appendField('Concrete Powder');
+                .appendField('Color Concrete Powder');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_dye'] = {
+    Blockly.Blocks['mc_item_color_dye'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftColour')
-                .appendField('Dye');
+                .appendField('Color Dye');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_glazed_terracotta'] = {
+    Blockly.Blocks['mc_item_color_glazed_terracotta'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftColour')
-                .appendField('Glazed Terracotta');
+                .appendField('Color Glazed Terracotta');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_harness'] = {
+    Blockly.Blocks['mc_item_color_harness'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftColour')
-                .appendField('Harness');
+                .appendField('Color Harness');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_shulker_box'] = {
+    Blockly.Blocks['mc_item_color_shulker_box'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftColour')
-                .appendField('Shulker Box');
+                .appendField('Color Shulker Box');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_stained_glass'] = {
+    Blockly.Blocks['mc_item_color_stained_glass'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftColour')
-                .appendField('Stained Glass');
+                .appendField('Color Stained Glass');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_stained_glass_pane'] = {
+    Blockly.Blocks['mc_item_color_stained_glass_pane'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftColour')
-                .appendField('Stained Glass Pane');
+                .appendField('Color Stained Glass Pane');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_terracotta'] = {
+    Blockly.Blocks['mc_item_color_terracotta'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftColour')
-                .appendField('Terracotta');
+                .appendField('Color Terracotta');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_wall_banner'] = {
+    Blockly.Blocks['mc_item_color_wall_banner'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftColour')
-                .appendField('Wall Banner');
+                .appendField('Color Wall Banner');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_wool'] = {
+    Blockly.Blocks['mc_item_color_wool'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftColour')
-                .appendField('Wool');
+                .appendField('Color Wool');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
     };
 
-    Blockly.Blocks['mc_item_tulip'] = {
+    Blockly.Blocks['mc_item_armor_tier_boots'] = {
+        init: function() {
+            this.appendValueInput('VARIANT')
+                .setCheck('MinecraftArmorTier')
+                .appendField('Armor Tier Boots');
+            this.setOutput(true, 'Item');
+            this.setColour("#D4A373");
+        }
+    };
+
+    Blockly.Blocks['mc_item_armor_tier_chestplate'] = {
+        init: function() {
+            this.appendValueInput('VARIANT')
+                .setCheck('MinecraftArmorTier')
+                .appendField('Armor Tier Chestplate');
+            this.setOutput(true, 'Item');
+            this.setColour("#D4A373");
+        }
+    };
+
+    Blockly.Blocks['mc_item_armor_tier_helmet'] = {
+        init: function() {
+            this.appendValueInput('VARIANT')
+                .setCheck('MinecraftArmorTier')
+                .appendField('Armor Tier Helmet');
+            this.setOutput(true, 'Item');
+            this.setColour("#D4A373");
+        }
+    };
+
+    Blockly.Blocks['mc_item_armor_tier_leggings'] = {
+        init: function() {
+            this.appendValueInput('VARIANT')
+                .setCheck('MinecraftArmorTier')
+                .appendField('Armor Tier Leggings');
+            this.setOutput(true, 'Item');
+            this.setColour("#D4A373");
+        }
+    };
+
+    Blockly.Blocks['mc_item_armor_tier_axe'] = {
+        init: function() {
+            this.appendValueInput('VARIANT')
+                .setCheck('MinecraftArmorTier')
+                .appendField('Armor Tier Axe');
+            this.setOutput(true, 'Item');
+            this.setColour("#D4A373");
+        }
+    };
+
+    Blockly.Blocks['mc_item_armor_tier_hoe'] = {
+        init: function() {
+            this.appendValueInput('VARIANT')
+                .setCheck('MinecraftArmorTier')
+                .appendField('Armor Tier Hoe');
+            this.setOutput(true, 'Item');
+            this.setColour("#D4A373");
+        }
+    };
+
+    Blockly.Blocks['mc_item_armor_tier_horse_armor'] = {
+        init: function() {
+            this.appendValueInput('VARIANT')
+                .setCheck('MinecraftArmorTier')
+                .appendField('Armor Tier Horse Armor');
+            this.setOutput(true, 'Item');
+            this.setColour("#D4A373");
+        }
+    };
+
+    Blockly.Blocks['mc_item_armor_tier_nautilus_armor'] = {
+        init: function() {
+            this.appendValueInput('VARIANT')
+                .setCheck('MinecraftArmorTier')
+                .appendField('Armor Tier Nautilus Armor');
+            this.setOutput(true, 'Item');
+            this.setColour("#D4A373");
+        }
+    };
+
+    Blockly.Blocks['mc_item_armor_tier_pickaxe'] = {
+        init: function() {
+            this.appendValueInput('VARIANT')
+                .setCheck('MinecraftArmorTier')
+                .appendField('Armor Tier Pickaxe');
+            this.setOutput(true, 'Item');
+            this.setColour("#D4A373");
+        }
+    };
+
+    Blockly.Blocks['mc_item_armor_tier_shovel'] = {
+        init: function() {
+            this.appendValueInput('VARIANT')
+                .setCheck('MinecraftArmorTier')
+                .appendField('Armor Tier Shovel');
+            this.setOutput(true, 'Item');
+            this.setColour("#D4A373");
+        }
+    };
+
+    Blockly.Blocks['mc_item_armor_tier_spear'] = {
+        init: function() {
+            this.appendValueInput('VARIANT')
+                .setCheck('MinecraftArmorTier')
+                .appendField('Armor Tier Spear');
+            this.setOutput(true, 'Item');
+            this.setColour("#D4A373");
+        }
+    };
+
+    Blockly.Blocks['mc_item_armor_tier_sword'] = {
+        init: function() {
+            this.appendValueInput('VARIANT')
+                .setCheck('MinecraftArmorTier')
+                .appendField('Armor Tier Sword');
+            this.setOutput(true, 'Item');
+            this.setColour("#D4A373");
+        }
+    };
+
+    Blockly.Blocks['mc_item_color_tulip'] = {
         init: function() {
             this.appendValueInput('VARIANT')
                 .setCheck('MinecraftColour')
-                .appendField('Tulip');
+                .appendField('Color Tulip');
             this.setOutput(true, 'Item');
             this.setColour("#D4A373");
         }
@@ -789,10 +909,6 @@ export function defineItemsBlocks(Blockly) {
                 ["Cave Air", "CAVE_AIR"],
                 ["Cave Spider Spawn Egg", "CAVE_SPIDER_SPAWN_EGG"],
                 ["Cave Vines Plant", "CAVE_VINES_PLANT"],
-                ["Chainmail Boots", "CHAINMAIL_BOOTS"],
-                ["Chainmail Chestplate", "CHAINMAIL_CHESTPLATE"],
-                ["Chainmail Helmet", "CHAINMAIL_HELMET"],
-                ["Chainmail Leggings", "CHAINMAIL_LEGGINGS"],
                 ["Chain Command Block", "CHAIN_COMMAND_BLOCK"],
                 ["Charcoal", "CHARCOAL"],
                 ["Chest Minecart", "CHEST_MINECART"],
@@ -886,25 +1002,6 @@ export function defineItemsBlocks(Blockly) {
                 ["Cut Sandstone Slab", "CUT_SANDSTONE_SLAB"],
                 ["Damaged Anvil", "DAMAGED_ANVIL"],
                 ["Danger Pottery Sherd", "DANGER_POTTERY_SHERD"],
-                ["Dark Oak Boat", "DARK_OAK_BOAT"],
-                ["Dark Oak Button", "DARK_OAK_BUTTON"],
-                ["Dark Oak Chest Boat", "DARK_OAK_CHEST_BOAT"],
-                ["Dark Oak Door", "DARK_OAK_DOOR"],
-                ["Dark Oak Fence", "DARK_OAK_FENCE"],
-                ["Dark Oak Fence Gate", "DARK_OAK_FENCE_GATE"],
-                ["Dark Oak Hanging Sign", "DARK_OAK_HANGING_SIGN"],
-                ["Dark Oak Log", "DARK_OAK_LOG"],
-                ["Dark Oak Planks", "DARK_OAK_PLANKS"],
-                ["Dark Oak Pressure Plate", "DARK_OAK_PRESSURE_PLATE"],
-                ["Dark Oak Sapling", "DARK_OAK_SAPLING"],
-                ["Dark Oak Shelf", "DARK_OAK_SHELF"],
-                ["Dark Oak Sign", "DARK_OAK_SIGN"],
-                ["Dark Oak Slab", "DARK_OAK_SLAB"],
-                ["Dark Oak Stairs", "DARK_OAK_STAIRS"],
-                ["Dark Oak Trapdoor", "DARK_OAK_TRAPDOOR"],
-                ["Dark Oak Wall Hanging Sign", "DARK_OAK_WALL_HANGING_SIGN"],
-                ["Dark Oak Wall Sign", "DARK_OAK_WALL_SIGN"],
-                ["Dark Oak Wood", "DARK_OAK_WOOD"],
                 ["Dark Prismarine", "DARK_PRISMARINE"],
                 ["Dark Prismarine Slab", "DARK_PRISMARINE_SLAB"],
                 ["Dark Prismarine Stairs", "DARK_PRISMARINE_STAIRS"],
@@ -938,19 +1035,7 @@ export function defineItemsBlocks(Blockly) {
                 ["Deepslate Tile Stairs", "DEEPSLATE_TILE_STAIRS"],
                 ["Deepslate Tile Wall", "DEEPSLATE_TILE_WALL"],
                 ["Diamond", "DIAMOND"],
-                ["Diamond Axe", "DIAMOND_AXE"],
                 ["Diamond Block", "DIAMOND_BLOCK"],
-                ["Diamond Boots", "DIAMOND_BOOTS"],
-                ["Diamond Chestplate", "DIAMOND_CHESTPLATE"],
-                ["Diamond Helmet", "DIAMOND_HELMET"],
-                ["Diamond Hoe", "DIAMOND_HOE"],
-                ["Diamond Horse Armor", "DIAMOND_HORSE_ARMOR"],
-                ["Diamond Leggings", "DIAMOND_LEGGINGS"],
-                ["Diamond Nautilus Armor", "DIAMOND_NAUTILUS_ARMOR"],
-                ["Diamond Pickaxe", "DIAMOND_PICKAXE"],
-                ["Diamond Shovel", "DIAMOND_SHOVEL"],
-                ["Diamond Spear", "DIAMOND_SPEAR"],
-                ["Diamond Sword", "DIAMOND_SWORD"],
                 ["Diorite Slab", "DIORITE_SLAB"],
                 ["Diorite Stairs", "DIORITE_STAIRS"],
                 ["Diorite Wall", "DIORITE_WALL"],
@@ -1054,19 +1139,7 @@ export function defineItemsBlocks(Blockly) {
                 ["Goat Horn", "GOAT_HORN"],
                 ["Goat Spawn Egg", "GOAT_SPAWN_EGG"],
                 ["Golden Apple", "GOLDEN_APPLE"],
-                ["Golden Axe", "GOLDEN_AXE"],
-                ["Golden Boots", "GOLDEN_BOOTS"],
                 ["Golden Carrot", "GOLDEN_CARROT"],
-                ["Golden Chestplate", "GOLDEN_CHESTPLATE"],
-                ["Golden Helmet", "GOLDEN_HELMET"],
-                ["Golden Hoe", "GOLDEN_HOE"],
-                ["Golden Horse Armor", "GOLDEN_HORSE_ARMOR"],
-                ["Golden Leggings", "GOLDEN_LEGGINGS"],
-                ["Golden Nautilus Armor", "GOLDEN_NAUTILUS_ARMOR"],
-                ["Golden Pickaxe", "GOLDEN_PICKAXE"],
-                ["Golden Shovel", "GOLDEN_SHOVEL"],
-                ["Golden Spear", "GOLDEN_SPEAR"],
-                ["Golden Sword", "GOLDEN_SWORD"],
                 ["Gold Block", "GOLD_BLOCK"],
                 ["Gold Ingot", "GOLD_INGOT"],
                 ["Gold Nugget", "GOLD_NUGGET"],
@@ -1107,25 +1180,13 @@ export function defineItemsBlocks(Blockly) {
                 ["Infested Stone", "INFESTED_STONE"],
                 ["Infested Stone Bricks", "INFESTED_STONE_BRICKS"],
                 ["Ink Sac", "INK_SAC"],
-                ["Iron Axe", "IRON_AXE"],
                 ["Iron Bars", "IRON_BARS"],
                 ["Iron Block", "IRON_BLOCK"],
-                ["Iron Boots", "IRON_BOOTS"],
                 ["Iron Chain", "IRON_CHAIN"],
-                ["Iron Chestplate", "IRON_CHESTPLATE"],
                 ["Iron Door", "IRON_DOOR"],
                 ["Iron Golem Spawn Egg", "IRON_GOLEM_SPAWN_EGG"],
-                ["Iron Helmet", "IRON_HELMET"],
-                ["Iron Hoe", "IRON_HOE"],
-                ["Iron Horse Armor", "IRON_HORSE_ARMOR"],
                 ["Iron Ingot", "IRON_INGOT"],
-                ["Iron Leggings", "IRON_LEGGINGS"],
-                ["Iron Nautilus Armor", "IRON_NAUTILUS_ARMOR"],
                 ["Iron Nugget", "IRON_NUGGET"],
-                ["Iron Pickaxe", "IRON_PICKAXE"],
-                ["Iron Shovel", "IRON_SHOVEL"],
-                ["Iron Spear", "IRON_SPEAR"],
-                ["Iron Sword", "IRON_SWORD"],
                 ["Iron Trapdoor", "IRON_TRAPDOOR"],
                 ["Item Frame", "ITEM_FRAME"],
                 ["Jigsaw", "JIGSAW"],
@@ -1143,47 +1204,8 @@ export function defineItemsBlocks(Blockly) {
                 ["Lead", "LEAD"],
                 ["Leaf Litter", "LEAF_LITTER"],
                 ["Leather", "LEATHER"],
-                ["Leather Boots", "LEATHER_BOOTS"],
-                ["Leather Chestplate", "LEATHER_CHESTPLATE"],
-                ["Leather Helmet", "LEATHER_HELMET"],
-                ["Leather Horse Armor", "LEATHER_HORSE_ARMOR"],
-                ["Leather Leggings", "LEATHER_LEGGINGS"],
                 ["Light", "LIGHT"],
                 ["Lightning Rod", "LIGHTNING_ROD"],
-                ["Light Blue Banner", "LIGHT_BLUE_BANNER"],
-                ["Light Blue Bed", "LIGHT_BLUE_BED"],
-                ["Light Blue Bundle", "LIGHT_BLUE_BUNDLE"],
-                ["Light Blue Candle", "LIGHT_BLUE_CANDLE"],
-                ["Light Blue Candle Cake", "LIGHT_BLUE_CANDLE_CAKE"],
-                ["Light Blue Carpet", "LIGHT_BLUE_CARPET"],
-                ["Light Blue Concrete", "LIGHT_BLUE_CONCRETE"],
-                ["Light Blue Concrete Powder", "LIGHT_BLUE_CONCRETE_POWDER"],
-                ["Light Blue Dye", "LIGHT_BLUE_DYE"],
-                ["Light Blue Glazed Terracotta", "LIGHT_BLUE_GLAZED_TERRACOTTA"],
-                ["Light Blue Harness", "LIGHT_BLUE_HARNESS"],
-                ["Light Blue Shulker Box", "LIGHT_BLUE_SHULKER_BOX"],
-                ["Light Blue Stained Glass", "LIGHT_BLUE_STAINED_GLASS"],
-                ["Light Blue Stained Glass Pane", "LIGHT_BLUE_STAINED_GLASS_PANE"],
-                ["Light Blue Terracotta", "LIGHT_BLUE_TERRACOTTA"],
-                ["Light Blue Wall Banner", "LIGHT_BLUE_WALL_BANNER"],
-                ["Light Blue Wool", "LIGHT_BLUE_WOOL"],
-                ["Light Gray Banner", "LIGHT_GRAY_BANNER"],
-                ["Light Gray Bed", "LIGHT_GRAY_BED"],
-                ["Light Gray Bundle", "LIGHT_GRAY_BUNDLE"],
-                ["Light Gray Candle", "LIGHT_GRAY_CANDLE"],
-                ["Light Gray Candle Cake", "LIGHT_GRAY_CANDLE_CAKE"],
-                ["Light Gray Carpet", "LIGHT_GRAY_CARPET"],
-                ["Light Gray Concrete", "LIGHT_GRAY_CONCRETE"],
-                ["Light Gray Concrete Powder", "LIGHT_GRAY_CONCRETE_POWDER"],
-                ["Light Gray Dye", "LIGHT_GRAY_DYE"],
-                ["Light Gray Glazed Terracotta", "LIGHT_GRAY_GLAZED_TERRACOTTA"],
-                ["Light Gray Harness", "LIGHT_GRAY_HARNESS"],
-                ["Light Gray Shulker Box", "LIGHT_GRAY_SHULKER_BOX"],
-                ["Light Gray Stained Glass", "LIGHT_GRAY_STAINED_GLASS"],
-                ["Light Gray Stained Glass Pane", "LIGHT_GRAY_STAINED_GLASS_PANE"],
-                ["Light Gray Terracotta", "LIGHT_GRAY_TERRACOTTA"],
-                ["Light Gray Wall Banner", "LIGHT_GRAY_WALL_BANNER"],
-                ["Light Gray Wool", "LIGHT_GRAY_WOOL"],
                 ["Light Weighted Pressure Plate", "LIGHT_WEIGHTED_PRESSURE_PLATE"],
                 ["Lily Pad", "LILY_PAD"],
                 ["Lingering Potion", "LINGERING_POTION"],
@@ -1249,21 +1271,9 @@ export function defineItemsBlocks(Blockly) {
                 ["Name Tag", "NAME_TAG"],
                 ["Nautilus Shell", "NAUTILUS_SHELL"],
                 ["Nautilus Spawn Egg", "NAUTILUS_SPAWN_EGG"],
-                ["Netherite Axe", "NETHERITE_AXE"],
                 ["Netherite Block", "NETHERITE_BLOCK"],
-                ["Netherite Boots", "NETHERITE_BOOTS"],
-                ["Netherite Chestplate", "NETHERITE_CHESTPLATE"],
-                ["Netherite Helmet", "NETHERITE_HELMET"],
-                ["Netherite Hoe", "NETHERITE_HOE"],
-                ["Netherite Horse Armor", "NETHERITE_HORSE_ARMOR"],
                 ["Netherite Ingot", "NETHERITE_INGOT"],
-                ["Netherite Leggings", "NETHERITE_LEGGINGS"],
-                ["Netherite Nautilus Armor", "NETHERITE_NAUTILUS_ARMOR"],
-                ["Netherite Pickaxe", "NETHERITE_PICKAXE"],
                 ["Netherite Scrap", "NETHERITE_SCRAP"],
-                ["Netherite Shovel", "NETHERITE_SHOVEL"],
-                ["Netherite Spear", "NETHERITE_SPEAR"],
-                ["Netherite Sword", "NETHERITE_SWORD"],
                 ["Netherite Upgrade Smithing Template", "NETHERITE_UPGRADE_SMITHING_TEMPLATE"],
                 ["Netherrack", "NETHERRACK"],
                 ["Nether Brick", "NETHER_BRICK"],
@@ -1299,26 +1309,6 @@ export function defineItemsBlocks(Blockly) {
                 ["Pale Hanging Moss", "PALE_HANGING_MOSS"],
                 ["Pale Moss Block", "PALE_MOSS_BLOCK"],
                 ["Pale Moss Carpet", "PALE_MOSS_CARPET"],
-                ["Pale Oak Boat", "PALE_OAK_BOAT"],
-                ["Pale Oak Button", "PALE_OAK_BUTTON"],
-                ["Pale Oak Chest Boat", "PALE_OAK_CHEST_BOAT"],
-                ["Pale Oak Door", "PALE_OAK_DOOR"],
-                ["Pale Oak Fence", "PALE_OAK_FENCE"],
-                ["Pale Oak Fence Gate", "PALE_OAK_FENCE_GATE"],
-                ["Pale Oak Hanging Sign", "PALE_OAK_HANGING_SIGN"],
-                ["Pale Oak Leaves", "PALE_OAK_LEAVES"],
-                ["Pale Oak Log", "PALE_OAK_LOG"],
-                ["Pale Oak Planks", "PALE_OAK_PLANKS"],
-                ["Pale Oak Pressure Plate", "PALE_OAK_PRESSURE_PLATE"],
-                ["Pale Oak Sapling", "PALE_OAK_SAPLING"],
-                ["Pale Oak Shelf", "PALE_OAK_SHELF"],
-                ["Pale Oak Sign", "PALE_OAK_SIGN"],
-                ["Pale Oak Slab", "PALE_OAK_SLAB"],
-                ["Pale Oak Stairs", "PALE_OAK_STAIRS"],
-                ["Pale Oak Trapdoor", "PALE_OAK_TRAPDOOR"],
-                ["Pale Oak Wall Hanging Sign", "PALE_OAK_WALL_HANGING_SIGN"],
-                ["Pale Oak Wall Sign", "PALE_OAK_WALL_SIGN"],
-                ["Pale Oak Wood", "PALE_OAK_WOOD"],
                 ["Panda Spawn Egg", "PANDA_SPAWN_EGG"],
                 ["Paper", "PAPER"],
                 ["Parched Spawn Egg", "PARCHED_SPAWN_EGG"],
@@ -1637,7 +1627,6 @@ export function defineItemsBlocks(Blockly) {
                 ["Tuff Stairs", "TUFF_STAIRS"],
                 ["Tuff Wall", "TUFF_WALL"],
                 ["Turtle Egg", "TURTLE_EGG"],
-                ["Turtle Helmet", "TURTLE_HELMET"],
                 ["Turtle Scute", "TURTLE_SCUTE"],
                 ["Turtle Spawn Egg", "TURTLE_SPAWN_EGG"],
                 ["Twisting Vines Plant", "TWISTING_VINES_PLANT"],
