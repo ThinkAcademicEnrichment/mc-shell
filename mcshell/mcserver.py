@@ -376,19 +376,22 @@ class BlocklyProgramRunner:
         })
     return jsonify({"status": "dispatched", "execution_id": execution_id})
 
-@app.route('/api/block_materials')
-def get_block_materials():
+@app.route('/api/taxonomy')
+def get_taxonomy():
     """
-    Serves the categorized dictionary of all block materials.
+    Serves the dynamically generated taxonomy dictionary for the Smart Picker UI.
     """
     try:
-        with open(MC_PICKER_MATERIALS_DATA_PATH, 'r') as f:
-            material_data = json.load(f)
-        return jsonify(material_data)
+        # MC_DATA_DIR resolves to the folder where materials.pkl lives
+        import json
+        taxonomy_path = MC_DATA_DIR / "taxonomy.json"
+        with open(taxonomy_path, 'r') as f:
+            taxonomy_data = json.load(f)
+        return jsonify(taxonomy_data)
     except FileNotFoundError:
-        return jsonify({"error": "Material data file not found."}), 404
+        return jsonify({"error": "Taxonomy data file not found. Ensure registry_builder.py was run."}), 404
     except Exception as e:
-        return jsonify({"error": f"Could not load material data: {e}"}), 500
+        return jsonify({"error": f"Could not load taxonomy data: {e}"}), 500
 
 @app.route('/api/receive_invite', methods=['POST'])
 def receive_invite():
