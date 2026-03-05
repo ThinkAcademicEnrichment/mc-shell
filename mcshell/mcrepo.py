@@ -2,6 +2,7 @@ import json
 import uuid
 import sqlite3
 import datetime
+from pathlib import Path
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
 
@@ -141,7 +142,13 @@ class SQLiteRepository(PowerRepository):
     # --- ADDED: Crucial lookup method for mcserver.py execution ---
     def find_power_by_function_name(self, function_name: str) -> Optional[Dict[str, Any]]:
         with self._get_connection() as conn:
-            row = conn.execute("SELECT * FROM powers WHERE function_name = ? OR power_id = ?", (function_name, function_name)).fetchone()
+            # FIXED: Added 'ORDER BY updated_at DESC' so the backend always resolves
+            # to the most recently edited version of a duplicated function!
+            row = conn.execute(
+                "SELECT * FROM powers WHERE function_name = ? OR power_id = ? ORDER BY updated_at DESC",
+                (function_name, function_name)
+            ).fetchone()
+
             if not row: return None
             p = dict(row)
             p['parameters'] = json.loads(p['parameters'] or '[]')
