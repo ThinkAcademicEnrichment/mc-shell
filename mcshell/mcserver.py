@@ -241,6 +241,9 @@ def execute_power_in_thread(power_id,execution_id, python_code, player_name, ser
             execution_scope = {
                 # 'np': np, 'math': math, 'Vec3': Vec3, 'Matrix3': Matrix3
             }
+
+            print(python_code)
+
             exec(python_code, execution_scope)
 
             BlocklyProgramRunner = execution_scope.get('BlocklyProgramRunner')
@@ -298,7 +301,11 @@ def execute_power():
     """Executes a saved power with runtime parameters from the control UI."""
     data = request.get_json() if request.is_json else request.form
     power_id = data.get('power_id')
-    runtime_params = {k: v for k, v in data.items() if k != 'power_id'}
+    # Extract the new execution ID passed by the Control Deck
+    execution_id = data.get('execution_id')
+
+    runtime_params = {k: v for k, v in data.items() if k != 'power_id' and k != 'execution_id'}
+
 
     player_name = current_app.config.get('MINECRAFT_PLAYER_NAME')
     server_data = current_app.config.get('MCSHELL_SERVER_DATA')
@@ -344,7 +351,8 @@ class BlocklyProgramRunner:
 """
 
     # --- Create a unique ID for this execution instance ---
-    execution_id = str(uuid.uuid4())
+    # now created by the UI above
+    # execution_id = str(uuid.uuid4())
     cancel_event = Event()
 
     # Instead of creating a native thread, we ask Socket.IO to start
