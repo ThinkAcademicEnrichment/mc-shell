@@ -57,8 +57,9 @@
             font-size: 32px; font-weight: bold; color: white;
             box-shadow: inset 0 2px 4px rgba(255,255,255,0.2), 0 4px 10px rgba(0,0,0,0.5);
             cursor: pointer; transition: transform 0.1s, filter 0.2s; position: relative;
+            touch-action: pan-y; /* Allow vertical scrolling, but ensure standard touch events fire cleanly */
         }
-        .app-icon:active { filter: brightness(0.7); }
+        .app-icon:active { filter: brightness(0.7); transform: scale(0.95); }
         .app-name {
             margin-top: 8px; font-size: 12px; font-weight: 500; text-align: center;
             width: 90px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -67,6 +68,7 @@
         .status-overlay {
             position: absolute; inset: 0; border-radius: 18px; background: rgba(0,0,0,0.6);
             display: flex; justify-content: center; align-items: center; backdrop-filter: blur(2px);
+            z-index: 5;
         }
         .spinner {
             width: 24px; height: 24px; border: 3px solid rgba(255,255,255,0.3);
@@ -179,7 +181,14 @@
     <main class="springboard" :class="isEditing ? 'is-editing' : ''">
         <template x-for="power in deckPowers" :key="power.power_id">
             <div class="app-container">
-                <div class="app-icon" :class="getCategoryClass(power.category)" @click="handleAppTap(power)">
+                <!-- Integrated Pointer Events for Long Press vs Quick Press Detection -->
+                <div class="app-icon" :class="getCategoryClass(power.category)"
+                     @pointerdown="handlePressStart(power, $event)"
+                     @pointerup="handlePressEnd(power, $event)"
+                     @pointerleave="handlePressCancel($event)"
+                     @pointercancel="handlePressCancel($event)"
+                     @contextmenu.prevent="">
+
                     <div class="delete-badge" x-show="isEditing" @click.stop="removeFromDeck(power.power_id)">×</div>
                     <span x-text="power.name.charAt(0).toUpperCase()"></span>
                     <div class="status-overlay" x-show="powerStatus[power.power_id] === 'running'">
@@ -212,7 +221,6 @@
                         <div class="param-group">
                             <label x-text="param.name"></label>
 
-                            <!-- 1. Number Fallback -->
                             <template x-if="param.type === 'Number'">
                                 <div style="display:flex; gap:10px; align-items:center;">
                                     <input type="range" x-model.number="executionParams[param.name]" style="flex:1" min="1" max="100">
@@ -220,7 +228,6 @@
                                 </div>
                             </template>
 
-                            <!-- 2. Boolean Switch -->
                             <template x-if="param.type === 'Boolean'">
                                 <label class="toggle-switch">
                                     <input type="checkbox" x-model="executionParams[param.name]">
@@ -228,7 +235,6 @@
                                 </label>
                             </template>
 
-                            <!-- 3. New 3D Vector Widget! -->
                             <template x-if="param.type === '3DVector'">
                                 <div style="display:flex; gap:10px; align-items:center;">
                                     <span style="color:#8e8e93; font-size:13px; font-weight:bold;">X</span>
@@ -240,7 +246,6 @@
                                 </div>
                             </template>
 
-                            <!-- 4. Simple Enums -->
                             <template x-if="isEnumType(param.type)">
                                 <select class="native-select" x-model="executionParams[param.name]">
                                     <template x-for="opt in taxonomy[param.type]" :key="opt.value">
@@ -249,7 +254,6 @@
                                 </select>
                             </template>
 
-                            <!-- 5. Smart Pickers -->
                             <template x-if="['Block', 'Item', 'Entity'].includes(param.type)">
                                 <div class="smart-picker-btn" @click="openPicker(param.type, param.name)">
                                     <span x-text="formatDisplayValue(executionParams[param.name])"></span>
@@ -257,14 +261,14 @@
                                 </div>
                             </template>
 
-                            <!-- 6. Generic Text Fallback -->
                             <template x-if="!['Number', 'Boolean', '3DVector', 'Block', 'Item', 'Entity'].includes(param.type) && !isEnumType(param.type)">
                                 <input type="text" class="param-input-text" x-model="executionParams[param.name]">
                             </template>
                         </div>
                     </template>
 
-                    <button class="action-btn" :class="getCategoryClass(activePower.category)" @click="executePower()">Run Power</button>
+                    <!-- Button behaviour completely shifted to Load Config -> Close -->
+                    <button class="action-btn" :class="getCategoryClass(activePower.category)" @click="saveConfig()">Load Configuration</button>
                     <button class="action-btn btn-cancel" @click="activePower = null">Cancel</button>
                 </div>
             </template>
@@ -345,6 +349,10 @@
                 pickerType: '', activeParamName: '', searchQuery: '',
                 pendingPickerValue: null,
 
+                // Pointer Event State trackers
+                pressTimer: null,
+                isLongPress: false,
+
                 async init() {
                     const saved = localStorage.getItem('mced_deck_layout');
                     if (saved) this.deckLayout = JSON.parse(saved);
@@ -382,8 +390,50 @@
                     return `cat-${category.split('/')[0].replace(/\\s+/g, '')}`;
                 },
 
-                handleAppTap(power) {
+                // --- Advanced Pointer Event Logic ---
+                handlePressStart(power, event) {
                     if (this.isEditing) return;
+                    this.isLongPress = false;
+
+                    // Set a timer for 500ms. If it triggers, it's a Long Press.
+                    this.pressTimer = setTimeout(() => {
+                        this.isLongPress = true;
+                        this.openConfigDrawer(power);
+                    }, 500);
+                },
+
+                handlePressEnd(power, event) {
+                    if (this.isEditing) return;
+
+                    // Clear the timer on mouse/finger up
+                    if (this.pressTimer) {
+                        clearTimeout(this.pressTimer);
+                        this.pressTimer = null;
+
+                        // If it never flagged as a long press, execute as a quick press!
+                        if (!this.isLongPress) {
+                            this.quickExecute(power);
+                        }
+                    }
+                },
+
+                handlePressCancel(event) {
+                    // Triggers if mouse leaves element boundaries or touch finger drags away
+                    if (this.pressTimer) {
+                        clearTimeout(this.pressTimer);
+                        this.pressTimer = null;
+                    }
+                },
+
+                openConfigDrawer(power) {
+                    if (this.powerStatus[power.power_id] === 'running') return;
+
+                    this.activePower = power;
+                    this.loadParamsForPower(power);
+                },
+
+                quickExecute(power) {
+                    // Prevent running multiple overlapping times
                     if (this.powerStatus[power.power_id] === 'running') {
                          if(confirm(`Cancel ${power.name}?`)) {
                              fetch(`/api/cancel_power`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ power_id: power.power_id }) });
@@ -392,9 +442,14 @@
                          return;
                     }
 
+                    // Quietly configure params in the background and execute immediately
                     this.activePower = power;
-                    this.executionParams = {};
+                    this.loadParamsForPower(power);
+                    this.executePower();
+                },
 
+                loadParamsForPower(power) {
+                    this.executionParams = {};
                     const cacheRaw = localStorage.getItem('mced_widget_params_' + power.power_id);
                     const cache = cacheRaw ? JSON.parse(cacheRaw) : {};
 
@@ -409,13 +464,20 @@
                                 valueToSet = this.getDefaultValue(p.type);
                             }
 
-                            // Ensure Vectors are decoupled so Alpine UI inputs work reactively
                             if (p.type === '3DVector' && typeof valueToSet === 'object' && valueToSet !== null) {
                                 this.executionParams[p.name] = { x: valueToSet.x || 0, y: valueToSet.y || 0, z: valueToSet.z || 0 };
                             } else {
                                 this.executionParams[p.name] = valueToSet;
                             }
                         });
+                    }
+                },
+
+                saveConfig() {
+                    // Saves the user's tweaked params to memory and safely closes drawer
+                    if (this.activePower) {
+                        localStorage.setItem('mced_widget_params_' + this.activePower.power_id, JSON.stringify(this.executionParams));
+                        this.activePower = null;
                     }
                 },
 
@@ -441,11 +503,11 @@
                 async executePower() {
                     if (!this.activePower) return;
 
+                    // Double-ensure parameters are locked into memory right before payload serialization
                     localStorage.setItem('mced_widget_params_' + this.activePower.power_id, JSON.stringify(this.executionParams));
 
                     const payload = { power_id: this.activePower.power_id };
                     for (const [key, value] of Object.entries(this.executionParams)) {
-                        // Pass vector object safely (Type-casting is now handled invisibly by python payload!)
                         if (value !== null && typeof value === 'object' && 'x' in value) {
                             payload[key] = value;
                         } else {
@@ -454,12 +516,15 @@
                     }
 
                     this.powerStatus[this.activePower.power_id] = 'running';
+                    const executingPowerId = this.activePower.power_id; // Capture locally for the catch block
+
+                    this.activePower = null; // Instantly closes the UI layer if it was open
+
                     try {
                         await fetch(`/api/execute_power`, {
                             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
                         });
-                    } catch (e) { this.powerStatus[this.activePower.power_id] = 'error'; }
-                    this.activePower = null;
+                    } catch (e) { this.powerStatus[executingPowerId] = 'error'; }
                 },
 
                 // --- SMART PICKER LOGIC ---
@@ -482,24 +547,22 @@
                     if (!this.pickerType || !this.taxonomy[this.pickerType]) return [];
                     let baseGroups = this.taxonomy[this.pickerType];
 
-                    // 1. Specific Picker Filtering (WITH SAFETY CHECK)
                     if (this.activePower && this.activePower.parameters) {
                         const paramDef = this.activePower.parameters.find(p => p.name === this.activeParamName);
                         if (paramDef && paramDef.picker_source) {
                             const match = paramDef.picker_source.match(/^mc_(?:block|item|entity)_picker_(.+)$/);
                             if (match) {
                                 let expectedName = match[1].split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-                                if (expectedName === 'General') expectedName = `Other ${this.pickerType}s`; // Fallback translation
+                                if (expectedName === 'General') expectedName = `Other ${this.pickerType}s`;
 
                                 const specificGroup = baseGroups.find(g => g.name === expectedName);
                                 if (specificGroup) {
-                                    baseGroups = [specificGroup]; // Lock to only this group!
+                                    baseGroups = [specificGroup];
                                 }
                             }
                         }
                     }
 
-                    // 2. Search filtering
                     if (this.searchQuery.trim() === '') return baseGroups;
 
                     const query = this.searchQuery.toLowerCase();
@@ -546,7 +609,12 @@
                     this.showLibrary = false;
                 },
                 removeFromDeck(powerId) {
-                    this.deckLayout = this.deckLayout.filter(id => id !== powerId); this.saveLayout();
+                    // Remove from deck layout array
+                    this.deckLayout = this.deckLayout.filter(id => id !== powerId);
+                    this.saveLayout();
+
+                    // Clean up localStorage to prevent widget parameter caches from bloating browser memory over time
+                    localStorage.removeItem('mced_widget_params_' + powerId);
                 },
                 saveLayout() { localStorage.setItem('mced_deck_layout', JSON.stringify(this.deckLayout)); }
             }));
