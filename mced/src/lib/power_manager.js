@@ -2,9 +2,6 @@ import * as Blockly from 'blockly';
 import { pythonGenerator } from 'blockly/python';
 import { MCED } from "./constants.mjs";
 
-/**
- * Sends a command to the Flask server's IPython endpoint.
- */
 export async function executeIPythonCommand(command, commandArguments) {
     try {
         const response = await fetch('/api/ipython_magic', {
@@ -21,10 +18,6 @@ export async function executeIPythonCommand(command, commandArguments) {
     }
 }
 
-/**
- * Fetches all unique categories currently in the user's library.
- * Useful for populating the category dropdown in the save modal.
- */
 export async function getExistingCategories() {
     try {
         const response = await fetch('/api/powers/categories');
@@ -34,22 +27,15 @@ export async function getExistingCategories() {
     } catch (error) {
         console.error("Failed to fetch categories:", error);
     }
-    // Default categories if API fails or library is empty
     return ["Powers", "Workspaces", "Utilities", "Powers/Geometry", "Powers/Player"];
 }
 
-/**
- * Enhanced Metadata extraction:
- * Now attempts to predict a sub-category based on the blocks present.
- */
 export async function getPowerMetadata(workspace) {
     let powerName = '';
     let powerDescription = '';
     let category = 'Workspaces';
 
     const topBlocks = workspace.getTopBlocks(false);
-
-    // Check for function definition
     const funcDefBlock = topBlocks.find(b =>
         b.type === 'procedures_defnoreturn' || b.type === 'procedures_defreturn'
     );
@@ -58,7 +44,6 @@ export async function getPowerMetadata(workspace) {
         powerName = funcDefBlock.getFieldValue('NAME');
         powerDescription = funcDefBlock.getCommentText() || '';
 
-        // Simple heuristic for sub-categorization
         const blockTypes = workspace.getAllBlocks(false).map(b => b.type);
         if (blockTypes.some(t => t.includes('DigitalGeometry'))) {
             category = 'Powers/Geometry';
@@ -72,16 +57,11 @@ export async function getPowerMetadata(workspace) {
     const existingCategories = await getExistingCategories();
 
     return {
-        name: powerName,
-        description: powerDescription,
-        category: category,
-        availableCategories: existingCategories
+        name: powerName, description: powerDescription,
+        category: category, availableCategories: existingCategories
     };
 }
 
-/**
- * Deletes a power from the repository.
- */
 export async function deletePower(powerId) {
     if (!powerId) return false;
     try {
@@ -93,9 +73,6 @@ export async function deletePower(powerId) {
     }
 }
 
-/**
- * Serializes the workspace and metadata into a Power Object for the backend.
- */
 export async function savePower(workspace, formData) {
     const blocklyJson = Blockly.serialization.workspaces.save(workspace);
     const topBlocks = workspace.getTopBlocks(true);
@@ -113,55 +90,31 @@ export async function savePower(workspace, formData) {
     };
 
     if (funcDefBlock) {
-        // 1. Generate the fully translated code natively via Blockly
+        pythonGenerator.init(workspace);
         const fullCode = pythonGenerator.workspaceToCode(workspace);
-
-        // 2. Extract ONLY the custom method definitions (Slicing between __init__ and run_program)
-        // This ensures we get the translated code without double-wrapping the class!
         const lines = fullCode.split('\n');
         let inInit = false;
         let extractedLines = [];
 
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
-
-            if (line.startsWith('    def __init__')) {
-                inInit = true;
-                continue;
-            }
-
+            if (line.startsWith('    def __init__')) { inInit = true; continue; }
             if (inInit) {
-                // Stay inside __init__ as long as lines are double-indented or empty
-                if (line.startsWith('        ') || line.trim() === '') {
-                    continue;
-                } else {
-                    inInit = false;
-                }
+                if (line.startsWith('        ') || line.trim() === '') continue;
+                else inInit = false;
             }
-
             if (!inInit) {
-                // Stop extracting once we hit the execution runner
-                if (line.startsWith('    def run_program')) {
-                    break;
-                }
-
-                // Only capture the actual methods
-                if (line.startsWith('    def ') || extractedLines.length > 0) {
-                    extractedLines.push(line);
-                }
+                if (line.startsWith('    def run_program')) break;
+                if (line.startsWith('    def ') || extractedLines.length > 0) extractedLines.push(line);
             }
         }
 
-        // 3. Dedent the extracted lines.
-        // The backend dynamically injects this code into a class template and indents it by 4 spaces.
-        // By stripping the initial 4 spaces here, we prevent the "double indent" that breaks execution.
         powerDataObject.python_code = extractedLines.map(line => {
             return line.startsWith('    ') ? line.substring(4) : line;
         }).join('\n').trimEnd() + '\n';
 
         powerDataObject.function_name = funcDefBlock.getFieldValue('NAME');
 
-        // 4. Process Parameters using the Call block
         const argNames = funcDefBlock.getVars();
         if (argNames.length > 0) {
             const callBlock = topBlocks.find(b =>
@@ -173,30 +126,80 @@ export async function savePower(workspace, formData) {
 
             powerDataObject.parameters = argNames.map((name, i) => {
                 const input = callBlock.getInput('ARG' + i);
-                const check = input?.connection?.targetBlock()?.outputConnection?.getCheck();
-                return { name, type: check ? check[0] : 'String', default: 0 };
+                const targetBlock = input?.connection?.targetBlock();
+                const check = targetBlock?.outputConnection?.getCheck();
+
+                let defaultValue = null;
+                let pickerSource = null;
+
+                if (targetBlock) {
+                    // 1. Detect if a specific category picker was attached
+                    if (targetBlock.type.match(/^mc_(block|item|entity)_picker_/)) {
+                        pickerSource = targetBlock.type;
+                    }
+
+                    // 2. Evaluate the block to get its explicit literal value
+                    let codeTuple = pythonGenerator.blockToCode(targetBlock);
+                    let pyCode = Array.isArray(codeTuple) ? codeTuple[0] : codeTuple;
+
+                    if (pyCode !== undefined && pyCode !== null) {
+                        pyCode = pyCode.trim();
+                        if ((pyCode.startsWith("'") && pyCode.endsWith("'")) || (pyCode.startsWith('"') && pyCode.endsWith('"'))) {
+                            defaultValue = pyCode.slice(1, -1);
+                        } else if (!isNaN(Number(pyCode))) {
+                            defaultValue = Number(pyCode);
+                        } else if (pyCode === 'True') {
+                            defaultValue = true;
+                        } else if (pyCode === 'False') {
+                            defaultValue = false;
+                        } else if (pyCode.startsWith('Vec3(')) {
+                            // Extract static vector coordinates
+                            const vecMatch = pyCode.match(/Vec3\(([^,]+),\s*([^,]+),\s*([^)]+)\)/);
+                            if (vecMatch && !isNaN(Number(vecMatch[1])) && !isNaN(Number(vecMatch[2])) && !isNaN(Number(vecMatch[3]))) {
+                                defaultValue = { x: Number(vecMatch[1]), y: Number(vecMatch[2]), z: Number(vecMatch[3]) };
+                            }
+                        }
+                    }
+                }
+
+                return { name, type: check ? check[0] : 'String', default: defaultValue, picker_source: pickerSource };
             });
+
+            // 3. Inject invisible Python Vector Type-Caster
+            // This allows the UI to send a simple JSON dict {x, y, z} and have it automatically
+            // convert to a Python Vec3 object at runtime!
+            let castingLogic = "";
+            powerDataObject.parameters.forEach(p => {
+                if (p.type === '3DVector') {
+                    castingLogic += `    if isinstance(${p.name}, dict) and 'x' in ${p.name}:\n`;
+                    castingLogic += `        from mcshell.Vec3 import Vec3\n`;
+                    castingLogic += `        ${p.name} = Vec3(float(${p.name}['x']), float(${p.name}['y']), float(${p.name}['z']))\n`;
+                }
+            });
+
+            if (castingLogic !== "") {
+                const sigRegex = new RegExp(`^def ${powerDataObject.function_name}\\(self.*?\\):`, 'm');
+                const match = powerDataObject.python_code.match(sigRegex);
+                if (match) {
+                    const insertPos = powerDataObject.python_code.indexOf(match[0]) + match[0].length;
+                    powerDataObject.python_code = powerDataObject.python_code.slice(0, insertPos) + '\n' + castingLogic + powerDataObject.python_code.slice(insertPos);
+                }
+            }
         }
     } else {
-        // Standalone scripts require the full class wrapper, so we send the whole thing!
         powerDataObject.python_code = pythonGenerator.workspaceToCode(workspace);
         powerDataObject.function_name = null;
         powerDataObject.parameters = [];
     }
 
     const response = await fetch('/api/powers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(powerDataObject),
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(powerDataObject),
     });
 
     if (!response.ok) throw new Error(await response.text());
     return true;
 }
 
-/**
- * Determines if we are running a standalone script or a functional power definition.
- */
 export function buildDebugPayload(workspace) {
     const topBlocks = workspace.getTopBlocks(false);
     if (topBlocks.length === 0) return null;
