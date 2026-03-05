@@ -5,22 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MC-ED Control Deck</title>
 
-    <!-- Prevent the favicon 404 error -->
     <link rel="icon" href="data:,">
-
-    <!-- Socket.IO (Loads synchronously) -->
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-
-    <!-- Alpine JS (MUST have defer so it waits for the DOM and your inline script) -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <style>
-        /* Modern iOS-Style Base */
         :root {
             --bg-color: #000000;
             --text-color: #ffffff;
             --overlay-bg: rgba(28, 28, 30, 0.9);
             --modal-bg: #2c2c2e;
+            --accent: #0a84ff;
         }
 
         body, html {
@@ -29,13 +24,11 @@
             color: var(--text-color);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             height: 100vh; overflow: hidden;
-            user-select: none; /* Prevents text selection on mobile */
-            -webkit-touch-callout: none;
+            user-select: none; -webkit-touch-callout: none;
         }
 
         [x-cloak] { display: none !important; }
 
-        /* Header */
         header {
             display: flex; justify-content: space-between; align-items: center;
             padding: 20px 24px;
@@ -51,124 +44,129 @@
         .edit-btn:active { transform: scale(0.95); }
         .edit-btn.active { background: #B06161; }
 
-        /* Springboard Grid */
         .springboard {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-            gap: 24px 16px;
-            padding: 20px;
-            align-content: start;
-            height: calc(100vh - 80px);
-            overflow-y: auto;
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            gap: 24px 16px; padding: 20px; align-content: start;
+            height: calc(100vh - 80px); overflow-y: auto;
         }
 
-        /* App Icon */
-        .app-container {
-            display: flex; flex-direction: column; align-items: center;
-            position: relative;
-        }
-
+        .app-container { display: flex; flex-direction: column; align-items: center; position: relative; }
         .app-icon {
-            width: 76px; height: 76px;
-            border-radius: 18px; /* iOS standard curvature */
+            width: 76px; height: 76px; border-radius: 18px;
             display: flex; justify-content: center; align-items: center;
             font-size: 32px; font-weight: bold; color: white;
             box-shadow: inset 0 2px 4px rgba(255,255,255,0.2), 0 4px 10px rgba(0,0,0,0.5);
-            cursor: pointer; transition: transform 0.1s, filter 0.2s;
-            position: relative;
+            cursor: pointer; transition: transform 0.1s, filter 0.2s; position: relative;
         }
         .app-icon:active { filter: brightness(0.7); }
-
         .app-name {
-            margin-top: 8px; font-size: 12px; font-weight: 500;
-            text-align: center; width: 90px;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+            margin-top: 8px; font-size: 12px; font-weight: 500; text-align: center;
+            width: 90px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
 
-        /* Status Overlay */
         .status-overlay {
-            position: absolute; inset: 0;
-            border-radius: 18px; background: rgba(0,0,0,0.6);
-            display: flex; justify-content: center; align-items: center;
-            backdrop-filter: blur(2px);
+            position: absolute; inset: 0; border-radius: 18px; background: rgba(0,0,0,0.6);
+            display: flex; justify-content: center; align-items: center; backdrop-filter: blur(2px);
         }
         .spinner {
-            width: 24px; height: 24px;
-            border: 3px solid rgba(255,255,255,0.3); border-top-color: white;
-            border-radius: 50%; animation: spin 1s linear infinite;
+            width: 24px; height: 24px; border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite;
         }
         @keyframes spin { 100% { transform: rotate(360deg); } }
-
-        /* Jiggle Mode (Edit) */
-        @keyframes jiggle {
-            0% { transform: rotate(-2deg); }
-            50% { transform: rotate(2deg); }
-            100% { transform: rotate(-2deg); }
-        }
+        @keyframes jiggle { 0% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } 100% { transform: rotate(-2deg); } }
         .is-editing .app-icon { animation: jiggle 0.3s infinite; }
 
         .delete-badge {
-            position: absolute; top: -6px; left: -6px;
-            width: 24px; height: 24px; border-radius: 50%;
+            position: absolute; top: -6px; left: -6px; width: 24px; height: 24px; border-radius: 50%;
             background: #ff3b30; color: white; font-weight: bold; font-size: 14px;
             display: flex; justify-content: center; align-items: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.5); border: 2px solid #000;
-            cursor: pointer; z-index: 10;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5); border: 2px solid #000; cursor: pointer; z-index: 10;
         }
+        .add-app { background: rgba(255,255,255,0.1); border: 2px dashed rgba(255,255,255,0.3); box-shadow: none; color: rgba(255,255,255,0.5); }
 
-        .add-app {
-            background: rgba(255,255,255,0.1); border: 2px dashed rgba(255,255,255,0.3);
-            box-shadow: none; color: rgba(255,255,255,0.5);
-        }
-
-        /* Modals & Action Drawers */
         .drawer-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(5px); z-index: 100;
-            display: flex; flex-direction: column; justify-content: flex-end;
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);
+            z-index: 100; display: flex; flex-direction: column; justify-content: flex-end;
         }
         .drawer-content {
             background: var(--modal-bg); border-radius: 24px 24px 0 0;
             padding: 24px; box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
-            max-height: 80vh; overflow-y: auto;
+            max-height: 85vh; overflow-y: auto; display: flex; flex-direction: column;
         }
-
-        .drawer-header { margin-bottom: 20px; }
+        .drawer-header { margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
         .drawer-header h2 { margin: 0 0 5px 0; font-size: 22px; }
-        .drawer-header p { margin: 0; color: #aaa; font-size: 14px; }
 
-        .param-group { margin-bottom: 16px; }
-        .param-group label { display: block; font-size: 13px; color: #ccc; margin-bottom: 6px; }
-        .param-group input {
-            width: 100%; padding: 12px; border-radius: 10px;
-            border: none; background: rgba(255,255,255,0.1); color: white;
-            font-size: 16px; box-sizing: border-box;
+        .param-group { margin-bottom: 18px; }
+        .param-group label { display: block; font-size: 13px; color: #ccc; margin-bottom: 8px; }
+        .param-input-text {
+            width: 100%; padding: 12px; border-radius: 10px; border: none;
+            background: rgba(255,255,255,0.1); color: white; font-size: 16px; box-sizing: border-box;
         }
-        .param-group input:focus { outline: 2px solid #5B7BA1; }
+        .param-input-text:focus { outline: 2px solid var(--accent); }
+
+        select.native-select {
+            width: 100%; padding: 12px; border-radius: 10px; border: none;
+            background: rgba(255,255,255,0.1); color: white; font-size: 16px; box-sizing: border-box;
+            appearance: none; -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 14px center;
+        }
+        select.native-select:focus { outline: 2px solid var(--accent); }
+
+        .smart-picker-btn {
+            background: #3a3a3c; padding: 12px 14px; border-radius: 10px; cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center; color: var(--accent);
+            font-size: 16px; font-weight: 500;
+        }
+
+        .toggle-switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider-toggle {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #38383a; transition: .2s; border-radius: 28px;
+        }
+        .slider-toggle:before {
+            position: absolute; content: ""; height: 24px; width: 24px; left: 2px; bottom: 2px;
+            background-color: white; transition: .2s; border-radius: 50%;
+        }
+        input:checked + .slider-toggle { background-color: #34c759; }
+        input:checked + .slider-toggle:before { transform: translateX(22px); }
 
         .action-btn {
             width: 100%; padding: 16px; border-radius: 14px; border: none;
-            font-size: 18px; font-weight: bold; color: white; cursor: pointer;
-            margin-top: 10px; transition: transform 0.1s;
+            font-size: 18px; font-weight: bold; color: white; cursor: pointer; margin-top: 10px;
         }
-        .action-btn:active { transform: scale(0.98); }
-
-        /* Cancel specific modal overrides */
         .btn-cancel { background: #3a3a3c; }
 
-        /* Category Palette Classes */
-        .cat-Block { background-color: #B06161; }
-        .cat-Item { background-color: #D4A373; }
-        .cat-Entity { background-color: #8D7EB5; }
-        .cat-Picker { background-color: #95A5A6; }
-        .cat-Geometry { background-color: #5B7BA1; }
-        .cat-Turtle { background-color: #C9A65B; }
-        .cat-LSystem { background-color: #7A9473; }
-        .cat-Events { background-color: #D68C45; }
-        .cat-DigitalSet { background-color: #A57582; }
-        .cat-Player { background-color: #61A1B0; }
-        .cat-Default { background-color: #4a4a4a; }
+        .cat-Block { background-color: #B06161; } .cat-Item { background-color: #D4A373; }
+        .cat-Entity { background-color: #8D7EB5; } .cat-Geometry { background-color: #5B7BA1; }
+        .cat-Turtle { background-color: #C9A65B; } .cat-Default { background-color: #4a4a4a; }
+
+        .btn-text { background: none; border: none; color: var(--accent); font-size: 17px; cursor: pointer; padding: 0; }
+        .btn-text.bold { font-weight: 600; }
+        .search-container { padding: 12px 0; border-bottom: 1px solid #38383a; }
+        .search-input {
+            width: 100%; background: #2c2c2e; border: none; border-radius: 10px;
+            padding: 10px 14px 10px 36px; color: white; font-size: 16px; box-sizing: border-box;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238e8e93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: 10px center;
+        }
+        .category-title { font-size: 13px; font-weight: 600; color: #8e8e93; text-transform: uppercase; margin: 20px 0 8px 12px; cursor: pointer; display: flex; justify-content: space-between; padding-right: 12px; }
+        .category-items { background: #2c2c2e; border-radius: 12px; overflow: hidden; }
+        .item-row { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid #38383a; cursor: pointer; }
+        .item-row:last-child { border-bottom: none; }
+        .item-row.selected .item-name { color: var(--accent); }
+        .item-name { flex: 1; font-size: 16px; font-weight: 500; }
+        .checkmark { color: var(--accent); font-size: 20px; font-weight: bold; display: none; }
+        .item-row.selected .checkmark { display: block; }
+
+        .variant-select {
+            background: rgba(255, 255, 255, 0.1); color: #ffffff; border: 1px solid rgba(255,255,255,0.15);
+            padding: 6px 10px; border-radius: 8px; font-size: 14px; font-weight: 500; margin-right: 15px; cursor: pointer;
+            appearance: none; -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 8px center; padding-right: 28px;
+        }
     </style>
 </head>
 <body x-data="controlApp">
@@ -178,18 +176,12 @@
         <button class="edit-btn" :class="isEditing ? 'active' : ''" @click="isEditing = !isEditing" x-text="isEditing ? 'Done' : 'Edit Layout'"></button>
     </header>
 
-    <!-- The Grid Springboard -->
     <main class="springboard" :class="isEditing ? 'is-editing' : ''">
         <template x-for="power in deckPowers" :key="power.power_id">
             <div class="app-container">
                 <div class="app-icon" :class="getCategoryClass(power.category)" @click="handleAppTap(power)">
-                    <!-- Delete Badge -->
                     <div class="delete-badge" x-show="isEditing" @click.stop="removeFromDeck(power.power_id)">×</div>
-
-                    <!-- Icon Letter -->
                     <span x-text="power.name.charAt(0).toUpperCase()"></span>
-
-                    <!-- Loading State -->
                     <div class="status-overlay" x-show="powerStatus[power.power_id] === 'running'">
                         <div class="spinner"></div>
                     </div>
@@ -198,138 +190,203 @@
             </div>
         </template>
 
-        <!-- Add Button (Only visible in edit mode) -->
-        <div class="app-container" x-show="isEditing" x-cloak @click="openLibrarySelector()">
+        <div class="app-container" x-show="isEditing" x-cloak @click="showLibrary = true">
             <div class="app-icon add-app">+</div>
             <div class="app-label app-name">Add Power</div>
         </div>
     </main>
 
     <!-- Execution/Parameters Drawer -->
-    <div class="drawer-overlay" x-show="activePower !== null" x-transition.opacity x-cloak>
+    <div class="drawer-overlay" x-show="activePower !== null && !showPicker" x-transition.opacity x-cloak>
         <div class="drawer-content" @click.stop>
             <template x-if="activePower">
                 <div>
                     <div class="drawer-header">
-                        <h2 x-text="activePower.name"></h2>
-                        <p x-text="activePower.description || 'No description provided.'"></p>
+                        <div>
+                            <h2 x-text="activePower.name" style="margin: 0 0 5px 0;"></h2>
+                            <p x-text="activePower.description || 'No description provided.'" style="margin:0; color:#aaa; font-size:14px;"></p>
+                        </div>
                     </div>
 
-                    <!-- Generate Input fields for parameters -->
                     <template x-for="param in activePower.parameters" :key="param.name">
                         <div class="param-group">
                             <label x-text="param.name"></label>
-                            <input type="text" x-model="executionParams[param.name]" :placeholder="'Enter ' + param.name">
+
+                            <!-- 1. Number Fallback -->
+                            <template x-if="param.type === 'Number'">
+                                <div style="display:flex; gap:10px; align-items:center;">
+                                    <input type="range" x-model.number="executionParams[param.name]" style="flex:1" min="1" max="100">
+                                    <input type="number" class="param-input-text" x-model.number="executionParams[param.name]" style="width:70px; text-align:center; padding: 10px;">
+                                </div>
+                            </template>
+
+                            <!-- 2. Boolean Switch -->
+                            <template x-if="param.type === 'Boolean'">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" x-model="executionParams[param.name]">
+                                    <span class="slider-toggle"></span>
+                                </label>
+                            </template>
+
+                            <!-- 3. New 3D Vector Widget! -->
+                            <template x-if="param.type === '3DVector'">
+                                <div style="display:flex; gap:10px; align-items:center;">
+                                    <span style="color:#8e8e93; font-size:13px; font-weight:bold;">X</span>
+                                    <input type="number" class="param-input-text" x-model.number="executionParams[param.name].x" style="flex:1; text-align:center; padding: 10px;">
+                                    <span style="color:#8e8e93; font-size:13px; font-weight:bold;">Y</span>
+                                    <input type="number" class="param-input-text" x-model.number="executionParams[param.name].y" style="flex:1; text-align:center; padding: 10px;">
+                                    <span style="color:#8e8e93; font-size:13px; font-weight:bold;">Z</span>
+                                    <input type="number" class="param-input-text" x-model.number="executionParams[param.name].z" style="flex:1; text-align:center; padding: 10px;">
+                                </div>
+                            </template>
+
+                            <!-- 4. Simple Enums -->
+                            <template x-if="isEnumType(param.type)">
+                                <select class="native-select" x-model="executionParams[param.name]">
+                                    <template x-for="opt in taxonomy[param.type]" :key="opt.value">
+                                        <option :value="opt.value" x-text="opt.name"></option>
+                                    </template>
+                                </select>
+                            </template>
+
+                            <!-- 5. Smart Pickers -->
+                            <template x-if="['Block', 'Item', 'Entity'].includes(param.type)">
+                                <div class="smart-picker-btn" @click="openPicker(param.type, param.name)">
+                                    <span x-text="formatDisplayValue(executionParams[param.name])"></span>
+                                    <span>▼</span>
+                                </div>
+                            </template>
+
+                            <!-- 6. Generic Text Fallback -->
+                            <template x-if="!['Number', 'Boolean', '3DVector', 'Block', 'Item', 'Entity'].includes(param.type) && !isEnumType(param.type)">
+                                <input type="text" class="param-input-text" x-model="executionParams[param.name]">
+                            </template>
                         </div>
                     </template>
 
-                    <button class="action-btn" :class="getCategoryClass(activePower.category)" @click="executePower()">
-                        Run Power
-                    </button>
-                    <button class="action-btn btn-cancel" @click="activePower = null">
-                        Cancel
-                    </button>
+                    <button class="action-btn" :class="getCategoryClass(activePower.category)" @click="executePower()">Run Power</button>
+                    <button class="action-btn btn-cancel" @click="activePower = null">Cancel</button>
                 </div>
             </template>
         </div>
     </div>
 
-    <!-- Library Selection Drawer (Add Power) -->
-    <div class="drawer-overlay" x-show="showLibrary" x-transition.opacity x-cloak>
-        <div class="drawer-content" style="height: 80vh; display: flex; flex-direction: column;" @click.stop>
-            <div class="drawer-header">
-                <h2>Power Library</h2>
-                <p>Select a power to add to your deck.</p>
+    <!-- The Smart Picker Drawer -->
+    <div class="drawer-overlay" x-show="showPicker" x-transition.opacity x-cloak>
+        <div class="drawer-content" style="height: 85vh; padding-top: 15px;" @click.stop>
+            <div class="drawer-header" style="margin-bottom: 5px;">
+                <button class="btn-text" @click="cancelPicker()">Cancel</button>
+                <h3 style="margin:0; font-size:18px;">Select Material</h3>
+                <button class="btn-text bold" @click="confirmPicker()">Done</button>
             </div>
 
-            <div style="flex: 1; overflow-y: auto; margin-bottom: 20px;">
-                <template x-for="p in allPowers" :key="p.power_id">
-                    <div style="display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #38383a; cursor: pointer;"
-                         @click="addToDeck(p.power_id)">
-                        <div class="app-icon" :class="getCategoryClass(p.category)" style="width: 40px; height: 40px; font-size: 18px; border-radius: 10px; margin-right: 15px;">
-                            <span x-text="p.name.charAt(0).toUpperCase()"></span>
+            <div class="search-container">
+                <input type="text" class="search-input" x-model="searchQuery" placeholder="Search...">
+            </div>
+
+            <div class="list-container" style="padding: 0 0 40px 0;">
+                <template x-for="group in filteredTaxonomy" :key="group.name">
+                    <div class="category-group" x-data="{ expanded: false }">
+                        <!-- Auto-expand if it's the ONLY group available (Specific Picker Scenario) -->
+                        <div class="category-title" @click="expanded = !expanded" x-init="if (filteredTaxonomy.length === 1) expanded = true">
+                            <span x-text="group.name"></span>
+                            <span x-text="(expanded || searchQuery.trim() !== '') ? '▼' : '▶'" style="font-size: 10px;"></span>
                         </div>
-                        <div style="flex: 1;">
-                            <div style="font-weight: 600;" x-text="p.name"></div>
-                            <div style="font-size: 12px; color: #888;" x-text="p.category"></div>
+
+                        <div class="category-items" x-show="expanded || searchQuery.trim() !== ''" x-transition>
+                            <template x-for="item in group.items" :key="item.name">
+                                <div class="item-row" :class="isItemSelected(item) ? 'selected' : ''" @click="selectPickerItem(item, false)">
+                                    <div class="item-name" x-text="item.name"></div>
+
+                                    <template x-if="item.variants">
+                                        <select class="variant-select" x-model="item.currentVariant" @click.stop @change="selectPickerItem(item, true)">
+                                            <template x-for="v in item.variants" :key="v">
+                                                <option :value="v" x-text="v"></option>
+                                            </template>
+                                        </select>
+                                    </template>
+                                    <div class="checkmark">✓</div>
+                                </div>
+                            </template>
                         </div>
-                        <div style="color: #0a84ff; font-weight: bold;">+ Add</div>
                     </div>
                 </template>
             </div>
+        </div>
+    </div>
 
+    <!-- Library Wrapper -->
+    <div class="drawer-overlay" x-show="showLibrary" x-transition.opacity x-cloak>
+        <div class="drawer-content" style="height: 80vh;" @click.stop>
+            <h2 style="margin-top:0">Power Library</h2>
+            <div style="overflow-y: auto; flex:1; margin-bottom: 20px;">
+                <template x-for="p in allPowers" :key="p.power_id">
+                    <div style="padding: 12px; border-bottom: 1px solid #38383a; cursor: pointer; display: flex; align-items: center;" @click="addToDeck(p.power_id)">
+                        <div class="app-icon" :class="getCategoryClass(p.category)" style="width: 40px; height: 40px; font-size: 18px; border-radius: 10px; margin-right: 15px;">
+                            <span x-text="p.name.charAt(0)"></span>
+                        </div>
+                        <div style="flex: 1;"><div style="font-weight: 600;" x-text="p.name"></div></div>
+                    </div>
+                </template>
+            </div>
             <button class="action-btn btn-cancel" @click="showLibrary = false">Close</button>
         </div>
     </div>
 
     <script>
-        // Registering Alpine Component properly to ensure safe initialization
         document.addEventListener('alpine:init', () => {
             Alpine.data('controlApp', () => ({
                 isEditing: false,
-                allPowers: [],
-                deckLayout: [],
-                activePower: null,
-                showLibrary: false,
-                executionParams: {},
-                powerStatus: {},
-                socket: null,
+                allPowers: [], deckLayout: [],
+                activePower: null, executionParams: {}, powerStatus: {},
+
+                taxonomy: {},
+                showLibrary: false, showPicker: false,
+                pickerType: '', activeParamName: '', searchQuery: '',
+                pendingPickerValue: null,
 
                 async init() {
                     const saved = localStorage.getItem('mced_deck_layout');
-                    if (saved) {
-                        this.deckLayout = JSON.parse(saved);
-                    }
+                    if (saved) this.deckLayout = JSON.parse(saved);
 
-                    await this.fetchPowers();
+                    await Promise.all([this.fetchPowers(), this.fetchTaxonomy()]);
 
-                    this.socket = io();
-                    this.socket.on('power_status', (data) => {
-                        console.log("Status Update:", data);
+                    const socket = io();
+                    socket.on('power_status', (data) => {
                         this.powerStatus[data.id] = data.status;
-
-                        if(data.status === 'error') {
-                            alert(`Error in ${data.id}:\n${data.message}`);
-                        }
+                        if(data.status === 'error') alert(`Error:\n${data.message}`);
                     });
                 },
 
                 async fetchPowers() {
                     try {
-                        const res = await fetch('/api/powers?view=control&format=json', {
-                            headers: { 'Accept': 'application/json' }
-                        });
+                        const res = await fetch('/api/powers?view=control&format=json', { headers: { 'Accept': 'application/json' }});
                         const data = await res.json();
-
                         this.allPowers = Array.isArray(data) ? data : Object.values(data);
-                    } catch (e) {
-                        console.error("Failed to load powers", e);
-                    }
+                    } catch (e) { console.error("Failed to load powers", e); }
+                },
+
+                async fetchTaxonomy() {
+                    try {
+                        const res = await fetch('/api/taxonomy');
+                        this.taxonomy = await res.json();
+                    } catch (e) { console.error("Failed to load taxonomy", e); }
                 },
 
                 get deckPowers() {
-                    return this.deckLayout
-                        .map(id => this.allPowers.find(p => p.power_id === id))
-                        .filter(p => p !== undefined);
+                    return this.deckLayout.map(id => this.allPowers.find(p => p.power_id === id)).filter(p => p !== undefined);
                 },
 
                 getCategoryClass(category) {
                     if (!category) return 'cat-Default';
-                    const catName = category.split('/')[0].replace(/\s+/g, '');
-                    return `cat-${catName}`;
+                    return `cat-${category.split('/')[0].replace(/\\s+/g, '')}`;
                 },
 
                 handleAppTap(power) {
                     if (this.isEditing) return;
-
                     if (this.powerStatus[power.power_id] === 'running') {
                          if(confirm(`Cancel ${power.name}?`)) {
-                             // Call the real /api/cancel_power endpoint with standard JSON POST
-                             fetch(`/api/cancel_power`, {
-                                 method: 'POST',
-                                 headers: { 'Content-Type': 'application/json' },
-                                 body: JSON.stringify({ power_id: power.power_id })
-                             });
+                             fetch(`/api/cancel_power`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ power_id: power.power_id }) });
                              this.powerStatus[power.power_id] = 'idle';
                          }
                          return;
@@ -337,65 +394,161 @@
 
                     this.activePower = power;
                     this.executionParams = {};
+
+                    const cacheRaw = localStorage.getItem('mced_widget_params_' + power.power_id);
+                    const cache = cacheRaw ? JSON.parse(cacheRaw) : {};
+
                     if (power.parameters) {
                         power.parameters.forEach(p => {
-                            this.executionParams[p.name] = '';
+                            let valueToSet;
+                            if (cache.hasOwnProperty(p.name)) {
+                                valueToSet = cache[p.name];
+                            } else if (p.default !== undefined && p.default !== null && p.default !== '') {
+                                valueToSet = p.default;
+                            } else {
+                                valueToSet = this.getDefaultValue(p.type);
+                            }
+
+                            // Ensure Vectors are decoupled so Alpine UI inputs work reactively
+                            if (p.type === '3DVector' && typeof valueToSet === 'object' && valueToSet !== null) {
+                                this.executionParams[p.name] = { x: valueToSet.x || 0, y: valueToSet.y || 0, z: valueToSet.z || 0 };
+                            } else {
+                                this.executionParams[p.name] = valueToSet;
+                            }
                         });
                     }
+                },
+
+                getDefaultValue(type) {
+                    if (type === 'Number') return 10;
+                    if (type === 'Boolean') return false;
+                    if (type === '3DVector') return { x: 0, y: 0, z: 0 };
+
+                    if (this.taxonomy && this.taxonomy[type]) {
+                        if (['Block', 'Item', 'Entity'].includes(type)) {
+                            const firstGroup = this.taxonomy[type][0];
+                            if (firstGroup && firstGroup.items && firstGroup.items.length > 0) {
+                                const item = firstGroup.items[0];
+                                return item.variants ? item.template.replace('{}', item.currentVariant.toUpperCase().replace(/ /g, '_')) : item.value;
+                            }
+                        } else if (this.taxonomy[type].length > 0) {
+                            return this.taxonomy[type][0].value;
+                        }
+                    }
+                    return '';
                 },
 
                 async executePower() {
                     if (!this.activePower) return;
 
-                    // Flatten parameters into the root of the payload.
-                    // The Python backend pops 'power_id' and expands the rest with **kwargs.
-                    const payload = {
-                        power_id: this.activePower.power_id
-                    };
+                    localStorage.setItem('mced_widget_params_' + this.activePower.power_id, JSON.stringify(this.executionParams));
 
-                    // Ensure numbers are sent as numeric types, not strings
+                    const payload = { power_id: this.activePower.power_id };
                     for (const [key, value] of Object.entries(this.executionParams)) {
-                        payload[key] = (isNaN(value) || value.trim() === '') ? value : Number(value);
+                        // Pass vector object safely (Type-casting is now handled invisibly by python payload!)
+                        if (value !== null && typeof value === 'object' && 'x' in value) {
+                            payload[key] = value;
+                        } else {
+                            payload[key] = (typeof value === 'boolean' || isNaN(value) || value.toString().trim() === '') ? value : Number(value);
+                        }
                     }
 
                     this.powerStatus[this.activePower.power_id] = 'running';
-
                     try {
-                        // Call the real /api/execute_power endpoint using standard POST JSON
                         await fetch(`/api/execute_power`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
+                            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
                         });
-                    } catch (e) {
-                        console.error("Execution failed:", e);
-                        this.powerStatus[this.activePower.power_id] = 'error';
-                    }
-
+                    } catch (e) { this.powerStatus[this.activePower.power_id] = 'error'; }
                     this.activePower = null;
                 },
 
-                openLibrarySelector() {
-                    this.fetchPowers();
-                    this.showLibrary = true;
+                // --- SMART PICKER LOGIC ---
+                isEnumType(type) { return !!this.taxonomy[type] && !['Block', 'Item', 'Entity'].includes(type); },
+
+                formatDisplayValue(val) {
+                    if (!val) return 'Select...';
+                    return String(val).split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
                 },
 
-                addToDeck(powerId) {
-                    if (!this.deckLayout.includes(powerId)) {
-                        this.deckLayout.push(powerId);
-                        this.saveLayout();
+                openPicker(type, paramName) {
+                    this.activeParamName = paramName;
+                    this.pickerType = type;
+                    this.searchQuery = '';
+                    this.pendingPickerValue = this.executionParams[paramName] || this.getDefaultValue(type);
+                    this.showPicker = true;
+                },
+
+                get filteredTaxonomy() {
+                    if (!this.pickerType || !this.taxonomy[this.pickerType]) return [];
+                    let baseGroups = this.taxonomy[this.pickerType];
+
+                    // 1. Specific Picker Filtering (WITH SAFETY CHECK)
+                    if (this.activePower && this.activePower.parameters) {
+                        const paramDef = this.activePower.parameters.find(p => p.name === this.activeParamName);
+                        if (paramDef && paramDef.picker_source) {
+                            const match = paramDef.picker_source.match(/^mc_(?:block|item|entity)_picker_(.+)$/);
+                            if (match) {
+                                let expectedName = match[1].split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+                                if (expectedName === 'General') expectedName = `Other ${this.pickerType}s`; // Fallback translation
+
+                                const specificGroup = baseGroups.find(g => g.name === expectedName);
+                                if (specificGroup) {
+                                    baseGroups = [specificGroup]; // Lock to only this group!
+                                }
+                            }
+                        }
                     }
+
+                    // 2. Search filtering
+                    if (this.searchQuery.trim() === '') return baseGroups;
+
+                    const query = this.searchQuery.toLowerCase();
+                    return baseGroups.map(group => ({
+                        name: group.name,
+                        items: group.items.filter(b => b.name.toLowerCase().includes(query))
+                    })).filter(group => group.items.length > 0);
+                },
+
+                selectPickerItem(item, isVariantChange) {
+                    let finalValue = item.value;
+                    if (item.variants) {
+                        let variantPrefix = item.currentVariant.toUpperCase().replace(/ /g, '_');
+                        finalValue = item.template.replace('{}', variantPrefix);
+                    }
+                    this.pendingPickerValue = finalValue;
+                },
+
+                confirmPicker() {
+                    this.executionParams[this.activeParamName] = this.pendingPickerValue;
+                    this.showPicker = false;
+                    this.searchQuery = '';
+                },
+
+                cancelPicker() {
+                    this.pendingPickerValue = null;
+                    this.showPicker = false;
+                    this.searchQuery = '';
+                },
+
+                isItemSelected(item) {
+                    const currentVal = this.pendingPickerValue;
+                    if (!currentVal) return false;
+                    if (item.variants) {
+                        const suffix = item.template.replace('{}', '');
+                        return String(currentVal).endsWith(suffix);
+                    }
+                    return currentVal === item.value;
+                },
+
+                // Springboard Utilities
+                addToDeck(powerId) {
+                    if (!this.deckLayout.includes(powerId)) { this.deckLayout.push(powerId); this.saveLayout(); }
                     this.showLibrary = false;
                 },
-
                 removeFromDeck(powerId) {
-                    this.deckLayout = this.deckLayout.filter(id => id !== powerId);
-                    this.saveLayout();
+                    this.deckLayout = this.deckLayout.filter(id => id !== powerId); this.saveLayout();
                 },
-
-                saveLayout() {
-                    localStorage.setItem('mced_deck_layout', JSON.stringify(this.deckLayout));
-                }
+                saveLayout() { localStorage.setItem('mced_deck_layout', JSON.stringify(this.deckLayout)); }
             }));
         });
     </script>
