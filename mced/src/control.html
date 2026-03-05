@@ -57,7 +57,7 @@
             font-size: 32px; font-weight: bold; color: white;
             box-shadow: inset 0 2px 4px rgba(255,255,255,0.2), 0 4px 10px rgba(0,0,0,0.5);
             cursor: pointer; transition: transform 0.1s, filter 0.2s; position: relative;
-            touch-action: pan-y; /* Allow vertical scrolling, but ensure standard touch events fire cleanly */
+            touch-action: pan-y;
         }
         .app-icon:active { filter: brightness(0.7); transform: scale(0.95); }
         .app-name {
@@ -179,23 +179,22 @@
     </header>
 
     <main class="springboard" :class="isEditing ? 'is-editing' : ''">
-        <template x-for="power in deckPowers" :key="power.power_id">
+        <template x-for="instance in deckInstances" :key="instance.instanceId">
             <div class="app-container">
-                <!-- Integrated Pointer Events for Long Press vs Quick Press Detection -->
-                <div class="app-icon" :class="getCategoryClass(power.category)"
-                     @pointerdown="handlePressStart(power, $event)"
-                     @pointerup="handlePressEnd(power, $event)"
+                <div class="app-icon" :class="getCategoryClass(instance.category)"
+                     @pointerdown="handlePressStart(instance, $event)"
+                     @pointerup="handlePressEnd(instance, $event)"
                      @pointerleave="handlePressCancel($event)"
                      @pointercancel="handlePressCancel($event)"
                      @contextmenu.prevent="">
 
-                    <div class="delete-badge" x-show="isEditing" @click.stop="removeFromDeck(power.power_id)">×</div>
-                    <span x-text="power.name.charAt(0).toUpperCase()"></span>
-                    <div class="status-overlay" x-show="powerStatus[power.power_id] === 'running'">
+                    <div class="delete-badge" x-show="isEditing" @click.stop="removeFromDeck(instance.instanceId)">×</div>
+                    <span x-text="instance.name.charAt(0).toUpperCase()"></span>
+                    <div class="status-overlay" x-show="powerStatus[instance.instanceId] === 'running'">
                         <div class="spinner"></div>
                     </div>
                 </div>
-                <div class="app-label app-name" x-text="power.name"></div>
+                <div class="app-label app-name" x-text="instance.name"></div>
             </div>
         </template>
 
@@ -206,18 +205,18 @@
     </main>
 
     <!-- Execution/Parameters Drawer -->
-    <div class="drawer-overlay" x-show="activePower !== null && !showPicker" x-transition.opacity x-cloak>
+    <div class="drawer-overlay" x-show="activeInstance !== null && !showPicker" x-transition.opacity x-cloak>
         <div class="drawer-content" @click.stop>
-            <template x-if="activePower">
+            <template x-if="activeInstance">
                 <div>
                     <div class="drawer-header">
                         <div>
-                            <h2 x-text="activePower.name" style="margin: 0 0 5px 0;"></h2>
-                            <p x-text="activePower.description || 'No description provided.'" style="margin:0; color:#aaa; font-size:14px;"></p>
+                            <h2 x-text="activeInstance.name" style="margin: 0 0 5px 0;"></h2>
+                            <p x-text="activeInstance.description || 'No description provided.'" style="margin:0; color:#aaa; font-size:14px;"></p>
                         </div>
                     </div>
 
-                    <template x-for="param in activePower.parameters" :key="param.name">
+                    <template x-for="param in activeInstance.parameters" :key="param.name">
                         <div class="param-group">
                             <label x-text="param.name"></label>
 
@@ -267,9 +266,8 @@
                         </div>
                     </template>
 
-                    <!-- Button behaviour completely shifted to Load Config -> Close -->
-                    <button class="action-btn" :class="getCategoryClass(activePower.category)" @click="saveConfig()">Load Configuration</button>
-                    <button class="action-btn btn-cancel" @click="activePower = null">Cancel</button>
+                    <button class="action-btn" :class="getCategoryClass(activeInstance.category)" @click="saveConfig()">Load Configuration</button>
+                    <button class="action-btn btn-cancel" @click="activeInstance = null">Cancel</button>
                 </div>
             </template>
         </div>
@@ -291,7 +289,6 @@
             <div class="list-container" style="padding: 0 0 40px 0;">
                 <template x-for="group in filteredTaxonomy" :key="group.name">
                     <div class="category-group" x-data="{ expanded: false }">
-                        <!-- Auto-expand if it's the ONLY group available (Specific Picker Scenario) -->
                         <div class="category-title" @click="expanded = !expanded" x-init="if (filteredTaxonomy.length === 1) expanded = true">
                             <span x-text="group.name"></span>
                             <span x-text="(expanded || searchQuery.trim() !== '') ? '▼' : '▶'" style="font-size: 10px;"></span>
@@ -341,27 +338,69 @@
         document.addEventListener('alpine:init', () => {
             Alpine.data('controlApp', () => ({
                 isEditing: false,
-                allPowers: [], deckLayout: [],
-                activePower: null, executionParams: {}, powerStatus: {},
+                allPowers: [],
+                deckLayout: [],
+                activeInstance: null, executionParams: {}, powerStatus: {},
 
                 taxonomy: {},
                 showLibrary: false, showPicker: false,
                 pickerType: '', activeParamName: '', searchQuery: '',
                 pendingPickerValue: null,
 
-                // Pointer Event State trackers
                 pressTimer: null,
                 isLongPress: false,
+                runningQueue: {}, // Maps powerId -> Array of executing instanceIds as a fallback
+
+                generateId() {
+                    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+                },
 
                 async init() {
                     const saved = localStorage.getItem('mced_deck_layout');
-                    if (saved) this.deckLayout = JSON.parse(saved);
+                    if (saved) {
+                        let parsed = JSON.parse(saved);
+                        let needsMigration = false;
+
+                        this.deckLayout = parsed.map(item => {
+                            if (typeof item === 'string') {
+                                needsMigration = true;
+                                return { instanceId: this.generateId(), powerId: item };
+                            }
+                            return item;
+                        });
+
+                        if (needsMigration) this.saveLayout();
+                    }
 
                     await Promise.all([this.fetchPowers(), this.fetchTaxonomy()]);
 
                     const socket = io();
                     socket.on('power_status', (data) => {
-                        this.powerStatus[data.id] = data.status;
+                        if (data.status === 'running') return;
+
+                        // 1. PERFECT MATCH: The backend knows exactly which widget triggered it
+                        if (data.execution_id) {
+                            this.powerStatus[data.execution_id] = data.status;
+
+                            // Clean it out of the fallback queue to keep things tidy
+                            if (this.runningQueue[data.id]) {
+                                this.runningQueue[data.id] = this.runningQueue[data.id].filter(id => id !== data.execution_id);
+                            }
+                        }
+                        // 2. FALLBACK QUEUE: If backend hasn't been updated with execution_id yet
+                        else if (this.runningQueue[data.id] && this.runningQueue[data.id].length > 0) {
+                            const finishedInstanceId = this.runningQueue[data.id].shift();
+                            this.powerStatus[finishedInstanceId] = data.status;
+                        }
+                        // 3. ABSOLUTE FALLBACK
+                        else {
+                            this.deckLayout.forEach(item => {
+                                if (item.powerId === data.id && this.powerStatus[item.instanceId] === 'running') {
+                                    this.powerStatus[item.instanceId] = data.status;
+                                }
+                            });
+                        }
+
                         if(data.status === 'error') alert(`Error:\n${data.message}`);
                     });
                 },
@@ -381,8 +420,14 @@
                     } catch (e) { console.error("Failed to load taxonomy", e); }
                 },
 
-                get deckPowers() {
-                    return this.deckLayout.map(id => this.allPowers.find(p => p.power_id === id)).filter(p => p !== undefined);
+                get deckInstances() {
+                    return this.deckLayout.map(item => {
+                        const power = this.allPowers.find(p => p.power_id === item.powerId);
+                        if (power) {
+                            return { ...power, instanceId: item.instanceId };
+                        }
+                        return null;
+                    }).filter(p => p !== null);
                 },
 
                 getCategoryClass(category) {
@@ -390,71 +435,67 @@
                     return `cat-${category.split('/')[0].replace(/\\s+/g, '')}`;
                 },
 
-                // --- Advanced Pointer Event Logic ---
-                handlePressStart(power, event) {
+                handlePressStart(instance, event) {
                     if (this.isEditing) return;
                     this.isLongPress = false;
 
-                    // Set a timer for 500ms. If it triggers, it's a Long Press.
                     this.pressTimer = setTimeout(() => {
                         this.isLongPress = true;
-                        this.openConfigDrawer(power);
+                        this.openConfigDrawer(instance);
                     }, 500);
                 },
 
-                handlePressEnd(power, event) {
+                handlePressEnd(instance, event) {
                     if (this.isEditing) return;
 
-                    // Clear the timer on mouse/finger up
                     if (this.pressTimer) {
                         clearTimeout(this.pressTimer);
                         this.pressTimer = null;
 
-                        // If it never flagged as a long press, execute as a quick press!
                         if (!this.isLongPress) {
-                            this.quickExecute(power);
+                            this.quickExecute(instance);
                         }
                     }
                 },
 
                 handlePressCancel(event) {
-                    // Triggers if mouse leaves element boundaries or touch finger drags away
                     if (this.pressTimer) {
                         clearTimeout(this.pressTimer);
                         this.pressTimer = null;
                     }
                 },
 
-                openConfigDrawer(power) {
-                    if (this.powerStatus[power.power_id] === 'running') return;
+                openConfigDrawer(instance) {
+                    if (this.powerStatus[instance.instanceId] === 'running') return;
 
-                    this.activePower = power;
-                    this.loadParamsForPower(power);
+                    this.activeInstance = instance;
+                    this.loadParamsForPower(instance);
                 },
 
-                quickExecute(power) {
-                    // Prevent running multiple overlapping times
-                    if (this.powerStatus[power.power_id] === 'running') {
-                         if(confirm(`Cancel ${power.name}?`)) {
-                             fetch(`/api/cancel_power`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ power_id: power.power_id }) });
-                             this.powerStatus[power.power_id] = 'idle';
+                quickExecute(instance) {
+                    if (this.powerStatus[instance.instanceId] === 'running') {
+                         if(confirm(`Cancel ${instance.name}?`)) {
+                             fetch(`/api/cancel_power`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ power_id: instance.power_id }) });
+                             this.powerStatus[instance.instanceId] = 'idle';
+                             if (this.runningQueue[instance.power_id]) {
+                                 this.runningQueue[instance.power_id] = this.runningQueue[instance.power_id].filter(id => id !== instance.instanceId);
+                             }
                          }
                          return;
                     }
 
-                    // Quietly configure params in the background and execute immediately
-                    this.activePower = power;
-                    this.loadParamsForPower(power);
+                    this.activeInstance = instance;
+                    this.loadParamsForPower(instance);
                     this.executePower();
                 },
 
-                loadParamsForPower(power) {
+                loadParamsForPower(instance) {
                     this.executionParams = {};
-                    const cacheRaw = localStorage.getItem('mced_widget_params_' + power.power_id);
+                    const cacheRaw = localStorage.getItem('mced_widget_params_' + instance.instanceId);
                     const cache = cacheRaw ? JSON.parse(cacheRaw) : {};
 
-                    if (power.parameters) {
-                        power.parameters.forEach(p => {
+                    if (instance.parameters) {
+                        instance.parameters.forEach(p => {
                             let valueToSet;
                             if (cache.hasOwnProperty(p.name)) {
                                 valueToSet = cache[p.name];
@@ -474,10 +515,9 @@
                 },
 
                 saveConfig() {
-                    // Saves the user's tweaked params to memory and safely closes drawer
-                    if (this.activePower) {
-                        localStorage.setItem('mced_widget_params_' + this.activePower.power_id, JSON.stringify(this.executionParams));
-                        this.activePower = null;
+                    if (this.activeInstance) {
+                        localStorage.setItem('mced_widget_params_' + this.activeInstance.instanceId, JSON.stringify(this.executionParams));
+                        this.activeInstance = null;
                     }
                 },
 
@@ -501,12 +541,16 @@
                 },
 
                 async executePower() {
-                    if (!this.activePower) return;
+                    if (!this.activeInstance) return;
 
-                    // Double-ensure parameters are locked into memory right before payload serialization
-                    localStorage.setItem('mced_widget_params_' + this.activePower.power_id, JSON.stringify(this.executionParams));
+                    localStorage.setItem('mced_widget_params_' + this.activeInstance.instanceId, JSON.stringify(this.executionParams));
 
-                    const payload = { power_id: this.activePower.power_id };
+                    // --- NEW: Attach the execution_id to the payload ---
+                    const payload = {
+                        power_id: this.activeInstance.power_id,
+                        execution_id: this.activeInstance.instanceId
+                    };
+
                     for (const [key, value] of Object.entries(this.executionParams)) {
                         if (value !== null && typeof value === 'object' && 'x' in value) {
                             payload[key] = value;
@@ -515,16 +559,29 @@
                         }
                     }
 
-                    this.powerStatus[this.activePower.power_id] = 'running';
-                    const executingPowerId = this.activePower.power_id; // Capture locally for the catch block
+                    this.powerStatus[this.activeInstance.instanceId] = 'running';
 
-                    this.activePower = null; // Instantly closes the UI layer if it was open
+                    // Add to fallback queue just in case backend isn't updated
+                    if (!this.runningQueue[this.activeInstance.power_id]) {
+                        this.runningQueue[this.activeInstance.power_id] = [];
+                    }
+                    this.runningQueue[this.activeInstance.power_id].push(this.activeInstance.instanceId);
+
+                    const executingInstanceId = this.activeInstance.instanceId;
+                    const executingPowerId = this.activeInstance.power_id;
+
+                    this.activeInstance = null;
 
                     try {
                         await fetch(`/api/execute_power`, {
                             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
                         });
-                    } catch (e) { this.powerStatus[executingPowerId] = 'error'; }
+                    } catch (e) {
+                        this.powerStatus[executingInstanceId] = 'error';
+                        if (this.runningQueue[executingPowerId]) {
+                            this.runningQueue[executingPowerId] = this.runningQueue[executingPowerId].filter(id => id !== executingInstanceId);
+                        }
+                    }
                 },
 
                 // --- SMART PICKER LOGIC ---
@@ -547,8 +604,8 @@
                     if (!this.pickerType || !this.taxonomy[this.pickerType]) return [];
                     let baseGroups = this.taxonomy[this.pickerType];
 
-                    if (this.activePower && this.activePower.parameters) {
-                        const paramDef = this.activePower.parameters.find(p => p.name === this.activeParamName);
+                    if (this.activeInstance && this.activeInstance.parameters) {
+                        const paramDef = this.activeInstance.parameters.find(p => p.name === this.activeParamName);
                         if (paramDef && paramDef.picker_source) {
                             const match = paramDef.picker_source.match(/^mc_(?:block|item|entity)_picker_(.+)$/);
                             if (match) {
@@ -605,16 +662,14 @@
 
                 // Springboard Utilities
                 addToDeck(powerId) {
-                    if (!this.deckLayout.includes(powerId)) { this.deckLayout.push(powerId); this.saveLayout(); }
+                    this.deckLayout.push({ instanceId: this.generateId(), powerId: powerId });
+                    this.saveLayout();
                     this.showLibrary = false;
                 },
-                removeFromDeck(powerId) {
-                    // Remove from deck layout array
-                    this.deckLayout = this.deckLayout.filter(id => id !== powerId);
+                removeFromDeck(instanceId) {
+                    this.deckLayout = this.deckLayout.filter(item => item.instanceId !== instanceId);
                     this.saveLayout();
-
-                    // Clean up localStorage to prevent widget parameter caches from bloating browser memory over time
-                    localStorage.removeItem('mced_widget_params_' + powerId);
+                    localStorage.removeItem('mced_widget_params_' + instanceId);
                 },
                 saveLayout() { localStorage.setItem('mced_deck_layout', JSON.stringify(this.deckLayout)); }
             }));
