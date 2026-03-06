@@ -1,0 +1,17 @@
+execute as @e[scores={gz-a4=80}] run function gamerz_riot:menu/skip-to-phase-00
+execute as @e[scores={gz-a4=81}] run function gamerz_riot:menu/skip-to-phase-01
+execute as @e[scores={gz-a4=82}] run function gamerz_riot:menu/skip-to-phase-02
+execute as @e[scores={gz-a4=83}] run function gamerz_riot:menu/skip-to-phase-03
+execute as @e[scores={gz-a4=84}] run function gamerz_riot:menu/skip-to-phase-04
+execute as @e[scores={gz-a4=85}] run function gamerz_riot:menu/skip-to-phase-05
+execute as @e[scores={gz-a4=86}] run function gamerz_riot:menu/skip-to-phase-06
+execute as @e[scores={gz-a4=87}] run function gamerz_riot:menu/skip-to-phase-07
+execute as @e[scores={gz-a4=88}] run function gamerz_riot:menu/skip-to-phase-08
+execute as @e[scores={gz-a4=89}] run function gamerz_riot:menu/skip-to-phase-09
+execute as @e[scores={gz-a4=90}] run function gamerz_riot:menu/skip-to-phase-10
+execute as @e[scores={gz-a4=91}] run function gamerz_riot:menu/skip-to-phase-11
+execute as @e[scores={gz-a4=92}] run function gamerz_riot:menu/skip-to-phase-12
+execute as @e[scores={gz-a4=93}] run function gamerz_riot:menu/skip-to-phase-13
+execute as @e[scores={gz-a4=94}] run function gamerz_riot:menu/skip-to-phase-14
+execute as @e[scores={gz-a4=95}] run function gamerz_riot:menu/skip-to-phase-15
+execute as @e[scores={gz-a4=96}] run function gamerz_riot:menu/skip-to-phase-16

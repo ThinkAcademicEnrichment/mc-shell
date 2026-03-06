@@ -1,0 +1,1 @@
+execute if entity @s run tellraw @a {"text":"\n §a§lError!§r§c\n\n §lYou§c may be playing in the §9§lWrong Minecraft version§r§c for this map. Change your §3§lMinecraft version§r§c or switch to the appropriate §9§lOneBlock Map§r§c for your §a§lMinecraft version!"}

@@ -1,0 +1,12 @@
+fillbiome 15 -64 15 -14 -40 -14 minecraft:dripstone_caves
+fillbiome 15 -41 15 -14 0 -14 minecraft:dripstone_caves
+fillbiome 15 1 15 -14 30 -14 minecraft:dripstone_caves
+fillbiome 15 31 15 -14 60 -14 minecraft:dripstone_caves
+fillbiome 15 61 15 -14 90 -14 minecraft:dripstone_caves
+fillbiome 15 91 15 -14 120 -14 minecraft:dripstone_caves
+fillbiome 15 121 15 -14 150 -14 minecraft:dripstone_caves
+fillbiome 15 151 15 -14 180 -14 minecraft:dripstone_caves
+fillbiome 15 181 15 -14 210 -14 minecraft:dripstone_caves
+fillbiome 15 211 15 -14 240 -14 minecraft:dripstone_caves
+fillbiome 15 241 15 -14 270 -14 minecraft:dripstone_caves
+fillbiome 15 271 15 -14 300 -14 minecraft:dripstone_caves
