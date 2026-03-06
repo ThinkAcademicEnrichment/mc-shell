@@ -207,6 +207,272 @@
       ]
     },
     {
+      "name": "Woods And Logs",
+      "items": [
+        {
+          "name": "Wood Log",
+          "template": "{}_LOG",
+          "variants": [
+            "Acacia",
+            "Birch",
+            "Cherry",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Wood",
+          "template": "{}_WOOD",
+          "variants": [
+            "Acacia",
+            "Birch",
+            "Cherry",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Planks",
+          "template": "{}_PLANKS",
+          "variants": [
+            "Acacia",
+            "Bamboo",
+            "Birch",
+            "Cherry",
+            "Crimson",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce",
+            "Warped"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Sapling",
+          "template": "{}_SAPLING",
+          "variants": [
+            "Acacia",
+            "Bamboo",
+            "Birch",
+            "Cherry",
+            "Dark Oak",
+            "Jungle",
+            "Oak",
+            "Pale Oak",
+            "Spruce"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Leaves",
+          "template": "{}_LEAVES",
+          "variants": [
+            "Acacia",
+            "Birch",
+            "Cherry",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce"
+          ],
+          "currentVariant": "Acacia"
+        }
+      ]
+    },
+    {
+      "name": "Colored Blocks",
+      "items": [
+        {
+          "name": "Color Wool",
+          "template": "{}_WOOL",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
+        },
+        {
+          "name": "Color Carpet",
+          "template": "{}_CARPET",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
+        },
+        {
+          "name": "Terracotta",
+          "value": "TERRACOTTA"
+        },
+        {
+          "name": "Color Glazed Terracotta",
+          "template": "{}_GLAZED_TERRACOTTA",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
+        },
+        {
+          "name": "Color Concrete",
+          "template": "{}_CONCRETE",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
+        },
+        {
+          "name": "Color Concrete Powder",
+          "template": "{}_CONCRETE_POWDER",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
+        },
+        {
+          "name": "Color Bed",
+          "template": "{}_BED",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
+        },
+        {
+          "name": "Color Banner",
+          "template": "{}_BANNER",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
+        },
+        {
+          "name": "Shulker Box",
+          "value": "SHULKER_BOX"
+        },
+        {
+          "name": "Candle",
+          "value": "CANDLE"
+        }
+      ]
+    },
+    {
       "name": "Stone Bricks",
       "items": [
         {
@@ -309,6 +575,52 @@
         {
           "name": "Tinted Glass",
           "value": "TINTED_GLASS"
+        },
+        {
+          "name": "Color Stained Glass",
+          "template": "{}_STAINED_GLASS",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
+        },
+        {
+          "name": "Color Stained Glass Pane",
+          "template": "{}_STAINED_GLASS_PANE",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
         }
       ]
     },
@@ -515,10 +827,6 @@
       "name": "Nature",
       "items": [
         {
-          "name": "Azalea Leaves",
-          "value": "AZALEA_LEAVES"
-        },
-        {
           "name": "Moss Block",
           "value": "MOSS_BLOCK"
         },
@@ -537,6 +845,22 @@
         {
           "name": "Weeping Vines",
           "value": "WEEPING_VINES"
+        },
+        {
+          "name": "Lily Pad",
+          "value": "LILY_PAD"
+        },
+        {
+          "name": "Sugar Cane",
+          "value": "SUGAR_CANE"
+        },
+        {
+          "name": "Bamboo",
+          "value": "BAMBOO"
+        },
+        {
+          "name": "Cactus",
+          "value": "CACTUS"
         }
       ]
     },
@@ -656,6 +980,136 @@
       ]
     },
     {
+      "name": "Tools",
+      "items": [
+        {
+          "name": "Armor Tier Sword",
+          "template": "{}_SWORD",
+          "variants": [
+            "Diamond",
+            "Golden",
+            "Iron",
+            "Netherite"
+          ],
+          "currentVariant": "Diamond"
+        },
+        {
+          "name": "Armor Tier Pickaxe",
+          "template": "{}_PICKAXE",
+          "variants": [
+            "Diamond",
+            "Golden",
+            "Iron",
+            "Netherite"
+          ],
+          "currentVariant": "Diamond"
+        },
+        {
+          "name": "Armor Tier Axe",
+          "template": "{}_AXE",
+          "variants": [
+            "Diamond",
+            "Golden",
+            "Iron",
+            "Netherite"
+          ],
+          "currentVariant": "Diamond"
+        },
+        {
+          "name": "Armor Tier Shovel",
+          "template": "{}_SHOVEL",
+          "variants": [
+            "Diamond",
+            "Golden",
+            "Iron",
+            "Netherite"
+          ],
+          "currentVariant": "Diamond"
+        },
+        {
+          "name": "Armor Tier Hoe",
+          "template": "{}_HOE",
+          "variants": [
+            "Diamond",
+            "Golden",
+            "Iron",
+            "Netherite"
+          ],
+          "currentVariant": "Diamond"
+        }
+      ]
+    },
+    {
+      "name": "Armour",
+      "items": [
+        {
+          "name": "Armor Tier Helmet",
+          "template": "{}_HELMET",
+          "variants": [
+            "Chainmail",
+            "Diamond",
+            "Golden",
+            "Iron",
+            "Leather",
+            "Netherite",
+            "Turtle"
+          ],
+          "currentVariant": "Chainmail"
+        },
+        {
+          "name": "Armor Tier Chestplate",
+          "template": "{}_CHESTPLATE",
+          "variants": [
+            "Chainmail",
+            "Diamond",
+            "Golden",
+            "Iron",
+            "Leather",
+            "Netherite"
+          ],
+          "currentVariant": "Chainmail"
+        },
+        {
+          "name": "Armor Tier Leggings",
+          "template": "{}_LEGGINGS",
+          "variants": [
+            "Chainmail",
+            "Diamond",
+            "Golden",
+            "Iron",
+            "Leather",
+            "Netherite"
+          ],
+          "currentVariant": "Chainmail"
+        },
+        {
+          "name": "Armor Tier Boots",
+          "template": "{}_BOOTS",
+          "variants": [
+            "Chainmail",
+            "Diamond",
+            "Golden",
+            "Iron",
+            "Leather",
+            "Netherite"
+          ],
+          "currentVariant": "Chainmail"
+        },
+        {
+          "name": "Armor Tier Horse Armor",
+          "template": "{}_HORSE_ARMOR",
+          "variants": [
+            "Diamond",
+            "Golden",
+            "Iron",
+            "Leather",
+            "Netherite"
+          ],
+          "currentVariant": "Diamond"
+        }
+      ]
+    },
+    {
       "name": "Other Blocks",
       "items": [
         {
@@ -711,6 +1165,28 @@
           "value": "ARMADILLO_SPAWN_EGG"
         },
         {
+          "name": "Armor Tier Nautilus Armor",
+          "template": "{}_NAUTILUS_ARMOR",
+          "variants": [
+            "Diamond",
+            "Golden",
+            "Iron",
+            "Netherite"
+          ],
+          "currentVariant": "Diamond"
+        },
+        {
+          "name": "Armor Tier Spear",
+          "template": "{}_SPEAR",
+          "variants": [
+            "Diamond",
+            "Golden",
+            "Iron",
+            "Netherite"
+          ],
+          "currentVariant": "Diamond"
+        },
+        {
           "name": "Arms Up Pottery Sherd",
           "value": "ARMS_UP_POTTERY_SHERD"
         },
@@ -739,12 +1215,12 @@
           "value": "AZALEA"
         },
         {
-          "name": "Baked Potato",
-          "value": "BAKED_POTATO"
+          "name": "Azalea Leaves",
+          "value": "AZALEA_LEAVES"
         },
         {
-          "name": "Bamboo",
-          "value": "BAMBOO"
+          "name": "Baked Potato",
+          "value": "BAKED_POTATO"
         },
         {
           "name": "Bamboo Block",
@@ -783,6 +1259,14 @@
           "value": "BAT_SPAWN_EGG"
         },
         {
+          "name": "Bee Nest",
+          "value": "BEE_NEST"
+        },
+        {
+          "name": "Bee Spawn Egg",
+          "value": "BEE_SPAWN_EGG"
+        },
+        {
           "name": "Beef",
           "value": "BEEF"
         },
@@ -795,10 +1279,6 @@
           "value": "BEETROOT"
         },
         {
-          "name": "Beetroots",
-          "value": "BEETROOTS"
-        },
-        {
           "name": "Beetroot Seeds",
           "value": "BEETROOT_SEEDS"
         },
@@ -807,12 +1287,8 @@
           "value": "BEETROOT_SOUP"
         },
         {
-          "name": "Bee Nest",
-          "value": "BEE_NEST"
-        },
-        {
-          "name": "Bee Spawn Egg",
-          "value": "BEE_SPAWN_EGG"
+          "name": "Beetroots",
+          "value": "BEETROOTS"
         },
         {
           "name": "Bell",
@@ -1011,10 +1487,6 @@
           "value": "BUSH"
         },
         {
-          "name": "Cactus",
-          "value": "CACTUS"
-        },
-        {
           "name": "Cactus Flower",
           "value": "CACTUS_FLOWER"
         },
@@ -1039,10 +1511,6 @@
           "value": "CAMPFIRE"
         },
         {
-          "name": "Candle",
-          "value": "CANDLE"
-        },
-        {
           "name": "Candle Cake",
           "value": "CANDLE_CAKE"
         },
@@ -1051,12 +1519,12 @@
           "value": "CARROT"
         },
         {
-          "name": "Carrots",
-          "value": "CARROTS"
-        },
-        {
           "name": "Carrot On A Stick",
           "value": "CARROT_ON_A_STICK"
+        },
+        {
+          "name": "Carrots",
+          "value": "CARROTS"
         },
         {
           "name": "Cartography Table",
@@ -1221,6 +1689,201 @@
         {
           "name": "Cod Spawn Egg",
           "value": "COD_SPAWN_EGG"
+        },
+        {
+          "name": "Color Bundle",
+          "template": "{}_BUNDLE",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
+        },
+        {
+          "name": "Color Candle",
+          "template": "{}_CANDLE",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
+        },
+        {
+          "name": "Color Candle Cake",
+          "template": "{}_CANDLE_CAKE",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
+        },
+        {
+          "name": "Color Dye",
+          "template": "{}_DYE",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
+        },
+        {
+          "name": "Color Harness",
+          "template": "{}_HARNESS",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
+        },
+        {
+          "name": "Color Shulker Box",
+          "template": "{}_SHULKER_BOX",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
+        },
+        {
+          "name": "Color Terracotta",
+          "template": "{}_TERRACOTTA",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
+        },
+        {
+          "name": "Color Tulip",
+          "template": "{}_TULIP",
+          "variants": [
+            "Orange",
+            "Pink",
+            "Red",
+            "White"
+          ],
+          "currentVariant": "Orange"
+        },
+        {
+          "name": "Color Wall Banner",
+          "template": "{}_WALL_BANNER",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
         },
         {
           "name": "Command Block",
@@ -1687,26 +2350,6 @@
           "value": "ENCHANTING_TABLE"
         },
         {
-          "name": "Enderman Spawn Egg",
-          "value": "ENDERMAN_SPAWN_EGG"
-        },
-        {
-          "name": "Endermite Spawn Egg",
-          "value": "ENDERMITE_SPAWN_EGG"
-        },
-        {
-          "name": "Ender Dragon Spawn Egg",
-          "value": "ENDER_DRAGON_SPAWN_EGG"
-        },
-        {
-          "name": "Ender Eye",
-          "value": "ENDER_EYE"
-        },
-        {
-          "name": "Ender Pearl",
-          "value": "ENDER_PEARL"
-        },
-        {
           "name": "End Crystal",
           "value": "END_CRYSTAL"
         },
@@ -1737,6 +2380,30 @@
         {
           "name": "End Stone Brick Wall",
           "value": "END_STONE_BRICK_WALL"
+        },
+        {
+          "name": "Ender Dragon Spawn Egg",
+          "value": "ENDER_DRAGON_SPAWN_EGG"
+        },
+        {
+          "name": "Ender Eye",
+          "value": "ENDER_EYE"
+        },
+        {
+          "name": "Ender Pearl",
+          "value": "ENDER_PEARL"
+        },
+        {
+          "name": "Enderman Spawn Egg",
+          "value": "ENDERMAN_SPAWN_EGG"
+        },
+        {
+          "name": "Endermite Spawn Egg",
+          "value": "ENDERMITE_SPAWN_EGG"
+        },
+        {
+          "name": "Enum Constant",
+          "value": "Enum Constant"
         },
         {
           "name": "Evoker Spawn Egg",
@@ -1811,10 +2478,6 @@
           "value": "EYE_ARMOR_TRIM_SMITHING_TEMPLATE"
         },
         {
-          "name": "Enum Constant",
-          "value": "Enum Constant"
-        },
-        {
           "name": "Farmland",
           "value": "FARMLAND"
         },
@@ -1843,18 +2506,6 @@
           "value": "FIRE"
         },
         {
-          "name": "Firefly Bush",
-          "value": "FIREFLY_BUSH"
-        },
-        {
-          "name": "Firework Rocket",
-          "value": "FIREWORK_ROCKET"
-        },
-        {
-          "name": "Firework Star",
-          "value": "FIREWORK_STAR"
-        },
-        {
           "name": "Fire Charge",
           "value": "FIRE_CHARGE"
         },
@@ -1875,6 +2526,18 @@
           "value": "FIRE_CORAL_WALL_FAN"
         },
         {
+          "name": "Firefly Bush",
+          "value": "FIREFLY_BUSH"
+        },
+        {
+          "name": "Firework Rocket",
+          "value": "FIREWORK_ROCKET"
+        },
+        {
+          "name": "Firework Star",
+          "value": "FIREWORK_STAR"
+        },
+        {
           "name": "Fishing Rod",
           "value": "FISHING_ROD"
         },
@@ -1891,22 +2554,6 @@
           "value": "FLINT_AND_STEEL"
         },
         {
-          "name": "Flowering Azalea",
-          "value": "FLOWERING_AZALEA"
-        },
-        {
-          "name": "Flowering Azalea Leaves",
-          "value": "FLOWERING_AZALEA_LEAVES"
-        },
-        {
-          "name": "Flower Banner Pattern",
-          "value": "FLOWER_BANNER_PATTERN"
-        },
-        {
-          "name": "Flower Pot",
-          "value": "FLOWER_POT"
-        },
-        {
           "name": "Flow Armor Trim Smithing Template",
           "value": "FLOW_ARMOR_TRIM_SMITHING_TEMPLATE"
         },
@@ -1917,6 +2564,22 @@
         {
           "name": "Flow Pottery Sherd",
           "value": "FLOW_POTTERY_SHERD"
+        },
+        {
+          "name": "Flower Banner Pattern",
+          "value": "FLOWER_BANNER_PATTERN"
+        },
+        {
+          "name": "Flower Pot",
+          "value": "FLOWER_POT"
+        },
+        {
+          "name": "Flowering Azalea",
+          "value": "FLOWERING_AZALEA"
+        },
+        {
+          "name": "Flowering Azalea Leaves",
+          "value": "FLOWERING_AZALEA_LEAVES"
         },
         {
           "name": "Fox Spawn Egg",
@@ -1959,10 +2622,6 @@
           "value": "GLOBE_BANNER_PATTERN"
         },
         {
-          "name": "Glowstone Dust",
-          "value": "GLOWSTONE_DUST"
-        },
-        {
           "name": "Glow Berries",
           "value": "GLOW_BERRIES"
         },
@@ -1983,20 +2642,16 @@
           "value": "GLOW_SQUID_SPAWN_EGG"
         },
         {
+          "name": "Glowstone Dust",
+          "value": "GLOWSTONE_DUST"
+        },
+        {
           "name": "Goat Horn",
           "value": "GOAT_HORN"
         },
         {
           "name": "Goat Spawn Egg",
           "value": "GOAT_SPAWN_EGG"
-        },
-        {
-          "name": "Golden Apple",
-          "value": "GOLDEN_APPLE"
-        },
-        {
-          "name": "Golden Carrot",
-          "value": "GOLDEN_CARROT"
         },
         {
           "name": "Gold Block",
@@ -2009,6 +2664,14 @@
         {
           "name": "Gold Nugget",
           "value": "GOLD_NUGGET"
+        },
+        {
+          "name": "Golden Apple",
+          "value": "GOLDEN_APPLE"
+        },
+        {
+          "name": "Golden Carrot",
+          "value": "GOLDEN_CARROT"
         },
         {
           "name": "Granite Slab",
@@ -2055,16 +2718,16 @@
           "value": "HAY_BLOCK"
         },
         {
-          "name": "Heartbreak Pottery Sherd",
-          "value": "HEARTBREAK_POTTERY_SHERD"
-        },
-        {
           "name": "Heart Of The Sea",
           "value": "HEART_OF_THE_SEA"
         },
         {
           "name": "Heart Pottery Sherd",
           "value": "HEART_POTTERY_SHERD"
+        },
+        {
+          "name": "Heartbreak Pottery Sherd",
+          "value": "HEARTBREAK_POTTERY_SHERD"
         },
         {
           "name": "Heavy Core",
@@ -2079,16 +2742,16 @@
           "value": "HOGLIN_SPAWN_EGG"
         },
         {
+          "name": "Honey Bottle",
+          "value": "HONEY_BOTTLE"
+        },
+        {
           "name": "Honeycomb",
           "value": "HONEYCOMB"
         },
         {
           "name": "Honeycomb Block",
           "value": "HONEYCOMB_BLOCK"
-        },
-        {
-          "name": "Honey Bottle",
-          "value": "HONEY_BOTTLE"
         },
         {
           "name": "Horn Coral",
@@ -2255,16 +2918,12 @@
           "value": "LIGHT"
         },
         {
-          "name": "Lightning Rod",
-          "value": "LIGHTNING_ROD"
-        },
-        {
           "name": "Light Weighted Pressure Plate",
           "value": "LIGHT_WEIGHTED_PRESSURE_PLATE"
         },
         {
-          "name": "Lily Pad",
-          "value": "LILY_PAD"
+          "name": "Lightning Rod",
+          "value": "LIGHTNING_ROD"
         },
         {
           "name": "Lingering Potion",
@@ -2343,6 +3002,10 @@
           "value": "MOOSHROOM_SPAWN_EGG"
         },
         {
+          "name": "Moss Carpet",
+          "value": "MOSS_CARPET"
+        },
+        {
           "name": "Mossy Cobblestone",
           "value": "MOSSY_COBBLESTONE"
         },
@@ -2371,10 +3034,6 @@
           "value": "MOSSY_STONE_BRICK_WALL"
         },
         {
-          "name": "Moss Carpet",
-          "value": "MOSS_CARPET"
-        },
-        {
           "name": "Mourner Pottery Sherd",
           "value": "MOURNER_POTTERY_SHERD"
         },
@@ -2387,10 +3046,6 @@
           "value": "MUD"
         },
         {
-          "name": "Muddy Mangrove Roots",
-          "value": "MUDDY_MANGROVE_ROOTS"
-        },
-        {
           "name": "Mud Brick Slab",
           "value": "MUD_BRICK_SLAB"
         },
@@ -2401,6 +3056,10 @@
         {
           "name": "Mud Brick Wall",
           "value": "MUD_BRICK_WALL"
+        },
+        {
+          "name": "Muddy Mangrove Roots",
+          "value": "MUDDY_MANGROVE_ROOTS"
         },
         {
           "name": "Mule Spawn Egg",
@@ -2515,26 +3174,6 @@
           "value": "NAUTILUS_SPAWN_EGG"
         },
         {
-          "name": "Netherite Block",
-          "value": "NETHERITE_BLOCK"
-        },
-        {
-          "name": "Netherite Ingot",
-          "value": "NETHERITE_INGOT"
-        },
-        {
-          "name": "Netherite Scrap",
-          "value": "NETHERITE_SCRAP"
-        },
-        {
-          "name": "Netherite Upgrade Smithing Template",
-          "value": "NETHERITE_UPGRADE_SMITHING_TEMPLATE"
-        },
-        {
-          "name": "Netherrack",
-          "value": "NETHERRACK"
-        },
-        {
           "name": "Nether Brick",
           "value": "NETHER_BRICK"
         },
@@ -2573,6 +3212,26 @@
         {
           "name": "Nether Wart Block",
           "value": "NETHER_WART_BLOCK"
+        },
+        {
+          "name": "Netherite Block",
+          "value": "NETHERITE_BLOCK"
+        },
+        {
+          "name": "Netherite Ingot",
+          "value": "NETHERITE_INGOT"
+        },
+        {
+          "name": "Netherite Scrap",
+          "value": "NETHERITE_SCRAP"
+        },
+        {
+          "name": "Netherite Upgrade Smithing Template",
+          "value": "NETHERITE_UPGRADE_SMITHING_TEMPLATE"
+        },
+        {
+          "name": "Netherrack",
+          "value": "NETHERRACK"
         },
         {
           "name": "Ocelot Spawn Egg",
@@ -2695,6 +3354,10 @@
           "value": "PHANTOM_SPAWN_EGG"
         },
         {
+          "name": "Pig Spawn Egg",
+          "value": "PIG_SPAWN_EGG"
+        },
+        {
           "name": "Piglin Banner Pattern",
           "value": "PIGLIN_BANNER_PATTERN"
         },
@@ -2713,10 +3376,6 @@
         {
           "name": "Piglin Wall Head",
           "value": "PIGLIN_WALL_HEAD"
-        },
-        {
-          "name": "Pig Spawn Egg",
-          "value": "PIG_SPAWN_EGG"
         },
         {
           "name": "Pillager Spawn Egg",
@@ -3059,16 +3718,16 @@
           "value": "PRISMARINE"
         },
         {
-          "name": "Prismarine Bricks",
-          "value": "PRISMARINE_BRICKS"
-        },
-        {
           "name": "Prismarine Brick Slab",
           "value": "PRISMARINE_BRICK_SLAB"
         },
         {
           "name": "Prismarine Brick Stairs",
           "value": "PRISMARINE_BRICK_STAIRS"
+        },
+        {
+          "name": "Prismarine Bricks",
+          "value": "PRISMARINE_BRICKS"
         },
         {
           "name": "Prismarine Crystals",
@@ -3215,14 +3874,6 @@
           "value": "RECOVERY_COMPASS"
         },
         {
-          "name": "Redstone",
-          "value": "REDSTONE"
-        },
-        {
-          "name": "Redstone Wall Torch",
-          "value": "REDSTONE_WALL_TORCH"
-        },
-        {
           "name": "Red Mushroom",
           "value": "RED_MUSHROOM"
         },
@@ -3259,6 +3910,14 @@
           "value": "RED_SANDSTONE_WALL"
         },
         {
+          "name": "Redstone",
+          "value": "REDSTONE"
+        },
+        {
+          "name": "Redstone Wall Torch",
+          "value": "REDSTONE_WALL_TORCH"
+        },
+        {
           "name": "Reinforced Deepslate",
           "value": "REINFORCED_DEEPSLATE"
         },
@@ -3275,10 +3934,6 @@
           "value": "RESIN_BRICK"
         },
         {
-          "name": "Resin Bricks",
-          "value": "RESIN_BRICKS"
-        },
-        {
           "name": "Resin Brick Slab",
           "value": "RESIN_BRICK_SLAB"
         },
@@ -3289,6 +3944,10 @@
         {
           "name": "Resin Brick Wall",
           "value": "RESIN_BRICK_WALL"
+        },
+        {
+          "name": "Resin Bricks",
+          "value": "RESIN_BRICKS"
         },
         {
           "name": "Resin Clump",
@@ -3363,12 +4022,12 @@
           "value": "SCULK_VEIN"
         },
         {
-          "name": "Seagrass",
-          "value": "SEAGRASS"
-        },
-        {
           "name": "Sea Pickle",
           "value": "SEA_PICKLE"
+        },
+        {
+          "name": "Seagrass",
+          "value": "SEAGRASS"
         },
         {
           "name": "Sentry Armor Trim Smithing Template",
@@ -3405,10 +4064,6 @@
         {
           "name": "Short Grass",
           "value": "SHORT_GRASS"
-        },
-        {
-          "name": "Shulker Box",
-          "value": "SHULKER_BOX"
         },
         {
           "name": "Shulker Shell",
@@ -3535,12 +4190,12 @@
           "value": "SNOUT_ARMOR_TRIM_SMITHING_TEMPLATE"
         },
         {
-          "name": "Snowball",
-          "value": "SNOWBALL"
-        },
-        {
           "name": "Snow Golem Spawn Egg",
           "value": "SNOW_GOLEM_SPAWN_EGG"
+        },
+        {
+          "name": "Snowball",
+          "value": "SNOWBALL"
         },
         {
           "name": "Soul Campfire",
@@ -3603,10 +4258,6 @@
           "value": "STICK"
         },
         {
-          "name": "Stonecutter",
-          "value": "STONECUTTER"
-        },
-        {
           "name": "Stone Axe",
           "value": "STONE_AXE"
         },
@@ -3657,6 +4308,10 @@
         {
           "name": "Stone Sword",
           "value": "STONE_SWORD"
+        },
+        {
+          "name": "Stonecutter",
+          "value": "STONECUTTER"
         },
         {
           "name": "Stray Spawn Egg",
@@ -3775,10 +4430,6 @@
           "value": "SUGAR"
         },
         {
-          "name": "Sugar Cane",
-          "value": "SUGAR_CANE"
-        },
-        {
           "name": "Suspicious Gravel",
           "value": "SUSPICIOUS_GRAVEL"
         },
@@ -3817,10 +4468,6 @@
         {
           "name": "Tall Seagrass",
           "value": "TALL_SEAGRASS"
-        },
-        {
-          "name": "Terracotta",
-          "value": "TERRACOTTA"
         },
         {
           "name": "Test Block",
@@ -3903,10 +4550,6 @@
           "value": "TUBE_CORAL_WALL_FAN"
         },
         {
-          "name": "Tuff Bricks",
-          "value": "TUFF_BRICKS"
-        },
-        {
           "name": "Tuff Brick Slab",
           "value": "TUFF_BRICK_SLAB"
         },
@@ -3917,6 +4560,10 @@
         {
           "name": "Tuff Brick Wall",
           "value": "TUFF_BRICK_WALL"
+        },
+        {
+          "name": "Tuff Bricks",
+          "value": "TUFF_BRICKS"
         },
         {
           "name": "Tuff Slab",
@@ -3979,12 +4626,12 @@
           "value": "WANDERING_TRADER_SPAWN_EGG"
         },
         {
-          "name": "Warden Spawn Egg",
-          "value": "WARDEN_SPAWN_EGG"
-        },
-        {
           "name": "Ward Armor Trim Smithing Template",
           "value": "WARD_ARMOR_TRIM_SMITHING_TEMPLATE"
+        },
+        {
+          "name": "Warden Spawn Egg",
+          "value": "WARDEN_SPAWN_EGG"
         },
         {
           "name": "Warped Fungus",
@@ -4339,12 +4986,12 @@
           "value": "WHEAT_SEEDS"
         },
         {
-          "name": "Wildflowers",
-          "value": "WILDFLOWERS"
-        },
-        {
           "name": "Wild Armor Trim Smithing Template",
           "value": "WILD_ARMOR_TRIM_SMITHING_TEMPLATE"
+        },
+        {
+          "name": "Wildflowers",
+          "value": "WILDFLOWERS"
         },
         {
           "name": "Wind Charge",
@@ -4377,6 +5024,253 @@
         {
           "name": "Wolf Spawn Egg",
           "value": "WOLF_SPAWN_EGG"
+        },
+        {
+          "name": "Wood Button",
+          "template": "{}_BUTTON",
+          "variants": [
+            "Acacia",
+            "Bamboo",
+            "Birch",
+            "Cherry",
+            "Crimson",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce",
+            "Warped"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Door",
+          "template": "{}_DOOR",
+          "variants": [
+            "Acacia",
+            "Bamboo",
+            "Birch",
+            "Cherry",
+            "Crimson",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce",
+            "Warped"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Fence",
+          "template": "{}_FENCE",
+          "variants": [
+            "Acacia",
+            "Bamboo",
+            "Birch",
+            "Cherry",
+            "Crimson",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce",
+            "Warped"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Fence Gate",
+          "template": "{}_FENCE_GATE",
+          "variants": [
+            "Acacia",
+            "Bamboo",
+            "Birch",
+            "Cherry",
+            "Crimson",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce",
+            "Warped"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Hanging Sign",
+          "template": "{}_HANGING_SIGN",
+          "variants": [
+            "Acacia",
+            "Bamboo",
+            "Birch",
+            "Cherry",
+            "Crimson",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce",
+            "Warped"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Pressure Plate",
+          "template": "{}_PRESSURE_PLATE",
+          "variants": [
+            "Acacia",
+            "Bamboo",
+            "Birch",
+            "Cherry",
+            "Crimson",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce",
+            "Warped"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Shelf",
+          "template": "{}_SHELF",
+          "variants": [
+            "Acacia",
+            "Bamboo",
+            "Birch",
+            "Cherry",
+            "Crimson",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce",
+            "Warped"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Sign",
+          "template": "{}_SIGN",
+          "variants": [
+            "Acacia",
+            "Bamboo",
+            "Birch",
+            "Cherry",
+            "Crimson",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce",
+            "Warped"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Slab",
+          "template": "{}_SLAB",
+          "variants": [
+            "Acacia",
+            "Bamboo",
+            "Birch",
+            "Cherry",
+            "Crimson",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce",
+            "Warped"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Stairs",
+          "template": "{}_STAIRS",
+          "variants": [
+            "Acacia",
+            "Bamboo",
+            "Birch",
+            "Cherry",
+            "Crimson",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce",
+            "Warped"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Trapdoor",
+          "template": "{}_TRAPDOOR",
+          "variants": [
+            "Acacia",
+            "Bamboo",
+            "Birch",
+            "Cherry",
+            "Crimson",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce",
+            "Warped"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Wall Hanging Sign",
+          "template": "{}_WALL_HANGING_SIGN",
+          "variants": [
+            "Acacia",
+            "Bamboo",
+            "Birch",
+            "Cherry",
+            "Crimson",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce",
+            "Warped"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Wall Sign",
+          "template": "{}_WALL_SIGN",
+          "variants": [
+            "Acacia",
+            "Bamboo",
+            "Birch",
+            "Cherry",
+            "Crimson",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce",
+            "Warped"
+          ],
+          "currentVariant": "Acacia"
         },
         {
           "name": "Wooden Axe",
@@ -4653,6 +5547,272 @@
       ]
     },
     {
+      "name": "Woods And Logs",
+      "items": [
+        {
+          "name": "Wood Log",
+          "template": "{}_LOG",
+          "variants": [
+            "Acacia",
+            "Birch",
+            "Cherry",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Wood",
+          "template": "{}_WOOD",
+          "variants": [
+            "Acacia",
+            "Birch",
+            "Cherry",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Planks",
+          "template": "{}_PLANKS",
+          "variants": [
+            "Acacia",
+            "Bamboo",
+            "Birch",
+            "Cherry",
+            "Crimson",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce",
+            "Warped"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Sapling",
+          "template": "{}_SAPLING",
+          "variants": [
+            "Acacia",
+            "Bamboo",
+            "Birch",
+            "Cherry",
+            "Dark Oak",
+            "Jungle",
+            "Oak",
+            "Pale Oak",
+            "Spruce"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Leaves",
+          "template": "{}_LEAVES",
+          "variants": [
+            "Acacia",
+            "Birch",
+            "Cherry",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce"
+          ],
+          "currentVariant": "Acacia"
+        }
+      ]
+    },
+    {
+      "name": "Colored Blocks",
+      "items": [
+        {
+          "name": "Color Wool",
+          "template": "{}_WOOL",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
+        },
+        {
+          "name": "Color Carpet",
+          "template": "{}_CARPET",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
+        },
+        {
+          "name": "Terracotta",
+          "value": "TERRACOTTA"
+        },
+        {
+          "name": "Color Glazed Terracotta",
+          "template": "{}_GLAZED_TERRACOTTA",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
+        },
+        {
+          "name": "Color Concrete",
+          "template": "{}_CONCRETE",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
+        },
+        {
+          "name": "Color Concrete Powder",
+          "template": "{}_CONCRETE_POWDER",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
+        },
+        {
+          "name": "Color Bed",
+          "template": "{}_BED",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
+        },
+        {
+          "name": "Color Banner",
+          "template": "{}_BANNER",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
+        },
+        {
+          "name": "Shulker Box",
+          "value": "SHULKER_BOX"
+        },
+        {
+          "name": "Candle",
+          "value": "CANDLE"
+        }
+      ]
+    },
+    {
       "name": "Stone Bricks",
       "items": [
         {
@@ -4755,6 +5915,52 @@
         {
           "name": "Tinted Glass",
           "value": "TINTED_GLASS"
+        },
+        {
+          "name": "Color Stained Glass",
+          "template": "{}_STAINED_GLASS",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
+        },
+        {
+          "name": "Color Stained Glass Pane",
+          "template": "{}_STAINED_GLASS_PANE",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
         }
       ]
     },
@@ -4961,10 +6167,6 @@
       "name": "Nature",
       "items": [
         {
-          "name": "Azalea Leaves",
-          "value": "AZALEA_LEAVES"
-        },
-        {
           "name": "Moss Block",
           "value": "MOSS_BLOCK"
         },
@@ -4983,6 +6185,22 @@
         {
           "name": "Weeping Vines",
           "value": "WEEPING_VINES"
+        },
+        {
+          "name": "Lily Pad",
+          "value": "LILY_PAD"
+        },
+        {
+          "name": "Sugar Cane",
+          "value": "SUGAR_CANE"
+        },
+        {
+          "name": "Bamboo",
+          "value": "BAMBOO"
+        },
+        {
+          "name": "Cactus",
+          "value": "CACTUS"
         }
       ]
     },
@@ -5102,6 +6320,136 @@
       ]
     },
     {
+      "name": "Tools",
+      "items": [
+        {
+          "name": "Armor Tier Sword",
+          "template": "{}_SWORD",
+          "variants": [
+            "Diamond",
+            "Golden",
+            "Iron",
+            "Netherite"
+          ],
+          "currentVariant": "Diamond"
+        },
+        {
+          "name": "Armor Tier Pickaxe",
+          "template": "{}_PICKAXE",
+          "variants": [
+            "Diamond",
+            "Golden",
+            "Iron",
+            "Netherite"
+          ],
+          "currentVariant": "Diamond"
+        },
+        {
+          "name": "Armor Tier Axe",
+          "template": "{}_AXE",
+          "variants": [
+            "Diamond",
+            "Golden",
+            "Iron",
+            "Netherite"
+          ],
+          "currentVariant": "Diamond"
+        },
+        {
+          "name": "Armor Tier Shovel",
+          "template": "{}_SHOVEL",
+          "variants": [
+            "Diamond",
+            "Golden",
+            "Iron",
+            "Netherite"
+          ],
+          "currentVariant": "Diamond"
+        },
+        {
+          "name": "Armor Tier Hoe",
+          "template": "{}_HOE",
+          "variants": [
+            "Diamond",
+            "Golden",
+            "Iron",
+            "Netherite"
+          ],
+          "currentVariant": "Diamond"
+        }
+      ]
+    },
+    {
+      "name": "Armour",
+      "items": [
+        {
+          "name": "Armor Tier Helmet",
+          "template": "{}_HELMET",
+          "variants": [
+            "Chainmail",
+            "Diamond",
+            "Golden",
+            "Iron",
+            "Leather",
+            "Netherite",
+            "Turtle"
+          ],
+          "currentVariant": "Chainmail"
+        },
+        {
+          "name": "Armor Tier Chestplate",
+          "template": "{}_CHESTPLATE",
+          "variants": [
+            "Chainmail",
+            "Diamond",
+            "Golden",
+            "Iron",
+            "Leather",
+            "Netherite"
+          ],
+          "currentVariant": "Chainmail"
+        },
+        {
+          "name": "Armor Tier Leggings",
+          "template": "{}_LEGGINGS",
+          "variants": [
+            "Chainmail",
+            "Diamond",
+            "Golden",
+            "Iron",
+            "Leather",
+            "Netherite"
+          ],
+          "currentVariant": "Chainmail"
+        },
+        {
+          "name": "Armor Tier Boots",
+          "template": "{}_BOOTS",
+          "variants": [
+            "Chainmail",
+            "Diamond",
+            "Golden",
+            "Iron",
+            "Leather",
+            "Netherite"
+          ],
+          "currentVariant": "Chainmail"
+        },
+        {
+          "name": "Armor Tier Horse Armor",
+          "template": "{}_HORSE_ARMOR",
+          "variants": [
+            "Diamond",
+            "Golden",
+            "Iron",
+            "Leather",
+            "Netherite"
+          ],
+          "currentVariant": "Diamond"
+        }
+      ]
+    },
+    {
       "name": "Other Items",
       "items": [
         {
@@ -5161,6 +6509,28 @@
           "value": "ARMOR_STAND"
         },
         {
+          "name": "Armor Tier Nautilus Armor",
+          "template": "{}_NAUTILUS_ARMOR",
+          "variants": [
+            "Diamond",
+            "Golden",
+            "Iron",
+            "Netherite"
+          ],
+          "currentVariant": "Diamond"
+        },
+        {
+          "name": "Armor Tier Spear",
+          "template": "{}_SPEAR",
+          "variants": [
+            "Diamond",
+            "Golden",
+            "Iron",
+            "Netherite"
+          ],
+          "currentVariant": "Diamond"
+        },
+        {
           "name": "Arms Up Pottery Sherd",
           "value": "ARMS_UP_POTTERY_SHERD"
         },
@@ -5189,12 +6559,12 @@
           "value": "AZALEA"
         },
         {
-          "name": "Baked Potato",
-          "value": "BAKED_POTATO"
+          "name": "Azalea Leaves",
+          "value": "AZALEA_LEAVES"
         },
         {
-          "name": "Bamboo",
-          "value": "BAMBOO"
+          "name": "Baked Potato",
+          "value": "BAKED_POTATO"
         },
         {
           "name": "Bamboo Block",
@@ -5233,6 +6603,14 @@
           "value": "BAT_SPAWN_EGG"
         },
         {
+          "name": "Bee Nest",
+          "value": "BEE_NEST"
+        },
+        {
+          "name": "Bee Spawn Egg",
+          "value": "BEE_SPAWN_EGG"
+        },
+        {
           "name": "Beef",
           "value": "BEEF"
         },
@@ -5245,10 +6623,6 @@
           "value": "BEETROOT"
         },
         {
-          "name": "Beetroots",
-          "value": "BEETROOTS"
-        },
-        {
           "name": "Beetroot Seeds",
           "value": "BEETROOT_SEEDS"
         },
@@ -5257,12 +6631,8 @@
           "value": "BEETROOT_SOUP"
         },
         {
-          "name": "Bee Nest",
-          "value": "BEE_NEST"
-        },
-        {
-          "name": "Bee Spawn Egg",
-          "value": "BEE_SPAWN_EGG"
+          "name": "Beetroots",
+          "value": "BEETROOTS"
         },
         {
           "name": "Bell",
@@ -5461,10 +6831,6 @@
           "value": "BUSH"
         },
         {
-          "name": "Cactus",
-          "value": "CACTUS"
-        },
-        {
           "name": "Cactus Flower",
           "value": "CACTUS_FLOWER"
         },
@@ -5489,10 +6855,6 @@
           "value": "CAMPFIRE"
         },
         {
-          "name": "Candle",
-          "value": "CANDLE"
-        },
-        {
           "name": "Candle Cake",
           "value": "CANDLE_CAKE"
         },
@@ -5501,12 +6863,12 @@
           "value": "CARROT"
         },
         {
-          "name": "Carrots",
-          "value": "CARROTS"
-        },
-        {
           "name": "Carrot On A Stick",
           "value": "CARROT_ON_A_STICK"
+        },
+        {
+          "name": "Carrots",
+          "value": "CARROTS"
         },
         {
           "name": "Cartography Table",
@@ -5675,6 +7037,201 @@
         {
           "name": "Cod Spawn Egg",
           "value": "COD_SPAWN_EGG"
+        },
+        {
+          "name": "Color Bundle",
+          "template": "{}_BUNDLE",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
+        },
+        {
+          "name": "Color Candle",
+          "template": "{}_CANDLE",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
+        },
+        {
+          "name": "Color Candle Cake",
+          "template": "{}_CANDLE_CAKE",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
+        },
+        {
+          "name": "Color Dye",
+          "template": "{}_DYE",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
+        },
+        {
+          "name": "Color Harness",
+          "template": "{}_HARNESS",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
+        },
+        {
+          "name": "Color Shulker Box",
+          "template": "{}_SHULKER_BOX",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
+        },
+        {
+          "name": "Color Terracotta",
+          "template": "{}_TERRACOTTA",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
+        },
+        {
+          "name": "Color Tulip",
+          "template": "{}_TULIP",
+          "variants": [
+            "Orange",
+            "Pink",
+            "Red",
+            "White"
+          ],
+          "currentVariant": "Orange"
+        },
+        {
+          "name": "Color Wall Banner",
+          "template": "{}_WALL_BANNER",
+          "variants": [
+            "Black",
+            "Blue",
+            "Brown",
+            "Cyan",
+            "Gray",
+            "Green",
+            "Light Blue",
+            "Light Gray",
+            "Lime",
+            "Magenta",
+            "Orange",
+            "Pink",
+            "Purple",
+            "Red",
+            "White",
+            "Yellow"
+          ],
+          "currentVariant": "Black"
         },
         {
           "name": "Command Block",
@@ -6145,26 +7702,6 @@
           "value": "ENCHANTING_TABLE"
         },
         {
-          "name": "Enderman Spawn Egg",
-          "value": "ENDERMAN_SPAWN_EGG"
-        },
-        {
-          "name": "Endermite Spawn Egg",
-          "value": "ENDERMITE_SPAWN_EGG"
-        },
-        {
-          "name": "Ender Dragon Spawn Egg",
-          "value": "ENDER_DRAGON_SPAWN_EGG"
-        },
-        {
-          "name": "Ender Eye",
-          "value": "ENDER_EYE"
-        },
-        {
-          "name": "Ender Pearl",
-          "value": "ENDER_PEARL"
-        },
-        {
           "name": "End Crystal",
           "value": "END_CRYSTAL"
         },
@@ -6195,6 +7732,30 @@
         {
           "name": "End Stone Brick Wall",
           "value": "END_STONE_BRICK_WALL"
+        },
+        {
+          "name": "Ender Dragon Spawn Egg",
+          "value": "ENDER_DRAGON_SPAWN_EGG"
+        },
+        {
+          "name": "Ender Eye",
+          "value": "ENDER_EYE"
+        },
+        {
+          "name": "Ender Pearl",
+          "value": "ENDER_PEARL"
+        },
+        {
+          "name": "Enderman Spawn Egg",
+          "value": "ENDERMAN_SPAWN_EGG"
+        },
+        {
+          "name": "Endermite Spawn Egg",
+          "value": "ENDERMITE_SPAWN_EGG"
+        },
+        {
+          "name": "Enum Constant",
+          "value": "Enum Constant"
         },
         {
           "name": "Evoker Spawn Egg",
@@ -6269,10 +7830,6 @@
           "value": "EYE_ARMOR_TRIM_SMITHING_TEMPLATE"
         },
         {
-          "name": "Enum Constant",
-          "value": "Enum Constant"
-        },
-        {
           "name": "Farmland",
           "value": "FARMLAND"
         },
@@ -6301,18 +7858,6 @@
           "value": "FIRE"
         },
         {
-          "name": "Firefly Bush",
-          "value": "FIREFLY_BUSH"
-        },
-        {
-          "name": "Firework Rocket",
-          "value": "FIREWORK_ROCKET"
-        },
-        {
-          "name": "Firework Star",
-          "value": "FIREWORK_STAR"
-        },
-        {
           "name": "Fire Charge",
           "value": "FIRE_CHARGE"
         },
@@ -6333,6 +7878,18 @@
           "value": "FIRE_CORAL_WALL_FAN"
         },
         {
+          "name": "Firefly Bush",
+          "value": "FIREFLY_BUSH"
+        },
+        {
+          "name": "Firework Rocket",
+          "value": "FIREWORK_ROCKET"
+        },
+        {
+          "name": "Firework Star",
+          "value": "FIREWORK_STAR"
+        },
+        {
           "name": "Fishing Rod",
           "value": "FISHING_ROD"
         },
@@ -6349,22 +7906,6 @@
           "value": "FLINT_AND_STEEL"
         },
         {
-          "name": "Flowering Azalea",
-          "value": "FLOWERING_AZALEA"
-        },
-        {
-          "name": "Flowering Azalea Leaves",
-          "value": "FLOWERING_AZALEA_LEAVES"
-        },
-        {
-          "name": "Flower Banner Pattern",
-          "value": "FLOWER_BANNER_PATTERN"
-        },
-        {
-          "name": "Flower Pot",
-          "value": "FLOWER_POT"
-        },
-        {
           "name": "Flow Armor Trim Smithing Template",
           "value": "FLOW_ARMOR_TRIM_SMITHING_TEMPLATE"
         },
@@ -6375,6 +7916,22 @@
         {
           "name": "Flow Pottery Sherd",
           "value": "FLOW_POTTERY_SHERD"
+        },
+        {
+          "name": "Flower Banner Pattern",
+          "value": "FLOWER_BANNER_PATTERN"
+        },
+        {
+          "name": "Flower Pot",
+          "value": "FLOWER_POT"
+        },
+        {
+          "name": "Flowering Azalea",
+          "value": "FLOWERING_AZALEA"
+        },
+        {
+          "name": "Flowering Azalea Leaves",
+          "value": "FLOWERING_AZALEA_LEAVES"
         },
         {
           "name": "Fox Spawn Egg",
@@ -6421,10 +7978,6 @@
           "value": "GLOBE_BANNER_PATTERN"
         },
         {
-          "name": "Glowstone Dust",
-          "value": "GLOWSTONE_DUST"
-        },
-        {
           "name": "Glow Berries",
           "value": "GLOW_BERRIES"
         },
@@ -6445,20 +7998,16 @@
           "value": "GLOW_SQUID_SPAWN_EGG"
         },
         {
+          "name": "Glowstone Dust",
+          "value": "GLOWSTONE_DUST"
+        },
+        {
           "name": "Goat Horn",
           "value": "GOAT_HORN"
         },
         {
           "name": "Goat Spawn Egg",
           "value": "GOAT_SPAWN_EGG"
-        },
-        {
-          "name": "Golden Apple",
-          "value": "GOLDEN_APPLE"
-        },
-        {
-          "name": "Golden Carrot",
-          "value": "GOLDEN_CARROT"
         },
         {
           "name": "Gold Block",
@@ -6471,6 +8020,14 @@
         {
           "name": "Gold Nugget",
           "value": "GOLD_NUGGET"
+        },
+        {
+          "name": "Golden Apple",
+          "value": "GOLDEN_APPLE"
+        },
+        {
+          "name": "Golden Carrot",
+          "value": "GOLDEN_CARROT"
         },
         {
           "name": "Granite Slab",
@@ -6517,16 +8074,16 @@
           "value": "HAY_BLOCK"
         },
         {
-          "name": "Heartbreak Pottery Sherd",
-          "value": "HEARTBREAK_POTTERY_SHERD"
-        },
-        {
           "name": "Heart Of The Sea",
           "value": "HEART_OF_THE_SEA"
         },
         {
           "name": "Heart Pottery Sherd",
           "value": "HEART_POTTERY_SHERD"
+        },
+        {
+          "name": "Heartbreak Pottery Sherd",
+          "value": "HEARTBREAK_POTTERY_SHERD"
         },
         {
           "name": "Heavy Core",
@@ -6541,16 +8098,16 @@
           "value": "HOGLIN_SPAWN_EGG"
         },
         {
+          "name": "Honey Bottle",
+          "value": "HONEY_BOTTLE"
+        },
+        {
           "name": "Honeycomb",
           "value": "HONEYCOMB"
         },
         {
           "name": "Honeycomb Block",
           "value": "HONEYCOMB_BLOCK"
-        },
-        {
-          "name": "Honey Bottle",
-          "value": "HONEY_BOTTLE"
         },
         {
           "name": "Hopper Minecart",
@@ -6721,16 +8278,12 @@
           "value": "LIGHT"
         },
         {
-          "name": "Lightning Rod",
-          "value": "LIGHTNING_ROD"
-        },
-        {
           "name": "Light Weighted Pressure Plate",
           "value": "LIGHT_WEIGHTED_PRESSURE_PLATE"
         },
         {
-          "name": "Lily Pad",
-          "value": "LILY_PAD"
+          "name": "Lightning Rod",
+          "value": "LIGHTNING_ROD"
         },
         {
           "name": "Lingering Potion",
@@ -6813,6 +8366,10 @@
           "value": "MOOSHROOM_SPAWN_EGG"
         },
         {
+          "name": "Moss Carpet",
+          "value": "MOSS_CARPET"
+        },
+        {
           "name": "Mossy Cobblestone",
           "value": "MOSSY_COBBLESTONE"
         },
@@ -6841,10 +8398,6 @@
           "value": "MOSSY_STONE_BRICK_WALL"
         },
         {
-          "name": "Moss Carpet",
-          "value": "MOSS_CARPET"
-        },
-        {
           "name": "Mourner Pottery Sherd",
           "value": "MOURNER_POTTERY_SHERD"
         },
@@ -6857,10 +8410,6 @@
           "value": "MUD"
         },
         {
-          "name": "Muddy Mangrove Roots",
-          "value": "MUDDY_MANGROVE_ROOTS"
-        },
-        {
           "name": "Mud Brick Slab",
           "value": "MUD_BRICK_SLAB"
         },
@@ -6871,6 +8420,10 @@
         {
           "name": "Mud Brick Wall",
           "value": "MUD_BRICK_WALL"
+        },
+        {
+          "name": "Muddy Mangrove Roots",
+          "value": "MUDDY_MANGROVE_ROOTS"
         },
         {
           "name": "Mule Spawn Egg",
@@ -6985,26 +8538,6 @@
           "value": "NAUTILUS_SPAWN_EGG"
         },
         {
-          "name": "Netherite Block",
-          "value": "NETHERITE_BLOCK"
-        },
-        {
-          "name": "Netherite Ingot",
-          "value": "NETHERITE_INGOT"
-        },
-        {
-          "name": "Netherite Scrap",
-          "value": "NETHERITE_SCRAP"
-        },
-        {
-          "name": "Netherite Upgrade Smithing Template",
-          "value": "NETHERITE_UPGRADE_SMITHING_TEMPLATE"
-        },
-        {
-          "name": "Netherrack",
-          "value": "NETHERRACK"
-        },
-        {
           "name": "Nether Brick",
           "value": "NETHER_BRICK"
         },
@@ -7043,6 +8576,26 @@
         {
           "name": "Nether Wart Block",
           "value": "NETHER_WART_BLOCK"
+        },
+        {
+          "name": "Netherite Block",
+          "value": "NETHERITE_BLOCK"
+        },
+        {
+          "name": "Netherite Ingot",
+          "value": "NETHERITE_INGOT"
+        },
+        {
+          "name": "Netherite Scrap",
+          "value": "NETHERITE_SCRAP"
+        },
+        {
+          "name": "Netherite Upgrade Smithing Template",
+          "value": "NETHERITE_UPGRADE_SMITHING_TEMPLATE"
+        },
+        {
+          "name": "Netherrack",
+          "value": "NETHERRACK"
         },
         {
           "name": "Ocelot Spawn Egg",
@@ -7165,6 +8718,10 @@
           "value": "PHANTOM_SPAWN_EGG"
         },
         {
+          "name": "Pig Spawn Egg",
+          "value": "PIG_SPAWN_EGG"
+        },
+        {
           "name": "Piglin Banner Pattern",
           "value": "PIGLIN_BANNER_PATTERN"
         },
@@ -7183,10 +8740,6 @@
         {
           "name": "Piglin Wall Head",
           "value": "PIGLIN_WALL_HEAD"
-        },
-        {
-          "name": "Pig Spawn Egg",
-          "value": "PIG_SPAWN_EGG"
         },
         {
           "name": "Pillager Spawn Egg",
@@ -7529,16 +9082,16 @@
           "value": "PRISMARINE"
         },
         {
-          "name": "Prismarine Bricks",
-          "value": "PRISMARINE_BRICKS"
-        },
-        {
           "name": "Prismarine Brick Slab",
           "value": "PRISMARINE_BRICK_SLAB"
         },
         {
           "name": "Prismarine Brick Stairs",
           "value": "PRISMARINE_BRICK_STAIRS"
+        },
+        {
+          "name": "Prismarine Bricks",
+          "value": "PRISMARINE_BRICKS"
         },
         {
           "name": "Prismarine Crystals",
@@ -7685,14 +9238,6 @@
           "value": "RECOVERY_COMPASS"
         },
         {
-          "name": "Redstone",
-          "value": "REDSTONE"
-        },
-        {
-          "name": "Redstone Wall Torch",
-          "value": "REDSTONE_WALL_TORCH"
-        },
-        {
           "name": "Red Mushroom",
           "value": "RED_MUSHROOM"
         },
@@ -7729,6 +9274,14 @@
           "value": "RED_SANDSTONE_WALL"
         },
         {
+          "name": "Redstone",
+          "value": "REDSTONE"
+        },
+        {
+          "name": "Redstone Wall Torch",
+          "value": "REDSTONE_WALL_TORCH"
+        },
+        {
           "name": "Reinforced Deepslate",
           "value": "REINFORCED_DEEPSLATE"
         },
@@ -7745,10 +9298,6 @@
           "value": "RESIN_BRICK"
         },
         {
-          "name": "Resin Bricks",
-          "value": "RESIN_BRICKS"
-        },
-        {
           "name": "Resin Brick Slab",
           "value": "RESIN_BRICK_SLAB"
         },
@@ -7759,6 +9308,10 @@
         {
           "name": "Resin Brick Wall",
           "value": "RESIN_BRICK_WALL"
+        },
+        {
+          "name": "Resin Bricks",
+          "value": "RESIN_BRICKS"
         },
         {
           "name": "Resin Clump",
@@ -7833,12 +9386,12 @@
           "value": "SCULK_VEIN"
         },
         {
-          "name": "Seagrass",
-          "value": "SEAGRASS"
-        },
-        {
           "name": "Sea Pickle",
           "value": "SEA_PICKLE"
+        },
+        {
+          "name": "Seagrass",
+          "value": "SEAGRASS"
         },
         {
           "name": "Sentry Armor Trim Smithing Template",
@@ -7875,10 +9428,6 @@
         {
           "name": "Short Grass",
           "value": "SHORT_GRASS"
-        },
-        {
-          "name": "Shulker Box",
-          "value": "SHULKER_BOX"
         },
         {
           "name": "Shulker Shell",
@@ -8005,12 +9554,12 @@
           "value": "SNOUT_ARMOR_TRIM_SMITHING_TEMPLATE"
         },
         {
-          "name": "Snowball",
-          "value": "SNOWBALL"
-        },
-        {
           "name": "Snow Golem Spawn Egg",
           "value": "SNOW_GOLEM_SPAWN_EGG"
+        },
+        {
+          "name": "Snowball",
+          "value": "SNOWBALL"
         },
         {
           "name": "Soul Campfire",
@@ -8073,10 +9622,6 @@
           "value": "STICK"
         },
         {
-          "name": "Stonecutter",
-          "value": "STONECUTTER"
-        },
-        {
           "name": "Stone Axe",
           "value": "STONE_AXE"
         },
@@ -8127,6 +9672,10 @@
         {
           "name": "Stone Sword",
           "value": "STONE_SWORD"
+        },
+        {
+          "name": "Stonecutter",
+          "value": "STONECUTTER"
         },
         {
           "name": "Stray Spawn Egg",
@@ -8245,10 +9794,6 @@
           "value": "SUGAR"
         },
         {
-          "name": "Sugar Cane",
-          "value": "SUGAR_CANE"
-        },
-        {
           "name": "Suspicious Gravel",
           "value": "SUSPICIOUS_GRAVEL"
         },
@@ -8287,10 +9832,6 @@
         {
           "name": "Tall Seagrass",
           "value": "TALL_SEAGRASS"
-        },
-        {
-          "name": "Terracotta",
-          "value": "TERRACOTTA"
         },
         {
           "name": "Test Block",
@@ -8377,10 +9918,6 @@
           "value": "TUBE_CORAL_WALL_FAN"
         },
         {
-          "name": "Tuff Bricks",
-          "value": "TUFF_BRICKS"
-        },
-        {
           "name": "Tuff Brick Slab",
           "value": "TUFF_BRICK_SLAB"
         },
@@ -8391,6 +9928,10 @@
         {
           "name": "Tuff Brick Wall",
           "value": "TUFF_BRICK_WALL"
+        },
+        {
+          "name": "Tuff Bricks",
+          "value": "TUFF_BRICKS"
         },
         {
           "name": "Tuff Slab",
@@ -8453,12 +9994,12 @@
           "value": "WANDERING_TRADER_SPAWN_EGG"
         },
         {
-          "name": "Warden Spawn Egg",
-          "value": "WARDEN_SPAWN_EGG"
-        },
-        {
           "name": "Ward Armor Trim Smithing Template",
           "value": "WARD_ARMOR_TRIM_SMITHING_TEMPLATE"
+        },
+        {
+          "name": "Warden Spawn Egg",
+          "value": "WARDEN_SPAWN_EGG"
         },
         {
           "name": "Warped Fungus",
@@ -8813,12 +10354,12 @@
           "value": "WHEAT_SEEDS"
         },
         {
-          "name": "Wildflowers",
-          "value": "WILDFLOWERS"
-        },
-        {
           "name": "Wild Armor Trim Smithing Template",
           "value": "WILD_ARMOR_TRIM_SMITHING_TEMPLATE"
+        },
+        {
+          "name": "Wildflowers",
+          "value": "WILDFLOWERS"
         },
         {
           "name": "Wind Charge",
@@ -8851,6 +10392,285 @@
         {
           "name": "Wolf Spawn Egg",
           "value": "WOLF_SPAWN_EGG"
+        },
+        {
+          "name": "Wood Boat",
+          "template": "{}_BOAT",
+          "variants": [
+            "Acacia",
+            "Birch",
+            "Cherry",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Button",
+          "template": "{}_BUTTON",
+          "variants": [
+            "Acacia",
+            "Bamboo",
+            "Birch",
+            "Cherry",
+            "Crimson",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce",
+            "Warped"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Chest Boat",
+          "template": "{}_CHEST_BOAT",
+          "variants": [
+            "Acacia",
+            "Birch",
+            "Cherry",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Door",
+          "template": "{}_DOOR",
+          "variants": [
+            "Acacia",
+            "Bamboo",
+            "Birch",
+            "Cherry",
+            "Crimson",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce",
+            "Warped"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Fence",
+          "template": "{}_FENCE",
+          "variants": [
+            "Acacia",
+            "Bamboo",
+            "Birch",
+            "Cherry",
+            "Crimson",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce",
+            "Warped"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Fence Gate",
+          "template": "{}_FENCE_GATE",
+          "variants": [
+            "Acacia",
+            "Bamboo",
+            "Birch",
+            "Cherry",
+            "Crimson",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce",
+            "Warped"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Hanging Sign",
+          "template": "{}_HANGING_SIGN",
+          "variants": [
+            "Acacia",
+            "Bamboo",
+            "Birch",
+            "Cherry",
+            "Crimson",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce",
+            "Warped"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Pressure Plate",
+          "template": "{}_PRESSURE_PLATE",
+          "variants": [
+            "Acacia",
+            "Bamboo",
+            "Birch",
+            "Cherry",
+            "Crimson",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce",
+            "Warped"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Shelf",
+          "template": "{}_SHELF",
+          "variants": [
+            "Acacia",
+            "Bamboo",
+            "Birch",
+            "Cherry",
+            "Crimson",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce",
+            "Warped"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Sign",
+          "template": "{}_SIGN",
+          "variants": [
+            "Acacia",
+            "Bamboo",
+            "Birch",
+            "Cherry",
+            "Crimson",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce",
+            "Warped"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Slab",
+          "template": "{}_SLAB",
+          "variants": [
+            "Acacia",
+            "Bamboo",
+            "Birch",
+            "Cherry",
+            "Crimson",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce",
+            "Warped"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Stairs",
+          "template": "{}_STAIRS",
+          "variants": [
+            "Acacia",
+            "Bamboo",
+            "Birch",
+            "Cherry",
+            "Crimson",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce",
+            "Warped"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Trapdoor",
+          "template": "{}_TRAPDOOR",
+          "variants": [
+            "Acacia",
+            "Bamboo",
+            "Birch",
+            "Cherry",
+            "Crimson",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce",
+            "Warped"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Wall Hanging Sign",
+          "template": "{}_WALL_HANGING_SIGN",
+          "variants": [
+            "Acacia",
+            "Bamboo",
+            "Birch",
+            "Cherry",
+            "Crimson",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce",
+            "Warped"
+          ],
+          "currentVariant": "Acacia"
+        },
+        {
+          "name": "Wood Wall Sign",
+          "template": "{}_WALL_SIGN",
+          "variants": [
+            "Acacia",
+            "Bamboo",
+            "Birch",
+            "Cherry",
+            "Crimson",
+            "Dark Oak",
+            "Jungle",
+            "Mangrove",
+            "Oak",
+            "Pale Oak",
+            "Spruce",
+            "Warped"
+          ],
+          "currentVariant": "Acacia"
         },
         {
           "name": "Wooden Axe",

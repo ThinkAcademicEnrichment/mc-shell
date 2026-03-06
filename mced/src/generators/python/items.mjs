@@ -308,6 +308,14 @@ export function defineItemsGenerators(pythonGenerator) {
         return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
     };
 
+    pythonGenerator.forBlock['mc_item_picker_woods_and_logs'] = function(block, generator) {
+        return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
+    };
+
+    pythonGenerator.forBlock['mc_item_picker_colored_blocks'] = function(block, generator) {
+        return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
+    };
+
     pythonGenerator.forBlock['mc_item_picker_stone_bricks'] = function(block, generator) {
         return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
     };
@@ -341,6 +349,14 @@ export function defineItemsGenerators(pythonGenerator) {
     };
 
     pythonGenerator.forBlock['mc_item_picker_spawning'] = function(block, generator) {
+        return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
+    };
+
+    pythonGenerator.forBlock['mc_item_picker_tools'] = function(block, generator) {
+        return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
+    };
+
+    pythonGenerator.forBlock['mc_item_picker_armour'] = function(block, generator) {
         return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
     };
 

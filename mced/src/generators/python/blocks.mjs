@@ -12,6 +12,10 @@ export function defineBlocksGenerators(pythonGenerator) {
         return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
     };
 
+    pythonGenerator.forBlock['picker_tool_tier'] = function(block, generator) {
+        return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
+    };
+
     pythonGenerator.forBlock['mc_block_wood_button'] = function(block, generator) {
         const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
         const val = rawVal.replace(/['"]/g, '');
@@ -308,6 +312,14 @@ export function defineBlocksGenerators(pythonGenerator) {
         return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
     };
 
+    pythonGenerator.forBlock['mc_block_picker_woods_and_logs'] = function(block, generator) {
+        return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
+    };
+
+    pythonGenerator.forBlock['mc_block_picker_colored_blocks'] = function(block, generator) {
+        return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
+    };
+
     pythonGenerator.forBlock['mc_block_picker_stone_bricks'] = function(block, generator) {
         return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
     };
@@ -341,6 +353,14 @@ export function defineBlocksGenerators(pythonGenerator) {
     };
 
     pythonGenerator.forBlock['mc_block_picker_spawning'] = function(block, generator) {
+        return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
+    };
+
+    pythonGenerator.forBlock['mc_block_picker_tools'] = function(block, generator) {
+        return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
+    };
+
+    pythonGenerator.forBlock['mc_block_picker_armour'] = function(block, generator) {
         return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
     };
 
