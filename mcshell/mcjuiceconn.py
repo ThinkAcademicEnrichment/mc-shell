@@ -23,13 +23,21 @@ class MCJuiceConnection:
         self._file = self.socket.makefile("r", encoding="utf-8")
 
     def drain(self):
-        """Drains the socket of any unexpected leftover data to prevent sync errors."""
-        while True:
-            readable, _, _ = select.select([self.socket], [], [], 0.0)
-            if not readable:
-                break
-            # Throw away garbage data
-            self.socket.recv(1500)
+        """Drains the socket using non-blocking IO to bypass OS select limits."""
+        self.socket.setblocking(False)
+        try:
+            while True:
+                data = self.socket.recv(4096)
+                if not data:
+                    break
+        except (BlockingIOError, InterruptedError):
+            # BlockingIOError means the socket is empty. We are successfully drained!
+            pass
+        except OSError:
+            # Socket might be closed, which is fine
+            pass
+        finally:
+            self.socket.setblocking(True)
 
     def send(self, command: str, *args):
         """Sends a command formatted as a CSV string."""
