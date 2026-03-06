@@ -175,7 +175,7 @@
 
     <header>
         <h1>Control Deck</h1>
-        <button class="edit-btn" :class="isEditing ? 'active' : ''" @click="isEditing = !isEditing" x-text="isEditing ? 'Done' : 'Edit Layout'"></button>
+        <button class="edit-btn" :class="isEditing ? 'active' : ''" @click="toggleEditMode()" x-text="isEditing ? 'Done' : 'Edit Layout'"></button>
     </header>
 
     <main class="springboard" :class="isEditing ? 'is-editing' : ''">
@@ -451,7 +451,15 @@
 
                 getCategoryClass(category) {
                     if (!category) return 'cat-Default';
-                    return `cat-${category.split('/')[0].replace(/\\s+/g, '')}`;
+                    return `cat-${category.split('/')[0].replace(/\s+/g, '')}`;
+                },
+
+                async toggleEditMode() {
+                    this.isEditing = !this.isEditing;
+                    // Refresh the powers list from the server whenever we enter Edit mode
+                    if (this.isEditing) {
+                        await this.fetchPowers();
+                    }
                 },
 
                 handlePressStart(instance, event) {
