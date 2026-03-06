@@ -181,12 +181,13 @@
     <main class="springboard" :class="isEditing ? 'is-editing' : ''">
         <template x-for="instance in deckInstances" :key="instance.instanceId">
             <div class="app-container">
+                <!-- Re-applied explicit Alpine event modifier to intercept touch-and-hold at the source -->
                 <div class="app-icon" :class="getCategoryClass(instance.category)"
                      @pointerdown="handlePressStart(instance, $event)"
                      @pointerup="handlePressEnd(instance, $event)"
                      @pointerleave="handlePressCancel($event)"
                      @pointercancel="handlePressCancel($event)"
-                     @contextmenu.prevent="">
+                     @contextmenu.prevent="true">
 
                     <div class="delete-badge" x-show="isEditing" @click.stop="removeFromDeck(instance.instanceId)">×</div>
                     <span x-text="instance.name.charAt(0).toUpperCase()"></span>
@@ -335,6 +336,17 @@
     </div>
 
     <script>
+        // --- GLOBAL CONTEXT MENU INTERCEPTOR ---
+        // Bulletproof fix for Chrome OS / Android touchscreen long-presses
+        document.addEventListener('contextmenu', (e) => {
+            // Allow native right-click/long-press ONLY inside input fields (so you can still paste text)
+            if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) {
+                return;
+            }
+            // Block the "Exit full screen" / native browser menu everywhere else on the canvas
+            e.preventDefault();
+        });
+
         document.addEventListener('alpine:init', () => {
             Alpine.data('controlApp', () => ({
                 isEditing: false,
