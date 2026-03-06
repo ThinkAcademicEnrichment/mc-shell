@@ -889,57 +889,90 @@ class MCShell(Magics):
     @line_magic
     def mc_debug_and_define(self, line):
         """
-        Receives code and metadata from the editor, and starts it in a
-        background thread for debugging.
+        Receives code and metadata from the editor, dynamically imports it,
+        constructs the execution context, and runs it safely in a background thread.
         """
         try:
+            # 1. Parse JSON payload from the editor
             payload = json.loads(line)
             code_to_execute = payload.get("code")
             metadata = payload.get("metadata", {})
 
-            try:
-                # Create a unique filename for the power
-                power_dir = pathlib.Path("./powers/blockcode")
-                power_dir.mkdir(parents=True, exist_ok=True)
+            # 2. Setup the directory and file
+            power_dir = pathlib.Path("./powers/blockcode")
+            power_dir.mkdir(parents=True, exist_ok=True)
+            (power_dir / "__init__.py").touch(exist_ok=True)
 
-                # Generate a unique suffix for the filename
-                file_hash = uuid.uuid4().hex[:6]
-                filename = f"power_{file_hash}.py"
-                filepath = power_dir / filename
+            file_hash = uuid.uuid4().hex[:6]
+            filename = f"power_{file_hash}.py"
+            filepath = power_dir / filename
 
-                with open(filepath, 'w') as f:
-                    f.write(code_to_execute)
+            # 3. Save the generated code
+            with open(filepath, 'w') as f:
+                f.write(code_to_execute)
 
-                print(f"Successfully saved power to: {filepath}")
-                print(f"To use it, you can now run:\nfrom powers.blockcode.{filename.replace('.py','')} import *")
+            print(f"Successfully saved power to: {filepath}")
+            print(f"To use it, you can now run:\nfrom powers.blockcode.{filename.replace('.py','')} import *")
 
-            except Exception as e:
-                print(f"Error saving script: {e}")
-
+            # 4. Initialize Player & Context
             player_name = self._get_mc_name()
-            server_data = self.server_data
+            player = self._get_player(player_name)
 
-            # --- Start the power in a background thread ---
-            execution_id = f"debug_{uuid.uuid4().hex[:6]}" # Special ID for debug runs
-            cancel_event = Event()
+            # Setup cancellation support and bind to the player for blocking operations
+            cancel_event = threading.Event()
+            player.cancel_event = cancel_event
 
-            thread = Thread(target=execute_power_in_thread, args=(
-                f"user-power-{execution_id}",execution_id, code_to_execute, player_name, server_data, {}, cancel_event
-            ))
-            thread.daemon = True
+            actions = MCActions(player)
+
+            # 5. Dynamically Import the Module
+            module_name = f"powers.blockcode.power_{file_hash}"
+            if module_name in sys.modules:
+                module = sys.modules[module_name]
+                importlib.reload(module)
+            else:
+                module = importlib.import_module(module_name)
+
+            # 6. Instantiate the Runner
+            runner = module.BlocklyProgramRunner(actions, cancel_event=cancel_event)
+
+            # 7. Define the Thread Execution Wrapper
+            execution_id = f"debug_{file_hash}"
+            def run_task():
+                try:
+                    runner.run_program()
+                except Exception as e:
+                    # Ignore PowerCancelledException which is a normal, clean exit
+                    if type(e).__name__ != "PowerCancelledException":
+                        import traceback
+                        print(f"\n--- Error executing {execution_id}: {e} ---")
+                        traceback.print_exc()
+                finally:
+                    # Automatically remove from running registry when done
+                    if execution_id in RUNNING_POWERS:
+                        del RUNNING_POWERS[execution_id]
+
+            # 8. Start Thread and Update Registry
+            thread = threading.Thread(target=run_task, daemon=True)
+
+            RUNNING_POWERS[execution_id] = {
+                'thread': thread,
+                'cancel_event': cancel_event,
+                'power_id': metadata.get('id', file_hash),
+                'start_time': time.time()
+            }
+
             thread.start()
 
-            RUNNING_POWERS[execution_id] = {'thread': thread, 'cancel_event': cancel_event}
-
-            if RUNNING_POWERS:
-                print(f"--- Power '{metadata.get('function_name')}' metadata defined/updated. ---")
-                print(f"--- Started debug execution with ID: {execution_id} ---")
-                # ADD THIS LINE: A specific prefix for the frontend to find
-                print(f"MCED_EXECUTION_ID:{execution_id}")
-                print("--- To stop it, run: %mc_cancel_power " + execution_id + " ---")
+            print(f"--- Power '{metadata.get('function_name', 'None')}' metadata defined/updated. ---")
+            print(f"--- Started debug execution with ID: {execution_id} ---")
+            # The editor explicitly looks for this string format to hook its STOP button
+            print(f"MCED_EXECUTION_ID:{execution_id}")
+            print(f"--- To stop it, run: %mc_cancel_power {execution_id} ---")
 
         except Exception as e:
-            print(f"An unexpected error occurred: {e}")
+            import traceback
+            print(f"An unexpected error occurred during execution setup: {e}")
+            traceback.print_exc()
 
     def _complete_mc_cancel_power(self, ipyshell, event):
         text = event.symbol
