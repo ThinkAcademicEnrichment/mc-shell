@@ -1,0 +1,34 @@
+{
+  "parent": "gamerz_riot:root",
+  "criteria": {
+    "tuff": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "minecraft:granite"
+            ]
+          }
+        ]
+      }
+    },
+    "has_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": {
+        "recipe": "minecraft:tuff"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "tuff",
+      "has_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:tuff"
+    ]
+  }
+}

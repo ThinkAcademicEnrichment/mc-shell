@@ -1,0 +1,4 @@
+playsound minecraft:ui.button.click master @s ~ ~ ~ 0.2 0.7 0.2
+execute if entity @e run tellraw @s [{"text":"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n Skip to Phase","color":"gray"},{"text":"\n Changes the infinite block to a selected phase!\n","color":"blue"}]
+execute if entity @e run tellraw @s [{"text":" To proceed, you must have cheats enabled (Singleplayer) or operator rights (Multiplayer). Otherwise, you'll receive an error.\n ","color":"red","shadow_color":505806963,},{"text":"[Proceed]","color":"gold","click_event":{"action":"run_command","command":"/function gamerz_riot:menu/phase-skip"},"hover_event":{"action":"show_text","value":"Click to proceed."}}]
+execute if entity @e run tellraw @s [{"text":"\n "},{"text":"[Back]","color":"red","click_event":{"action":"run_command","command":"/trigger gz-a4 set 2"},"hover_event":{"action":"show_text","value":"Click to go back."}},{"text":"\n"}]

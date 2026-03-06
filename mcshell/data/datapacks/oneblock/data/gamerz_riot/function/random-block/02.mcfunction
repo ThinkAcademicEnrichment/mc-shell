@@ -1,0 +1,20 @@
+function gamerz_riot:randomizer/gz-a4-randblock-1-ed
+execute as @s[scores={gz-a4-randblock=1..100}] at @s run setblock ~ ~ ~ stone
+execute as @s[scores={gz-a4-randblock=101..190}] at @s run setblock ~ ~ ~ grass_block
+execute as @s[scores={gz-a4-randblock=191..240}] at @s run setblock ~ ~ ~ gravel
+execute as @s[scores={gz-a4-randblock=241..285}] at @s run setblock ~ ~ ~ dirt
+execute as @s[scores={gz-a4-randblock=286..323}] at @s run setblock ~ ~ ~ oak_log
+execute as @s[scores={gz-a4-randblock=324..353}] at @s run setblock ~ ~ ~ birch_log
+execute as @s[scores={gz-a4-randblock=354..378}] at @s run setblock ~ ~ ~ andesite
+execute as @s[scores={gz-a4-randblock=379..403}] at @s run setblock ~ ~ ~ diorite
+execute as @s[scores={gz-a4-randblock=404..428}] at @s run setblock ~ ~ ~ granite
+execute as @s[scores={gz-a4-randblock=429..453}] at @s run setblock ~ ~ ~ clay
+execute as @s[scores={gz-a4-randblock=454..473}] at @s run setblock ~ ~ ~ coal_ore
+execute as @s[scores={gz-a4-randblock=474..488}] at @s run setblock ~ ~ ~ podzol
+execute as @s[scores={gz-a4-randblock=489..501}] at @s run setblock ~ ~ ~ iron_ore
+execute as @s[scores={gz-a4-randblock=502..511}] at @s run setblock ~ ~ ~ melon
+execute as @s[scores={gz-a4-randblock=512..517}] at @s run setblock ~ ~ ~ pumpkin
+execute as @s[scores={gz-a4-randblock=518..542}] at @s run setblock ~ ~ ~ smooth_basalt
+execute as @s[scores={gz-a4-randblock=543..582}] at @s run setblock ~ ~ ~ amethyst_block
+execute as @s[scores={gz-a4-randblock=583..601}] at @s run setblock ~ ~ ~ copper_ore
+execute as @s[scores={gz-a4-randblock=602..631}] at @s run setblock ~ ~ ~ calcite

@@ -46,3 +46,8 @@ mcshell/data/entities/toolbox.xml
 #ignore maven output
 mcjuice/target/
 mcshell/data/mcjuice-*.jar
+
+# ignore powers and scripts
+powers
+scripts
+poetry.toml
