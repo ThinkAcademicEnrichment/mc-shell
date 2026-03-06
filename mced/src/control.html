@@ -350,6 +350,7 @@
                 pressTimer: null,
                 isLongPress: false,
                 runningQueue: {}, // Maps powerId -> Array of executing instanceIds as a fallback
+                socket: null, // --- ADD: Store the socket in the component state ---
 
                 generateId() {
                     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
@@ -374,13 +375,19 @@
 
                     await Promise.all([this.fetchPowers(), this.fetchTaxonomy()]);
 
-                    const socket = io();
-                    socket.on('power_status', (data) => {
-                        if (data.status === 'running') return;
+                    // --- FIX: Store the initialized socket on the component ---
+                    this.socket = io();
+                    this.socket.on('power_status', (data) => {
+                        if (data.status === 'running' || data.status === 'dispatched') {
+                            if (data.execution_id) {
+                                this.powerStatus[data.execution_id] = 'running';
+                            }
+                            return;
+                        }
 
-                        // 1. PERFECT MATCH: The backend knows exactly which widget triggered it
+                        // Normalize all termination states ('idle', 'finished', 'error') to 'idle'
                         if (data.execution_id) {
-                            this.powerStatus[data.execution_id] = data.status;
+                            this.powerStatus[data.execution_id] = 'idle';
 
                             // Clean it out of the fallback queue to keep things tidy
                             if (this.runningQueue[data.id]) {
@@ -390,13 +397,13 @@
                         // 2. FALLBACK QUEUE: If backend hasn't been updated with execution_id yet
                         else if (this.runningQueue[data.id] && this.runningQueue[data.id].length > 0) {
                             const finishedInstanceId = this.runningQueue[data.id].shift();
-                            this.powerStatus[finishedInstanceId] = data.status;
+                            this.powerStatus[finishedInstanceId] = 'idle';
                         }
                         // 3. ABSOLUTE FALLBACK
                         else {
                             this.deckLayout.forEach(item => {
                                 if (item.powerId === data.id && this.powerStatus[item.instanceId] === 'running') {
-                                    this.powerStatus[item.instanceId] = data.status;
+                                    this.powerStatus[item.instanceId] = 'idle';
                                 }
                             });
                         }
@@ -475,7 +482,12 @@
                 quickExecute(instance) {
                     if (this.powerStatus[instance.instanceId] === 'running') {
                          if(confirm(`Cancel ${instance.name}?`)) {
-                             fetch(`/api/cancel_power`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ power_id: instance.power_id }) });
+
+                             // --- THE MAGIC CONCURRENCY FIX ---
+                             // Fire the cancellation request to your backend's dedicated WebSocket listener,
+                             // passing the exact instance ID of this specific widget button!
+                             this.socket.emit('cancel_power', { execution_id: instance.instanceId });
+
                              this.powerStatus[instance.instanceId] = 'idle';
                              if (this.runningQueue[instance.power_id]) {
                                  this.runningQueue[instance.power_id] = this.runningQueue[instance.power_id].filter(id => id !== instance.instanceId);
