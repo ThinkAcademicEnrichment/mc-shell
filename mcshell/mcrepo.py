@@ -8,7 +8,6 @@ from typing import List, Dict, Any, Optional
 
 from mcshell.constants import MC_POWER_LIBRARY_DIR, MC_DATA_DIR
 
-# The identity used when authoring the Standard Library
 AUTHORING_PLAYER = "__system_author__"
 
 class PowerRepository(ABC):
@@ -23,6 +22,8 @@ class PowerRepository(ABC):
     def get_full_power(self, power_id: str) -> Optional[Dict[str, Any]]: pass
     @abstractmethod
     def delete_power(self, power_id: str) -> bool: pass
+    @abstractmethod
+    def find_power_by_function_name(self, function_name: str) -> Optional[Dict[str, Any]]: pass
 
 class SQLiteRepository(PowerRepository):
     def __init__(self, player_name: str):
@@ -61,30 +62,14 @@ class SQLiteRepository(PowerRepository):
             conn.commit()
 
     def rename_category(self, old_name: str, new_name: str) -> int:
-        """
-        Renames a category across all powers.
-        Also handles sub-categories (e.g., renaming 'A' to 'B' turns 'A/C' into 'B/C').
-        Returns the number of affected powers.
-        """
         with self._get_connection() as conn:
-            # 1. Update exact matches
-            cursor = conn.execute(
-                "UPDATE powers SET category = ? WHERE category = ?",
-                (new_name, old_name)
-            )
+            cursor = conn.execute("UPDATE powers SET category = ? WHERE category = ?", (new_name, old_name))
             count = cursor.rowcount
-
-            # 2. Update sub-category branches (e.g., "Old/Sub" -> "New/Sub")
-            # We look for categories starting with "old_name/"
-            prefix = f"{old_name}/"
-            new_prefix = f"{new_name}/"
-
             cursor = conn.execute(
                 "UPDATE powers SET category = ? || SUBSTR(category, ?) WHERE category LIKE ? ESCAPE '\\'",
                 (new_name, len(old_name) + 1, f"{old_name}/%")
             )
             count += cursor.rowcount
-
             conn.commit()
             return count
 
@@ -152,6 +137,23 @@ class SQLiteRepository(PowerRepository):
             if not row: return None
             p = dict(row)
             p['parameters'], p['dependencies'], p['blockly_json'] = json.loads(p['parameters'] or '[]'), json.loads(p['dependencies'] or '[]'), json.loads(p['blockly_json'] or '{}')
+            return p
+
+    # --- ADDED: Crucial lookup method for mcserver.py execution ---
+    def find_power_by_function_name(self, function_name: str) -> Optional[Dict[str, Any]]:
+        with self._get_connection() as conn:
+            # FIXED: Added 'ORDER BY updated_at DESC' so the backend always resolves
+            # to the most recently edited version of a duplicated function!
+            row = conn.execute(
+                "SELECT * FROM powers WHERE function_name = ? OR power_id = ? ORDER BY updated_at DESC",
+                (function_name, function_name)
+            ).fetchone()
+
+            if not row: return None
+            p = dict(row)
+            p['parameters'] = json.loads(p['parameters'] or '[]')
+            p['dependencies'] = json.loads(p['dependencies'] or '[]')
+            p['blockly_json'] = json.loads(p['blockly_json'] or '{}')
             return p
 
     def delete_power(self, power_id: str) -> bool:

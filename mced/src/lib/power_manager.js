@@ -2,9 +2,6 @@ import * as Blockly from 'blockly';
 import { pythonGenerator } from 'blockly/python';
 import { MCED } from "./constants.mjs";
 
-/**
- * Sends a command to the Flask server's IPython endpoint.
- */
 export async function executeIPythonCommand(command, commandArguments) {
     try {
         const response = await fetch('/api/ipython_magic', {
@@ -21,10 +18,6 @@ export async function executeIPythonCommand(command, commandArguments) {
     }
 }
 
-/**
- * Fetches all unique categories currently in the user's library.
- * Useful for populating the category dropdown in the save modal.
- */
 export async function getExistingCategories() {
     try {
         const response = await fetch('/api/powers/categories');
@@ -34,23 +27,15 @@ export async function getExistingCategories() {
     } catch (error) {
         console.error("Failed to fetch categories:", error);
     }
-    // Default categories if API fails or library is empty
     return ["Powers", "Workspaces", "Utilities", "Powers/Geometry", "Powers/Player"];
 }
 
-/**
- * Enhanced Metadata extraction:
- * Now attempts to predict a sub-category based on the blocks present.
- * This is async because it now fetches the list of existing categories for the UI.
- */
 export async function getPowerMetadata(workspace) {
     let powerName = '';
     let powerDescription = '';
     let category = 'Workspaces';
 
     const topBlocks = workspace.getTopBlocks(false);
-
-    // Check for function definition
     const funcDefBlock = topBlocks.find(b =>
         b.type === 'procedures_defnoreturn' || b.type === 'procedures_defreturn'
     );
@@ -59,7 +44,6 @@ export async function getPowerMetadata(workspace) {
         powerName = funcDefBlock.getFieldValue('NAME');
         powerDescription = funcDefBlock.getCommentText() || '';
 
-        // Simple heuristic for sub-categorization
         const blockTypes = workspace.getAllBlocks(false).map(b => b.type);
         if (blockTypes.some(t => t.includes('DigitalGeometry'))) {
             category = 'Powers/Geometry';
@@ -70,20 +54,14 @@ export async function getPowerMetadata(workspace) {
         }
     }
 
-    // Fetch existing categories to populate the dropdown
     const existingCategories = await getExistingCategories();
 
     return {
-        name: powerName,
-        description: powerDescription,
-        category: category,
-        availableCategories: existingCategories
+        name: powerName, description: powerDescription,
+        category: category, availableCategories: existingCategories
     };
 }
 
-/**
- * Deletes a power from the repository.
- */
 export async function deletePower(powerId) {
     if (!powerId) return false;
     try {
@@ -95,9 +73,6 @@ export async function deletePower(powerId) {
     }
 }
 
-/**
- * Serializes the workspace and metadata into a Power Object for the backend.
- */
 export async function savePower(workspace, formData) {
     const blocklyJson = Blockly.serialization.workspaces.save(workspace);
     const topBlocks = workspace.getTopBlocks(true);
@@ -111,38 +86,152 @@ export async function savePower(workspace, formData) {
         category: formData.category || "Workspaces",
         power_id: formData.power_id || null,
         blockly_json: blocklyJson,
-        dependencies: []
+        dependencies: [],
+        parameters: []
     };
 
     if (funcDefBlock) {
-        const powerFunctionName = funcDefBlock.getFieldValue('NAME');
-        const argNames = funcDefBlock.getVars();
-        const funcNameForCode = pythonGenerator.nameDB_.getName(powerFunctionName, MCED.BlocklyNameTypes.PROCEDURE);
-        const argsForDef = argNames.map(name => pythonGenerator.nameDB_.getName(name, MCED.BlocklyNameTypes.VARIABLE));
+        pythonGenerator.init(workspace);
+        const fullCode = pythonGenerator.workspaceToCode(workspace);
+        const lines = fullCode.split('\n');
 
-        let funcBody = pythonGenerator.statementToCode(funcDefBlock, 'STACK') || (pythonGenerator.INDENT + 'pass\n');
-        if (funcDefBlock.type === 'procedures_defreturn') {
-            const ret = pythonGenerator.valueToCode(funcDefBlock, 'RETURN', pythonGenerator.ORDER_NONE) || 'None';
-            funcBody += pythonGenerator.INDENT + 'return ' + ret + '\n';
+        let inInit = false;
+        let extractedLines = [];
+        let collectedImports = new Set();
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+
+            // Harvest any required library imports Blockly generated
+            if (line.startsWith('import ') || line.startsWith('from ')) {
+                // FIXED: Wildcard imports (import *) are illegal inside Python functions.
+                // The mcserver.py execution wrapper already provides these globally anyway!
+                if (!line.includes('import *')) {
+                    collectedImports.add(line.trim());
+                }
+                continue;
+            }
+
+            if (line.startsWith('    def __init__')) { inInit = true; continue; }
+            if (inInit) {
+                if (line.startsWith('        ') || line.trim() === '') continue;
+                else inInit = false;
+            }
+            if (!inInit) {
+                if (line.startsWith('    def run_program')) break;
+                if (line.startsWith('    def ') || extractedLines.length > 0) extractedLines.push(line);
+            }
         }
 
-        powerDataObject.function_name = powerFunctionName;
-        powerDataObject.python_code = `def ${funcNameForCode}(self, ${argsForDef.join(', ')}):\n${funcBody}`;
+        powerDataObject.python_code = extractedLines.map(line => {
+            return line.startsWith('    ') ? line.substring(4) : line;
+        }).join('\n').trimEnd() + '\n';
 
+        powerDataObject.function_name = funcDefBlock.getFieldValue('NAME');
+
+        const argNames = funcDefBlock.getVars();
         if (argNames.length > 0) {
             const callBlock = topBlocks.find(b =>
                 (b.type === 'procedures_callnoreturn' || b.type === 'procedures_callreturn') &&
-                b.getFieldValue('NAME') === powerFunctionName
+                b.getFieldValue('NAME') === powerDataObject.function_name
             );
 
-            if (!callBlock) throw new Error(`You must have a "call ${powerFunctionName}" block to define types.`);
+            if (!callBlock) throw new Error(`You must have a "call ${powerDataObject.function_name}" block to define types.`);
 
             powerDataObject.parameters = argNames.map((name, i) => {
                 const input = callBlock.getInput('ARG' + i);
-                const check = input?.connection?.targetBlock()?.outputConnection?.getCheck();
-                return { name, type: check ? check[0] : 'String', default: 0 };
+                const targetBlock = input?.connection?.targetBlock();
+                const check = targetBlock?.outputConnection?.getCheck();
+
+                let defaultValue = null;
+                let pickerSource = null;
+
+                if (targetBlock) {
+                    if (targetBlock.type.match(/^mc_(block|item|entity)_picker_/)) {
+                        pickerSource = targetBlock.type;
+                    }
+
+                    let codeTuple = pythonGenerator.blockToCode(targetBlock);
+                    let pyCode = Array.isArray(codeTuple) ? codeTuple[0] : codeTuple;
+
+                    if (pyCode !== undefined && pyCode !== null) {
+                        pyCode = pyCode.trim();
+                        if ((pyCode.startsWith("'") && pyCode.endsWith("'")) || (pyCode.startsWith('"') && pyCode.endsWith('"'))) {
+                            defaultValue = pyCode.slice(1, -1);
+                        } else if (!isNaN(Number(pyCode))) {
+                            defaultValue = Number(pyCode);
+                        } else if (pyCode === 'True') {
+                            defaultValue = true;
+                        } else if (pyCode === 'False') {
+                            defaultValue = false;
+                        } else if (pyCode.startsWith('Vec3(')) {
+                            const vecMatch = pyCode.match(/Vec3\(([^,]+),\s*([^,]+),\s*([^)]+)\)/);
+                            if (vecMatch && !isNaN(Number(vecMatch[1])) && !isNaN(Number(vecMatch[2])) && !isNaN(Number(vecMatch[3]))) {
+                                defaultValue = { x: Number(vecMatch[1]), y: Number(vecMatch[2]), z: Number(vecMatch[3]) };
+                            }
+                        }
+                    }
+                }
+
+                return { name, type: check ? check[0] : 'String', default: defaultValue, picker_source: pickerSource };
             });
         }
+
+        // --- 3. Advanced Python String Surgery ---
+        const sigRegex = new RegExp(`^([ \\t]*)def ${powerDataObject.function_name}\\(.*?\\):`, 'm');
+        const match = powerDataObject.python_code.match(sigRegex);
+
+        if (match) {
+            const baseIndent = match[1] || "";
+            const innerIndent = baseIndent + "    ";
+
+            // A. Build the Header Injection (Imports, Type casting & Thread Init)
+            let headerLogic = `\n${innerIndent}import time\n`;
+
+            // INJECT HARVESTED IMPORTS (Safely bypassing duplicates)
+            collectedImports.forEach(imp => {
+                if (imp !== 'import time') {
+                    headerLogic += `${innerIndent}${imp}\n`;
+                }
+            });
+
+            headerLogic += `${innerIndent}if not hasattr(self, 'active_threads'):\n`;
+            headerLogic += `${innerIndent}    self.active_threads = []\n`;
+
+            powerDataObject.parameters.forEach(p => {
+                if (p.type === '3DVector') {
+                    headerLogic += `${innerIndent}if isinstance(${p.name}, dict) and 'x' in ${p.name}:\n`;
+                    headerLogic += `${innerIndent}    from mcshell.Vec3 import Vec3\n`;
+                    headerLogic += `${innerIndent}    ${p.name} = Vec3(float(${p.name}['x']), float(${p.name}['y']), float(${p.name}['z']))\n`;
+                }
+            });
+
+            // B. Build the Footer Injection (The Wait Loop)
+            let footerLogic = `\n${innerIndent}# --- Auto-Injected Thread Wait Loop ---\n`;
+            footerLogic += `${innerIndent}while hasattr(self, 'active_threads') and any(t.is_alive() for t in getattr(self, 'active_threads', [])):\n`;
+            footerLogic += `${innerIndent}    if getattr(self, 'cancel_event', None) and self.cancel_event.is_set(): break\n`;
+            footerLogic += `${innerIndent}    time.sleep(0.1)\n\n`;
+
+            // C. Locate the exact bounds of the main function
+            const insertPos = powerDataObject.python_code.indexOf(match[0]) + match[0].length;
+
+            const nextDefRegex = new RegExp(`^${baseIndent}def `, 'm');
+            const contentAfterSig = powerDataObject.python_code.slice(insertPos);
+            const nextDefMatch = contentAfterSig.match(nextDefRegex);
+
+            let splitPos = powerDataObject.python_code.length;
+            if (nextDefMatch) {
+                splitPos = insertPos + nextDefMatch.index;
+            }
+
+            // D. Sandwich the injections into the code
+            const part1 = powerDataObject.python_code.slice(0, insertPos);
+            const part2 = powerDataObject.python_code.slice(insertPos, splitPos);
+            const part3 = powerDataObject.python_code.slice(splitPos);
+
+            powerDataObject.python_code = part1 + headerLogic + part2 + footerLogic + part3;
+        }
+
     } else {
         powerDataObject.python_code = pythonGenerator.workspaceToCode(workspace);
         powerDataObject.function_name = null;
@@ -150,18 +239,13 @@ export async function savePower(workspace, formData) {
     }
 
     const response = await fetch('/api/powers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(powerDataObject),
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(powerDataObject),
     });
 
     if (!response.ok) throw new Error(await response.text());
     return true;
 }
 
-/**
- * Determines if we are running a standalone script or a functional power definition.
- */
 export function buildDebugPayload(workspace) {
     const topBlocks = workspace.getTopBlocks(false);
     if (topBlocks.length === 0) return null;
