@@ -34,7 +34,7 @@ This guide will get you running in just a few minutes. Each step is linked to a 
 ### Installation
 
 Before you begin, you will need a few things installed on your system (Linux, macOS, or Windows Subsystem for Linux):
-* **Python** (version 3.9 or higher)
+* **Python** (version 3.10 or higher)
 
 Once the prerequisites are met, run the following commands in your terminal to download and install the project and all its dependencies. Note the recommended  
 `--user` option: this will install in `~/.local/bin` so make sure your `PATH` includes this directory! And notice the package is called `mc-shell` but the
@@ -69,10 +69,24 @@ This section covers all the `%pp_` commands for managing your personal Paper ser
 
 ### Creating and Listing Worlds
 
-To create a new, self-contained world, use the `%pp_create_world` command. This will create a new folder in your home directory (`~/mc-worlds`), download the appropriate Paper server, and set up all the necessary configuration files. The current default version (which the client must match) is `1.21.4`.
+To create a new, self-contained world, use the `%pp_create_world` command. This will create a new folder in your home directory (`~/mc-worlds`), download the appropriate Paper server, and set up all the necessary configuration files. The current default version (which the client must match) is `1.21.11` but you can specify any version you want with the `--version` option, for example `1.21.4`.
 ```ipython
 %pp_create_world my_creative_build --version=1.21.4
 ```
+
+You can apply any set of datapacks that appear in your `~/mc-worlds/datapacks-library` directory. `mc-shell` ships with three datapacks: `flat_world`,`void_world` and a version of *OneBlock* by [IJAMinecraft](https://ijaminecraft.com/map/oneblock/) called `oneblock`. 
+
+To create a totally flat world, use the following command:
+```ipython
+%pp_create_world my_flat_creative_build --datapacks=flat_world
+```
+To create a *OneBlock* world, use the following command. Note we overlay the void datapack to clear the world.
+```ipython
+%pp_create_world my_OneBlock --datapacks=void_world,oneblock
+```
+You can download and apply any datapack you want by unzip it to a folder inside `~/mc-worlds/datapacks-library` and then passing the name of the folder to the `--datapacks` option as described above.
+
+You can also add *PaperMC* plugins to your `~/mc-worlds/<world_name>/plugins` folder.
 
 To see a list of all the worlds you have created, use the `%pp_list_worlds` command.
 
@@ -129,5 +143,5 @@ The Control Panel is a touch-friendly UI for executing your saved powers in-game
 
 The interface has two modes:
 
-  * **Run Mode:** The main grid displays your power "widgets." If a power has parameters, the widget will have interactive controls like sliders or pickers. Simply set the parameters and click "Execute."
+  * **Run Mode:** The main grid displays your power "widgets." If a power has parameters, a long press on the widget will make interactive controls like sliders or pickers appear. Simply set the parameters and click 'Load Configuration.' Then a quick press of the widget will execute that power.
   * **Edit Mode:** Click "Edit Layout" to customize your grid. You can open a library of all your saved powers, add them as new widgets to your grid, and drag-and-drop them to arrange your layout.
