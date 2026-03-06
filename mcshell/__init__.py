@@ -962,28 +962,17 @@ class MCShell(Magics):
         execution_id = line.strip()
         if not execution_id:
             print("Usage: %mc_cancel_power <execution_id>")
-            print("Currently running powers:", list(RUNNING_POWERS.keys()))
+            if RUNNING_POWERS:
+                print("Currently running powers:", list(RUNNING_POWERS.keys()))
             return
 
-        # Lookup the execution metadata in the global registry
         power_metadata = RUNNING_POWERS.get(execution_id)
-
         if power_metadata:
             print(f"Sending cancellation signal to power: {execution_id}")
-            # Corrected Key: Simply 'cancel_event'
+            # Corrected attribute access (removed paste garbage)
             power_metadata['cancel_event'].set()
         else:
             print(f"Error: No running power found with ID: {execution_id}")
-
-        # @line_magic
-        # def mc_start_debug(self, line):
-        #     """Starts the debug mcserver in a separate thread."""
-        #     start_debug_server()
-        #
-        # @line_magic
-        # def mc_stop_debug(self, line):
-        #     """Stops the debug mcserver thread."""
-        #     stop_debug_server()
 
     def _get_mc_name(self) -> Optional[str]:
         """
