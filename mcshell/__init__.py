@@ -158,7 +158,7 @@ class MCShell(Magics):
             # Capturing strings first ensures we don't crash on int('')
             resp_port = Prompt.ask('Server Port:', default=str(self.server_data['port']))
             resp_rcon = Prompt.ask('RCON Port:', default=str(self.server_data['rcon_port']))
-            resp_fj   = Prompt.ask('FruitJuice Port:', default=str(self.server_data['fj_port']))
+            resp_fj   = Prompt.ask('McJuice Port:', default=str(self.server_data['fj_port']))
             resp_app  = Prompt.ask('Application Port:', default=str(self.server_data['app_port']))
 
             # Robust casting logic
@@ -227,12 +227,6 @@ class MCShell(Magics):
                 "rcon.password": self.server_data.get('password'),
                 "enable-command-block":'true',
             },
-            "FruitJuice" : {
-                "hostname": "0.0.0.0",
-                "port": self.server_data.get('fj_port',FJ_PLUGIN_PORT),
-                "location": "ABSOLUTE",
-                "hitclick": "LEFT",
-            },
             "paper": {
                 "packet-limiter": {
                     "all-packets": {
@@ -257,9 +251,6 @@ class MCShell(Magics):
         except IOError as e:
             print(f"Error: Could not write world_manifest.json file. {e}")
             return
-
-        # Always install FruitJuice from bundled version
-        plugins_dir.joinpath(FJ_JAR_PATH.name).symlink_to(FJ_JAR_PATH)
 
         # Always install McJuice from bundled version
         plugins_dir.joinpath(MC_JUICE_JAR_PATH.name).symlink_to(MC_JUICE_JAR_PATH)

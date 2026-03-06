@@ -3,6 +3,7 @@ import yaml
 import pickle
 import pathlib
 import re
+import json
 from pathlib import Path
 
 # --- STANDALONE PATH CONFIGURATION ---
@@ -144,26 +145,53 @@ class RegistryBuilder:
         {'id': 'picker_data_path', 'label': 'Data Path', 'options': DATA_PATHS, 'input_type': 'DataPath'},
     ]
 
-    WOOD_TYPES = ["OAK", "SPRUCE", "BIRCH", "JUNGLE", "ACACIA", "DARK_OAK", "MANGROVE", "CHERRY", "PALE_OAK", "BAMBOO", "CRIMSON", "WARPED"]
-    COLORS_LIST = ["WHITE", "ORANGE", "MAGENTA", "LIGHT_BLUE", "YELLOW", "LIME", "PINK", "GRAY", "LIGHT_GRAY", "CYAN", "PURPLE", "BLUE", "BROWN", "GREEN", "RED", "BLACK"]
-
-    VARIANT_MAP = {
-        'WOOD': {'id': 'picker_wood_types', 'label': 'Wood Type', 'options': [(w.replace('_', ' ').title(), w) for w in WOOD_TYPES], 'input_type': 'MinecraftWood', 'shadow': 'picker_wood_types'},
-        'COLOR': {'id': 'picker_colours', 'label': 'Color', 'options': [(c.replace('_', ' ').title(), c) for c in COLORS_LIST], 'input_type': 'MinecraftColour', 'shadow': 'picker_colours'}
+    VARIANT_CONFIG = {
+        "WOOD": {
+            "id": "picker_wood_types",
+            "label": "Wood Type",
+            "prefixes": ["OAK", "SPRUCE", "BIRCH", "JUNGLE", "ACACIA", "DARK_OAK", "MANGROVE", "CHERRY", "PALE_OAK", "BAMBOO", "CRIMSON", "WARPED"],
+            "input_type": "MinecraftWood",
+            "shadow": "picker_wood_types"
+        },
+        "COLOR": {
+            "id": "picker_colours",
+            "label": "Color",
+            "prefixes": ["WHITE", "ORANGE", "MAGENTA", "LIGHT_BLUE", "YELLOW", "LIME", "PINK", "GRAY", "LIGHT_GRAY", "CYAN", "PURPLE", "BLUE", "BROWN", "GREEN", "RED", "BLACK"],
+            "input_type": "MinecraftColour",
+            "shadow": "picker_colours"
+        },
+        "ARMOR_TIER": {
+            "id": "picker_armor_tier",
+            "label": "Armor Tier",
+            "prefixes": ["LEATHER", "CHAINMAIL", "IRON", "GOLDEN", "DIAMOND", "NETHERITE", "TURTLE"],
+            "input_type": "MinecraftArmorTier",
+            "shadow": "picker_armor_tier"
+        },
+        "TOOL_TIER": {
+            "id": "picker_tool_tier",
+            "label": "Tool Tier",
+            "prefixes": ["WOODEN", "STONE", "IRON", "GOLDEN", "DIAMOND", "NETHERITE"],
+            "input_type": "MinecraftToolTier",
+            "shadow": "picker_tool_tier"
+        }
     }
 
     MATERIAL_PICKER_GROUPS = {
         "world": ["AIR", "STONE", "GRANITE", "DIORITE", "ANDESITE", "DEEPSLATE", "CALCITE", "TUFF", "DIRT", "COARSE_DIRT", "ROOTED_DIRT", "GRASS_BLOCK", "PODZOL", "MYCELIUM", "DIRT_PATH", "SAND", "RED_SAND", "GRAVEL", "CLAY", "ICE", "PACKED_ICE", "BLUE_ICE", "SNOW", "SNOW_BLOCK", "WATER", "LAVA", "BEDROCK", "OBSIDIAN", "CRYING_OBSIDIAN", "MAGMA_BLOCK"],
         "ores": ["COAL_ORE", "DEEPSLATE_COAL_ORE", "IRON_ORE", "DEEPSLATE_IRON_ORE", "COPPER_ORE", "DEEPSLATE_COPPER_ORE", "GOLD_ORE", "DEEPSLATE_GOLD_ORE", "REDSTONE_ORE", "DEEPSLATE_REDSTONE_ORE", "EMERALD_ORE", "DEEPSLATE_EMERALD_ORE", "LAPIS_ORE", "DEEPSLATE_LAPIS_ORE", "DIAMOND_ORE", "DEEPSLATE_DIAMOND_ORE", "NETHER_GOLD_ORE", "NETHER_QUARTZ_ORE", "ANCIENT_DEBRIS"],
+        "woods_and_logs": ["LOG", "WOOD", "PLANKS", "SAPLING", "LEAVES", "STRIPPED_LOG", "STRIPPED_WOOD"],
+        "colored_blocks": ["WOOL", "CARPET", "TERRACOTTA", "GLAZED_TERRACOTTA", "CONCRETE", "CONCRETE_POWDER", "BED", "BANNER", "SHULKER_BOX", "CANDLE"],
         "stone_bricks": ["BRICKS", "STONE_BRICKS", "MUD_BRICKS", "DEEPSLATE_BRICKS", "DEEPSLATE_TILES", "NETHER_BRICKS", "RED_NETHER_BRICKS", "POLISHED_BLACKSTONE_BRICKS", "END_STONE_BRICKS", "QUARTZ_BRICKS", "CHISELED_STONE_BRICKS", "CRACKED_STONE_BRICKS", "MOSSY_STONE_BRICKS", "CHISELED_NETHER_BRICKS", "CRACKED_NETHER_BRICKS", "CHISELED_POLISHED_BLACKSTONE", "CRACKED_POLISHED_BLACKSTONE_BRICKS", "CHISELED_DEEPSLATE", "CRACKED_DEEPSLATE_BRICKS", "CRACKED_DEEPSLATE_TILES", "CHISELED_TUFF_BRICKS"],
-        "glass": ["GLASS", "GLASS_PANE", "TINTED_GLASS"],
+        "glass": ["GLASS", "GLASS_PANE", "TINTED_GLASS", "STAINED_GLASS", "STAINED_GLASS_PANE"],
         "redstone_components": ["REDSTONE_WIRE", "REDSTONE_BLOCK", "REDSTONE_TORCH", "REPEATER", "COMPARATOR", "PISTON", "STICKY_PISTON", "SLIME_BLOCK", "HONEY_BLOCK", "OBSERVER", "DROPPER", "DISPENSER", "HOPPER", "LECTERN", "LEVER", "DAYLIGHT_DETECTOR", "TRIPWIRE_HOOK", "TARGET", "NOTE_BLOCK", "RAIL", "POWERED_RAIL", "DETECTOR_RAIL", "ACTIVATOR_RAIL", "REDSTONE_LAMP"],
         "lighting": ["TORCH", "SOUL_TORCH", "LANTERN", "SOUL_LANTERN", "GLOWSTONE", "SEA_LANTERN", "OCHRE_FROGLIGHT", "PEARLESCENT_FROGLIGHT", "VERDANT_FROGLIGHT", "COPPER_LANTERN", "SHROOMLIGHT", "JACK_O_LANTERN", "BEACON", "END_ROD"],
         "copper_variants": ["COPPER_BLOCK", "EXPOSED_COPPER", "WEATHERED_COPPER", "OXIDIZED_COPPER", "CUT_COPPER", "CHISELED_COPPER", "COPPER_GRATE", "COPPER_BULB"],
-        "nature": ["OAK_LEAVES", "SPRUCE_LEAVES", "BIRCH_LEAVES", "JUNGLE_LEAVES", "ACACIA_LEAVES", "DARK_OAK_LEAVES", "MANGROVE_LEAVES", "CHERRY_LEAVES", "AZALEA_LEAVES", "MOSS_BLOCK", "VINE", "CAVE_VINES", "TWISTING_VINES", "WEEPING_VINES"],
+        "nature": ["MOSS_BLOCK", "VINE", "CAVE_VINES", "TWISTING_VINES", "WEEPING_VINES", "LILY_PAD", "SUGAR_CANE", "BAMBOO", "CACTUS"],
         "flowers": ["DANDELION", "POPPY", "BLUE_ORCHID", "ALLIUM", "AZURE_BLUET", "RED_TULIP", "ORANGE_TULIP", "WHITE_TULIP", "PINK_TULIP", "OXEYE_DAISY", "CORNFLOWER", "LILY_OF_THE_VALLEY", "WITHER_ROSE", "SUNFLOWER", "LILAC", "ROSE_BUSH", "PEONY"],
         "functional_storage": ["CHEST", "TRAPPED_CHEST", "BARREL", "ENDER_CHEST", "CRAFTER", "FURNACE", "BLAST_FURNACE", "SMOKER"],
-        "spawning": ["SPAWNER", "TRIAL_SPAWNER", "FROGSPAWN", "RESPAWN_ANCHOR"]
+        "spawning": ["SPAWNER", "TRIAL_SPAWNER", "FROGSPAWN", "RESPAWN_ANCHOR"],
+        "tools": ["SWORD", "PICKAXE", "AXE", "SHOVEL", "HOE"],
+        "armour": ["HELMET", "CHESTPLATE", "LEGGINGS", "BOOTS", "HORSE_ARMOR"]
     }
 
     ENTITY_GROUPS = {
@@ -178,6 +206,7 @@ class RegistryBuilder:
         self.toolbox_path = toolbox_path
         self.blocks_dir = blocks_dir
         self.gens_dir = gens_dir
+        self.generated_block_pickers = [] # <--- NEW: Tracks exactly what pickers get generated
 
         try:
             with materials_path.open('rb') as f:
@@ -193,7 +222,6 @@ class RegistryBuilder:
 
         self.ACTION_CLASSES = []
         if BlocklyGenerator is not None:
-            # Base static classes (pyncraft removed!)
             classes = [
                 (get_action_class("serveractions", "ServerActions"), "Server", self.COLORS["Server"]),
                 (get_action_class("playeractions", "PlayerActions"), "Player", self.COLORS["Player"]),
@@ -205,7 +233,6 @@ class RegistryBuilder:
                 (get_action_class("digitalsetactions", "DigitalSetActions"), "Digital Set", self.COLORS["Digital Set"]),
             ]
 
-            # DYNAMIC DISCOVERY: Read yaml and auto-append GeneratedXActions
             yaml_path = MC_DATA_DIR / "mcjuice_api.yaml"
             if yaml_path.exists():
                 try:
@@ -225,7 +252,6 @@ class RegistryBuilder:
         return name.replace('_', ' ').title()
 
     def build_all(self):
-        """Executes the complete build pipeline."""
         if BlocklyGenerator is None: return
         self.ensure_toolbox(clean_toolbox=True)
         self.build_blocks()
@@ -234,9 +260,9 @@ class RegistryBuilder:
         self.build_actions()
         self.build_pickers_category()
         self.build_action_classes_export()
+        self.export_taxonomy()
 
     def build_action_classes_export(self):
-        """Generates a JS artifact exporting active Python action class names for frontend formatting."""
         class_names = [cls.__name__ for cls, _, _ in self.ACTION_CLASSES]
         js_content = f"export const ACTION_CLASSES = {class_names!r};\n"
         out_path = self.gens_dir / "action_classes.mjs"
@@ -244,8 +270,9 @@ class RegistryBuilder:
 
     def _generate_base_pickers(self) -> dict:
         js, py = [], []
-        for info in self.VARIANT_MAP.values():
-            res = BlocklyGenerator.generate_picker(info['id'], info['label'], info['options'], info['input_type'], self.COLORS["Picker"])
+        for info in self.VARIANT_CONFIG.values():
+            options = [(self._normalize_name(p), p) for p in info['prefixes']]
+            res = BlocklyGenerator.generate_picker(info['id'], info['label'], options, info['input_type'], self.COLORS["Picker"])
             js.append(res['js']); py.append(res['py'])
         return {"js": "\n".join(js), "py": "\n".join(py)}
 
@@ -258,45 +285,95 @@ class RegistryBuilder:
                 self.toolbox_path.write_text(template.read_text())
 
     def _classify_variants(self, material_list):
-        parameterized, consumed = {}, set()
-        suffixes = {}
+        parameterized = {}
+        consumed = set()
+        classified_groups = {}
+        suffix_map = {}
+
         for mat in material_list:
-            parts = mat.split('_')
-            if len(parts) > 1:
-                prefix, suffix = parts[0], "_".join(parts[1:])
-                if prefix in self.WOOD_TYPES: suffixes.setdefault(f"{{}}_{suffix}", {"mats": [], "type": "WOOD"}).get("mats").append(mat)
-                elif prefix in self.COLORS_LIST: suffixes.setdefault(f"{{}}_{suffix}", {"mats": [], "type": "COLOR"}).get("mats").append(mat)
-        for t, info in suffixes.items():
+            matched = False
+            for var_key, var_info in self.VARIANT_CONFIG.items():
+                if matched: break
+                for prefix in var_info["prefixes"]:
+                    if mat.startswith(f"{prefix}_"):
+                        suffix = mat[len(prefix)+1:]
+                        group_key = (var_key, suffix)
+
+                        if group_key not in classified_groups:
+                            classified_groups[group_key] = {"mats": [], "type": var_key, "variants": [], "suffix": suffix}
+
+                        classified_groups[group_key]["mats"].append(mat)
+                        classified_groups[group_key]["variants"].append(self._normalize_name(prefix))
+                        matched = True
+                        break
+
+        for (var_key, suffix), info in classified_groups.items():
             if len(info["mats"]) > 3:
-                var = self.VARIANT_MAP[info["type"]]
-                parameterized[t] = {"template": t, "input_type": var["input_type"], "shadow": var["shadow"], "label": self._normalize_name(t.replace('{}_', ''))}
+                var_config = self.VARIANT_CONFIG[info["type"]]
+                template_name = f"{var_key}_{suffix}"
+                python_template = f"{{}}_{suffix}"
+
+                parameterized[template_name] = {
+                    "template": python_template,
+                    "input_type": var_config["input_type"],
+                    "shadow": var_config["shadow"],
+                    "label": self._normalize_name(template_name),
+                    "available_variants": sorted(info["variants"]),
+                    "mats": info["mats"] # <--- NEW: Explicitly output the raw underlying materials
+                }
                 consumed.update(info["mats"])
-        return parameterized, consumed
+
+                if suffix not in suffix_map:
+                    suffix_map[suffix] = []
+                suffix_map[suffix].append(template_name)
+
+        return parameterized, consumed, suffix_map
 
     def build_blocks(self):
+        self.generated_block_pickers = [] # Reset block picker tracking
         js, py, xml = [], [], []
         base = self._generate_base_pickers()
         js.append(base['js']); py.append(base['py'])
 
         blocks = [k for k, v in self.materials_data.items() if v.get('is_block')]
-        templates, consumed = self._classify_variants(blocks)
+        templates, consumed, suffix_map = self._classify_variants(blocks)
 
-        for t, info in templates.items():
-            b_type = f"mc_block_{t.lower().replace('{}_', '').replace(' ', '_')}"
-            res = BlocklyGenerator.generate_parameterized_block(b_type, info["label"], "VARIANT", info["input_type"], "Block", self.COLORS["Block"], t, info["shadow"])
+        for t_key, info in templates.items():
+            b_type = f"mc_block_{t_key.lower().replace(' ', '_')}"
+            res = BlocklyGenerator.generate_parameterized_block(
+                b_type, info["label"], "VARIANT", info["input_type"], "Block",
+                self.COLORS["Block"], info["template"], info["shadow"]
+            )
             js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
 
         for group_name, members in self.MATERIAL_PICKER_GROUPS.items():
-            valid_members = [m for m in members if m in blocks]
+            valid_members = []
+            for m in members:
+                # 1. Grab Raw Blocks
+                if m in blocks:
+                    valid_members.append(m)
+                # 2. FIX: Dynamically unpack templates (e.g. "LOG") back into raw blocks for the picker!
+                if m in suffix_map:
+                    for t_key in suffix_map[m]:
+                        valid_members.extend(templates[t_key]["mats"])
+
+            # Remove duplicates and ensure everything is actually a block
+            valid_members = sorted(list(set([m for m in valid_members if m in blocks])))
+
             if not valid_members: continue
+
             b_type = f"mc_block_picker_{group_name.lower()}"
+            self.generated_block_pickers.append(b_type) # Track it!
+
             res = BlocklyGenerator.generate_picker(b_type, self._normalize_name(group_name), [(self._normalize_name(m), m) for m in valid_members], "Block", self.COLORS["Picker"])
             js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
             consumed.update(valid_members)
 
         rem = sorted(list(set(blocks) - consumed))
         if rem:
-            res = BlocklyGenerator.generate_picker("mc_block_picker_general", "Other Blocks", [(self._normalize_name(m), m) for m in rem], "Block", self.COLORS["Picker"])
+            b_type = "mc_block_picker_general"
+            self.generated_block_pickers.append(b_type) # Track fallback picker
+            res = BlocklyGenerator.generate_picker(b_type, "Other Blocks", [(self._normalize_name(m), m) for m in rem], "Block", self.COLORS["Picker"])
             js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
 
         self._write_output("blocks", "Blocks", js, py)
@@ -305,16 +382,30 @@ class RegistryBuilder:
     def build_items(self):
         js, py, xml = [], [], []
         items = [k for k, v in self.materials_data.items() if v.get('is_item')]
-        templates, consumed = self._classify_variants(items)
+        templates, consumed, suffix_map = self._classify_variants(items)
 
-        for t, info in templates.items():
-            b_type = f"mc_item_{t.lower().replace('{}_', '').replace(' ', '_')}"
-            res = BlocklyGenerator.generate_parameterized_block(b_type, info["label"], "VARIANT", info["input_type"], "Item", self.COLORS["Item"], t, info["shadow"])
+        for t_key, info in templates.items():
+            b_type = f"mc_item_{t_key.lower().replace(' ', '_')}"
+            res = BlocklyGenerator.generate_parameterized_block(
+                b_type, info["label"], "VARIANT", info["input_type"], "Item",
+                self.COLORS["Item"], info["template"], info["shadow"]
+            )
             js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
 
         for group_name, members in self.MATERIAL_PICKER_GROUPS.items():
-            valid_members = [m for m in members if m in items]
+            valid_members = []
+            for m in members:
+                # Identical Unpacking Fix for Items
+                if m in items:
+                    valid_members.append(m)
+                if m in suffix_map:
+                    for t_key in suffix_map[m]:
+                        valid_members.extend(templates[t_key]["mats"])
+
+            valid_members = sorted(list(set([m for m in valid_members if m in items])))
+
             if not valid_members: continue
+
             b_type = f"mc_item_picker_{group_name.lower()}"
             res = BlocklyGenerator.generate_picker(b_type, self._normalize_name(group_name), [(self._normalize_name(m), m) for m in valid_members], "Item", self.COLORS["Picker"])
             js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
@@ -353,11 +444,88 @@ class RegistryBuilder:
             BlocklyGenerator.update_toolbox(c_xml, self.toolbox_path)
 
     def build_pickers_category(self):
-        xml = [f'<block type="{info["id"]}"></block>' for info in self.VARIANT_MAP.values()]
+        """
+        NEW: Safely builds the Pickers category in the toolbox by *only* inserting
+        blocks that were successfully generated and tracked in the previous steps.
+        """
+        xml = [f'<block type="{info["id"]}"></block>' for info in self.VARIANT_CONFIG.values()]
         xml += [f'<block type="{p["id"]}"></block>' for p in self.ACTION_PICKERS]
-        for group_name in self.MATERIAL_PICKER_GROUPS.keys():
-            xml.append(f'<block type="mc_block_picker_{group_name.lower()}"></block>')
+
+        # Pull exactly what was verified and built in build_blocks()
+        for b_type in getattr(self, 'generated_block_pickers', []):
+            xml.append(f'<block type="{b_type}"></block>')
+
         BlocklyGenerator.update_toolbox(f'<category name="Pickers" colour="{self.COLORS["Picker"]}">{"".join(xml)}</category>', self.toolbox_path)
+
+    def export_taxonomy(self):
+        taxonomy = {"Block": [], "Item": [], "Entity": []}
+
+        for p in self.ACTION_PICKERS:
+            taxonomy[p['input_type']] = [{"name": opt[0], "value": opt[1]} for opt in p['options']]
+
+        def build_category(groups_dict, all_items, category_key):
+            parameterized, consumed, suffix_map = self._classify_variants(all_items)
+            global_added_templates = set()
+
+            for group_name, members in groups_dict.items():
+                group_out = {"name": self._normalize_name(group_name), "items": []}
+
+                for m in members:
+                    if m in all_items and m not in consumed:
+                        group_out["items"].append({"name": self._normalize_name(m), "value": m})
+                    elif m in suffix_map:
+                        for t_key in suffix_map[m]:
+                            if t_key not in global_added_templates:
+                                t_info = parameterized[t_key]
+                                group_out["items"].append({
+                                    "name": t_info["label"],
+                                    "template": t_info["template"],
+                                    "variants": t_info["available_variants"],
+                                    "currentVariant": t_info["available_variants"][0] if t_info["available_variants"] else ""
+                                })
+                                global_added_templates.add(t_key)
+
+                if group_out["items"]:
+                    taxonomy[category_key].append(group_out)
+
+            other_items = []
+            rem = sorted(list(set(all_items) - consumed))
+            grouped_raw = set(item for sublist in groups_dict.values() for item in sublist)
+            rem = [x for x in rem if x not in grouped_raw]
+
+            for m in rem:
+                other_items.append({"name": self._normalize_name(m), "value": m})
+
+            leftover_templates = set(parameterized.keys()) - global_added_templates
+            for t_key in sorted(leftover_templates):
+                t_info = parameterized[t_key]
+                other_items.append({
+                    "name": t_info["label"],
+                    "template": t_info["template"],
+                    "variants": t_info["available_variants"],
+                    "currentVariant": t_info["available_variants"][0] if t_info["available_variants"] else ""
+                })
+
+            if other_items:
+                other_items.sort(key=lambda x: x["name"])
+                taxonomy[category_key].append({
+                    "name": f"Other {category_key}s",
+                    "items": other_items
+                })
+
+        blocks = [k for k, v in self.materials_data.items() if v.get('is_block')]
+        build_category(self.MATERIAL_PICKER_GROUPS, blocks, "Block")
+
+        items = [k for k, v in self.materials_data.items() if v.get('is_item')]
+        build_category(self.MATERIAL_PICKER_GROUPS, items, "Item")
+
+        entities = [k for k in self.entity_data.keys()]
+        build_category(self.ENTITY_GROUPS, entities, "Entity")
+
+        out_path = MC_DATA_DIR / "taxonomy.json"
+        with open(out_path, "w") as f:
+            json.dump(taxonomy, f, indent=2)
+        print(f"Exported UI Taxonomy successfully to {out_path}")
 
     def _write_output(self, file_name, export_name, js, py):
         header = 'import { MCED } from "../lib/constants.mjs";\n\n'
@@ -367,7 +535,6 @@ class RegistryBuilder:
         self.gens_dir.mkdir(parents=True, exist_ok=True)
         (self.blocks_dir / f"{file_name}.mjs").write_text(js_c, encoding='utf-8')
         (self.gens_dir / f"{file_name}.mjs").write_text(py_c, encoding='utf-8')
-
 
 class ApiGenerator:
     """

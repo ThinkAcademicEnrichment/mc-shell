@@ -2,17 +2,10 @@ import os
 import json
 from flask import Blueprint, request, jsonify, make_response, current_app, render_template_string, session, send_file
 
-from mcshell.constants import MC_CONTROL_LAYOUT_PATH
+# from mcshell.constants import MC_CONTROL_LAYOUT_PATH
 
 # 1. Create a Blueprint instance.
-#    'powers_api' is the name of the blueprint.
-#    __name__ helps Flask locate the blueprint.
-#    url_prefix='/api' automatically prepends '/api' to all routes in this file.
 powers_bp = Blueprint('powers_api', __name__, url_prefix='/api')
-
-
-# 2. Move your power-related routes here.
-#    Note that the decorator is now @powers_bp.route(...) instead of @app.route(...)
 
 @powers_bp.route('/powers', methods=['POST'])
 def save_new_power():
@@ -34,62 +27,44 @@ def save_new_power():
             "closeSaveModal": True
         }
         headers = {"HX-Trigger": json.dumps(trigger_data)}
-        return jsonify({"success": True, "power_id": power_id}), 201, headers
+        return "", 204, headers
     except Exception as e:
-        print(f"Error saving power for player {player_id}: {e}")
-        return jsonify({"error": "An internal error occurred while saving the power."}), 500
-
-# NEW ENDPOINT TO SERVE THE LAYOUT DEFINITION
-@powers_bp.route('/control/layout', methods=['GET'])
-def get_control_layout():
-    # In a real app, this would load the layout for the specific player
-    # For now, it reads a static file.
-    try:
-        # Assuming control_layout.json is in the project root
-        return send_file(MC_CONTROL_LAYOUT_PATH, mimetype='application/json')
-    except FileNotFoundError:
-        print(f"{MC_CONTROL_LAYOUT_PATH} not found!")
-        # Return a default empty layout if the file doesn't exist
-        return jsonify({"grid": {"columns": 4}, "widgets": []})
-
+        print(f"Error saving power: {e}")
+        return jsonify({"error": "Internal error"}), 500
 
 @powers_bp.route('/powers', methods=['GET'])
-def get_powers_list():
-    """
-    Gets the list of saved powers and renders the appropriate HTML fragment
-    based on the 'view' query parameter ('editor' or 'control').
-    """
-    view_type = request.args.get('view', 'editor')
-
-    player_id = current_app.config.get('MINECRAFT_PLAYER_NAME')
+def get_powers():
+    """Returns powers either as JSON dict or as HTMX-ready HTML based on request args."""
     power_repo = current_app.config.get('POWER_REPO')
-
+    player_id = current_app.config.get('MINECRAFT_PLAYER_NAME')
+    
     if not player_id or not power_repo:
         return "<p>Error: Not authorized</p>", 401
 
-    powers_summary_list = power_repo.list_powers()
+    view_type = request.args.get('view', 'editor')
 
-    # Group powers by category (logic remains the same)
-    powers_by_category = {}
-    for power in powers_summary_list:
-        category = power.get('category', 'Uncategorized')
-        if category not in powers_by_category:
-            powers_by_category[category] = []
-        powers_by_category[category].append(power)
-
-    # --- Select the correct template based on the view type ---
     if view_type == 'control':
-
-        # Call the new method to get all data needed for the control UI
+        # Serve JSON payload for the Control Deck UI
         all_powers_list = power_repo.list_full_powers()
-        # Convert the list into a dictionary keyed by power_id for easy lookup on the client
         powers_dict = {p['power_id']: p for p in all_powers_list if 'power_id' in p}
-
         print(f"Serving full power data dictionary for player '{player_id}' for control UI.")
         return jsonify(powers_dict)
 
-    else:  # Default to the 'editor' view
-        # Use the detailed template for the editor sidebar
+    else:
+        # Default to serving the detailed HTML list for the Editor Sidebar
+        powers_summary_list = power_repo.list_powers()
+
+        if not powers_summary_list:
+            return "<p style='padding: 0 8px; color: #888;'>No powers found.</p>"
+
+        # Group powers by category to support the Editor's sidebar template
+        categories = {}
+        for power in powers_summary_list:
+            category = power.get('category', 'Uncategorized')
+            if category not in categories:
+                categories[category] = []
+            categories[category].append(power)
+
         template_string = """
         {% for category, powers in categories.items()|sort %}
           <div class="power-category" x-data="{ open: true }">
@@ -125,7 +100,7 @@ def get_powers_list():
                       <button class="btn-small btn-danger"
                               @click="$dispatch('open-delete-confirm', {
                                   powerId: '{{ power.power_id }}',
-                                  powerName: '{{ power.name | replace("'", "\\'") }}'
+                                  powerName: '{{ power.name | replace(\"'\", \"\\\\'\") }}'
                               })">
                           Delete
                       </button>
@@ -137,59 +112,30 @@ def get_powers_list():
           </div>
         {% endfor %}
         """
-        html_response_string = render_template_string(template_string, categories=powers_by_category)
-
-    # Create the final response with no-cache headers
-    response = make_response(html_response_string)
-    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-    response.headers['Expires'] = '0'
-    return response
-
+        return render_template_string(template_string, categories=categories)
 
 @powers_bp.route('/power/<power_id>', methods=['GET'])
-def get_power_detail(power_id):
-    """
-    Gets the full JSON data for a single power, used by the editor to load
-    a workspace. The data is returned in an HX-Trigger header.
-    """
-    mode = request.args.get('mode', 'replace')
-
-    player_id = current_app.config.get('MINECRAFT_PLAYER_NAME')
+def get_power_by_id(power_id):
+    """Fetches a single power's details and triggers a load event in the frontend via HTMX."""
     power_repo = current_app.config.get('POWER_REPO')
+    if not power_repo:
+        return jsonify({"error": "Repository not configured"}), 500
 
-    if not player_id or not power_repo:
-        # Handle error case
-        err_trigger = {"showError": {"errorMessage": "Server or player not configured."}}
-        return make_response("", 401, {"HX-Trigger": json.dumps(err_trigger)})
+    power_data = power_repo.get_full_power(power_id)
+    if not power_data:
+        return jsonify({"error": "Power not found"}), 404
 
-    full_power_data = power_repo.get_full_power(power_id)
-
-    if not full_power_data:
-        err_trigger = {"showError": {"errorMessage": f"Power with ID {power_id} not found."}}
-        return make_response("", 404, {"HX-Trigger": json.dumps(err_trigger)})
-
-    # --- NEW: If replacing, set this as the current power in the session ---
-    if mode == 'replace':
-        session['current_power'] = {
-            "power_id": power_id,
-            "name": full_power_data.get("name"),
-            "description": full_power_data.get("description"),
-            "category": full_power_data.get("category")
-        }
-    # --- The Htmx Event Trigger Response ---
-    # We are defining a custom event 'loadPower' and passing the full power data
-    # and the loading 'mode' inside the event's detail.
+    mode = request.args.get('mode', 'replace')
+    
+    # Send the full blockly data back as an HX-Trigger event parameter
     trigger_data = {
         "loadPower": {
-            "powerData": full_power_data,
-            "mode": mode # Signal to the client to replace the workspace
+            "powerData": power_data,
+            "mode": mode
         }
     }
-
     headers = {"HX-Trigger": json.dumps(trigger_data)}
-
-    # We don't need to send a body, just the trigger header. Status 204 No Content is perfect.
-    return "", 204, headers
+    return "", 200, headers
 
 
 @powers_bp.route('/power/<power_id>', methods=['DELETE'])
@@ -204,11 +150,8 @@ def delete_power_by_id(power_id):
     try:
         success = power_repo.delete_power(power_id)
         if success:
-            # Instead of an empty response, we now trigger the 'library-changed' event.
             trigger_data = {"library-changed": f"Power {power_id} was deleted."}
             headers = {"HX-Trigger": json.dumps(trigger_data)}
-
-            # Return a 200 OK. The body can be empty. The header does the work.
             return "", 200, headers
         else:
             return jsonify({"error": "Power not found"}), 404
@@ -218,9 +161,7 @@ def delete_power_by_id(power_id):
 
 @powers_bp.route('/powers/categories', methods=['GET'])
 def get_categories():
-    # Ensure you are accessing the repository instance assigned during mc_start_app
-    from flask import current_app
-    repo = current_app.config.get('REPO')
+    repo = current_app.config.get('POWER_REPO') 
     if not repo:
         return jsonify(["Powers", "Workspaces"])
     return jsonify(repo.list_categories())
