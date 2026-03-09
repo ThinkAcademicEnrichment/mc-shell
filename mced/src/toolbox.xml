@@ -462,6 +462,7 @@
 <block type="digitalsetactions_empty_set" />
 <block type="digitalsetactions_erode" />
 <block type="digitalsetactions_extrude"><value name="dx"><shadow type="math_number"><field name="NUM">1</field></shadow></value> <value name="dy"><shadow type="math_number"><field name="NUM">1</field></shadow></value> <value name="dz"><shadow type="math_number"><field name="NUM">1</field></shadow></value></block>
+<block type="digitalsetactions_get_voxels" />
 <block type="digitalsetactions_intersection" />
 <block type="digitalsetactions_is_empty" />
 <block type="digitalsetactions_rotate"><value name="axis"><shadow type="picker_axis"><field name="VALUE">y</field></shadow></value> <value name="angle"><shadow type="math_number"><field name="NUM">1.0</field></shadow></value></block>
