@@ -1,6 +1,7 @@
 import numpy as np
 import math
 from collections import deque
+from mcshell.constants import Vec3,Matrix3
 
 class DigitalSet:
     """
@@ -41,6 +42,61 @@ class DigitalSet:
     # --- Affine Transformations (Local) ---
     def translate(self, dx, dy, dz):
         new_voxels = { (x + int(dx), y + int(dy), z + int(dz)) for x, y, z in self.voxels.copy() }
+        return DigitalSet(new_voxels)
+
+    def rotate(self, axis: str, angle_degrees: float) -> 'DigitalSet':
+        """
+        Rotates the DigitalSet around its centroid using Matrix3.
+
+        Args:
+            axis: 'x', 'y', or 'z'.
+            angle_degrees: The rotation angle in degrees.
+
+        Returns:
+            A new DigitalSet containing the rotated and re-quantized voxels.
+            Quantization is performed via nearest-integer rounding (round()).
+        """
+        if not self.voxels:
+            return DigitalSet()
+
+        # 1. Calculate Centroid (Center of Rotation)
+        # We rotate around the center of the set so it doesn't fly away from the origin.
+        sum_x = sum(v[0] for v in self.voxels)
+        sum_y = sum(v[1] for v in self.voxels)
+        sum_z = sum(v[2] for v in self.voxels)
+        count = len(self.voxels)
+        centroid = Vec3(sum_x / count, sum_y / count, sum_z / count)
+
+        # 2. Create the Rotation Matrix
+        # Mapping standard axis strings to Euler parameters
+        matrix = Matrix3.identity()
+        ax = axis.lower()
+        if ax == 'x':
+            matrix = Matrix3.from_euler_angles(pitch_degrees=angle_degrees)
+        elif ax == 'y':
+            matrix = Matrix3.from_euler_angles(yaw_degrees=angle_degrees)
+        elif ax == 'z':
+            matrix = Matrix3.from_euler_angles(roll_degrees=angle_degrees)
+        else:
+            # Fallback for identity if axis is unknown
+            return self
+
+        # 3. Transform and Re-quantize
+        new_voxels = set()
+        for v in self.voxels:
+            # Convert tuple to Vec3
+            pos = Vec3(v[0], v[1], v[2])
+
+            # Use Matrix3 to rotate around the centroid
+            rotated_vec = matrix.rotate_around_point(pos, centroid)
+
+            # Round to nearest integer (nearest-neighbor) and add to new set
+            new_voxels.add((
+                int(round(rotated_vec.x)),
+                int(round(rotated_vec.y)),
+                int(round(rotated_vec.z))
+            ))
+
         return DigitalSet(new_voxels)
 
     def shear(self, axis_primary, axis_secondary, factor):
