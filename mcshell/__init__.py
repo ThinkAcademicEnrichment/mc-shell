@@ -1156,44 +1156,45 @@ class MCShell(Magics):
                 'password':None,
             }
 
-        # 1. DEFINE VARS FIRST: Determine intended local ports from defaults
-        local_mc = self.server_data.get('port', 25565)
-        local_rcon = self.server_data.get('rcon_port', 25575)
-        local_mj = self.server_data.get('mj_port', 4721)
-
-        # 2. OVERRIDES: Process any user-provided terminal overrides
-        if '--local-mc' in parts:
-            local_mc = int(parts[parts.index('--local-mc') + 1])
-        if '--local-rcon' in parts:
-            local_rcon = int(parts[parts.index('--local-rcon') + 1])
-        if '--local-mj' in parts:
-            local_mj = int(parts[parts.index('--local-mj') + 1])
-
-        # 3. SAFETY CHECK: Your existing checks
-        if hasattr(self, 'active_paper_server') and getattr(self, 'active_paper_server') and self.active_paper_server.is_alive():
-            print("A local Minecraft server is already running. Proceeding with proxy connections anyway.")
-
-        # 4. START TUNNEL: If a token was provided, we are in "Proxy Mode"
         if token:
-            print("Connecting to secure tunnel...")
-            # Pass the extracted integer ports, NOT the dictionary
-            _start_secure_tunnel_client(token, local_mc, local_rcon, local_mj)
+            # 1. DEFINE VARS FIRST: Determine intended local ports from defaults
+            local_mc = self.server_data.get('port', 25565)
+            local_rcon = self.server_data.get('rcon_port', 25575)
+            local_mj = self.server_data.get('mj_port', 4721)
 
-            # THE MAGIC TRICK: Overwrite in-memory server_data to point to the secure tunnel entrances
-            self.server_data['host'] = '127.0.0.1'
-            self.server_data['port'] = local_mc
-            self.server_data['rcon_port'] = local_rcon
-            self.server_data['mj_port'] = local_mj
+            # 2. OVERRIDES: Process any user-provided terminal overrides
+            if '--local-mc' in parts:
+                local_mc = int(parts[parts.index('--local-mc') + 1])
+            if '--local-rcon' in parts:
+                local_rcon = int(parts[parts.index('--local-rcon') + 1])
+            if '--local-mj' in parts:
+                local_mj = int(parts[parts.index('--local-mj') + 1])
 
-            # Give the background thread a moment to establish port forwards
-            time.sleep(1.0)
-            print("Tunnel connection established.")
+            # 3. SAFETY CHECK: Your existing checks
+            if hasattr(self, 'active_paper_server') and getattr(self, 'active_paper_server') and self.active_paper_server.is_alive():
+                print("A local Minecraft server is already running. Proceeding with proxy connections anyway.")
 
-            login_to_server = Prompt.ask('Do you want to be a server op?',choices=['yes','no'],default='no')
-            if login_to_server.lower() == 'yes':
-                self.server_data.update({
-                    'password': Prompt.ask('Server Password:', password=True)
-                })
+            # 4. START TUNNEL: If a token was provided, we are in "Proxy Mode"
+            if token:
+                print("Connecting to secure tunnel...")
+                # Pass the extracted integer ports, NOT the dictionary
+                _start_secure_tunnel_client(token, local_mc, local_rcon, local_mj)
+
+                # THE MAGIC TRICK: Overwrite in-memory server_data to point to the secure tunnel entrances
+                self.server_data['host'] = '127.0.0.1'
+                self.server_data['port'] = local_mc
+                self.server_data['rcon_port'] = local_rcon
+                self.server_data['mj_port'] = local_mj
+
+                # Give the background thread a moment to establish port forwards
+                time.sleep(1.0)
+                print("Tunnel connection established.")
+
+        login_to_server = Prompt.ask('Do you want to be a server op?',choices=['yes','no'],default='no')
+        if login_to_server.lower() == 'yes':
+            self.server_data.update({
+                'password': Prompt.ask('Server Password:', password=True)
+            })
 
         minecraft_name = self._get_mc_name()
         power_repo = SQLiteRepository(minecraft_name)
