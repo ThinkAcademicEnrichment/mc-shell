@@ -1,13 +1,11 @@
-# default config.yml
+# ========================================== #
+#          McJuice Configuration             #
+# ========================================== #
 
-# The host name and port to listen on
-# hostname - ip address or hostname to allow connections from, default is "0.0.0.0" 
-#            (any). "localhost" would prevent remote clients from connecting.
-hostname: 
+# The IP address to bind the McJuice socket server to.
+#   "0.0.0.0" -> Listens on all network interfaces (Accessible externally if port is forwarded)
+#   "127.0.0.1" -> Listens ONLY on the local machine (Most secure for local development)
+host: "0.0.0.0"
+
+# The port that the Python mc-shell environment will connect to.
 port: 4721
-
-# Determine whether locations are RELATIVE to the spawn point (default like pi) or ABSOLUTE
-location: ABSOLUTE
-
-# Determine whether hit events are triggered by LEFT clicks, RIGHT clicks or BOTH
-hitclick: LEFT
