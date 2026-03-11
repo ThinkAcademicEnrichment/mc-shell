@@ -11,7 +11,7 @@ class MCTunnelServer(asyncssh.SSHServer):
     """
     A strictly scoped SSH server that acts as a secure pneumatic tube.
     It denies all standard SSH features (like shell access) and only
-    permits TCP port forwarding to explicitly allowed ports.
+    permits direct TCP/IP connections to explicitly allowed localhost ports.
     """
     def __init__(self, authorized_pub_key: str, allowed_ports: list[int]):
         self.authorized_pub_key = authorized_pub_key
@@ -36,17 +36,34 @@ class MCTunnelServer(asyncssh.SSHServer):
     def validate_public_key(self, username: str, key: asyncssh.SSHKey) -> bool:
         return key.export_public_key('openssh').decode('utf-8') == self.authorized_pub_key
 
+    def connection_requested(self, dest_host: str, dest_port: int, orig_host: str, orig_port: int) -> bool:
+        """
+        Security Gate for Local Port Forwarding (ssh -L).
+        Only allow the client to open connections to the 3 explicit game ports ON localhost.
+        """
+        # Prevent the client from using the host as a proxy to attack the host's LAN
+        if dest_host not in ('127.0.0.1', 'localhost'):
+            logger.warning(f"Rejected attempt to route to non-local IP: {dest_host}")
+            return False
+
+        if dest_port in self.allowed_ports:
+            logger.info(f"Client authorized to connect to internal port: {dest_port}")
+            return True
+
+        logger.warning(f"Rejected attempt to tunnel to unauthorized port: {dest_port}")
+        return False
+
     def server_requested_tcp_forward_port(self, listen_host: str, listen_port: int) -> bool:
         """
-        Security Gate: Only allow the client to request tunnels to the 3 explicit game ports.
+        Security Gate for Remote Port Forwarding (ssh -R).
+        We don't use this, so explicitly deny all requests to be safe.
         """
-        if listen_port in self.allowed_ports:
-            logger.info(f"Client authorized to tunnel to port: {listen_port}")
-            return True
-        logger.warning(f"Rejected attempt to tunnel to unauthorized port: {listen_port}")
         return False
 
     def session_requested(self) -> bool:
+        """
+        Security Gate: Absolutely no shell/terminal access allowed.
+        """
         return False
 
 def _get_local_ip():
@@ -62,7 +79,7 @@ async def start_host_gateway(bind_ip='0.0.0.0', bind_port=2222, mc_port=25565, r
     client_key = asyncssh.generate_private_key('ssh-ed25519')
     client_pub_str = client_key.export_public_key('openssh').decode('utf-8')
 
-    # FIX: Ensure all three critical ports are allowed through the SSH gatekeeper
+    # Ensure all three critical ports are allowed through the SSH gatekeeper
     allowed_ports = [mc_port, rcon_port, mj_port]
 
     await asyncssh.create_server(
@@ -118,7 +135,7 @@ async def connect_client_tunnel(join_token: str, local_mc_port=None, local_rcon_
         if sock is not None:
             sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 
-        # FIX: Forward all three required application ports simultaneously
+        # Forward all three required application ports simultaneously
         await conn.forward_local_port('', local_mc_port, '127.0.0.1', remote_mc)
         await conn.forward_local_port('', local_rcon_port, '127.0.0.1', remote_rcon)
         await conn.forward_local_port('', local_mj_port, '127.0.0.1', remote_mj)
