@@ -61,8 +61,21 @@ class MCTunnelServer(asyncssh.SSHServer):
         """
         return False
 
+def _get_local_ip():
+    """
+    Helper to automatically discover the host machine's IP address.
+    This replaces the hardcoded 'YOUR_PUBLIC_IP' string.
+    """
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            # We don't actually connect, the OS just routes it to find the active IP
+            s.connect(("8.8.8.8", 80))
+            return s.getsockname()[0]
+    except Exception:
+        return "127.0.0.1"
 
-async def start_host_gateway(bind_ip='0.0.0.0', bind_port=2222, mc_port=25565, plugin_port=8080) -> str:
+
+async def start_host_gateway(bind_ip='0.0.0.0', bind_port=2222, mc_port=25565, rcon_port=25575, mj_port=4721) -> str:
     """
     Spins up the embedded SSH server and generates a zero-config Join Token.
     This would be called by your %pp_start_world magic.
@@ -72,11 +85,11 @@ async def start_host_gateway(bind_ip='0.0.0.0', bind_port=2222, mc_port=25565, p
     client_key = asyncssh.generate_private_key('ssh-ed25519')
     client_pub_str = client_key.export_public_key('openssh').decode('utf-8')
 
-    allowed_ports = [mc_port, plugin_port]
+    allowed_ports = [mc_port, rcon_port, mj_port]
 
     # 2. Start the lightweight SSH server
     await asyncssh.create_server(
-        lambda: MinecraftTunnelServer(client_pub_str, allowed_ports),
+        lambda: MCTunnelServer(client_pub_str, allowed_ports),
         bind_ip, bind_port,
         server_host_keys=[host_key],
         compression_algs=['none'],     # PERFORMANCE: Don't re-compress MC data
@@ -84,23 +97,25 @@ async def start_host_gateway(bind_ip='0.0.0.0', bind_port=2222, mc_port=25565, p
     )
 
     # 3. Create the "Join Token"
-    # We package the private key the client needs, plus connection info, into a string
     token_data = {
-        "ip": "YOUR_PUBLIC_IP", # You would dynamically fetch STUN/external IP here
+        "ip": _get_local_ip(), # Grab the real IP dynamically
         "port": bind_port,
         "key": client_key.export_private_key('openssh').decode('utf-8')
     }
 
-    # Base64 encode it so it looks like a clean magic code (e.g. "eyAiaXAiLi...")
+    # Base64 encode it so it looks like a clean magic code
     join_token = base64.b64encode(json.dumps(token_data).encode('utf-8')).decode('utf-8')
     return join_token
 
-
-async def connect_client_tunnel(join_token: str, mc_port=25565, plugin_port=8080):
+async def connect_client_tunnel(join_token: str, remote_mc_port=25566, local_mc_port=None, plugin_port=4721):
     """
     Connects to the host using the Join Token and maps local ports to the server.
     This would be called by your %pp_join magic.
     """
+    # If no custom local port is provided, default to mirroring the remote port
+    if local_mc_port is None:
+        local_mc_port = remote_mc_port
+
     # 1. Unpack the Join Token
     token_data = json.loads(base64.b64decode(join_token).decode('utf-8'))
     client_key = asyncssh.import_private_key(token_data["key"])
@@ -123,11 +138,11 @@ async def connect_client_tunnel(join_token: str, mc_port=25565, plugin_port=8080
             sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 
         # 3. Request the secure port forwards
-        # This maps localhost:25565 to the Server's 25565 through the encrypted tube
-        await conn.forward_local_port('', mc_port, '127.0.0.1', mc_port)
+        # This maps localhost:<local_mc_port> to the Server's <remote_mc_port> through the encrypted tube
+        await conn.forward_local_port('', local_mc_port, '127.0.0.1', remote_mc_port)
         await conn.forward_local_port('', plugin_port, '127.0.0.1', plugin_port)
 
-        logger.info("Tunnel established! Open Minecraft and connect to 'localhost'")
+        print(f"Tunnel established! Open Minecraft and connect to 'localhost:{local_mc_port}'")
 
         # Keep the connection open until interrupted
         await conn.wait_closed()
