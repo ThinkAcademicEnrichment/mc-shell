@@ -347,6 +347,11 @@ class MCShell(Magics):
         # Orthogonal flag extraction
         is_secure = '--secure' in line
         line = line.replace('--secure', '').strip()
+        if is_secure:
+            extra_server_properties = {
+                'server-ip' : '127.0.0.1',
+                'mcjuice-host': '127.0.0.1'
+            }
 
         world_name = line.strip()
         if not world_name:
@@ -372,11 +377,11 @@ class MCShell(Magics):
 
         # Start the Paper server
         self.active_paper_server = PaperServerManager(world_name, world_directory)
-        self.active_paper_server.start()
+        self.active_paper_server.start(**extra_server_properties)
         # now start it after files are generated and it is terminated once
         if not self.active_paper_server.is_alive():
             self.active_paper_server = PaperServerManager(world_name, world_directory)
-            self.active_paper_server.start()
+            self.active_paper_server.start(**extra_server_properties)
 
         if not self.active_paper_server.is_alive():
             print("Could not start Paper server. Aborting.")
@@ -390,7 +395,7 @@ class MCShell(Magics):
         if not 'app_port' in list(self.server_data.keys()):
             self.server_data['app_port'] = 5001
         # start the app server
-        self.ip.run_line_magic('mc_start_app','')
+        # self.ip.run_line_magic('mc_start_app','')
 
         if is_secure:
             print("Starting secure SSH tunnel gateway...")

@@ -28,16 +28,36 @@ class PaperServerManager:
         # Path to the Paper JAR is stored relative to the worlds base directory
         self.jar_path = self.world_directory.parent / self.world_manifest.get('server_jar_path')
 
-    def apply_manifest_settings(self):
+    def apply_manifest_settings(self,**kwargs):
         """
         Applies settings from world_manifest.json to server.properties
         and paper-global.yml.
+        Allow passing arbitrary key value pairs for server.properties file
         """
         print(f"--- Applying settings from manifest to world: {self.world_name} ---")
 
         try:
+            mcjuice_host = kwargs.pop("mcjuice-host", None)
+            if mcjuice_host:
+                mcjuice_dir = self.world_directory / "plugins" / "McJuice"
+                mcjuice_dir.mkdir(parents=True, exist_ok=True)
+                plugin_config_path = mcjuice_dir / "config.yml"
+
+                config_data = {}
+                if plugin_config_path.exists():
+                    with plugin_config_path.open('r') as f:
+                        config_data = yaml.safe_load(f) or {}
+
+                config_data['host'] = mcjuice_host
+
+                with plugin_config_path.open('w') as f:
+                    yaml.safe_dump(config_data, f, default_flow_style=False)
+
+                print(f"Secured McJuice API binding to {mcjuice_host}")
+
             # 1. Update server.properties
-            settings_to_apply = self.world_manifest.get("server_properties", {})
+            settings_to_apply = {**self.world_manifest.get("server_properties", {}),**kwargs}
+
             properties_path = self.world_directory / "server.properties"
 
             properties = {}
@@ -139,7 +159,7 @@ class PaperServerManager:
                 self.process.close(force=True)
             self.process = None
 
-    def start(self):
+    def start(self,**kwargs):
         """
         Ensures the environment is ready and starts the server in a background thread.
         Handles JRE acquisition and first-time configuration automatically.
@@ -166,7 +186,7 @@ class PaperServerManager:
                 return
 
         # 3. Always apply manifest settings before starting to ensure ports/passwords are synced
-        self.apply_manifest_settings()
+        self.apply_manifest_settings(**kwargs)
 
         if self.is_alive():
             print(f"Server for world '{self.world_name}' is already running.")
