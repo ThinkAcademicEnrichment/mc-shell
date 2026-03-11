@@ -201,28 +201,26 @@ class MCShell(Magics):
 
         self.server_data['password'] = password
 
-        # self.server_data = {"host": '127.0.0.1','port':MC_SERVER_PORT, "rcon_port": MC_RCON_PORT, "password": password, "fj_port":FJ_PLUGIN_PORT} # Port can be dynamic if needed
-
         print("Input the ports for the server, rcon and plugin. These only need to be changed if you are running more than one mc-shell!")
         try:
             # Capturing strings first ensures we don't crash on int('')
             resp_port = Prompt.ask('Server Port:', default=str(self.server_data['port']))
             resp_rcon = Prompt.ask('RCON Port:', default=str(self.server_data['rcon_port']))
-            resp_fj   = Prompt.ask('McJuice Port:', default=str(self.server_data['fj_port']))
+            resp_mj   = Prompt.ask('McJuice Port:', default=str(self.server_data['mj_port']))
             resp_app  = Prompt.ask('Application Port:', default=str(self.server_data['app_port']))
 
             # Robust casting logic
             ports = {
                 'port': int(resp_port) if resp_port else self.server_data['port'],
                 'rcon_port': int(resp_rcon) if resp_rcon else self.server_data['rcon_port'],
-                'fj_port': int(resp_fj) if resp_fj else self.server_data['fj_port'],
+                'fj_port': int(resp_mj) if resp_mj else self.server_data['mj_port'],
                 'app_port': int(resp_app) if resp_app else self.server_data['app_port']
             }
 
 
             self.server_data['port'] = ports['port']
             self.server_data['rcon_port'] = ports['rcon_port']
-            self.server_data['fj_port'] = ports['fj_port']
+            self.server_data['mj_port'] = ports['mj_port']
             self.server_data['app_port'] = ports['app_port']
 
         except (EOFError, KeyboardInterrupt):
@@ -1160,12 +1158,17 @@ class MCShell(Magics):
         Starts the mc-ed application server, getting the authorized Minecraft user
         name from the central configuration file.
         """
-        # if we started a world, self.server_data should be set
-        if not self.active_paper_server:
+
+        parts = line.split()
+        # If the first argument doesn't start with '--', it's our token
+        token = parts[0] if parts and not parts[0].startswith('--') else None
+
+        if not token:
             self.server_data = {
                 'host': Prompt.ask('Server Address:', default=self.server_data['host']),
-                'fj_port': int(Prompt.ask('Plugin Port:', default=str(self.server_data['fj_port']))),
-                'rcon_port': int(Prompt.ask('Server Port:', default=str(self.server_data['rcon_port']))),
+                'port': int(Prompt.ask('Server Port:', default=str(self.server_data['port']))),
+                'rcon_port': int(Prompt.ask('Rcon Port:', default=str(self.server_data['rcon_port']))),
+                'mj_port': int(Prompt.ask('Plugin Port:', default=str(self.server_data['mj_port']))),
                 'app_port': int(Prompt.ask('Application Port:', default=str(self.server_data['app_port']))),
                 'password':None,
             }

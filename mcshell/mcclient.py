@@ -14,20 +14,20 @@ MJ_PORT = 4721
 # ------------------------------------------------------
 
 class MCClient:
-    def __init__(self, host=MC_SERVER_HOST, port=MC_SERVER_PORT,rcon_port=MC_RCON_PORT, fj_port=FJ_PLUGIN_PORT, app_port=MC_APP_PORT, password='' ):
+    def __init__(self, host=MC_SERVER_HOST, port=MC_SERVER_PORT, rcon_port=MC_RCON_PORT, mj_port=MJ_PLUGIN_PORT, app_port=MC_APP_PORT, password=''):
 
         self.host = host
         self.port = port
         self.rcon_port = rcon_port
         self.app_port = MC_APP_PORT
         self.password = password
-        self.fruit_juice_port  = fj_port
+        self.mj_port  = mj_port
 
 
     @property
     def server_args(self):
         """For helping create fellow players on the same server"""
-        return dict(zip(('host','port','rcon_port','fj_port','password'),(self.host,self.port,self.rcon_port,self.fruit_juice_port,self.password)))
+        return dict(zip(('host','port','rcon_port','mj_port','password'), (self.host, self.port, self.rcon_port, self.mj_port, self.password)))
 
     def run(self, *args):
         """
