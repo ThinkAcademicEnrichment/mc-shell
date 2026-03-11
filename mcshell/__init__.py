@@ -32,9 +32,9 @@ from mcshell.mctunnelserver import start_host_gateway, connect_client_tunnel
 # Secure Tunnel Helper Functions (Orthogonal to main app logic)
 # =====================================================================
 
-def _run_tunnel_host_thread(mc_port, plugin_port, out_token):
+def _run_tunnel_host_thread(mc_port, rcon_port, mj_port, out_token):
     async def host_task():
-        token = await start_host_gateway(bind_ip='0.0.0.0', bind_port=2222, mc_port=mc_port, plugin_port=plugin_port)
+        token = await start_host_gateway(bind_ip='0.0.0.0', bind_port=2222, mc_port=mc_port, rcon_port=rcon_port, mj_port=mj_port)
         out_token.append(token)
         # Keep the event loop alive indefinitely so the SSH server stays up
         while True:
@@ -47,10 +47,10 @@ def _run_tunnel_host_thread(mc_port, plugin_port, out_token):
     except Exception as e:
         print(f"\n[Tunnel Host Error] {e}")
 
-def _start_secure_tunnel_host(mc_port, plugin_port):
+def _start_secure_tunnel_host(server_data):
     out_token = []
     # Use daemon=True so the thread automatically dies when IPython exits
-    thread = Thread(target=_run_tunnel_host_thread, args=(mc_port, plugin_port, out_token), daemon=True)
+    thread = Thread(target=_run_tunnel_host_thread, args=(server_data['port'], server_data['rcon_port'], server_data['mj_port'],out_token), daemon=True)
     thread.start()
 
     # Wait up to 5 seconds for the cryptographic keys and token to generate
@@ -60,16 +60,16 @@ def _start_secure_tunnel_host(mc_port, plugin_port):
         time.sleep(0.1)
     return None
 
-def _run_tunnel_client_thread(token, mc_port, plugin_port):
+def _run_tunnel_client_thread(token, remote_mc_port, local_mc_port, plugin_port):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
-        loop.run_until_complete(connect_client_tunnel(token, mc_port, plugin_port))
+        loop.run_until_complete(connect_client_tunnel(token, remote_mc_port=remote_mc_port, local_mc_port=local_mc_port, plugin_port=plugin_port))
     except Exception as e:
         print(f"\n[Tunnel Client Error] {e}")
 
-def _start_secure_tunnel_client(token, mc_port, plugin_port):
-    thread = Thread(target=_run_tunnel_client_thread, args=(token, mc_port, plugin_port), daemon=True)
+def _start_secure_tunnel_client(token, remote_mc_port, local_mc_port=None, plugin_port=4721):
+    thread = Thread(target=_run_tunnel_client_thread, args=(token, remote_mc_port, local_mc_port, plugin_port), daemon=True)
     thread.start()
 
 @magics_class
@@ -213,7 +213,7 @@ class MCShell(Magics):
             ports = {
                 'port': int(resp_port) if resp_port else self.server_data['port'],
                 'rcon_port': int(resp_rcon) if resp_rcon else self.server_data['rcon_port'],
-                'fj_port': int(resp_mj) if resp_mj else self.server_data['mj_port'],
+                'mj_port': int(resp_mj) if resp_mj else self.server_data['mj_port'],
                 'app_port': int(resp_app) if resp_app else self.server_data['app_port']
             }
 
@@ -396,31 +396,14 @@ class MCShell(Magics):
             print("Starting secure SSH tunnel gateway...")
             # We assume standard ports for this proof of concept.
             # (You can dynamically pull these from your config if needed)
-            mc_port = 25565
-            plugin_port = 8080
-            token = _start_secure_tunnel_host(mc_port, plugin_port)
+            token = _start_secure_tunnel_host(self.server_data)
 
             if token:
                 print(f"\n[SECURE HOST] Tunnel active! Share this Join Token with your friends:\n\n{token}\n")
             else:
                 print("\n[SECURE HOST] Failed to generate Join Token.\n")
 
-    @line_magic
-    def pp_join(self, line):
-        """
-        Connects to a remotely hosted Minecraft world securely.
-        Usage: %pp_join <join_token>
-        """
-        token = line.strip()
-        if not token:
-            print("Error: Please provide a Join Token. Usage: %pp_join <token>")
-            return
 
-        print("Connecting to secure tunnel...")
-        # Using default MC and Plugin ports for the local forwards
-        _start_secure_tunnel_client(token, mc_port=25565, plugin_port=8080)
-        print("Client tunnel initiated! If the token is valid, you can now connect Minecraft to 'localhost:25565'.")
-        
     @line_magic
     def pp_stop_world(self, line):
         """
@@ -1178,6 +1161,21 @@ class MCShell(Magics):
                 self.server_data.update({
                     'password': Prompt.ask('Server Password:', password=True)
                 })
+
+        else:
+            # If a token was provided, we are in "Proxy Mode"
+            print("Connecting to secure tunnel...")
+            _start_secure_tunnel_client(token, self.server_data, local_rcon, local_mj)
+
+            # THE MAGIC TRICK: Overwrite in-memory server_data to point to the secure tunnel
+            self.server_data['HOST'] = '127.0.0.1'
+            self.server_data['MC_PORT'] = local_mc
+            self.server_data['RCON_PORT'] = local_rcon
+            self.server_data['MJ_PORT'] = local_mj
+
+            # Give the background thread a moment to establish port forwards
+            time.sleep(1.0)
+            print("Tunnel connection established.")
 
         minecraft_name = self._get_mc_name()
         power_repo = SQLiteRepository(minecraft_name)
