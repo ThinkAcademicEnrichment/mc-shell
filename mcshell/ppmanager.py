@@ -30,8 +30,8 @@ class PaperServerManager:
 
     def apply_manifest_settings(self):
         """
-        Applies settings from world_manifest.json to server.properties,
-        FruitJuice/config.yml, and paper-global.yml.
+        Applies settings from world_manifest.json to server.properties
+        and paper-global.yml.
         """
         print(f"--- Applying settings from manifest to world: {self.world_name} ---")
 
@@ -59,12 +59,12 @@ class PaperServerManager:
                     f.write(f"{key}={value}\n")
 
             # 2. Update FruitJuice config
-            fj_data = self.world_manifest.get('FruitJuice')
-            if fj_data:
-                fj_config_path = self.world_directory / "plugins" / "FruitJuice" / "config.yml"
-                fj_config_path.parent.mkdir(parents=True, exist_ok=True)
-                with fj_config_path.open('w') as file:
-                    yaml.dump(fj_data, file, sort_keys=False)
+            # fj_data = self.world_manifest.get('FruitJuice')
+            # if fj_data:
+            #     fj_config_path = self.world_directory / "plugins" / "FruitJuice" / "config.yml"
+            #     fj_config_path.parent.mkdir(parents=True, exist_ok=True)
+            #     with fj_config_path.open('w') as file:
+            #         yaml.dump(fj_data, file, sort_keys=False)
 
             # 3. Update Paper global settings
             paper_settings = self.world_manifest.get('paper', {})
