@@ -693,7 +693,7 @@ class MCShell(Magics):
         self.server_data.update({
             'host': Prompt.ask('Server Address:', default=self.server_data['host']),
             'rcon_port': int(Prompt.ask('Server Port:', default=str(self.server_data['rcon_port']))),
-            'fj_port': int(Prompt.ask('Plugin Port:', default=str(self.server_data['fj_port']))),
+            'mj_port': int(Prompt.ask('Plugin Port:', default=str(self.server_data['mj_port']))),
             'password': Prompt.ask('Server Password:', password=True)
         })
 
@@ -1146,10 +1146,20 @@ class MCShell(Magics):
         # If the first argument doesn't start with '--', it's our token
         token = parts[0] if parts and not parts[0].startswith('--') else None
 
+        if not token:
+            self.server_data = {
+                'host': Prompt.ask('Server Address:', default=self.server_data['host']),
+                'port': int(Prompt.ask('Server Port:', default=str(self.server_data['port']))),
+                'rcon_port': int(Prompt.ask('Rcon Port:', default=str(self.server_data['rcon_port']))),
+                'mj_port': int(Prompt.ask('Plugin Port:', default=str(self.server_data['mj_port']))),
+                'app_port': int(Prompt.ask('Application Port:', default=str(self.server_data['app_port']))),
+                'password':None,
+            }
+
         # 1. DEFINE VARS FIRST: Determine intended local ports from defaults
-        local_mc = self.server_data.get('MC_PORT', 25565)
-        local_rcon = self.server_data.get('RCON_PORT', 25575)
-        local_mj = self.server_data.get('MJ_PORT', 4721)
+        local_mc = self.server_data.get('port', 25565)
+        local_rcon = self.server_data.get('rcon_port', 25575)
+        local_mj = self.server_data.get('mj_port', 4721)
 
         # 2. OVERRIDES: Process any user-provided terminal overrides
         if '--local-mc' in parts:
@@ -1170,15 +1180,32 @@ class MCShell(Magics):
             _start_secure_tunnel_client(token, local_mc, local_rcon, local_mj)
 
             # THE MAGIC TRICK: Overwrite in-memory server_data to point to the secure tunnel entrances
-            self.server_data['HOST'] = '127.0.0.1'
-            self.server_data['MC_PORT'] = local_mc
-            self.server_data['RCON_PORT'] = local_rcon
-            self.server_data['MJ_PORT'] = local_mj
+            self.server_data['host'] = '127.0.0.1'
+            self.server_data['port'] = local_mc
+            self.server_data['rcon_port'] = local_rcon
+            self.server_data['mj_port'] = local_mj
 
             # Give the background thread a moment to establish port forwards
             time.sleep(1.0)
             print("Tunnel connection established.")
 
+            login_to_server = Prompt.ask('Do you want to be a server op?',choices=['yes','no'],default='no')
+            if login_to_server.lower() == 'yes':
+                self.server_data.update({
+                    'password': Prompt.ask('Server Password:', password=True)
+                })
+
+        minecraft_name = self._get_mc_name()
+        power_repo = SQLiteRepository(minecraft_name)
+        print("Stopping any running application servers.")
+        stop_app_server()
+        print(f"Starting application server for authorized Minecraft player: {minecraft_name}")
+        start_app_server(self.server_data,minecraft_name,self.shell,power_repo)
+        print(f"Open a browser here to use the editor:")
+        print(f"\thttp://{socket.gethostname()}.local:{self.server_data['app_port']}")
+        print(f"Open a browser here to use the control:")
+        print(f"\thttp://{socket.gethostname()}.local:{self.server_data['app_port']}/control")
+        return
 
     @line_magic
     def mc_stop_app(self, line):
