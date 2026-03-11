@@ -18,15 +18,10 @@ class MCTunnelServer(asyncssh.SSHServer):
         self.allowed_ports = allowed_ports
 
     def connection_made(self, conn: asyncssh.SSHServerConnection):
-        """
-        Hook: Triggered the moment a TCP connection is established.
-        PERFORMANCE TUNING: We disable Nagle's Algorithm here to eliminate
-        the ~40ms buffer delay that causes "block lag" in Minecraft.
-        """
         sock = conn.get_extra_info('socket')
         if sock is not None:
             try:
-                # Force instant transmission of small packets
+                # Force instant transmission of small packets (Nagle's Algorithm disable)
                 sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
                 logger.debug("TCP_NODELAY enabled for incoming client.")
             except Exception as e:
@@ -39,15 +34,11 @@ class MCTunnelServer(asyncssh.SSHServer):
         return True
 
     def validate_public_key(self, username: str, key: asyncssh.SSHKey) -> bool:
-        """
-        Authenticate the client by comparing their key against the one
-        we baked into the "Join Token".
-        """
         return key.export_public_key('openssh').decode('utf-8') == self.authorized_pub_key
 
     def server_requested_tcp_forward_port(self, listen_host: str, listen_port: int) -> bool:
         """
-        Security Gate: Only allow the client to request tunnels to our game ports.
+        Security Gate: Only allow the client to request tunnels to the 3 explicit game ports.
         """
         if listen_port in self.allowed_ports:
             logger.info(f"Client authorized to tunnel to port: {listen_port}")
@@ -56,93 +47,82 @@ class MCTunnelServer(asyncssh.SSHServer):
         return False
 
     def session_requested(self) -> bool:
-        """
-        Security Gate: Absolutely no shell/terminal access allowed.
-        """
         return False
 
 def _get_local_ip():
-    """
-    Helper to automatically discover the host machine's IP address.
-    This replaces the hardcoded 'YOUR_PUBLIC_IP' string.
-    """
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-            # We don't actually connect, the OS just routes it to find the active IP
             s.connect(("8.8.8.8", 80))
             return s.getsockname()[0]
     except Exception:
         return "127.0.0.1"
 
-
 async def start_host_gateway(bind_ip='0.0.0.0', bind_port=2222, mc_port=25565, rcon_port=25575, mj_port=4721) -> str:
-    """
-    Spins up the embedded SSH server and generates a zero-config Join Token.
-    This would be called by your %pp_start_world magic.
-    """
-    # 1. Generate ultra-fast ED25519 keys for this specific play session
     host_key = asyncssh.generate_private_key('ssh-ed25519')
     client_key = asyncssh.generate_private_key('ssh-ed25519')
     client_pub_str = client_key.export_public_key('openssh').decode('utf-8')
 
+    # FIX: Ensure all three critical ports are allowed through the SSH gatekeeper
     allowed_ports = [mc_port, rcon_port, mj_port]
 
-    # 2. Start the lightweight SSH server
     await asyncssh.create_server(
         lambda: MCTunnelServer(client_pub_str, allowed_ports),
         bind_ip, bind_port,
         server_host_keys=[host_key],
-        compression_algs=['none'],     # PERFORMANCE: Don't re-compress MC data
-        keepalive_interval=30          # Keep tunnel alive if the player's WiFi blips
+        compression_algs=['none'],
+        keepalive_interval=30
     )
 
-    # 3. Create the "Join Token"
+    # Bake the host's target ports into the token manifest
     token_data = {
-        "ip": _get_local_ip(), # Grab the real IP dynamically
+        "ip": _get_local_ip(),
         "port": bind_port,
-        "key": client_key.export_private_key('openssh').decode('utf-8')
+        "key": client_key.export_private_key('openssh').decode('utf-8'),
+        "ports": {
+            "mc": mc_port,
+            "rcon": rcon_port,
+            "mj": mj_port
+        }
     }
 
-    # Base64 encode it so it looks like a clean magic code
     join_token = base64.b64encode(json.dumps(token_data).encode('utf-8')).decode('utf-8')
     return join_token
 
-async def connect_client_tunnel(join_token: str, remote_mc_port=25566, local_mc_port=None, plugin_port=4721):
-    """
-    Connects to the host using the Join Token and maps local ports to the server.
-    This would be called by your %pp_join magic.
-    """
-    # If no custom local port is provided, default to mirroring the remote port
-    if local_mc_port is None:
-        local_mc_port = remote_mc_port
 
-    # 1. Unpack the Join Token
+async def connect_client_tunnel(join_token: str, local_mc_port=None, local_rcon_port=None, local_mj_port=None):
     token_data = json.loads(base64.b64decode(join_token).decode('utf-8'))
     client_key = asyncssh.import_private_key(token_data["key"])
 
+    # Extract the host's required remote ports directly from the token
+    remote_mc = token_data["ports"]["mc"]
+    remote_rcon = token_data["ports"]["rcon"]
+    remote_mj = token_data["ports"]["mj"]
+
+    # Map to local ports if overrides weren't explicitly provided
+    if local_mc_port is None: local_mc_port = remote_mc
+    if local_rcon_port is None: local_rcon_port = remote_rcon
+    if local_mj_port is None: local_mj_port = remote_mj
+
     logger.info(f"Connecting secure tunnel to {token_data['ip']}...")
 
-    # 2. Connect to the host
     async with asyncssh.connect(
         host=token_data['ip'],
         port=token_data['port'],
-        username='mcplayer', # Username is ignored by our server, but required by protocol
+        username='mcplayer',
         client_keys=[client_key],
-        known_hosts=None, # In a strict setup you'd verify host key, but token is fine here
-        compression_algs=['none'] # PERFORMANCE: Must be disabled on client side too
+        known_hosts=None,
+        compression_algs=['none']
     ) as conn:
 
-        # PERFORMANCE: Disable Nagle on the client side sending socket
         sock = conn.get_extra_info('socket')
         if sock is not None:
             sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 
-        # 3. Request the secure port forwards
-        # This maps localhost:<local_mc_port> to the Server's <remote_mc_port> through the encrypted tube
-        await conn.forward_local_port('', local_mc_port, '127.0.0.1', remote_mc_port)
-        await conn.forward_local_port('', plugin_port, '127.0.0.1', plugin_port)
+        # FIX: Forward all three required application ports simultaneously
+        await conn.forward_local_port('', local_mc_port, '127.0.0.1', remote_mc)
+        await conn.forward_local_port('', local_rcon_port, '127.0.0.1', remote_rcon)
+        await conn.forward_local_port('', local_mj_port, '127.0.0.1', remote_mj)
 
-        print(f"Tunnel established! Open Minecraft and connect to 'localhost:{local_mc_port}'")
+        print(f"\n[TUNNEL] Secure link established! Local ports mapped -> MC:{local_mc_port}, RCON:{local_rcon_port}, API:{local_mj_port}")
 
-        # Keep the connection open until interrupted
         await conn.wait_closed()

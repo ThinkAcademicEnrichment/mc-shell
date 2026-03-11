@@ -47,10 +47,10 @@ def _run_tunnel_host_thread(mc_port, rcon_port, mj_port, out_token):
     except Exception as e:
         print(f"\n[Tunnel Host Error] {e}")
 
-def _start_secure_tunnel_host(server_data):
+def _start_secure_tunnel_host(mc_port, rcon_port, mj_port):
     out_token = []
     # Use daemon=True so the thread automatically dies when IPython exits
-    thread = Thread(target=_run_tunnel_host_thread, args=(server_data['port'], server_data['rcon_port'], server_data['mj_port'],out_token), daemon=True)
+    thread = Thread(target=_run_tunnel_host_thread, args=(mc_port, rcon_port, mj_port, out_token), daemon=True)
     thread.start()
 
     # Wait up to 5 seconds for the cryptographic keys and token to generate
@@ -60,16 +60,23 @@ def _start_secure_tunnel_host(server_data):
         time.sleep(0.1)
     return None
 
-def _run_tunnel_client_thread(token, remote_mc_port, local_mc_port, plugin_port):
+def _run_tunnel_client_thread(token, local_mc, local_rcon, local_mj):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
-        loop.run_until_complete(connect_client_tunnel(token, remote_mc_port=remote_mc_port, local_mc_port=local_mc_port, plugin_port=plugin_port))
+        # FIX: Ensure all three mapped ports flow cleanly into the tunnel connector
+        loop.run_until_complete(connect_client_tunnel(
+            token,
+            local_mc_port=local_mc,
+            local_rcon_port=local_rcon,
+            local_mj_port=local_mj
+        ))
     except Exception as e:
         print(f"\n[Tunnel Client Error] {e}")
 
-def _start_secure_tunnel_client(token, remote_mc_port, local_mc_port=None, plugin_port=4721):
-    thread = Thread(target=_run_tunnel_client_thread, args=(token, remote_mc_port, local_mc_port, plugin_port), daemon=True)
+def _start_secure_tunnel_client(token, local_mc, local_rcon, local_mj):
+    # FIX: Accept all three ports without default Nones, guaranteeing they pass through
+    thread = Thread(target=_run_tunnel_client_thread, args=(token, local_mc, local_rcon, local_mj), daemon=True)
     thread.start()
 
 @magics_class
@@ -401,7 +408,7 @@ class MCShell(Magics):
             print("Starting secure SSH tunnel gateway...")
             # We assume standard ports for this proof of concept.
             # (You can dynamically pull these from your config if needed)
-            token = _start_secure_tunnel_host(self.server_data)
+            token = _start_secure_tunnel_host(self.server_data['port'],self.server_data['rcon_port'],self.server_data['mj_port'])
 
             if token:
                 print(f"\n[SECURE HOST] Tunnel active! Share this Join Token with your friends:\n\n{token}\n")
