@@ -47,6 +47,7 @@ blockapily = "^0.3.1"
 pytest = "^9.0.2"
 mctools = "^1.4.1"
 voxelmap = "^5.1.1"
+asyncssh = "^2.22.0"
 
 [tool.poetry.scripts]
 mcshell = "mcshell.mcshell:cli"

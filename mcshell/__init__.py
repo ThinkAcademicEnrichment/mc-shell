@@ -22,6 +22,63 @@ from mcshell.mcplayer import MCPlayer
 import atexit
 from threading import Thread,Event
 
+import atexit
+from threading import Thread,Event
+import asyncio
+import time
+from mcshell.mctunnelserver import start_host_gateway, connect_client_tunnel
+
+# =====================================================================
+# Secure Tunnel Helper Functions (Orthogonal to main app logic)
+# =====================================================================
+
+def _run_tunnel_host_thread(mc_port, rcon_port, mj_port, out_token):
+    async def host_task():
+        token = await start_host_gateway(bind_ip='0.0.0.0', bind_port=2222, mc_port=mc_port, rcon_port=rcon_port, mj_port=mj_port)
+        out_token.append(token)
+        # Keep the event loop alive indefinitely so the SSH server stays up
+        while True:
+            await asyncio.sleep(3600)
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        loop.run_until_complete(host_task())
+    except Exception as e:
+        print(f"\n[Tunnel Host Error] {e}")
+
+def _start_secure_tunnel_host(mc_port, rcon_port, mj_port):
+    out_token = []
+    # Use daemon=True so the thread automatically dies when IPython exits
+    thread = Thread(target=_run_tunnel_host_thread, args=(mc_port, rcon_port, mj_port, out_token), daemon=True)
+    thread.start()
+
+    # Wait up to 5 seconds for the cryptographic keys and token to generate
+    for _ in range(50):
+        if out_token:
+            return out_token[0]
+        time.sleep(0.1)
+    return None
+
+def _run_tunnel_client_thread(token, local_mc, local_rcon, local_mj):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        # FIX: Ensure all three mapped ports flow cleanly into the tunnel connector
+        loop.run_until_complete(connect_client_tunnel(
+            token,
+            local_mc_port=local_mc,
+            local_rcon_port=local_rcon,
+            local_mj_port=local_mj
+        ))
+    except Exception as e:
+        print(f"\n[Tunnel Client Error] {e}")
+
+def _start_secure_tunnel_client(token, local_mc, local_rcon, local_mj):
+    # FIX: Accept all three ports without default Nones, guaranteeing they pass through
+    thread = Thread(target=_run_tunnel_client_thread, args=(token, local_mc, local_rcon, local_mj), daemon=True)
+    thread.start()
+
 @magics_class
 class MCShell(Magics):
 
@@ -151,28 +208,26 @@ class MCShell(Magics):
 
         self.server_data['password'] = password
 
-        # self.server_data = {"host": '127.0.0.1','port':MC_SERVER_PORT, "rcon_port": MC_RCON_PORT, "password": password, "fj_port":FJ_PLUGIN_PORT} # Port can be dynamic if needed
-
         print("Input the ports for the server, rcon and plugin. These only need to be changed if you are running more than one mc-shell!")
         try:
             # Capturing strings first ensures we don't crash on int('')
             resp_port = Prompt.ask('Server Port:', default=str(self.server_data['port']))
             resp_rcon = Prompt.ask('RCON Port:', default=str(self.server_data['rcon_port']))
-            resp_fj   = Prompt.ask('McJuice Port:', default=str(self.server_data['fj_port']))
+            resp_mj   = Prompt.ask('McJuice Port:', default=str(self.server_data['mj_port']))
             resp_app  = Prompt.ask('Application Port:', default=str(self.server_data['app_port']))
 
             # Robust casting logic
             ports = {
                 'port': int(resp_port) if resp_port else self.server_data['port'],
                 'rcon_port': int(resp_rcon) if resp_rcon else self.server_data['rcon_port'],
-                'fj_port': int(resp_fj) if resp_fj else self.server_data['fj_port'],
+                'mj_port': int(resp_mj) if resp_mj else self.server_data['mj_port'],
                 'app_port': int(resp_app) if resp_app else self.server_data['app_port']
             }
 
 
             self.server_data['port'] = ports['port']
             self.server_data['rcon_port'] = ports['rcon_port']
-            self.server_data['fj_port'] = ports['fj_port']
+            self.server_data['mj_port'] = ports['mj_port']
             self.server_data['app_port'] = ports['app_port']
 
         except (EOFError, KeyboardInterrupt):
@@ -295,6 +350,21 @@ class MCShell(Magics):
         If another server is running, it will be stopped first.
         Usage: %pp_start_world <world_name>
         """
+
+        # Orthogonal flag extraction
+        is_secure = '--secure' in line
+        line = line.replace('--secure', '').strip()
+        extra_server_properties = {
+            'server-ip': '0.0.0.0',
+            'mcjuice-host': '0.0.0.0'
+        }
+
+        if is_secure:
+            extra_server_properties = {
+                'server-ip' : '127.0.0.1',
+                'mcjuice-host': '127.0.0.1'
+            }
+
         world_name = line.strip()
         if not world_name:
             print("Error: Please provide a world name. Usage: %pp_start <world_name>")
@@ -319,11 +389,11 @@ class MCShell(Magics):
 
         # Start the Paper server
         self.active_paper_server = PaperServerManager(world_name, world_directory)
-        self.active_paper_server.start()
+        self.active_paper_server.start(**extra_server_properties)
         # now start it after files are generated and it is terminated once
         if not self.active_paper_server.is_alive():
             self.active_paper_server = PaperServerManager(world_name, world_directory)
-            self.active_paper_server.start()
+            self.active_paper_server.start(**extra_server_properties)
 
         if not self.active_paper_server.is_alive():
             print("Could not start Paper server. Aborting.")
@@ -337,7 +407,19 @@ class MCShell(Magics):
         if not 'app_port' in list(self.server_data.keys()):
             self.server_data['app_port'] = 5001
         # start the app server
-        self.ip.run_line_magic('mc_start_app','')
+        # self.ip.run_line_magic('mc_start_app','')
+
+        if is_secure:
+            print("Starting secure SSH tunnel gateway...")
+            # We assume standard ports for this proof of concept.
+            # (You can dynamically pull these from your config if needed)
+            token = _start_secure_tunnel_host(self.server_data['port'],self.server_data['rcon_port'],self.server_data['mj_port'])
+
+            if token:
+                print(f"\n[SECURE HOST] Tunnel active! Share this Join Token with your friends:\n\n{token}\n")
+            else:
+                print("\n[SECURE HOST] Failed to generate Join Token.\n")
+
 
     @line_magic
     def pp_stop_world(self, line):
@@ -628,7 +710,7 @@ class MCShell(Magics):
         self.server_data.update({
             'host': Prompt.ask('Server Address:', default=self.server_data['host']),
             'rcon_port': int(Prompt.ask('Server Port:', default=str(self.server_data['rcon_port']))),
-            'fj_port': int(Prompt.ask('Plugin Port:', default=str(self.server_data['fj_port']))),
+            'mj_port': int(Prompt.ask('Plugin Port:', default=str(self.server_data['mj_port']))),
             'password': Prompt.ask('Server Password:', password=True)
         })
 
@@ -1073,24 +1155,63 @@ class MCShell(Magics):
     @line_magic
     def mc_start_app(self, line):
         """
-        Starts the mc-ed application server, getting the authorized Minecraft user
-        name from the central configuration file.
+        Starts the client application components to connect to a world.
+        Usage: %mc_start_app [token] [--local-mc <port>] [--local-rcon <port>] [--local-mj <port>]
         """
-        # if we started a world, self.server_data should be set
-        if not self.active_paper_server:
+        parts = line.split()
+
+        # If the first argument doesn't start with '--', it's our token
+        token = parts[0] if parts and not parts[0].startswith('--') else None
+
+        if not token:
             self.server_data = {
                 'host': Prompt.ask('Server Address:', default=self.server_data['host']),
-                'fj_port': int(Prompt.ask('Plugin Port:', default=str(self.server_data['fj_port']))),
-                'rcon_port': int(Prompt.ask('Server Port:', default=str(self.server_data['rcon_port']))),
+                'port': int(Prompt.ask('Server Port:', default=str(self.server_data['port']))),
+                'rcon_port': int(Prompt.ask('Rcon Port:', default=str(self.server_data['rcon_port']))),
+                'mj_port': int(Prompt.ask('Plugin Port:', default=str(self.server_data['mj_port']))),
                 'app_port': int(Prompt.ask('Application Port:', default=str(self.server_data['app_port']))),
                 'password':None,
             }
 
-            login_to_server = Prompt.ask('Do you want to be a server op?',choices=['yes','no'],default='no')
-            if login_to_server.lower() == 'yes':
-                self.server_data.update({
-                    'password': Prompt.ask('Server Password:', password=True)
-                })
+        if token:
+            # 1. DEFINE VARS FIRST: Determine intended local ports from defaults
+            local_mc = self.server_data.get('port', 25565)
+            local_rcon = self.server_data.get('rcon_port', 25575)
+            local_mj = self.server_data.get('mj_port', 4721)
+
+            # 2. OVERRIDES: Process any user-provided terminal overrides
+            if '--local-mc' in parts:
+                local_mc = int(parts[parts.index('--local-mc') + 1])
+            if '--local-rcon' in parts:
+                local_rcon = int(parts[parts.index('--local-rcon') + 1])
+            if '--local-mj' in parts:
+                local_mj = int(parts[parts.index('--local-mj') + 1])
+
+            # 3. SAFETY CHECK: Your existing checks
+            if hasattr(self, 'active_paper_server') and getattr(self, 'active_paper_server') and self.active_paper_server.is_alive():
+                print("A local Minecraft server is already running. Proceeding with proxy connections anyway.")
+
+            # 4. START TUNNEL: If a token was provided, we are in "Proxy Mode"
+            if token:
+                print("Connecting to secure tunnel...")
+                # Pass the extracted integer ports, NOT the dictionary
+                _start_secure_tunnel_client(token, local_mc, local_rcon, local_mj)
+
+                # THE MAGIC TRICK: Overwrite in-memory server_data to point to the secure tunnel entrances
+                self.server_data['host'] = '127.0.0.1'
+                self.server_data['port'] = local_mc
+                self.server_data['rcon_port'] = local_rcon
+                self.server_data['mj_port'] = local_mj
+
+                # Give the background thread a moment to establish port forwards
+                time.sleep(1.0)
+                print("Tunnel connection established.")
+
+        login_to_server = Prompt.ask('Do you want to be a server op?',choices=['yes','no'],default='no')
+        if login_to_server.lower() == 'yes':
+            self.server_data.update({
+                'password': Prompt.ask('Server Password:', password=True)
+            })
 
         minecraft_name = self._get_mc_name()
         power_repo = SQLiteRepository(minecraft_name)

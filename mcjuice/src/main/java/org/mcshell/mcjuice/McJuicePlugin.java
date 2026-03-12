@@ -14,15 +14,21 @@ public class McJuicePlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         instance = this;
+
+        // This natively creates the "plugins/McJuice/" folder next to the jar
+        // and copies the resources/config.yml into it if it doesn't exist.
         saveDefaultConfig();
 
         getServer().getPluginManager().registerEvents(new GeneratedEventListener(), this);
 
+        // Read settings from the configuration file
+        String host = getConfig().getString("host", "0.0.0.0");
         int port = getConfig().getInt("port", 4721);
-        listenerThread = new ServerListenerThread(this, "0.0.0.0", port);
+
+        listenerThread = new ServerListenerThread(this, host, port);
         listenerThread.start();
 
-        getLogger().info("McJuice Plugin Enabled. Push Architecture Active on port " + port);
+        getLogger().info("McJuice Plugin Enabled. Push Architecture Active on " + host + ":" + port);
     }
 
     @Override
