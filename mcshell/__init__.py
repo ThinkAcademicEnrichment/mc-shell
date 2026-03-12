@@ -354,6 +354,11 @@ class MCShell(Magics):
         # Orthogonal flag extraction
         is_secure = '--secure' in line
         line = line.replace('--secure', '').strip()
+        extra_server_properties = {
+            'server-ip': '0.0.0.0',
+            'mcjuice-host': '0.0.0.0'
+        }
+
         if is_secure:
             extra_server_properties = {
                 'server-ip' : '127.0.0.1',
