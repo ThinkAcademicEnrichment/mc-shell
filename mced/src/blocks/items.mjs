@@ -372,126 +372,6 @@ export function defineItemsBlocks(Blockly) {
         }
     };
 
-    Blockly.Blocks['mc_item_armor_tier_boots'] = {
-        init: function() {
-            this.appendValueInput('VARIANT')
-                .setCheck('MinecraftArmorTier')
-                .appendField('Armor Tier Boots');
-            this.setOutput(true, 'Item');
-            this.setColour("#D4A373");
-        }
-    };
-
-    Blockly.Blocks['mc_item_armor_tier_chestplate'] = {
-        init: function() {
-            this.appendValueInput('VARIANT')
-                .setCheck('MinecraftArmorTier')
-                .appendField('Armor Tier Chestplate');
-            this.setOutput(true, 'Item');
-            this.setColour("#D4A373");
-        }
-    };
-
-    Blockly.Blocks['mc_item_armor_tier_helmet'] = {
-        init: function() {
-            this.appendValueInput('VARIANT')
-                .setCheck('MinecraftArmorTier')
-                .appendField('Armor Tier Helmet');
-            this.setOutput(true, 'Item');
-            this.setColour("#D4A373");
-        }
-    };
-
-    Blockly.Blocks['mc_item_armor_tier_leggings'] = {
-        init: function() {
-            this.appendValueInput('VARIANT')
-                .setCheck('MinecraftArmorTier')
-                .appendField('Armor Tier Leggings');
-            this.setOutput(true, 'Item');
-            this.setColour("#D4A373");
-        }
-    };
-
-    Blockly.Blocks['mc_item_armor_tier_axe'] = {
-        init: function() {
-            this.appendValueInput('VARIANT')
-                .setCheck('MinecraftArmorTier')
-                .appendField('Armor Tier Axe');
-            this.setOutput(true, 'Item');
-            this.setColour("#D4A373");
-        }
-    };
-
-    Blockly.Blocks['mc_item_armor_tier_hoe'] = {
-        init: function() {
-            this.appendValueInput('VARIANT')
-                .setCheck('MinecraftArmorTier')
-                .appendField('Armor Tier Hoe');
-            this.setOutput(true, 'Item');
-            this.setColour("#D4A373");
-        }
-    };
-
-    Blockly.Blocks['mc_item_armor_tier_horse_armor'] = {
-        init: function() {
-            this.appendValueInput('VARIANT')
-                .setCheck('MinecraftArmorTier')
-                .appendField('Armor Tier Horse Armor');
-            this.setOutput(true, 'Item');
-            this.setColour("#D4A373");
-        }
-    };
-
-    Blockly.Blocks['mc_item_armor_tier_nautilus_armor'] = {
-        init: function() {
-            this.appendValueInput('VARIANT')
-                .setCheck('MinecraftArmorTier')
-                .appendField('Armor Tier Nautilus Armor');
-            this.setOutput(true, 'Item');
-            this.setColour("#D4A373");
-        }
-    };
-
-    Blockly.Blocks['mc_item_armor_tier_pickaxe'] = {
-        init: function() {
-            this.appendValueInput('VARIANT')
-                .setCheck('MinecraftArmorTier')
-                .appendField('Armor Tier Pickaxe');
-            this.setOutput(true, 'Item');
-            this.setColour("#D4A373");
-        }
-    };
-
-    Blockly.Blocks['mc_item_armor_tier_shovel'] = {
-        init: function() {
-            this.appendValueInput('VARIANT')
-                .setCheck('MinecraftArmorTier')
-                .appendField('Armor Tier Shovel');
-            this.setOutput(true, 'Item');
-            this.setColour("#D4A373");
-        }
-    };
-
-    Blockly.Blocks['mc_item_armor_tier_spear'] = {
-        init: function() {
-            this.appendValueInput('VARIANT')
-                .setCheck('MinecraftArmorTier')
-                .appendField('Armor Tier Spear');
-            this.setOutput(true, 'Item');
-            this.setColour("#D4A373");
-        }
-    };
-
-    Blockly.Blocks['mc_item_armor_tier_sword'] = {
-        init: function() {
-            this.appendValueInput('VARIANT')
-                .setCheck('MinecraftArmorTier')
-                .appendField('Armor Tier Sword');
-            this.setOutput(true, 'Item');
-            this.setColour("#D4A373");
-        }
-    };
-
     Blockly.Blocks['mc_item_color_tulip'] = {
         init: function() {
             this.appendValueInput('VARIANT')
@@ -575,241 +455,6 @@ export function defineItemsBlocks(Blockly) {
         }
     };
 
-    Blockly.Blocks['mc_item_picker_woods_and_logs'] = {
-        init: function() {
-            this.appendDummyInput()
-                .appendField("Woods And Logs")
-                .appendField(new Blockly.FieldDropdown([
-                ["Acacia Leaves", "ACACIA_LEAVES"],
-                ["Acacia Log", "ACACIA_LOG"],
-                ["Acacia Planks", "ACACIA_PLANKS"],
-                ["Acacia Sapling", "ACACIA_SAPLING"],
-                ["Acacia Wood", "ACACIA_WOOD"],
-                ["Bamboo Planks", "BAMBOO_PLANKS"],
-                ["Bamboo Sapling", "BAMBOO_SAPLING"],
-                ["Birch Leaves", "BIRCH_LEAVES"],
-                ["Birch Log", "BIRCH_LOG"],
-                ["Birch Planks", "BIRCH_PLANKS"],
-                ["Birch Sapling", "BIRCH_SAPLING"],
-                ["Birch Wood", "BIRCH_WOOD"],
-                ["Cherry Leaves", "CHERRY_LEAVES"],
-                ["Cherry Log", "CHERRY_LOG"],
-                ["Cherry Planks", "CHERRY_PLANKS"],
-                ["Cherry Sapling", "CHERRY_SAPLING"],
-                ["Cherry Wood", "CHERRY_WOOD"],
-                ["Crimson Planks", "CRIMSON_PLANKS"],
-                ["Dark Oak Leaves", "DARK_OAK_LEAVES"],
-                ["Dark Oak Log", "DARK_OAK_LOG"],
-                ["Dark Oak Planks", "DARK_OAK_PLANKS"],
-                ["Dark Oak Sapling", "DARK_OAK_SAPLING"],
-                ["Dark Oak Wood", "DARK_OAK_WOOD"],
-                ["Jungle Leaves", "JUNGLE_LEAVES"],
-                ["Jungle Log", "JUNGLE_LOG"],
-                ["Jungle Planks", "JUNGLE_PLANKS"],
-                ["Jungle Sapling", "JUNGLE_SAPLING"],
-                ["Jungle Wood", "JUNGLE_WOOD"],
-                ["Mangrove Leaves", "MANGROVE_LEAVES"],
-                ["Mangrove Log", "MANGROVE_LOG"],
-                ["Mangrove Planks", "MANGROVE_PLANKS"],
-                ["Mangrove Wood", "MANGROVE_WOOD"],
-                ["Oak Leaves", "OAK_LEAVES"],
-                ["Oak Log", "OAK_LOG"],
-                ["Oak Planks", "OAK_PLANKS"],
-                ["Oak Sapling", "OAK_SAPLING"],
-                ["Oak Wood", "OAK_WOOD"],
-                ["Pale Oak Leaves", "PALE_OAK_LEAVES"],
-                ["Pale Oak Log", "PALE_OAK_LOG"],
-                ["Pale Oak Planks", "PALE_OAK_PLANKS"],
-                ["Pale Oak Sapling", "PALE_OAK_SAPLING"],
-                ["Pale Oak Wood", "PALE_OAK_WOOD"],
-                ["Spruce Leaves", "SPRUCE_LEAVES"],
-                ["Spruce Log", "SPRUCE_LOG"],
-                ["Spruce Planks", "SPRUCE_PLANKS"],
-                ["Spruce Sapling", "SPRUCE_SAPLING"],
-                ["Spruce Wood", "SPRUCE_WOOD"],
-                ["Warped Planks", "WARPED_PLANKS"]
-                ]), "VALUE");
-            this.setOutput(true, "Item");
-            this.setColour("#95A5A6");
-            this.setTooltip("");
-        }
-    };
-
-    Blockly.Blocks['mc_item_picker_colored_blocks'] = {
-        init: function() {
-            this.appendDummyInput()
-                .appendField("Colored Blocks")
-                .appendField(new Blockly.FieldDropdown([
-                ["Black Banner", "BLACK_BANNER"],
-                ["Black Bed", "BLACK_BED"],
-                ["Black Candle", "BLACK_CANDLE"],
-                ["Black Carpet", "BLACK_CARPET"],
-                ["Black Concrete", "BLACK_CONCRETE"],
-                ["Black Concrete Powder", "BLACK_CONCRETE_POWDER"],
-                ["Black Glazed Terracotta", "BLACK_GLAZED_TERRACOTTA"],
-                ["Black Shulker Box", "BLACK_SHULKER_BOX"],
-                ["Black Terracotta", "BLACK_TERRACOTTA"],
-                ["Black Wool", "BLACK_WOOL"],
-                ["Blue Banner", "BLUE_BANNER"],
-                ["Blue Bed", "BLUE_BED"],
-                ["Blue Candle", "BLUE_CANDLE"],
-                ["Blue Carpet", "BLUE_CARPET"],
-                ["Blue Concrete", "BLUE_CONCRETE"],
-                ["Blue Concrete Powder", "BLUE_CONCRETE_POWDER"],
-                ["Blue Glazed Terracotta", "BLUE_GLAZED_TERRACOTTA"],
-                ["Blue Shulker Box", "BLUE_SHULKER_BOX"],
-                ["Blue Terracotta", "BLUE_TERRACOTTA"],
-                ["Blue Wool", "BLUE_WOOL"],
-                ["Brown Banner", "BROWN_BANNER"],
-                ["Brown Bed", "BROWN_BED"],
-                ["Brown Candle", "BROWN_CANDLE"],
-                ["Brown Carpet", "BROWN_CARPET"],
-                ["Brown Concrete", "BROWN_CONCRETE"],
-                ["Brown Concrete Powder", "BROWN_CONCRETE_POWDER"],
-                ["Brown Glazed Terracotta", "BROWN_GLAZED_TERRACOTTA"],
-                ["Brown Shulker Box", "BROWN_SHULKER_BOX"],
-                ["Brown Terracotta", "BROWN_TERRACOTTA"],
-                ["Brown Wool", "BROWN_WOOL"],
-                ["Candle", "CANDLE"],
-                ["Cyan Banner", "CYAN_BANNER"],
-                ["Cyan Bed", "CYAN_BED"],
-                ["Cyan Candle", "CYAN_CANDLE"],
-                ["Cyan Carpet", "CYAN_CARPET"],
-                ["Cyan Concrete", "CYAN_CONCRETE"],
-                ["Cyan Concrete Powder", "CYAN_CONCRETE_POWDER"],
-                ["Cyan Glazed Terracotta", "CYAN_GLAZED_TERRACOTTA"],
-                ["Cyan Shulker Box", "CYAN_SHULKER_BOX"],
-                ["Cyan Terracotta", "CYAN_TERRACOTTA"],
-                ["Cyan Wool", "CYAN_WOOL"],
-                ["Gray Banner", "GRAY_BANNER"],
-                ["Gray Bed", "GRAY_BED"],
-                ["Gray Candle", "GRAY_CANDLE"],
-                ["Gray Carpet", "GRAY_CARPET"],
-                ["Gray Concrete", "GRAY_CONCRETE"],
-                ["Gray Concrete Powder", "GRAY_CONCRETE_POWDER"],
-                ["Gray Glazed Terracotta", "GRAY_GLAZED_TERRACOTTA"],
-                ["Gray Shulker Box", "GRAY_SHULKER_BOX"],
-                ["Gray Terracotta", "GRAY_TERRACOTTA"],
-                ["Gray Wool", "GRAY_WOOL"],
-                ["Green Banner", "GREEN_BANNER"],
-                ["Green Bed", "GREEN_BED"],
-                ["Green Candle", "GREEN_CANDLE"],
-                ["Green Carpet", "GREEN_CARPET"],
-                ["Green Concrete", "GREEN_CONCRETE"],
-                ["Green Concrete Powder", "GREEN_CONCRETE_POWDER"],
-                ["Green Glazed Terracotta", "GREEN_GLAZED_TERRACOTTA"],
-                ["Green Shulker Box", "GREEN_SHULKER_BOX"],
-                ["Green Terracotta", "GREEN_TERRACOTTA"],
-                ["Green Wool", "GREEN_WOOL"],
-                ["Light Blue Banner", "LIGHT_BLUE_BANNER"],
-                ["Light Blue Bed", "LIGHT_BLUE_BED"],
-                ["Light Blue Candle", "LIGHT_BLUE_CANDLE"],
-                ["Light Blue Carpet", "LIGHT_BLUE_CARPET"],
-                ["Light Blue Concrete", "LIGHT_BLUE_CONCRETE"],
-                ["Light Blue Concrete Powder", "LIGHT_BLUE_CONCRETE_POWDER"],
-                ["Light Blue Glazed Terracotta", "LIGHT_BLUE_GLAZED_TERRACOTTA"],
-                ["Light Blue Shulker Box", "LIGHT_BLUE_SHULKER_BOX"],
-                ["Light Blue Terracotta", "LIGHT_BLUE_TERRACOTTA"],
-                ["Light Blue Wool", "LIGHT_BLUE_WOOL"],
-                ["Light Gray Banner", "LIGHT_GRAY_BANNER"],
-                ["Light Gray Bed", "LIGHT_GRAY_BED"],
-                ["Light Gray Candle", "LIGHT_GRAY_CANDLE"],
-                ["Light Gray Carpet", "LIGHT_GRAY_CARPET"],
-                ["Light Gray Concrete", "LIGHT_GRAY_CONCRETE"],
-                ["Light Gray Concrete Powder", "LIGHT_GRAY_CONCRETE_POWDER"],
-                ["Light Gray Glazed Terracotta", "LIGHT_GRAY_GLAZED_TERRACOTTA"],
-                ["Light Gray Shulker Box", "LIGHT_GRAY_SHULKER_BOX"],
-                ["Light Gray Terracotta", "LIGHT_GRAY_TERRACOTTA"],
-                ["Light Gray Wool", "LIGHT_GRAY_WOOL"],
-                ["Lime Banner", "LIME_BANNER"],
-                ["Lime Bed", "LIME_BED"],
-                ["Lime Candle", "LIME_CANDLE"],
-                ["Lime Carpet", "LIME_CARPET"],
-                ["Lime Concrete", "LIME_CONCRETE"],
-                ["Lime Concrete Powder", "LIME_CONCRETE_POWDER"],
-                ["Lime Glazed Terracotta", "LIME_GLAZED_TERRACOTTA"],
-                ["Lime Shulker Box", "LIME_SHULKER_BOX"],
-                ["Lime Terracotta", "LIME_TERRACOTTA"],
-                ["Lime Wool", "LIME_WOOL"],
-                ["Magenta Banner", "MAGENTA_BANNER"],
-                ["Magenta Bed", "MAGENTA_BED"],
-                ["Magenta Candle", "MAGENTA_CANDLE"],
-                ["Magenta Carpet", "MAGENTA_CARPET"],
-                ["Magenta Concrete", "MAGENTA_CONCRETE"],
-                ["Magenta Concrete Powder", "MAGENTA_CONCRETE_POWDER"],
-                ["Magenta Glazed Terracotta", "MAGENTA_GLAZED_TERRACOTTA"],
-                ["Magenta Shulker Box", "MAGENTA_SHULKER_BOX"],
-                ["Magenta Terracotta", "MAGENTA_TERRACOTTA"],
-                ["Magenta Wool", "MAGENTA_WOOL"],
-                ["Orange Banner", "ORANGE_BANNER"],
-                ["Orange Bed", "ORANGE_BED"],
-                ["Orange Candle", "ORANGE_CANDLE"],
-                ["Orange Carpet", "ORANGE_CARPET"],
-                ["Orange Concrete", "ORANGE_CONCRETE"],
-                ["Orange Concrete Powder", "ORANGE_CONCRETE_POWDER"],
-                ["Orange Glazed Terracotta", "ORANGE_GLAZED_TERRACOTTA"],
-                ["Orange Shulker Box", "ORANGE_SHULKER_BOX"],
-                ["Orange Terracotta", "ORANGE_TERRACOTTA"],
-                ["Orange Wool", "ORANGE_WOOL"],
-                ["Pink Banner", "PINK_BANNER"],
-                ["Pink Bed", "PINK_BED"],
-                ["Pink Candle", "PINK_CANDLE"],
-                ["Pink Carpet", "PINK_CARPET"],
-                ["Pink Concrete", "PINK_CONCRETE"],
-                ["Pink Concrete Powder", "PINK_CONCRETE_POWDER"],
-                ["Pink Glazed Terracotta", "PINK_GLAZED_TERRACOTTA"],
-                ["Pink Shulker Box", "PINK_SHULKER_BOX"],
-                ["Pink Terracotta", "PINK_TERRACOTTA"],
-                ["Pink Wool", "PINK_WOOL"],
-                ["Purple Banner", "PURPLE_BANNER"],
-                ["Purple Bed", "PURPLE_BED"],
-                ["Purple Candle", "PURPLE_CANDLE"],
-                ["Purple Carpet", "PURPLE_CARPET"],
-                ["Purple Concrete", "PURPLE_CONCRETE"],
-                ["Purple Concrete Powder", "PURPLE_CONCRETE_POWDER"],
-                ["Purple Glazed Terracotta", "PURPLE_GLAZED_TERRACOTTA"],
-                ["Purple Shulker Box", "PURPLE_SHULKER_BOX"],
-                ["Purple Terracotta", "PURPLE_TERRACOTTA"],
-                ["Purple Wool", "PURPLE_WOOL"],
-                ["Red Banner", "RED_BANNER"],
-                ["Red Bed", "RED_BED"],
-                ["Red Candle", "RED_CANDLE"],
-                ["Red Carpet", "RED_CARPET"],
-                ["Red Concrete", "RED_CONCRETE"],
-                ["Red Concrete Powder", "RED_CONCRETE_POWDER"],
-                ["Red Glazed Terracotta", "RED_GLAZED_TERRACOTTA"],
-                ["Red Shulker Box", "RED_SHULKER_BOX"],
-                ["Red Terracotta", "RED_TERRACOTTA"],
-                ["Red Wool", "RED_WOOL"],
-                ["Shulker Box", "SHULKER_BOX"],
-                ["Terracotta", "TERRACOTTA"],
-                ["White Banner", "WHITE_BANNER"],
-                ["White Bed", "WHITE_BED"],
-                ["White Candle", "WHITE_CANDLE"],
-                ["White Carpet", "WHITE_CARPET"],
-                ["White Concrete", "WHITE_CONCRETE"],
-                ["White Concrete Powder", "WHITE_CONCRETE_POWDER"],
-                ["White Glazed Terracotta", "WHITE_GLAZED_TERRACOTTA"],
-                ["White Shulker Box", "WHITE_SHULKER_BOX"],
-                ["White Terracotta", "WHITE_TERRACOTTA"],
-                ["White Wool", "WHITE_WOOL"],
-                ["Yellow Banner", "YELLOW_BANNER"],
-                ["Yellow Bed", "YELLOW_BED"],
-                ["Yellow Candle", "YELLOW_CANDLE"],
-                ["Yellow Carpet", "YELLOW_CARPET"],
-                ["Yellow Concrete", "YELLOW_CONCRETE"],
-                ["Yellow Concrete Powder", "YELLOW_CONCRETE_POWDER"],
-                ["Yellow Glazed Terracotta", "YELLOW_GLAZED_TERRACOTTA"],
-                ["Yellow Shulker Box", "YELLOW_SHULKER_BOX"],
-                ["Yellow Terracotta", "YELLOW_TERRACOTTA"],
-                ["Yellow Wool", "YELLOW_WOOL"]
-                ]), "VALUE");
-            this.setOutput(true, "Item");
-            this.setColour("#95A5A6");
-            this.setTooltip("");
-        }
-    };
-
     Blockly.Blocks['mc_item_picker_stone_bricks'] = {
         init: function() {
             this.appendDummyInput()
@@ -848,41 +493,9 @@ export function defineItemsBlocks(Blockly) {
             this.appendDummyInput()
                 .appendField("Glass")
                 .appendField(new Blockly.FieldDropdown([
-                ["Black Stained Glass", "BLACK_STAINED_GLASS"],
-                ["Black Stained Glass Pane", "BLACK_STAINED_GLASS_PANE"],
-                ["Blue Stained Glass", "BLUE_STAINED_GLASS"],
-                ["Blue Stained Glass Pane", "BLUE_STAINED_GLASS_PANE"],
-                ["Brown Stained Glass", "BROWN_STAINED_GLASS"],
-                ["Brown Stained Glass Pane", "BROWN_STAINED_GLASS_PANE"],
-                ["Cyan Stained Glass", "CYAN_STAINED_GLASS"],
-                ["Cyan Stained Glass Pane", "CYAN_STAINED_GLASS_PANE"],
                 ["Glass", "GLASS"],
                 ["Glass Pane", "GLASS_PANE"],
-                ["Gray Stained Glass", "GRAY_STAINED_GLASS"],
-                ["Gray Stained Glass Pane", "GRAY_STAINED_GLASS_PANE"],
-                ["Green Stained Glass", "GREEN_STAINED_GLASS"],
-                ["Green Stained Glass Pane", "GREEN_STAINED_GLASS_PANE"],
-                ["Light Blue Stained Glass", "LIGHT_BLUE_STAINED_GLASS"],
-                ["Light Blue Stained Glass Pane", "LIGHT_BLUE_STAINED_GLASS_PANE"],
-                ["Light Gray Stained Glass", "LIGHT_GRAY_STAINED_GLASS"],
-                ["Light Gray Stained Glass Pane", "LIGHT_GRAY_STAINED_GLASS_PANE"],
-                ["Lime Stained Glass", "LIME_STAINED_GLASS"],
-                ["Lime Stained Glass Pane", "LIME_STAINED_GLASS_PANE"],
-                ["Magenta Stained Glass", "MAGENTA_STAINED_GLASS"],
-                ["Magenta Stained Glass Pane", "MAGENTA_STAINED_GLASS_PANE"],
-                ["Orange Stained Glass", "ORANGE_STAINED_GLASS"],
-                ["Orange Stained Glass Pane", "ORANGE_STAINED_GLASS_PANE"],
-                ["Pink Stained Glass", "PINK_STAINED_GLASS"],
-                ["Pink Stained Glass Pane", "PINK_STAINED_GLASS_PANE"],
-                ["Purple Stained Glass", "PURPLE_STAINED_GLASS"],
-                ["Purple Stained Glass Pane", "PURPLE_STAINED_GLASS_PANE"],
-                ["Red Stained Glass", "RED_STAINED_GLASS"],
-                ["Red Stained Glass Pane", "RED_STAINED_GLASS_PANE"],
-                ["Tinted Glass", "TINTED_GLASS"],
-                ["White Stained Glass", "WHITE_STAINED_GLASS"],
-                ["White Stained Glass Pane", "WHITE_STAINED_GLASS_PANE"],
-                ["Yellow Stained Glass", "YELLOW_STAINED_GLASS"],
-                ["Yellow Stained Glass Pane", "YELLOW_STAINED_GLASS_PANE"]
+                ["Tinted Glass", "TINTED_GLASS"]
                 ]), "VALUE");
             this.setOutput(true, "Item");
             this.setColour("#95A5A6");
@@ -977,12 +590,17 @@ export function defineItemsBlocks(Blockly) {
             this.appendDummyInput()
                 .appendField("Nature")
                 .appendField(new Blockly.FieldDropdown([
-                ["Bamboo", "BAMBOO"],
-                ["Cactus", "CACTUS"],
+                ["Acacia Leaves", "ACACIA_LEAVES"],
+                ["Azalea Leaves", "AZALEA_LEAVES"],
+                ["Birch Leaves", "BIRCH_LEAVES"],
                 ["Cave Vines", "CAVE_VINES"],
-                ["Lily Pad", "LILY_PAD"],
+                ["Cherry Leaves", "CHERRY_LEAVES"],
+                ["Dark Oak Leaves", "DARK_OAK_LEAVES"],
+                ["Jungle Leaves", "JUNGLE_LEAVES"],
+                ["Mangrove Leaves", "MANGROVE_LEAVES"],
                 ["Moss Block", "MOSS_BLOCK"],
-                ["Sugar Cane", "SUGAR_CANE"],
+                ["Oak Leaves", "OAK_LEAVES"],
+                ["Spruce Leaves", "SPRUCE_LEAVES"],
                 ["Twisting Vines", "TWISTING_VINES"],
                 ["Vine", "VINE"],
                 ["Weeping Vines", "WEEPING_VINES"]
@@ -1058,80 +676,6 @@ export function defineItemsBlocks(Blockly) {
         }
     };
 
-    Blockly.Blocks['mc_item_picker_tools'] = {
-        init: function() {
-            this.appendDummyInput()
-                .appendField("Tools")
-                .appendField(new Blockly.FieldDropdown([
-                ["Diamond Axe", "DIAMOND_AXE"],
-                ["Diamond Hoe", "DIAMOND_HOE"],
-                ["Diamond Pickaxe", "DIAMOND_PICKAXE"],
-                ["Diamond Shovel", "DIAMOND_SHOVEL"],
-                ["Diamond Sword", "DIAMOND_SWORD"],
-                ["Golden Axe", "GOLDEN_AXE"],
-                ["Golden Hoe", "GOLDEN_HOE"],
-                ["Golden Pickaxe", "GOLDEN_PICKAXE"],
-                ["Golden Shovel", "GOLDEN_SHOVEL"],
-                ["Golden Sword", "GOLDEN_SWORD"],
-                ["Iron Axe", "IRON_AXE"],
-                ["Iron Hoe", "IRON_HOE"],
-                ["Iron Pickaxe", "IRON_PICKAXE"],
-                ["Iron Shovel", "IRON_SHOVEL"],
-                ["Iron Sword", "IRON_SWORD"],
-                ["Netherite Axe", "NETHERITE_AXE"],
-                ["Netherite Hoe", "NETHERITE_HOE"],
-                ["Netherite Pickaxe", "NETHERITE_PICKAXE"],
-                ["Netherite Shovel", "NETHERITE_SHOVEL"],
-                ["Netherite Sword", "NETHERITE_SWORD"]
-                ]), "VALUE");
-            this.setOutput(true, "Item");
-            this.setColour("#95A5A6");
-            this.setTooltip("");
-        }
-    };
-
-    Blockly.Blocks['mc_item_picker_armour'] = {
-        init: function() {
-            this.appendDummyInput()
-                .appendField("Armour")
-                .appendField(new Blockly.FieldDropdown([
-                ["Chainmail Boots", "CHAINMAIL_BOOTS"],
-                ["Chainmail Chestplate", "CHAINMAIL_CHESTPLATE"],
-                ["Chainmail Helmet", "CHAINMAIL_HELMET"],
-                ["Chainmail Leggings", "CHAINMAIL_LEGGINGS"],
-                ["Diamond Boots", "DIAMOND_BOOTS"],
-                ["Diamond Chestplate", "DIAMOND_CHESTPLATE"],
-                ["Diamond Helmet", "DIAMOND_HELMET"],
-                ["Diamond Horse Armor", "DIAMOND_HORSE_ARMOR"],
-                ["Diamond Leggings", "DIAMOND_LEGGINGS"],
-                ["Golden Boots", "GOLDEN_BOOTS"],
-                ["Golden Chestplate", "GOLDEN_CHESTPLATE"],
-                ["Golden Helmet", "GOLDEN_HELMET"],
-                ["Golden Horse Armor", "GOLDEN_HORSE_ARMOR"],
-                ["Golden Leggings", "GOLDEN_LEGGINGS"],
-                ["Iron Boots", "IRON_BOOTS"],
-                ["Iron Chestplate", "IRON_CHESTPLATE"],
-                ["Iron Helmet", "IRON_HELMET"],
-                ["Iron Horse Armor", "IRON_HORSE_ARMOR"],
-                ["Iron Leggings", "IRON_LEGGINGS"],
-                ["Leather Boots", "LEATHER_BOOTS"],
-                ["Leather Chestplate", "LEATHER_CHESTPLATE"],
-                ["Leather Helmet", "LEATHER_HELMET"],
-                ["Leather Horse Armor", "LEATHER_HORSE_ARMOR"],
-                ["Leather Leggings", "LEATHER_LEGGINGS"],
-                ["Netherite Boots", "NETHERITE_BOOTS"],
-                ["Netherite Chestplate", "NETHERITE_CHESTPLATE"],
-                ["Netherite Helmet", "NETHERITE_HELMET"],
-                ["Netherite Horse Armor", "NETHERITE_HORSE_ARMOR"],
-                ["Netherite Leggings", "NETHERITE_LEGGINGS"],
-                ["Turtle Helmet", "TURTLE_HELMET"]
-                ]), "VALUE");
-            this.setOutput(true, "Item");
-            this.setColour("#95A5A6");
-            this.setTooltip("");
-        }
-    };
-
     Blockly.Blocks['mc_item_picker_general'] = {
         init: function() {
             this.appendDummyInput()
@@ -1158,8 +702,8 @@ export function defineItemsBlocks(Blockly) {
                 ["Axolotl Bucket", "AXOLOTL_BUCKET"],
                 ["Axolotl Spawn Egg", "AXOLOTL_SPAWN_EGG"],
                 ["Azalea", "AZALEA"],
-                ["Azalea Leaves", "AZALEA_LEAVES"],
                 ["Baked Potato", "BAKED_POTATO"],
+                ["Bamboo", "BAMBOO"],
                 ["Bamboo Block", "BAMBOO_BLOCK"],
                 ["Bamboo Chest Raft", "BAMBOO_CHEST_RAFT"],
                 ["Bamboo Mosaic", "BAMBOO_MOSAIC"],
@@ -1226,12 +770,14 @@ export function defineItemsBlocks(Blockly) {
                 ["Bundle", "BUNDLE"],
                 ["Burn Pottery Sherd", "BURN_POTTERY_SHERD"],
                 ["Bush", "BUSH"],
+                ["Cactus", "CACTUS"],
                 ["Cactus Flower", "CACTUS_FLOWER"],
                 ["Cake", "CAKE"],
                 ["Calibrated Sculk Sensor", "CALIBRATED_SCULK_SENSOR"],
                 ["Camel Husk Spawn Egg", "CAMEL_HUSK_SPAWN_EGG"],
                 ["Camel Spawn Egg", "CAMEL_SPAWN_EGG"],
                 ["Campfire", "CAMPFIRE"],
+                ["Candle", "CANDLE"],
                 ["Candle Cake", "CANDLE_CAKE"],
                 ["Carrot", "CARROT"],
                 ["Carrots", "CARROTS"],
@@ -1243,6 +789,10 @@ export function defineItemsBlocks(Blockly) {
                 ["Cave Air", "CAVE_AIR"],
                 ["Cave Spider Spawn Egg", "CAVE_SPIDER_SPAWN_EGG"],
                 ["Cave Vines Plant", "CAVE_VINES_PLANT"],
+                ["Chainmail Boots", "CHAINMAIL_BOOTS"],
+                ["Chainmail Chestplate", "CHAINMAIL_CHESTPLATE"],
+                ["Chainmail Helmet", "CHAINMAIL_HELMET"],
+                ["Chainmail Leggings", "CHAINMAIL_LEGGINGS"],
                 ["Chain Command Block", "CHAIN_COMMAND_BLOCK"],
                 ["Charcoal", "CHARCOAL"],
                 ["Chest Minecart", "CHEST_MINECART"],
@@ -1369,7 +919,19 @@ export function defineItemsBlocks(Blockly) {
                 ["Deepslate Tile Stairs", "DEEPSLATE_TILE_STAIRS"],
                 ["Deepslate Tile Wall", "DEEPSLATE_TILE_WALL"],
                 ["Diamond", "DIAMOND"],
+                ["Diamond Axe", "DIAMOND_AXE"],
                 ["Diamond Block", "DIAMOND_BLOCK"],
+                ["Diamond Boots", "DIAMOND_BOOTS"],
+                ["Diamond Chestplate", "DIAMOND_CHESTPLATE"],
+                ["Diamond Helmet", "DIAMOND_HELMET"],
+                ["Diamond Hoe", "DIAMOND_HOE"],
+                ["Diamond Horse Armor", "DIAMOND_HORSE_ARMOR"],
+                ["Diamond Leggings", "DIAMOND_LEGGINGS"],
+                ["Diamond Nautilus Armor", "DIAMOND_NAUTILUS_ARMOR"],
+                ["Diamond Pickaxe", "DIAMOND_PICKAXE"],
+                ["Diamond Shovel", "DIAMOND_SHOVEL"],
+                ["Diamond Spear", "DIAMOND_SPEAR"],
+                ["Diamond Sword", "DIAMOND_SWORD"],
                 ["Diorite Slab", "DIORITE_SLAB"],
                 ["Diorite Stairs", "DIORITE_STAIRS"],
                 ["Diorite Wall", "DIORITE_WALL"],
@@ -1473,7 +1035,19 @@ export function defineItemsBlocks(Blockly) {
                 ["Goat Horn", "GOAT_HORN"],
                 ["Goat Spawn Egg", "GOAT_SPAWN_EGG"],
                 ["Golden Apple", "GOLDEN_APPLE"],
+                ["Golden Axe", "GOLDEN_AXE"],
+                ["Golden Boots", "GOLDEN_BOOTS"],
                 ["Golden Carrot", "GOLDEN_CARROT"],
+                ["Golden Chestplate", "GOLDEN_CHESTPLATE"],
+                ["Golden Helmet", "GOLDEN_HELMET"],
+                ["Golden Hoe", "GOLDEN_HOE"],
+                ["Golden Horse Armor", "GOLDEN_HORSE_ARMOR"],
+                ["Golden Leggings", "GOLDEN_LEGGINGS"],
+                ["Golden Nautilus Armor", "GOLDEN_NAUTILUS_ARMOR"],
+                ["Golden Pickaxe", "GOLDEN_PICKAXE"],
+                ["Golden Shovel", "GOLDEN_SHOVEL"],
+                ["Golden Spear", "GOLDEN_SPEAR"],
+                ["Golden Sword", "GOLDEN_SWORD"],
                 ["Gold Block", "GOLD_BLOCK"],
                 ["Gold Ingot", "GOLD_INGOT"],
                 ["Gold Nugget", "GOLD_NUGGET"],
@@ -1514,13 +1088,25 @@ export function defineItemsBlocks(Blockly) {
                 ["Infested Stone", "INFESTED_STONE"],
                 ["Infested Stone Bricks", "INFESTED_STONE_BRICKS"],
                 ["Ink Sac", "INK_SAC"],
+                ["Iron Axe", "IRON_AXE"],
                 ["Iron Bars", "IRON_BARS"],
                 ["Iron Block", "IRON_BLOCK"],
+                ["Iron Boots", "IRON_BOOTS"],
                 ["Iron Chain", "IRON_CHAIN"],
+                ["Iron Chestplate", "IRON_CHESTPLATE"],
                 ["Iron Door", "IRON_DOOR"],
                 ["Iron Golem Spawn Egg", "IRON_GOLEM_SPAWN_EGG"],
+                ["Iron Helmet", "IRON_HELMET"],
+                ["Iron Hoe", "IRON_HOE"],
+                ["Iron Horse Armor", "IRON_HORSE_ARMOR"],
                 ["Iron Ingot", "IRON_INGOT"],
+                ["Iron Leggings", "IRON_LEGGINGS"],
+                ["Iron Nautilus Armor", "IRON_NAUTILUS_ARMOR"],
                 ["Iron Nugget", "IRON_NUGGET"],
+                ["Iron Pickaxe", "IRON_PICKAXE"],
+                ["Iron Shovel", "IRON_SHOVEL"],
+                ["Iron Spear", "IRON_SPEAR"],
+                ["Iron Sword", "IRON_SWORD"],
                 ["Iron Trapdoor", "IRON_TRAPDOOR"],
                 ["Item Frame", "ITEM_FRAME"],
                 ["Jigsaw", "JIGSAW"],
@@ -1538,9 +1124,15 @@ export function defineItemsBlocks(Blockly) {
                 ["Lead", "LEAD"],
                 ["Leaf Litter", "LEAF_LITTER"],
                 ["Leather", "LEATHER"],
+                ["Leather Boots", "LEATHER_BOOTS"],
+                ["Leather Chestplate", "LEATHER_CHESTPLATE"],
+                ["Leather Helmet", "LEATHER_HELMET"],
+                ["Leather Horse Armor", "LEATHER_HORSE_ARMOR"],
+                ["Leather Leggings", "LEATHER_LEGGINGS"],
                 ["Light", "LIGHT"],
                 ["Lightning Rod", "LIGHTNING_ROD"],
                 ["Light Weighted Pressure Plate", "LIGHT_WEIGHTED_PRESSURE_PLATE"],
+                ["Lily Pad", "LILY_PAD"],
                 ["Lingering Potion", "LINGERING_POTION"],
                 ["Llama Spawn Egg", "LLAMA_SPAWN_EGG"],
                 ["Lodestone", "LODESTONE"],
@@ -1604,9 +1196,21 @@ export function defineItemsBlocks(Blockly) {
                 ["Name Tag", "NAME_TAG"],
                 ["Nautilus Shell", "NAUTILUS_SHELL"],
                 ["Nautilus Spawn Egg", "NAUTILUS_SPAWN_EGG"],
+                ["Netherite Axe", "NETHERITE_AXE"],
                 ["Netherite Block", "NETHERITE_BLOCK"],
+                ["Netherite Boots", "NETHERITE_BOOTS"],
+                ["Netherite Chestplate", "NETHERITE_CHESTPLATE"],
+                ["Netherite Helmet", "NETHERITE_HELMET"],
+                ["Netherite Hoe", "NETHERITE_HOE"],
+                ["Netherite Horse Armor", "NETHERITE_HORSE_ARMOR"],
                 ["Netherite Ingot", "NETHERITE_INGOT"],
+                ["Netherite Leggings", "NETHERITE_LEGGINGS"],
+                ["Netherite Nautilus Armor", "NETHERITE_NAUTILUS_ARMOR"],
+                ["Netherite Pickaxe", "NETHERITE_PICKAXE"],
                 ["Netherite Scrap", "NETHERITE_SCRAP"],
+                ["Netherite Shovel", "NETHERITE_SHOVEL"],
+                ["Netherite Spear", "NETHERITE_SPEAR"],
+                ["Netherite Sword", "NETHERITE_SWORD"],
                 ["Netherite Upgrade Smithing Template", "NETHERITE_UPGRADE_SMITHING_TEMPLATE"],
                 ["Netherrack", "NETHERRACK"],
                 ["Nether Brick", "NETHER_BRICK"],
@@ -1827,6 +1431,7 @@ export function defineItemsBlocks(Blockly) {
                 ["Shield", "SHIELD"],
                 ["Short Dry Grass", "SHORT_DRY_GRASS"],
                 ["Short Grass", "SHORT_GRASS"],
+                ["Shulker Box", "SHULKER_BOX"],
                 ["Shulker Shell", "SHULKER_SHELL"],
                 ["Shulker Spawn Egg", "SHULKER_SPAWN_EGG"],
                 ["Silence Armor Trim Smithing Template", "SILENCE_ARMOR_TRIM_SMITHING_TEMPLATE"],
@@ -1918,6 +1523,7 @@ export function defineItemsBlocks(Blockly) {
                 ["Structure Block", "STRUCTURE_BLOCK"],
                 ["Structure Void", "STRUCTURE_VOID"],
                 ["Sugar", "SUGAR"],
+                ["Sugar Cane", "SUGAR_CANE"],
                 ["Suspicious Gravel", "SUSPICIOUS_GRAVEL"],
                 ["Suspicious Sand", "SUSPICIOUS_SAND"],
                 ["Suspicious Stew", "SUSPICIOUS_STEW"],
@@ -1928,6 +1534,7 @@ export function defineItemsBlocks(Blockly) {
                 ["Tall Dry Grass", "TALL_DRY_GRASS"],
                 ["Tall Grass", "TALL_GRASS"],
                 ["Tall Seagrass", "TALL_SEAGRASS"],
+                ["Terracotta", "TERRACOTTA"],
                 ["Test Block", "TEST_BLOCK"],
                 ["Test Instance Block", "TEST_INSTANCE_BLOCK"],
                 ["Tide Armor Trim Smithing Template", "TIDE_ARMOR_TRIM_SMITHING_TEMPLATE"],
@@ -1957,6 +1564,7 @@ export function defineItemsBlocks(Blockly) {
                 ["Tuff Stairs", "TUFF_STAIRS"],
                 ["Tuff Wall", "TUFF_WALL"],
                 ["Turtle Egg", "TURTLE_EGG"],
+                ["Turtle Helmet", "TURTLE_HELMET"],
                 ["Turtle Scute", "TURTLE_SCUTE"],
                 ["Turtle Spawn Egg", "TURTLE_SPAWN_EGG"],
                 ["Twisting Vines Plant", "TWISTING_VINES_PLANT"],

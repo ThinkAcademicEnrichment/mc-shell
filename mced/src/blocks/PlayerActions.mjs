@@ -2,141 +2,89 @@ import { MCED } from "../lib/constants.mjs";
 
 export function definePlayerActionsBlocks(Blockly) {
 
-    Blockly.Blocks['playeractions_get_deaths'] = {
-        init: function() {
-            this.appendDummyInput().appendField("Get Death Count");
-            
-            this.setOutput(true, 'Number');
-            this.setColour("#61A1B0");
-            this.setTooltip("Returns the total number of times the player has died.");
-        }
-    };
-
     Blockly.Blocks['playeractions_get_direction'] = {
         init: function() {
             this.appendDummyInput().appendField("Get Direction");
             
             this.setOutput(true, '3DVector');
             this.setColour("#61A1B0");
-            this.setTooltip("");
+            this.setTooltip("Returns the direction the player is looking as a unit vector.");
         }
     };
 
-    Blockly.Blocks['playeractions_get_food_level'] = {
+    Blockly.Blocks['playeractions_get_height'] = {
         init: function() {
-            this.appendDummyInput().appendField("Get Food Level");
-            
+            this.appendDummyInput().appendField("Get Height");
+            this.appendValueInput('position').appendField('At Position [(X,Y,Z)]').setCheck('3DVector');
             this.setOutput(true, 'Number');
             this.setColour("#61A1B0");
-            this.setTooltip("Returns the food level of the player.");
+            this.setTooltip("Gets the Y coordinate of the highest block at the X,Z of the given position.");
         }
     };
 
-    Blockly.Blocks['playeractions_get_health'] = {
+    Blockly.Blocks['playeractions_get_height_at'] = {
         init: function() {
-            this.appendDummyInput().appendField("Get Health");
-            
+            this.appendDummyInput().appendField("Get Height");
+            this.appendValueInput('position').appendField('At Position [(X,Y,Z)]').setCheck('3DVector');
             this.setOutput(true, 'Number');
             this.setColour("#61A1B0");
-            this.setTooltip("Returns the health of the player.");
+            this.setTooltip("Gets the Y coordinate of the highest block at the X,Z of the given position.");
         }
     };
 
-    Blockly.Blocks['playeractions_get_pitch'] = {
+    Blockly.Blocks['playeractions_get_position'] = {
         init: function() {
-            this.appendDummyInput().appendField("Get Pitch");
-            
-            this.setOutput(true, 'Number');
-            this.setColour("#61A1B0");
-            this.setTooltip("");
-        }
-    };
-
-    Blockly.Blocks['playeractions_get_pos'] = {
-        init: function() {
-            this.appendDummyInput().appendField("Get Position");
+            this.appendDummyInput().appendField("Get Player Position");
             
             this.setOutput(true, '3DVector');
             this.setColour("#61A1B0");
-            this.setTooltip("Gets the exact XYZ position of the player.");
+            this.setTooltip("Returns the player's current Vec3 position.");
         }
     };
 
-    Blockly.Blocks['playeractions_get_rotation'] = {
+    Blockly.Blocks['playeractions_get_q_compass_direction'] = {
         init: function() {
-            this.appendDummyInput().appendField("Get Rotation");
+            this.appendDummyInput().appendField("Get Player Q-Compass Direction");
             
-            this.setOutput(true, 'Number');
+            this.setOutput(true, 'QCompass');
             this.setColour("#61A1B0");
             this.setTooltip("");
         }
     };
 
-    Blockly.Blocks['playeractions_get_tile_pos'] = {
+    Blockly.Blocks['playeractions_get_q_direction'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Get Q Direction");
+            
+            this.setOutput(true, '3DVector');
+            this.setColour("#61A1B0");
+            this.setTooltip("Returns the quantized direction the player is looking as a unit vector.");
+        }
+    };
+
+    Blockly.Blocks['playeractions_get_tile_position'] = {
         init: function() {
             this.appendDummyInput().appendField("Get Tile Position");
             
             this.setOutput(true, '3DVector');
             this.setColour("#61A1B0");
-            this.setTooltip("Gets the integer block position of the player.");
-        }
-    };
-
-    Blockly.Blocks['playeractions_send_title'] = {
-        init: function() {
-            this.appendDummyInput().appendField("Send Title to Screen");
-            this.appendValueInput('title').appendField('Title').setCheck('String');
-this.appendValueInput('subtitle').appendField('Subtitle').setCheck('String');
-this.appendValueInput('stay').appendField('Stay (Ticks)').setCheck('Number');
-            this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#61A1B0");
-            this.setTooltip("Sends a title and subtitle to the player's screen.");
+            this.setTooltip("Returns the integer block coordinates of the player.");
         }
     };
 
     Blockly.Blocks['playeractions_set_direction'] = {
         init: function() {
-            this.appendDummyInput().appendField("Set Direction to [dir]");
-            this.appendValueInput('dir').appendField('Direction Vector').setCheck('3DVector');
+            this.appendDummyInput().appendField("Set Direction");
+            this.appendValueInput('direction').appendField('Direction Vector').setCheck('3DVector');
             this.setPreviousStatement(true); this.setNextStatement(true);
             this.setColour("#61A1B0");
-            this.setTooltip("");
+            this.setTooltip("Sets the player's facing direction.");
         }
     };
 
-    Blockly.Blocks['playeractions_set_food_level'] = {
+    Blockly.Blocks['playeractions_set_position'] = {
         init: function() {
-            this.appendDummyInput().appendField("Set Food Level to [level]");
-            this.appendValueInput('level').appendField('Food Level').setCheck('Number');
-            this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#61A1B0");
-            this.setTooltip("");
-        }
-    };
-
-    Blockly.Blocks['playeractions_set_health'] = {
-        init: function() {
-            this.appendDummyInput().appendField("Set Health to [health]");
-            this.appendValueInput('health').appendField('Health').setCheck('Number');
-            this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#61A1B0");
-            this.setTooltip("");
-        }
-    };
-
-    Blockly.Blocks['playeractions_set_pitch'] = {
-        init: function() {
-            this.appendDummyInput().appendField("Set Pitch to [pitch]");
-            this.appendValueInput('pitch').appendField('Pitch').setCheck('Number');
-            this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#61A1B0");
-            this.setTooltip("");
-        }
-    };
-
-    Blockly.Blocks['playeractions_set_pos'] = {
-        init: function() {
-            this.appendDummyInput().appendField("Set Position to [pos]");
+            this.appendDummyInput().appendField("Set Player Position");
             this.appendValueInput('pos').appendField('Position').setCheck('3DVector');
             this.setPreviousStatement(true); this.setNextStatement(true);
             this.setColour("#61A1B0");
@@ -144,23 +92,23 @@ this.appendValueInput('stay').appendField('Stay (Ticks)').setCheck('Number');
         }
     };
 
-    Blockly.Blocks['playeractions_set_rotation'] = {
+    Blockly.Blocks['playeractions_set_q_compass_direction'] = {
         init: function() {
-            this.appendDummyInput().appendField("Set Rotation to [yaw]");
-            this.appendValueInput('yaw').appendField('Yaw').setCheck('Number');
+            this.appendDummyInput().appendField("Set Player Q-Compass Direction");
+            this.appendValueInput('direction').appendField('Q-Compass Direction').setCheck('QCompass');
             this.setPreviousStatement(true); this.setNextStatement(true);
             this.setColour("#61A1B0");
             this.setTooltip("");
         }
     };
 
-    Blockly.Blocks['playeractions_set_tile_pos'] = {
+    Blockly.Blocks['playeractions_set_tile_position'] = {
         init: function() {
-            this.appendDummyInput().appendField("Set Tile Position to [pos]");
+            this.appendDummyInput().appendField("Set Tile Position");
             this.appendValueInput('pos').appendField('Position').setCheck('3DVector');
             this.setPreviousStatement(true); this.setNextStatement(true);
             this.setColour("#61A1B0");
-            this.setTooltip("");
+            this.setTooltip("Returns the integer block coordinates of the player.");
         }
     };
 }

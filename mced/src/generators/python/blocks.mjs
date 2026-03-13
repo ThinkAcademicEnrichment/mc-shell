@@ -8,14 +8,6 @@ export function defineBlocksGenerators(pythonGenerator) {
         return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
     };
 
-    pythonGenerator.forBlock['picker_armor_tier'] = function(block, generator) {
-        return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
-    };
-
-    pythonGenerator.forBlock['picker_tool_tier'] = function(block, generator) {
-        return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
-    };
-
     pythonGenerator.forBlock['mc_block_wood_button'] = function(block, generator) {
         const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
         const val = rawVal.replace(/['"]/g, '');
@@ -226,78 +218,6 @@ export function defineBlocksGenerators(pythonGenerator) {
         return [`'${val}_WOOL'`, pythonGenerator.ORDER_ATOMIC];
     };
 
-    pythonGenerator.forBlock['mc_block_armor_tier_boots'] = function(block, generator) {
-        const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
-        const val = rawVal.replace(/['"]/g, '');
-        return [`'${val}_BOOTS'`, pythonGenerator.ORDER_ATOMIC];
-    };
-
-    pythonGenerator.forBlock['mc_block_armor_tier_chestplate'] = function(block, generator) {
-        const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
-        const val = rawVal.replace(/['"]/g, '');
-        return [`'${val}_CHESTPLATE'`, pythonGenerator.ORDER_ATOMIC];
-    };
-
-    pythonGenerator.forBlock['mc_block_armor_tier_helmet'] = function(block, generator) {
-        const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
-        const val = rawVal.replace(/['"]/g, '');
-        return [`'${val}_HELMET'`, pythonGenerator.ORDER_ATOMIC];
-    };
-
-    pythonGenerator.forBlock['mc_block_armor_tier_leggings'] = function(block, generator) {
-        const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
-        const val = rawVal.replace(/['"]/g, '');
-        return [`'${val}_LEGGINGS'`, pythonGenerator.ORDER_ATOMIC];
-    };
-
-    pythonGenerator.forBlock['mc_block_armor_tier_axe'] = function(block, generator) {
-        const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
-        const val = rawVal.replace(/['"]/g, '');
-        return [`'${val}_AXE'`, pythonGenerator.ORDER_ATOMIC];
-    };
-
-    pythonGenerator.forBlock['mc_block_armor_tier_hoe'] = function(block, generator) {
-        const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
-        const val = rawVal.replace(/['"]/g, '');
-        return [`'${val}_HOE'`, pythonGenerator.ORDER_ATOMIC];
-    };
-
-    pythonGenerator.forBlock['mc_block_armor_tier_horse_armor'] = function(block, generator) {
-        const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
-        const val = rawVal.replace(/['"]/g, '');
-        return [`'${val}_HORSE_ARMOR'`, pythonGenerator.ORDER_ATOMIC];
-    };
-
-    pythonGenerator.forBlock['mc_block_armor_tier_nautilus_armor'] = function(block, generator) {
-        const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
-        const val = rawVal.replace(/['"]/g, '');
-        return [`'${val}_NAUTILUS_ARMOR'`, pythonGenerator.ORDER_ATOMIC];
-    };
-
-    pythonGenerator.forBlock['mc_block_armor_tier_pickaxe'] = function(block, generator) {
-        const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
-        const val = rawVal.replace(/['"]/g, '');
-        return [`'${val}_PICKAXE'`, pythonGenerator.ORDER_ATOMIC];
-    };
-
-    pythonGenerator.forBlock['mc_block_armor_tier_shovel'] = function(block, generator) {
-        const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
-        const val = rawVal.replace(/['"]/g, '');
-        return [`'${val}_SHOVEL'`, pythonGenerator.ORDER_ATOMIC];
-    };
-
-    pythonGenerator.forBlock['mc_block_armor_tier_spear'] = function(block, generator) {
-        const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
-        const val = rawVal.replace(/['"]/g, '');
-        return [`'${val}_SPEAR'`, pythonGenerator.ORDER_ATOMIC];
-    };
-
-    pythonGenerator.forBlock['mc_block_armor_tier_sword'] = function(block, generator) {
-        const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
-        const val = rawVal.replace(/['"]/g, '');
-        return [`'${val}_SWORD'`, pythonGenerator.ORDER_ATOMIC];
-    };
-
     pythonGenerator.forBlock['mc_block_color_tulip'] = function(block, generator) {
         const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
         const val = rawVal.replace(/['"]/g, '');
@@ -309,14 +229,6 @@ export function defineBlocksGenerators(pythonGenerator) {
     };
 
     pythonGenerator.forBlock['mc_block_picker_ores'] = function(block, generator) {
-        return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
-    };
-
-    pythonGenerator.forBlock['mc_block_picker_woods_and_logs'] = function(block, generator) {
-        return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
-    };
-
-    pythonGenerator.forBlock['mc_block_picker_colored_blocks'] = function(block, generator) {
         return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
     };
 
@@ -353,14 +265,6 @@ export function defineBlocksGenerators(pythonGenerator) {
     };
 
     pythonGenerator.forBlock['mc_block_picker_spawning'] = function(block, generator) {
-        return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
-    };
-
-    pythonGenerator.forBlock['mc_block_picker_tools'] = function(block, generator) {
-        return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
-    };
-
-    pythonGenerator.forBlock['mc_block_picker_armour'] = function(block, generator) {
         return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
     };
 
