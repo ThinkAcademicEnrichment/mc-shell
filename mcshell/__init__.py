@@ -35,11 +35,16 @@ from mcshell.mctunnelserver import start_host_gateway, connect_client_tunnel
 
 def _run_tunnel_host_thread(mc_port, rcon_port, mj_port, out_token, use_upnp=False, explicit_host=None):
     async def host_task():
+        # 1. Force integer types to ensure our logic works safely
+        mc_port_i = int(mc_port)
+        rcon_port_i = int(rcon_port)
+        mj_port_i = int(mj_port)
+
         # Generate a 6-character Kahoot-style PIN (e.g. A9K2B4)
         pin = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
         # Using bind_port=0 lets the OS pick a guaranteed free ephemeral port
-        bound_port = await start_host_gateway(pin, bind_ip='0.0.0.0', bind_port=0, mc_port=mc_port, rcon_port=rcon_port, mj_port=mj_port)
+        bound_port = await start_host_gateway(pin, bind_ip='0.0.0.0', bind_port=0, mc_port=mc_port_i, rcon_port=rcon_port_i, mj_port=mj_port_i)
 
         host_ip = None
 
@@ -70,8 +75,14 @@ def _run_tunnel_host_thread(mc_port, rcon_port, mj_port, out_token, use_upnp=Fal
             from mcshell.mctunnelserver import _get_local_ip
             host_ip = _get_local_ip()
 
-        # Formulate the robust Join Code
-        join_code = f"{host_ip}:{bound_port}#{pin}"
+        # 2. Formulate the robust Join Code
+        # If the ports match defaults exactly, keep the token short and clean.
+        if mc_port_i == 25565 and rcon_port_i == 25575 and mj_port_i == 4721:
+            join_code = f"{host_ip}:{bound_port}#{pin}"
+        else:
+            # If ports deviated, append them so the client knows what to ask for
+            join_code = f"{host_ip}:{bound_port}#{pin}-{mc_port_i}-{rcon_port_i}-{mj_port_i}"
+
         out_token.append(join_code)
 
         # Keep the event loop alive indefinitely so the SSH server stays up
