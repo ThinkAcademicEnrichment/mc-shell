@@ -23,6 +23,7 @@ import atexit
 from threading import Thread,Event
 
 import atexit
+import string
 from threading import Thread,Event
 import asyncio
 import time
@@ -32,10 +33,47 @@ from mcshell.mctunnelserver import start_host_gateway, connect_client_tunnel
 # Secure Tunnel Helper Functions (Orthogonal to main app logic)
 # =====================================================================
 
-def _run_tunnel_host_thread(mc_port, rcon_port, mj_port, out_token):
+def _run_tunnel_host_thread(mc_port, rcon_port, mj_port, out_token, use_upnp=False, explicit_host=None):
     async def host_task():
-        token = await start_host_gateway(bind_ip='0.0.0.0', bind_port=2222, mc_port=mc_port, rcon_port=rcon_port, mj_port=mj_port)
-        out_token.append(token)
+        # Generate a 6-character Kahoot-style PIN (e.g. A9K2B4)
+        pin = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
+        # Using bind_port=0 lets the OS pick a guaranteed free ephemeral port
+        bound_port = await start_host_gateway(pin, bind_ip='0.0.0.0', bind_port=0, mc_port=mc_port, rcon_port=rcon_port, mj_port=mj_port)
+
+        host_ip = None
+
+        if explicit_host:
+            host_ip = explicit_host
+        elif use_upnp:
+            try:
+                import miniupnpc
+                upnp = miniupnpc.UPnP()
+                upnp.discoverdelay = 200
+                upnp.discover()
+                upnp.selectigd()
+                external_ip = upnp.externalipaddress()
+
+                # Ask router to map the external port directly to our OS-assigned local port
+                mapped = upnp.addportmapping(bound_port, 'TCP', upnp.lanaddr, bound_port, 'MC-Shell Secure Tunnel', '')
+                if mapped:
+                    host_ip = external_ip
+                    print(f"\n[UPnP] Success! Router opened port {bound_port}.")
+                else:
+                    print("\n[UPnP] Router denied mapping. Falling back to local network mode.")
+            except ImportError:
+                print("\n[UPnP] 'miniupnpc' library missing. Falling back to local network mode.")
+            except Exception as e:
+                print(f"\n[UPnP] Failed to configure router ({e}). Falling back to local network mode.")
+
+        if not host_ip:
+            from mcshell.mctunnelserver import _get_local_ip
+            host_ip = _get_local_ip()
+
+        # Formulate the robust Join Code
+        join_code = f"{host_ip}:{bound_port}#{pin}"
+        out_token.append(join_code)
+
         # Keep the event loop alive indefinitely so the SSH server stays up
         while True:
             await asyncio.sleep(3600)
@@ -47,10 +85,10 @@ def _run_tunnel_host_thread(mc_port, rcon_port, mj_port, out_token):
     except Exception as e:
         print(f"\n[Tunnel Host Error] {e}")
 
-def _start_secure_tunnel_host(mc_port, rcon_port, mj_port):
+def _start_secure_tunnel_host(mc_port, rcon_port, mj_port, use_upnp=False, explicit_host=None):
     out_token = []
     # Use daemon=True so the thread automatically dies when IPython exits
-    thread = Thread(target=_run_tunnel_host_thread, args=(mc_port, rcon_port, mj_port, out_token), daemon=True)
+    thread = Thread(target=_run_tunnel_host_thread, args=(mc_port, rcon_port, mj_port, out_token, use_upnp, explicit_host), daemon=True)
     thread.start()
 
     # Wait up to 5 seconds for the cryptographic keys and token to generate
@@ -60,13 +98,14 @@ def _start_secure_tunnel_host(mc_port, rcon_port, mj_port):
         time.sleep(0.1)
     return None
 
-def _run_tunnel_client_thread(token, local_mc, local_rcon, local_mj):
+def _run_tunnel_client_thread(host, port, pin, local_mc, local_rcon, local_mj):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
-        # FIX: Ensure all three mapped ports flow cleanly into the tunnel connector
         loop.run_until_complete(connect_client_tunnel(
-            token,
+            host,
+            port,
+            pin,
             local_mc_port=local_mc,
             local_rcon_port=local_rcon,
             local_mj_port=local_mj
@@ -74,9 +113,17 @@ def _run_tunnel_client_thread(token, local_mc, local_rcon, local_mj):
     except Exception as e:
         print(f"\n[Tunnel Client Error] {e}")
 
-def _start_secure_tunnel_client(token, local_mc, local_rcon, local_mj):
-    # FIX: Accept all three ports without default Nones, guaranteeing they pass through
-    thread = Thread(target=_run_tunnel_client_thread, args=(token, local_mc, local_rcon, local_mj), daemon=True)
+def _start_secure_tunnel_client(join_code, local_mc, local_rcon, local_mj):
+    # Parse the join_code: HOST:PORT#PIN
+    try:
+        address_part, pin = join_code.split('#')
+        host, port_str = address_part.split(':')
+        port = int(port_str)
+    except ValueError:
+        print("[Tunnel Client Error] Invalid Join Code format.")
+        return
+
+    thread = Thread(target=_run_tunnel_client_thread, args=(host, port, pin, local_mc, local_rcon, local_mj), daemon=True)
     thread.start()
 
 @magics_class
@@ -348,21 +395,35 @@ class MCShell(Magics):
         """
         Starts a Paper server for a given world name.
         If another server is running, it will be stopped first.
-        Usage: %pp_start_world <world_name>
+        Usage: %pp_start_world <world_name> [--secure [upnp | hostname]]
         """
 
         # Orthogonal flag extraction
         is_secure = '--secure' in line
-        line = line.replace('--secure', '').strip()
-        extra_server_properties = {
-            'server-ip': '0.0.0.0',
-            'mcjuice-host': '0.0.0.0'
-        }
+        use_upnp = False
+        explicit_host = None
 
         if is_secure:
+            parts = line.split()
+            idx = parts.index('--secure')
+            # Extract optional modifier (upnp or hostname) following the secure flag
+            if idx + 1 < len(parts) and not parts[idx + 1].startswith('--'):
+                mod = parts.pop(idx + 1)
+                if mod.lower() == 'upnp':
+                    use_upnp = True
+                else:
+                    explicit_host = mod
+            parts.remove('--secure')
+            line = ' '.join(parts)
+
             extra_server_properties = {
                 'server-ip' : '127.0.0.1',
                 'mcjuice-host': '127.0.0.1'
+            }
+        else:
+            extra_server_properties = {
+                'server-ip': '0.0.0.0',
+                'mcjuice-host': '0.0.0.0'
             }
 
         world_name = line.strip()
@@ -406,20 +467,15 @@ class MCShell(Magics):
 
         if not 'app_port' in list(self.server_data.keys()):
             self.server_data['app_port'] = 5001
-        # start the app server
-        # self.ip.run_line_magic('mc_start_app','')
 
         if is_secure:
             print("Starting secure SSH tunnel gateway...")
-            # We assume standard ports for this proof of concept.
-            # (You can dynamically pull these from your config if needed)
-            token = _start_secure_tunnel_host(self.server_data['port'],self.server_data['rcon_port'],self.server_data['mj_port'])
+            token = _start_secure_tunnel_host(self.server_data['port'], self.server_data['rcon_port'], self.server_data['mj_port'], use_upnp=use_upnp, explicit_host=explicit_host)
 
             if token:
-                print(f"\n[SECURE HOST] Tunnel active! Share this Join Token with your friends:\n\n{token}\n")
+                print(f"\n[SECURE HOST] Tunnel active! Share this Join Code with your friends:\n\n{token}\n")
             else:
-                print("\n[SECURE HOST] Failed to generate Join Token.\n")
-
+                print("\n[SECURE HOST] Failed to generate Join Code.\n")
 
     @line_magic
     def pp_stop_world(self, line):

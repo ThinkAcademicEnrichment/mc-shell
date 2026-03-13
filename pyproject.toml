@@ -48,6 +48,7 @@ pytest = "^9.0.2"
 mctools = "^1.4.1"
 voxelmap = "^5.1.1"
 asyncssh = "^2.22.0"
+miniupnpc = "^2.3.3"
 
 [tool.poetry.scripts]
 mcshell = "mcshell.mcshell:cli"
