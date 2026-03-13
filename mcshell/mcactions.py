@@ -4,7 +4,7 @@ from mcshell.constants import *
 
 from mcshell.mcactions_base import MCActionsBase
 
-from mcshell.eventactions import EventActions
+# from mcshell.eventactions import EventActions
 from mcshell.serveractions import ServerActions
 from mcshell.qturtleactions import QTurtleActions
 from mcshell.digitalgeometryactions import DigitalGeometryActions
@@ -14,12 +14,13 @@ from mcshell.mclsystem import LSystem
 # FIX: Robustly import generated actions to prevent build-time crashes
 try:
     from mcshell.generated_actions import (
-        PlayerActions, ChatActions, WorldActions
+        PlayerActions, ChatActions, WorldActions, EventActions
     )
 except ImportError:
     PlayerActions = None
     ChatActions = None
     WorldActions = None
+    EventActions = None
 
 # Advanced Digital Geometry and Turtle
 from mcshell.mcturtle import (
