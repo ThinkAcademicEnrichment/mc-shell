@@ -103,7 +103,6 @@ class RegistryBuilder:
                 (get_action_class("mcactions", "LSystemShapes"), "LSystem Shapes", self.COLORS["LSystem"]),
                 (get_action_class("digitalgeometryactions", "DigitalGeometryActions"), "Digital Geometry", self.COLORS["Geometry"]),
                 (get_action_class("qturtleactions", "QTurtleActions"), "Q-Turtle", self.COLORS["Turtle"]),
-                (get_action_class("eventactions", "EventActions"), "Event", self.COLORS["Events"]),
                 (get_action_class("digitalsetactions", "DigitalSetActions"), "Digital Set", self.COLORS["Digital Set"]),
             ]
 
@@ -112,11 +111,18 @@ class RegistryBuilder:
                 try:
                     with open(yaml_path, 'r') as f:
                         schema = yaml.safe_load(f)
+
+                        # 1. Discover standard Namespaces (Player, World, Chat)
                         for ns in schema.get('namespaces', {}).keys():
                             class_name = f"{ns.capitalize()}Actions"
                             label = f"{ns.capitalize()}"
                             color = self.COLORS.get(label, self.COLORS["World"])
                             classes.append((get_action_class("generated_actions", class_name), label, color))
+
+                        # 2. Discover generated Event Actions
+                        if schema.get('events') and any('blockly' in e for e in schema['events']):
+                            classes.append((get_action_class("generated_actions", "EventActions"), "Event", self.COLORS.get("Events", "#D68C45")))
+
                 except Exception as e:
                     print(f"Warning: Failed to auto-discover generated classes: {e}")
 
