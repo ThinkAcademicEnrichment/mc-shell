@@ -98,7 +98,6 @@ class RegistryBuilder:
         if BlocklyGenerator is not None:
             classes = [
                 (get_action_class("serveractions", "ServerActions"), "Server", self.COLORS["Server"]),
-                (get_action_class("playeractions", "PlayerActions"), "Player", self.COLORS["Player"]),
                 (get_action_class("mcactions", "TurtleShapes"), "Turtle Shapes", self.COLORS["Turtle"]),
                 (get_action_class("mcactions", "LSystemShapes"), "LSystem Shapes", self.COLORS["LSystem"]),
                 (get_action_class("digitalgeometryactions", "DigitalGeometryActions"), "Digital Geometry", self.COLORS["Geometry"]),
