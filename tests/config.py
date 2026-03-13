@@ -11,7 +11,7 @@ import os
 from unittest.mock import patch
 import IPython.testing.globalipapp
 
-from mcshell.constants import MC_WORLDS_BASE_DIR, MC_SERVER_HOST, MC_RCON_PORT, FJ_PLUGIN_PORT
+from mcshell.constants import MC_WORLDS_BASE_DIR, MC_SERVER_HOST, MC_RCON_PORT, MJ_PLUGIN_PORT
 from mcshell.mcplayer import MCPlayer
 from mcshell.mcactions import MCActions
 

@@ -24,9 +24,9 @@ def setup_player(player_name="TestPlayer"):
         print("Make sure the server is running and McJuice is loaded!")
         sys.exit(1)
 
-def test_raw_throughput(actions: MCActions, num_blocks=5000):
+def stress_raw_throughput(actions: MCActions, num_blocks=5000):
     """
-    Test 1: Single-threaded Async Throughput.
+    Stress 1: Single-threaded Async Throughput.
     Measures the absolute maximum speed the pipeline can shove data over the socket.
     """
     print(f"\n--- TEST 1: Raw Throughput ({num_blocks} blocks) ---")
@@ -49,9 +49,9 @@ def test_raw_throughput(actions: MCActions, num_blocks=5000):
     print(f"Result: {num_blocks} blocks placed in {duration:.2f} seconds.")
     print(f"Speed:  {ops_per_sec:.0f} blocks/second")
 
-def test_async_concurrency(actions: MCActions, num_threads=5, blocks_per_thread=1000):
+def stress_async_concurrency(actions: MCActions, num_threads=5, blocks_per_thread=1000):
     """
-    Test 2: Multi-threaded Async Stress (The Interleaving Test)
+    Stress 2: Multi-threaded Async Stress (The Interleaving Test)
     Spawns multiple threads spamming the socket simultaneously.
     If the server console shows "Unknown command" errors, socket interleaving has occurred.
     """
@@ -85,9 +85,9 @@ def test_async_concurrency(actions: MCActions, num_threads=5, blocks_per_thread=
     print("Check your Minecraft Server Console. If you see 'Unknown command' or parsing errors, the TCP socket interleaved!")
 
 
-def test_sync_concurrency(player: MCPlayer, num_threads=4, reads_per_thread=200):
+def stress_sync_concurrency(player: MCPlayer, num_threads=4, reads_per_thread=200):
     """
-    Test 3: Multi-threaded Sync Stress (The Response Stealing Test)
+    Stress 3: Multi-threaded Sync Stress (The Response Stealing Test)
     Multiple threads reading different data types simultaneously.
     If Thread A accidentally reads Thread B's data, python will throw a ValueError.
     """
@@ -155,12 +155,12 @@ if __name__ == "__main__":
     mc_player, mc_actions = setup_player(PLAYER_NAME)
 
     # Run the gauntlet
-    test_raw_throughput(mc_actions)
+    stress_raw_throughput(mc_actions)
     time.sleep(1) # Let server catch up
 
-    test_async_concurrency(mc_actions)
+    stress_async_concurrency(mc_actions)
     time.sleep(1)
 
-    test_sync_concurrency(mc_player)
+    stress_sync_concurrency(mc_player)
 
     print("\nTorture tests complete.")
