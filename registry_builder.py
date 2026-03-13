@@ -68,11 +68,11 @@ class RegistryBuilder:
     COLORS_LIST = rc.COLORS_LIST
 
     # Map both names and inject the 'prefixes' key to ensure backwards compatibility with local methods
-    VARIANT_MAP = rc.VARIANT_MAP
-    VARIANT_CONFIG = {
-        'WOOD': {**rc.VARIANT_MAP.get('WOOD', {}), 'prefixes': rc.WOOD_TYPES},
-        'COLOR': {**rc.VARIANT_MAP.get('COLOR', {}), 'prefixes': rc.COLORS_LIST}
-    }
+    VARIANT_CONFIG = rc.VARIANT_CONFIG
+    # VARIANT_CONFIG = {
+    #     'WOOD': {**rc.VARIANT_MAP.get('WOOD', {}), 'prefixes': rc.WOOD_TYPES},
+    #     'COLOR': {**rc.VARIANT_MAP.get('COLOR', {}), 'prefixes': rc.COLORS_LIST}
+    # }
 
     MATERIAL_PICKER_GROUPS = rc.MATERIAL_PICKER_GROUPS
     ENTITY_GROUPS = rc.ENTITY_GROUPS
