@@ -98,7 +98,7 @@ def _start_secure_tunnel_host(mc_port, rcon_port, mj_port, use_upnp=False, expli
         time.sleep(0.1)
     return None
 
-def _run_tunnel_client_thread(host, port, pin, local_mc, local_rcon, local_mj):
+def _run_tunnel_client_thread(host, port, pin, remote_mc, remote_rcon, remote_mj, local_mc, local_rcon, local_mj):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
@@ -106,6 +106,9 @@ def _run_tunnel_client_thread(host, port, pin, local_mc, local_rcon, local_mj):
             host,
             port,
             pin,
+            remote_mc=remote_mc,
+            remote_rcon=remote_rcon,
+            remote_mj=remote_mj,
             local_mc_port=local_mc,
             local_rcon_port=local_rcon,
             local_mj_port=local_mj
@@ -114,16 +117,30 @@ def _run_tunnel_client_thread(host, port, pin, local_mc, local_rcon, local_mj):
         print(f"\n[Tunnel Client Error] {e}")
 
 def _start_secure_tunnel_client(join_code, local_mc, local_rcon, local_mj):
-    # Parse the join_code: HOST:PORT#PIN
+    # Parse the join_code: HOST:PORT#PIN[-MC-RCON-MJ]
     try:
-        address_part, pin = join_code.split('#')
+        address_part, auth_part = join_code.split('#')
         host, port_str = address_part.split(':')
         port = int(port_str)
-    except ValueError:
+
+        # Check if the host attached custom ports
+        if '-' in auth_part:
+            parts = auth_part.split('-')
+            pin = parts[0]
+            remote_mc = int(parts[1])
+            remote_rcon = int(parts[2])
+            remote_mj = int(parts[3])
+        else:
+            pin = auth_part
+            remote_mc = 25565
+            remote_rcon = 25575
+            remote_mj = 4721
+
+    except (ValueError, IndexError):
         print("[Tunnel Client Error] Invalid Join Code format.")
         return
 
-    thread = Thread(target=_run_tunnel_client_thread, args=(host, port, pin, local_mc, local_rcon, local_mj), daemon=True)
+    thread = Thread(target=_run_tunnel_client_thread, args=(host, port, pin, remote_mc, remote_rcon, remote_mj, local_mc, local_rcon, local_mj), daemon=True)
     thread.start()
 
 @magics_class
