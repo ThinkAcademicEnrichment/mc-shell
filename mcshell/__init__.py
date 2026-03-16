@@ -279,16 +279,6 @@ class MCShell(Magics):
         server_jars_dir.mkdir(exist_ok=True)
 
         # Prompt for a password
-        # try:
-        #     password = getpass.getpass(prompt=f"Create a password for world '{world_name}': ")
-        #     if not password:
-        #         print("Password cannot be empty.")
-        #         return
-        # except (EOFError, KeyboardInterrupt):
-        #     print("\nWorld creation cancelled.")
-        #     return
-
-        # Prompt for a password
         try:
             password = getpass.getpass(prompt=f"Create a password for world '{world_name}' (leave empty for random): ")
             if not password:
@@ -498,8 +488,6 @@ class MCShell(Magics):
         # Define the directory for the new world
         world_directory = MC_WORLDS_BASE_DIR / world_name
 
-        # For now, we assume the directory exists.
-        # The %pp_create magic would be responsible for actually creating it.
         if not world_directory.exists():
             print(f"Error: World directory does not exist at '{world_directory}'.")
             print(f"Please create it first with: %pp_create_world {world_name}")
