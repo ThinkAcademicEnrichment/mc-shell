@@ -22,12 +22,19 @@ from mcshell.mcplayer import MCPlayer
 import atexit
 from threading import Thread,Event
 
-import atexit
 import string
-from threading import Thread,Event
+import random
+import requests
+import json
+import uuid
+import os
+import shutil
+import pickle
+import shlex
 import asyncio
 import time
-from mcshell.mctunnelserver import start_host_gateway, connect_client_tunnel,get_vpn_ip
+import re # Added for VPN IP Regex matching
+from mcshell.mctunnelserver import start_host_gateway, connect_client_tunnel, get_vpn_ip
 
 # =====================================================================
 # Secure Tunnel & Plugin Helper Functions
@@ -56,7 +63,7 @@ def _resolve_modrinth_plugin(project_id, mc_version):
         pass # Failsafe to fallback URLs
     return None
 
-def _run_tunnel_host_thread(mc_port, rcon_port, mj_port, out_token, use_upnp=False, explicit_host=None):
+def _run_tunnel_host_thread(mc_port, rcon_port, mj_port, out_token, use_upnp=False):
     async def host_task():
         # 1. Force integer types to ensure our logic works safely
         mc_port_i = int(mc_port)
@@ -71,9 +78,7 @@ def _run_tunnel_host_thread(mc_port, rcon_port, mj_port, out_token, use_upnp=Fal
 
         host_ip = None
 
-        if explicit_host:
-            host_ip = explicit_host
-        elif use_upnp:
+        if use_upnp:
             try:
                 import miniupnpc
                 upnp = miniupnpc.UPnP()
@@ -119,10 +124,10 @@ def _run_tunnel_host_thread(mc_port, rcon_port, mj_port, out_token, use_upnp=Fal
     except Exception as e:
         print(f"\n[Tunnel Host Error] {e}")
 
-def _start_secure_tunnel_host(mc_port, rcon_port, mj_port, use_upnp=False, explicit_host=None):
+def _start_secure_tunnel_host(mc_port, rcon_port, mj_port, use_upnp=False):
     out_token = []
     # Use daemon=True so the thread automatically dies when IPython exits
-    thread = Thread(target=_run_tunnel_host_thread, args=(mc_port, rcon_port, mj_port, out_token, use_upnp, explicit_host), daemon=True)
+    thread = Thread(target=_run_tunnel_host_thread, args=(mc_port, rcon_port, mj_port, out_token, use_upnp), daemon=True)
     thread.start()
 
     # Wait up to 5 seconds for the cryptographic keys and token to generate
@@ -240,7 +245,6 @@ class MCShell(Magics):
             ipyshell.user_ns.update({'world_matches':arg_matches})
 
         return arg_matches
-
 
     @line_magic
     def pp_create_world(self, line):
@@ -444,24 +448,21 @@ class MCShell(Magics):
         """
         Starts a Paper server for a given world name.
         If another server is running, it will be stopped first.
-        Usage: %pp_start_world <world_name> [--secure [upnp | hostname]]
+        Usage: %pp_start_world <world_name> [--secure [upnp]]
         """
 
         # Orthogonal flag extraction
         is_secure = '--secure' in line
         use_upnp = False
-        explicit_host = None
 
         if is_secure:
             parts = line.split()
             idx = parts.index('--secure')
-            # Extract optional modifier (upnp or hostname) following the secure flag
+            # Extract optional modifier (upnp) following the secure flag
             if idx + 1 < len(parts) and not parts[idx + 1].startswith('--'):
                 mod = parts.pop(idx + 1)
                 if mod.lower() == 'upnp':
                     use_upnp = True
-                else:
-                    explicit_host = mod
             parts.remove('--secure')
             line = ' '.join(parts)
 
@@ -517,23 +518,26 @@ class MCShell(Magics):
 
         if is_secure:
             print("Starting secure SSH tunnel gateway...")
-            token = _start_secure_tunnel_host(self.server_data['port'], self.server_data['rcon_port'], self.server_data['mj_port'], use_upnp=use_upnp, explicit_host=explicit_host)
+            token = _start_secure_tunnel_host(self.server_data['port'], self.server_data['rcon_port'], self.server_data['mj_port'], use_upnp=use_upnp)
 
             if token:
                 vpn_ip = get_vpn_ip()
 
-                print(f"\n[SECURE HOST] Tunnel active!")
+                print(f"\n[SECURE HOST] Local Gateway active!")
                 if vpn_ip:
-                    print("\n🎮 Option A: PC/Mac Remote Play (No VPN required)")
-                    print(f"Share this Join Code with your friends:\n{token}")
+                    print("\n🌐 TAILSCALE DETECTED (Recommended for all players)")
+                    print(f"Tell friends to connect directly to this IP: {vpn_ip}")
+                    print(" - Java Players: Run %mc_start_app " + vpn_ip)
+                    print(" - Bedrock/iPad: Add server " + vpn_ip + " in the Minecraft app")
 
-                    print("\n📱 Option B: Bedrock/iPad Remote Play (Requires Tailscale)")
-                    print(f"Tell friends to run %mc_start_app with this IP: {vpn_ip}")
-                    print(f"(Or type {vpn_ip} directly into the Minecraft Bedrock server list!)")
+                    print("\n🔒 SSH FALLBACK (Java PC/Mac only, requires UPnP or Local LAN)")
+                    print(f"Join Code:\n{token}")
                 else:
-                    print(f"\nShare this Join Code with your friends:\n{token}")
-                    print("\n💡 Did you know? You can allow Xbox and iPad players to join securely from anywhere")
-                    print("by installing Tailscale (a free virtual network) on this computer!")
+                    print(f"\n🔒 SSH TUNNEL ACTIVE (Java PC/Mac only, requires UPnP or Local LAN)")
+                    print(f"Join Code:\n{token}")
+                    print("\n💡 HIGHLY RECOMMENDED: Install Tailscale!")
+                    print("Tailscale is a free networking app that seamlessly connects computers.")
+                    print("It bypasses school firewalls and adds support for iPads and Xbox players without relying on Join Codes.")
             else:
                 print("\n[SECURE HOST] Failed to generate Join Code.\n")
 
@@ -542,23 +546,19 @@ class MCShell(Magics):
         """
         Stops the currently running Paper server and its associated mc-ed app server.
         """
-        # Check if a server session is active
         if not self.active_paper_server or not self.active_paper_server.is_alive():
             print("No active Paper server session is currently running.")
             return
 
         print(f"--- Stopping session for world: {self.active_paper_server.world_name} ---")
 
-        # Stop the mc-ed application server first
         print("Stopping application server...")
-        stop_app_server() # This is your existing function from mcserver.py
+        stop_app_server()
         self.mc_name = None
-        # Stop the Paper server process
-        # The .stop() method in PaperServerManager handles the graceful shutdown
+
         print("Stopping Paper server (this may take a moment)...")
         self.active_paper_server.stop()
 
-        # Clean up the state
         self.active_paper_server = None
         print("Session stopped successfully.")
 
@@ -718,39 +718,6 @@ class MCShell(Magics):
         return  self._send('run',*args)
     def _data(self, *args):
         return self._send('data',*args)
-
-    # @property
-    # def commands(self):
-    #     _rcon_commands = {}
-    #     if not self.rcon_commands:
-    #         try:
-    #             _help_text = self._help()
-    #         except:
-    #             return _rcon_commands
-    #
-    #         _help_data = list(filter(lambda x: x != '', map(lambda x: x.split(' '), _help_text.split('/'))))[1:]
-    #         for _help_datum in _help_data:
-    #             _cmd = _help_datum[0]
-    #             if 'minecraft:' in _cmd:
-    #                 _cmd = _cmd.split(':')[1]
-    #             try:
-    #                 _cmd_data = self._help(_cmd)
-    #             except:
-    #                 return
-    #             if not _cmd_data:
-    #                 # found a shortcut command like xp -> experience
-    #                 continue
-    #             _cmd_data = list(map(lambda x:x.split()[1:],_cmd_data.split('/')))
-    #             _sub_cmd_data = {}
-    #             for _sub_cmd_datum in _cmd_data[1:]:
-    #                 if not _sub_cmd_datum[0][0]  in ('<','[','('):
-    #                     _sub_cmd_data.update({_sub_cmd_datum[0]: _sub_cmd_datum[1:]})
-    #                 else:
-    #                     # TODO what about commands without sub-commands?
-    #                     _sub_cmd_data.update({' ': _sub_cmd_datum})
-    #                 _rcon_commands.update({_cmd.replace('-','_'): _sub_cmd_data})
-    #         self.rcon_commands = _rcon_commands
-    #     return self.rcon_commands
 
     @property
     def commands(self):
@@ -944,7 +911,7 @@ class MCShell(Magics):
             return
         if not response:
             return
-        
+
         print('Response:')
         print('-' * 100)
         if _arg_list[0] == 'help':
@@ -1795,21 +1762,15 @@ def load_ipython_extension(ip):
     Called by IPython when the extension is loaded.
     This is where we register the magics and the shutdown hook.
     """
-
     sync_datapack_library()
 
-    # Register the main magic class
     mcshell_instance = MCShell(ip)
     ip.register_magics(mcshell_instance)
 
-    # Define the cleanup function that will be called on exit.
     def shutdown_hook():
         print("\nIPython is shutting down. Stopping active mc-shell session...")
-        # We can access the magic instance to call its methods.
         if mcshell_instance.active_paper_server and mcshell_instance.active_paper_server.is_alive():
-            mcshell_instance.pp_stop_world('') # Pass an empty line argument
+            mcshell_instance.pp_stop_world('')
         print("Cleanup complete.")
 
-
-    # Register the shutdown_hook to run when the Python interpreter exits.
     atexit.register(shutdown_hook)
