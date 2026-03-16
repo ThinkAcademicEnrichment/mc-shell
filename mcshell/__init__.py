@@ -30,8 +30,31 @@ import time
 from mcshell.mctunnelserver import start_host_gateway, connect_client_tunnel
 
 # =====================================================================
-# Secure Tunnel Helper Functions (Orthogonal to main app logic)
+# Secure Tunnel & Plugin Helper Functions
 # =====================================================================
+
+def _resolve_modrinth_plugin(project_id, mc_version):
+    """Queries the Modrinth API for the exact plugin download URL matching the Minecraft version."""
+    api_url = f"https://api.modrinth.com/v2/project/{project_id}/version"
+    params = {
+        "game_versions": f'["{mc_version}"]',
+        "loaders": '["paper", "spigot"]'
+    }
+    try:
+        resp = requests.get(api_url, params=params, timeout=5)
+        if resp.ok:
+            data = resp.json()
+            if data and len(data) > 0:
+                # Retrieve the primary file of the most recent compatible release
+                files = data[0].get("files", [])
+                for f in files:
+                    if f.get("primary"):
+                        return f["url"]
+                if files:
+                    return files[0]["url"]
+    except Exception as e:
+        pass # Failsafe to fallback URLs
+    return None
 
 def _run_tunnel_host_thread(mc_port, rcon_port, mj_port, out_token, use_upnp=False, explicit_host=None):
     async def host_task():
@@ -218,6 +241,7 @@ class MCShell(Magics):
 
         return arg_matches
 
+
     @line_magic
     def pp_create_world(self, line):
         args = line.split()
@@ -337,7 +361,12 @@ class MCShell(Magics):
             print(f"Error: Could not write eula.txt file. {e}")
             return
 
-        # Create the world_manifest.json file
+        print(f"Resolving compatible Geyser/Floodgate plugins for Minecraft {mc_version}...")
+        # Resolve dynamic Modrinth URLs based on the MC version, falling back to Geyser's official 'latest' endpoints
+        geyser_url = _resolve_modrinth_plugin("geyser", mc_version) or "https://download.geysermc.org/v2/projects/geyser/versions/latest/builds/latest/downloads/spigot"
+        floodgate_url = _resolve_modrinth_plugin("floodgate", mc_version) or "https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/spigot"
+
+        # Create the world_manifest.json file with required Geyser/Floodgate plugins
         manifest = {
             "world_name": world_name,
             "paper_version": mc_version,
@@ -345,6 +374,8 @@ class MCShell(Magics):
             "server_jar_path": str(jar_path.relative_to(world_dir.parent)), # Store a path relative to the world_dir
             "world_data_path": str((world_dir / "world").relative_to(world_dir)),
             "plugins": [
+                geyser_url,
+                floodgate_url
             ],
             "server_properties": {
                 "gamemode": "creative",
@@ -385,7 +416,7 @@ class MCShell(Magics):
         # Always install McJuice from bundled version
         plugins_dir.joinpath(MC_JUICE_JAR_PATH.name).symlink_to(MC_JUICE_JAR_PATH)
 
-        # Install the plugins listed in the manifest
+        # Install the plugins listed in the manifest (Downloads Geyser & Floodgate automatically)
         plugin_urls = manifest.get("plugins", [])
         if plugin_urls:
             downloader.install_plugins(plugin_urls, plugins_dir)

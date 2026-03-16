@@ -136,8 +136,22 @@ class PaperDownloader:
         world_plugins_dir.mkdir(exist_ok=True)
         successful_installs = []
         for url in plugin_urls:
-            filename = url.split('/')[-1]
+            # Strip query parameters if any exist before grabbing the filename chunk
+            clean_url = url.split('?')[0]
+            filename = clean_url.split('/')[-1]
+
+            # API endpoints (like Geyser's /spigot) often don't have .jar in the URL.
+            # We need to assign a proper name and ensure it gets processed as a JAR.
+            if not filename.endswith(".jar") and not filename.endswith(".zip"):
+                if "floodgate" in url.lower():
+                    filename = "Floodgate.jar"
+                elif "geyser" in url.lower():
+                    filename = "Geyser-Spigot.jar"
+                else:
+                    filename += ".jar"
+
             dest = world_plugins_dir / filename
+
             if filename.endswith(".jar") and self._download_file(url, dest):
                 successful_installs.append(filename)
             elif filename.endswith(".zip"):
