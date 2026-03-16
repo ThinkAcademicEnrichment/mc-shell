@@ -533,11 +533,13 @@ class MCShell(Magics):
                     print("\n🔒 SSH FALLBACK (Java PC/Mac only, requires UPnP or Local LAN)")
                     print(f"Join Code:\n{token}")
                 else:
+                    local_ip = token.split(':')[0]
                     print(f"\n🔒 SSH TUNNEL ACTIVE (Java PC/Mac only, requires UPnP or Local LAN)")
                     print(f"Join Code:\n{token}")
-                    print("\n💡 HIGHLY RECOMMENDED: Install Tailscale!")
-                    print("Tailscale is a free networking app that seamlessly connects computers.")
-                    print("It bypasses school firewalls and adds support for iPads and Xbox players without relying on Join Codes.")
+                    print("\n🌐 TAILSCALE & BEDROCK PLAYERS:")
+                    print("If you have Tailscale installed, OR your network uses a Tailscale Subnet Router:")
+                    print(f"Tell friends to connect their Minecraft app directly to your local IP: {local_ip}")
+                    print("(If you aren't using Tailscale yet, we highly recommend it to easily bypass firewalls!)")
             else:
                 print("\n[SECURE HOST] Failed to generate Join Code.\n")
 
