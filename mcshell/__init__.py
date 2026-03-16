@@ -27,7 +27,7 @@ import string
 from threading import Thread,Event
 import asyncio
 import time
-from mcshell.mctunnelserver import start_host_gateway, connect_client_tunnel
+from mcshell.mctunnelserver import start_host_gateway, connect_client_tunnel,get_vpn_ip
 
 # =====================================================================
 # Secure Tunnel & Plugin Helper Functions
@@ -532,7 +532,20 @@ class MCShell(Magics):
             token = _start_secure_tunnel_host(self.server_data['port'], self.server_data['rcon_port'], self.server_data['mj_port'], use_upnp=use_upnp, explicit_host=explicit_host)
 
             if token:
-                print(f"\n[SECURE HOST] Tunnel active! Share this Join Code with your friends:\n\n{token}\n")
+                vpn_ip = get_vpn_ip()
+
+                print(f"\n[SECURE HOST] Tunnel active!")
+                if vpn_ip:
+                    print("\n🎮 Option A: PC/Mac Remote Play (No VPN required)")
+                    print(f"Share this Join Code with your friends:\n{token}")
+
+                    print("\n📱 Option B: Bedrock/iPad Remote Play (Requires Tailscale)")
+                    print(f"Tell friends to run %mc_start_app with this IP: {vpn_ip}")
+                    print(f"(Or type {vpn_ip} directly into the Minecraft Bedrock server list!)")
+                else:
+                    print(f"\nShare this Join Code with your friends:\n{token}")
+                    print("\n💡 Did you know? You can allow Xbox and iPad players to join securely from anywhere")
+                    print("by installing Tailscale (a free virtual network) on this computer!")
             else:
                 print("\n[SECURE HOST] Failed to generate Join Code.\n")
 
@@ -1271,7 +1284,7 @@ class MCShell(Magics):
     def mc_start_app(self, line):
         """
         Starts the client application components to connect to a world.
-        Usage: %mc_start_app [token] [--local-mc <port>] [--local-rcon <port>] [--local-mj <port>]
+        Usage: %mc_start_app [token|IP] [--local-mc <port>] [--local-rcon <port>] [--local-mj <port>]
         """
         parts = line.split()
 
@@ -1302,14 +1315,19 @@ class MCShell(Magics):
             if '--local-mj' in parts:
                 local_mj = int(parts[parts.index('--local-mj') + 1])
 
-            # 3. SAFETY CHECK: Your existing checks
+            # 3. SAFETY CHECK
             if hasattr(self, 'active_paper_server') and getattr(self, 'active_paper_server') and self.active_paper_server.is_alive():
                 print("A local Minecraft server is already running. Proceeding with proxy connections anyway.")
 
-            # 4. START TUNNEL: If a token was provided, we are in "Proxy Mode"
-            if token:
+            # 4. START TUNNEL OR VPN: Smart Token Routing
+            if re.match(r"^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$", token):
+                print(f"\n[VPN DETECTED] Connecting directly to {token} over virtual LAN...")
+                self.server_data['host'] = token
+                self.server_data['port'] = local_mc
+                self.server_data['rcon_port'] = local_rcon
+                self.server_data['mj_port'] = local_mj
+            else:
                 print("Connecting to secure tunnel...")
-                # Pass the extracted integer ports, NOT the dictionary
                 _start_secure_tunnel_client(token, local_mc, local_rcon, local_mj)
 
                 # THE MAGIC TRICK: Overwrite in-memory server_data to point to the secure tunnel entrances

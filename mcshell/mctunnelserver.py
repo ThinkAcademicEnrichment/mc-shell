@@ -3,7 +3,37 @@ import asyncssh
 import socket
 import logging
 
+try:
+    import psutil
+except ImportError:
+    psutil = None
+
 logger = logging.getLogger(__name__)
+
+def get_vpn_ip() -> str | None:
+    """
+    Scans the host's network interfaces for a VPN IP address.
+    Specifically targets Carrier-Grade NAT IPs (100.x.x.x) used by Tailscale.
+    """
+    if not psutil:
+        logger.warning("psutil module missing. VPN detection disabled.")
+        return None
+
+    try:
+        # Iterate over all active network interfaces
+        for interface, addrs in psutil.net_if_addrs().items():
+            for addr in addrs:
+                # We only care about IPv4 addresses
+                if addr.family == socket.AF_INET:
+                    ip = addr.address
+                    # Tailscale specifically allocates from the 100.64.0.0/10 block
+                    if ip.startswith('100.'):
+                        logger.info(f"Detected VPN interface '{interface}' with IP: {ip}")
+                        return ip
+    except Exception as e:
+        logger.warning(f"Failed to scan network interfaces for VPN: {e}")
+
+    return None
 
 class MCTunnelServer(asyncssh.SSHServer):
     """
