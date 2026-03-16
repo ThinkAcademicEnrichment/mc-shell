@@ -34,7 +34,7 @@ import shlex
 import asyncio
 import time
 import re # Added for VPN IP Regex matching
-from mcshell.mctunnelserver import start_host_gateway, connect_client_tunnel, get_vpn_ip
+from mcshell.mctunnelserver import start_host_gateway, connect_client_tunnel, get_vpn_ip, _get_local_ip
 
 # =====================================================================
 # Secure Tunnel & Plugin Helper Functions
@@ -100,7 +100,6 @@ def _run_tunnel_host_thread(mc_port, rcon_port, mj_port, out_token, use_upnp=Fal
                 print(f"\n[UPnP] Failed to configure router ({e}). Falling back to local network mode.")
 
         if not host_ip:
-            from mcshell.mctunnelserver import _get_local_ip
             host_ip = _get_local_ip()
 
         # 2. Formulate the robust Join Code
@@ -516,6 +515,15 @@ class MCShell(Magics):
         if not 'app_port' in list(self.server_data.keys()):
             self.server_data['app_port'] = 5001
 
+        def _make_direct_token(ip):
+            """Generates a direct connection token, appending ports only if they deviate from defaults."""
+            mc_p = self.server_data.get('port', 25565)
+            rcon_p = self.server_data.get('rcon_port', 25575)
+            mj_p = self.server_data.get('mj_port', 4721)
+            if mc_p == 25565 and rcon_p == 25575 and mj_p == 4721:
+                return ip
+            return f"{ip}@{mc_p}-{rcon_p}-{mj_p}"
+
         if is_secure:
             print("Starting secure SSH tunnel gateway...")
             token = _start_secure_tunnel_host(self.server_data['port'], self.server_data['rcon_port'], self.server_data['mj_port'], use_upnp=use_upnp)
@@ -526,22 +534,40 @@ class MCShell(Magics):
                 print(f"\n[SECURE HOST] Local Gateway active!")
                 if vpn_ip:
                     print("\n🌐 TAILSCALE DETECTED (Recommended for all players)")
-                    print(f"Tell friends to connect directly to this IP: {vpn_ip}")
-                    print(" - Java Players: Run %mc_start_app " + vpn_ip)
-                    print(" - Bedrock/iPad: Add server " + vpn_ip + " in the Minecraft app")
+                    print(f"Java Join Code: { _make_direct_token(vpn_ip) }")
+                    print(f"Bedrock/iPad IP: {vpn_ip}")
 
                     print("\n🔒 SSH FALLBACK (Java PC/Mac only, requires UPnP or Local LAN)")
-                    print(f"Join Code:\n{token}")
+                    print(f"Java Join Code: {token}")
                 else:
                     local_ip = token.split(':')[0]
                     print(f"\n🔒 SSH TUNNEL ACTIVE (Java PC/Mac only, requires UPnP or Local LAN)")
-                    print(f"Join Code:\n{token}")
-                    print("\n🌐 TAILSCALE & BEDROCK PLAYERS:")
+                    print(f"Java Join Code: {token}")
+                    print("\n🌐 TAILSCALE & LOCAL NETWORK PLAYERS:")
                     print("If you have Tailscale installed, OR your network uses a Tailscale Subnet Router:")
-                    print(f"Tell friends to connect their Minecraft app directly to your local IP: {local_ip}")
+                    print(f"Java Join Code: { _make_direct_token(local_ip) }")
+                    print(f"Bedrock/iPad IP: {local_ip}")
                     print("(If you aren't using Tailscale yet, we highly recommend it to easily bypass firewalls!)")
             else:
                 print("\n[SECURE HOST] Failed to generate Join Code.\n")
+        else:
+            vpn_ip = get_vpn_ip()
+            local_ip = _get_local_ip()
+
+            print(f"\n[LOCAL HOST] Server active on local interfaces!")
+            if vpn_ip:
+                print("\n🌐 TAILSCALE DETECTED (Recommended for remote players)")
+                print(f"Java Join Code: { _make_direct_token(vpn_ip) }")
+                print(f"Bedrock/iPad IP: {vpn_ip}")
+
+            print("\n🏠 LOCAL NETWORK (Same Wi-Fi only)")
+            print(f"Java Join Code: { _make_direct_token(local_ip) }")
+            print(f"Bedrock/iPad IP: {local_ip}")
+
+            if not vpn_ip:
+                print("\n💡 TIP: To play securely over the internet with friends, restart the server")
+                print("using: %pp_start_world <world_name> --secure")
+                print("OR install Tailscale for the best experience!")
 
     @line_magic
     def pp_stop_world(self, line):
@@ -1276,14 +1302,8 @@ class MCShell(Magics):
             if hasattr(self, 'active_paper_server') and getattr(self, 'active_paper_server') and self.active_paper_server.is_alive():
                 print("A local Minecraft server is already running. Proceeding with proxy connections anyway.")
 
-            # 4. START TUNNEL OR VPN: Smart Token Routing
-            if re.match(r"^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$", token):
-                print(f"\n[VPN DETECTED] Connecting directly to {token} over virtual LAN...")
-                self.server_data['host'] = token
-                self.server_data['port'] = local_mc
-                self.server_data['rcon_port'] = local_rcon
-                self.server_data['mj_port'] = local_mj
-            else:
+            # 4. SMART TOKEN ROUTING
+            if '#' in token:
                 print("Connecting to secure tunnel...")
                 _start_secure_tunnel_client(token, local_mc, local_rcon, local_mj)
 
@@ -1296,6 +1316,26 @@ class MCShell(Magics):
                 # Give the background thread a moment to establish port forwards
                 time.sleep(1.0)
                 print("Tunnel connection established.")
+            else:
+                # Handle Direct IPs and Custom Port strings (e.g. 192.168.1.5@25566-25576-4721)
+                if '@' in token:
+                    ip_part, ports_part = token.split('@', 1)
+                    try:
+                        p_mc, p_rcon, p_mj = map(int, ports_part.split('-'))
+                        self.server_data['host'] = ip_part
+                        self.server_data['port'] = p_mc
+                        self.server_data['rcon_port'] = p_rcon
+                        self.server_data['mj_port'] = p_mj
+                        print(f"\n[DIRECT CONNECT] Connecting to {ip_part} with custom ports...")
+                    except ValueError:
+                        print("\n[ERROR] Invalid Direct Token format. Falling back to default ports.")
+                        self.server_data['host'] = ip_part
+                else:
+                    print(f"\n[DIRECT CONNECT] Connecting directly to {token}...")
+                    self.server_data['host'] = token
+                    self.server_data['port'] = local_mc
+                    self.server_data['rcon_port'] = local_rcon
+                    self.server_data['mj_port'] = local_mj
 
         login_to_server = Prompt.ask('Do you want to be a server op?',choices=['yes','no'],default='no')
         if login_to_server.lower() == 'yes':
@@ -1313,6 +1353,18 @@ class MCShell(Magics):
         print(f"\thttp://{socket.gethostname()}.local:{self.server_data['app_port']}")
         print(f"Open a browser here to use the control:")
         print(f"\thttp://{socket.gethostname()}.local:{self.server_data['app_port']}/control")
+
+        print(f"\n" + "="*55)
+        print(f"🎮 READY TO PLAY! Enter this into Minecraft:")
+        if self.server_data['host'] == '127.0.0.1' or self.server_data['host'] == 'localhost':
+            mc_port_str = f":{self.server_data['port']}" if self.server_data['port'] != 25565 else ""
+            print(f"   Java Edition IP: localhost{mc_port_str}")
+            print(f"   Bedrock / iPad : (Requires Tailscale or Local LAN on Host)")
+        else:
+            mc_port_str = f":{self.server_data['port']}" if self.server_data['port'] != 25565 else ""
+            print(f"   Java Edition IP: {self.server_data['host']}{mc_port_str}")
+            print(f"   Bedrock / iPad : {self.server_data['host']} (Default port 19132)")
+        print(f"="*55 + "\n")
         return
 
     @line_magic
