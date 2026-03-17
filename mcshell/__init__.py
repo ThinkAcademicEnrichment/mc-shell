@@ -215,6 +215,7 @@ class MCShell(Magics):
 
         # Track if this session automatically joined Tailscale so we can clean it up
         self.managed_tailscale = False
+        self.current_ssh_token = None
 
     def _connect_tailscale(self, authkey: str, accept_routes: bool = False):
         """Automatically authenticates and connects to Tailscale cross-platform."""
@@ -295,6 +296,66 @@ class MCShell(Magics):
                 print("[TAILSCALE] Disconnected successfully.")
             except Exception as e:
                 print(f"[TAILSCALE WARNING] Could not disconnect automatically: {e}")
+
+    def _print_connection_hub(self):
+        """Helper method to print the share tokens cleanly."""
+        def _make_direct_token(ip):
+            """Generates a direct connection token, appending ports only if they deviate from defaults."""
+            mc_p = self.server_data.get('port', 25565)
+            rcon_p = self.server_data.get('rcon_port', 25575)
+            mj_p = self.server_data.get('mj_port', 4721)
+            if mc_p == 25565 and rcon_p == 25575 and mj_p == 4721:
+                return ip
+            return f"{ip}@{mc_p}-{rcon_p}-{mj_p}"
+
+        vpn_ip = get_vpn_ip()
+        local_ip = _get_local_ip()
+        authkey = self.server_data.get('tailscale_authkey')
+        use_subnet = self.server_data.get('tailscale_subnet_mode', False)
+
+        print(f"\n" + "="*60)
+        print("🌍 CONNECTION HUB: Share these tokens with friends!")
+        print("="*60)
+
+        if authkey:
+            # Automated Classroom UX: Give the students a single copy-paste token
+            if use_subnet:
+                primary_ip = local_ip
+                vpn_token = f"{_make_direct_token(primary_ip)}^{authkey}"
+                print("\n[ CLASSROOM VPN CONNECTION (Subnet Router Mode) ]")
+                print(f"Token : {vpn_token}")
+            else:
+                if vpn_ip:
+                    vpn_token = f"{_make_direct_token(vpn_ip)}^{authkey}"
+                    print("\n[ CLASSROOM VPN CONNECTION (Node-to-Node Mode) ]")
+                    print(f"Token : {vpn_token}")
+                else:
+                    print("\n[ CLASSROOM VPN CONNECTION (Node-to-Node Mode) ]")
+                    print("⚠️  ERROR: Tailscale failed to acquire a VPN IP.")
+                    print("⚠️  Cannot generate an automated remote token. Check your Tailscale installation.")
+
+        # Standard direct tokens
+        print("\n[ DIRECT CONNECTION (No SSH Required) ]")
+        print(f"Local LAN Token : {_make_direct_token(local_ip)}")
+
+        # Only show the raw Tailscale token if we aren't already giving them the automated authkey command
+        if vpn_ip and not authkey:
+            print(f"Tailscale Token : {_make_direct_token(vpn_ip)}")
+
+        # SSH Tunnel
+        print("\n[ SECURE SSH TUNNEL (Internet Fallback) ]")
+        if self.current_ssh_token:
+            print(f"Token : {self.current_ssh_token}")
+            token_ip = self.current_ssh_token.split(':')[0]
+            if token_ip == local_ip:
+                print("(Warning: Token uses Local IP. For internet play, restart with: --ssh)")
+            else:
+                print("(UPnP successfully negotiated with router)")
+        else:
+            print("Failed to generate SSH Token, or tunnel not active.")
+
+        print("="*60 + "\n")
+        print("Students can join by running: %pp_join_world <Token>\n")
 
     def _complete_world_command(self, ipyshell, event):
         ipyshell.user_ns.update(dict(rcon_event=event))
@@ -638,69 +699,15 @@ class MCShell(Magics):
         if not 'app_port' in list(self.server_data.keys()):
             self.server_data['app_port'] = 5001
 
-        def _make_direct_token(ip):
-            """Generates a direct connection token, appending ports only if they deviate from defaults."""
-            mc_p = self.server_data.get('port', 25565)
-            rcon_p = self.server_data.get('rcon_port', 25575)
-            mj_p = self.server_data.get('mj_port', 4721)
-            if mc_p == 25565 and rcon_p == 25575 and mj_p == 4721:
-                return ip
-            return f"{ip}@{mc_p}-{rcon_p}-{mj_p}"
-
         # Start the background SSH Tunnel gateway automatically
         print("Starting secure SSH tunnel gateway in the background...")
-        token = _start_secure_tunnel_host(self.server_data['port'], self.server_data['rcon_port'], self.server_data['mj_port'], use_ssh=use_ssh)
+        self.current_ssh_token = _start_secure_tunnel_host(self.server_data['port'], self.server_data['rcon_port'], self.server_data['mj_port'], use_ssh=use_ssh)
 
         # Cross-platform automated host login (ONLY if we aren't relying on an external Subnet Router)
         if authkey and not use_subnet:
             self._connect_tailscale(authkey, accept_routes=False)
 
-        vpn_ip = get_vpn_ip()
-        local_ip = _get_local_ip()
-
-        print(f"\n" + "="*60)
-        print("🌍 CONNECTION HUB: Share these tokens with friends!")
-        print("="*60)
-
-        if authkey:
-            # Automated Classroom UX: Give the students a single copy-paste token
-            if use_subnet:
-                primary_ip = local_ip
-                vpn_token = f"{_make_direct_token(primary_ip)}^{authkey}"
-                print("\n[ CLASSROOM VPN CONNECTION (Subnet Router Mode) ]")
-                print(f"Token : {vpn_token}")
-            else:
-                if vpn_ip:
-                    vpn_token = f"{_make_direct_token(vpn_ip)}^{authkey}"
-                    print("\n[ CLASSROOM VPN CONNECTION (Node-to-Node Mode) ]")
-                    print(f"Token : {vpn_token}")
-                else:
-                    print("\n[ CLASSROOM VPN CONNECTION (Node-to-Node Mode) ]")
-                    print("⚠️  ERROR: Tailscale failed to acquire a VPN IP.")
-                    print("⚠️  Cannot generate an automated remote token. Check your Tailscale installation.")
-
-        # Standard direct tokens
-        print("\n[ DIRECT CONNECTION (No SSH Required) ]")
-        print(f"Local LAN Token : {_make_direct_token(local_ip)}")
-
-        # Only show the raw Tailscale token if we aren't already giving them the automated authkey command
-        if vpn_ip and not authkey:
-            print(f"Tailscale Token : {_make_direct_token(vpn_ip)}")
-
-        # SSH Tunnel
-        print("\n[ SECURE SSH TUNNEL (Internet Fallback) ]")
-        if token:
-            print(f"Token : {token}")
-            token_ip = token.split(':')[0]
-            if token_ip == local_ip:
-                print("(Warning: Token uses Local IP. For internet play, restart with: --ssh)")
-            else:
-                print("(UPnP successfully negotiated with router)")
-        else:
-            print("Failed to generate SSH Token.")
-
-        print("="*60 + "\n")
-        print("Students can join by running: %mc_start_app <Token>\n")
+        self._print_connection_hub()
 
     @line_magic
     def pp_stop_world(self, line):
@@ -842,10 +849,6 @@ class MCShell(Magics):
     @line_magic
     def pp_join_world(self,line):
         """Join an existing world using and start an app server"""
-        # Safety Check: Is this world currently running?
-        if self.active_paper_server and self.active_paper_server.is_alive():
-            print("Please stop the currently running world first with: %pp_stop_world")
-            return
         self.ip.run_line_magic('mc_start_app',line)
 
     def _send(self,kind,*args):
@@ -964,10 +967,58 @@ class MCShell(Magics):
             print("[red bold]login failed[/]")
 
     @line_magic
-    def mc_server_info(self,line):
-        _mcc = self._get_client()
-        pprint(self.server_data)
+    def mc_server_info(self, line):
+        """Check server status, list connected players, configuration, and connection hub."""
+        print("="*60)
+        print("🖥️  MC-SHELL SERVER DASHBOARD")
+        print("="*60)
 
+        # 1. App Server (mc-ed) Status
+        if self.app_server_thread and self.app_server_thread.is_alive():
+            print(f"🟢 Editor App Server  : RUNNING")
+            print(f"   Editor URL         : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}")
+        else:
+            print("🔴 Editor App Server  : STOPPED")
+
+        # 2. Paper Server Status (Host only)
+        is_host = self.active_paper_server and self.active_paper_server.is_alive()
+        if is_host:
+            world = self.active_paper_server.world_name
+            print(f"🟢 Local Paper Server : RUNNING (World: '{world}')")
+        else:
+            print("🔴 Local Paper Server : STOPPED")
+
+        # 3. Connection & Player Info
+        if (self.app_server_thread and self.app_server_thread.is_alive()) or is_host:
+            print(f"\n⚙️  Active Configuration:")
+            if not is_host:
+                print(f"   Remote Host        : {self.server_data.get('host', 'Unknown')}")
+            print(f"   Minecraft Port     : {self.server_data.get('port', 25565)}")
+            print(f"   RCON Port          : {self.server_data.get('rcon_port', 25575)}")
+            print(f"   McJuice Port       : {self.server_data.get('mj_port', 4721)}")
+
+            password = self.server_data.get('password')
+            if password:
+                print(f"   Server Password    : {password}")
+
+            # Fetch players via RCON
+            try:
+                # Disable printing of the raw auth rejection to keep the dashboard clean
+                response = self._get_client().run('list')
+                if response:
+                    print(f"\n👥 {response}")
+                else:
+                    print("\n👥 Minecraft Players: No response from server.")
+            except Exception:
+                print("\n👥 Minecraft Players: Could not retrieve player list via RCON.")
+
+            # Only print Connection Hub if you are the host
+            if is_host:
+                self._print_connection_hub()
+        else:
+            print("\nTo start a local world, run: %pp_start_world <world_name>")
+            print("To join a remote world, run: %pp_join_world <Token>")
+            print("="*60)
 
     @line_magic
     def mc_help(self, line):
@@ -1507,10 +1558,24 @@ class MCShell(Magics):
 
         print(f"\n" + "="*55)
         print(f"🎮 READY TO PLAY! Enter this into Minecraft:")
-        if self.server_data['host'] == '127.0.0.1' or self.server_data['host'] == 'localhost':
+        if self.server_data['host'] in ('127.0.0.1', 'localhost'):
             mc_port_str = f":{self.server_data['port']}" if self.server_data['port'] != 25565 else ""
-            print(f"   Java Edition IP: localhost{mc_port_str}")
-            print(f"   Bedrock / iPad : (Requires Tailscale or Local LAN on Host)")
+
+            # Context Check: Are we the host, or a remote client using an SSH tunnel?
+            if self.active_paper_server and self.active_paper_server.is_alive():
+                # We are the host. Display our actual network IPs.
+                vpn_ip = get_vpn_ip()
+                local_ip = _get_local_ip()
+                if vpn_ip:
+                    print(f"   Java Edition IP: {local_ip}{mc_port_str} (LAN) or {vpn_ip}{mc_port_str} (VPN)")
+                    print(f"   Bedrock / iPad : {local_ip} (LAN) or {vpn_ip} (VPN)")
+                else:
+                    print(f"   Java Edition IP: {local_ip}{mc_port_str}")
+                    print(f"   Bedrock / iPad : {local_ip} (Default port 19132)")
+            else:
+                # We are a remote client using an SSH Tunnel.
+                print(f"   Java Edition IP: localhost{mc_port_str}")
+                print(f"   Bedrock / iPad : (Requires Tailscale or Local LAN on Host)")
         else:
             mc_port_str = f":{self.server_data['port']}" if self.server_data['port'] != 25565 else ""
             print(f"   Java Edition IP: {self.server_data['host']}{mc_port_str}")
@@ -1525,25 +1590,6 @@ class MCShell(Magics):
         # force another read of user_map.json or request user input
         self.mc_name = None
         self._disconnect_tailscale()
-
-    @line_magic
-    def mc_server_status(self,line):
-        '''Check if servers are running and list connected players.'''
-        if self.app_server_thread and self.app_server_thread.is_alive():
-            print("The mc-ed application server is running.")
-        else:
-            print("The mc-ed application server is NOT running.")
-
-        if self.active_paper_server and self.active_paper_server.is_alive():
-            print(f"The Paper Minecraft server is running (World: {self.active_paper_server.world_name}).")
-            try:
-                # Query RCON for the player list
-                response = self._get_client().run('list')
-                print(f"\nMinecraft Players: {response}")
-            except Exception:
-                print("Could not retrieve player list via RCON.")
-        else:
-            print("The Paper Minecraft server is NOT running.")
 
     @line_magic
     def mc_invite_player(self, line):
