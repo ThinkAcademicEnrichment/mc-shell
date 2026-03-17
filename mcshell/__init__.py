@@ -213,6 +213,34 @@ class MCShell(Magics):
 
         self.active_paper_server: Optional[PaperServerManager ,None ] = None
 
+        # Track if this session automatically joined Tailscale so we can clean it up
+        self.managed_tailscale = False
+
+    def _disconnect_tailscale(self):
+        """Automatically logs out of Tailscale if we were the ones who brought it up."""
+        if getattr(self, 'managed_tailscale', False):
+            print("\n[TAILSCALE] Disconnecting from classroom VPN...")
+            import subprocess
+            import platform
+
+            sys_os = platform.system().lower()
+            is_wsl = 'linux' in sys_os and ('microsoft' in platform.release().lower() or 'wsl' in platform.release().lower())
+
+            cmd = ["sudo", "tailscale", "logout"]
+            if is_wsl:
+                cmd = ["tailscale.exe", "logout"]
+            elif sys_os == 'windows':
+                cmd = ["tailscale", "logout"]
+            elif sys_os == 'darwin':
+                cmd = ["/Applications/Tailscale.app/Contents/MacOS/Tailscale", "logout"]
+
+            try:
+                # 'logout' completely purges the ephemeral node from the network instantly
+                subprocess.run(cmd, check=False, capture_output=True)
+                self.managed_tailscale = False
+                print("[TAILSCALE] Disconnected successfully.")
+            except Exception as e:
+                print(f"[TAILSCALE WARNING] Could not disconnect automatically: {e}")
 
     def _complete_world_command(self, ipyshell, event):
         ipyshell.user_ns.update(dict(rcon_event=event))
@@ -542,25 +570,24 @@ class MCShell(Magics):
             print("Share this exact command with students to instantly connect them:")
             print(f"  %mc_start_app {_make_direct_token(primary_ip)} --authkey {authkey}")
 
-            print("\n[ LOCAL LAN CONNECTION (Same Wi-Fi) ]")
-            print(f"Token : {_make_direct_token(local_ip)}")
-        else:
-            # Fallback to standard token output
-            print("\n[ DIRECT CONNECTION (No SSH Required) ]")
-            print(f"Local LAN Token : {_make_direct_token(local_ip)}")
-            if vpn_ip:
-                print(f"Tailscale Token : {_make_direct_token(vpn_ip)}")
+        # Standard direct tokens
+        print("\n[ DIRECT CONNECTION (No SSH Required) ]")
+        print(f"Local LAN Token : {_make_direct_token(local_ip)}")
+        # Only show the raw Tailscale token if we aren't already giving them the automated authkey command
+        if vpn_ip and not authkey:
+            print(f"Tailscale Token : {_make_direct_token(vpn_ip)}")
 
-            print("\n[ SECURE SSH TUNNEL (Internet) ]")
-            if token:
-                print(f"Token : {token}")
-                token_ip = token.split(':')[0]
-                if token_ip == local_ip:
-                    print("(Warning: Token uses Local IP. For internet play, restart with: --upnp)")
-                else:
-                    print("(UPnP successfully negotiated with router)")
+        # SSH Tunnel
+        print("\n[ SECURE SSH TUNNEL (Internet Fallback) ]")
+        if token:
+            print(f"Token : {token}")
+            token_ip = token.split(':')[0]
+            if token_ip == local_ip:
+                print("(Warning: Token uses Local IP. For internet play, restart with: --upnp)")
             else:
-                print("Failed to generate SSH Token.")
+                print("(UPnP successfully negotiated with router)")
+        else:
+            print("Failed to generate SSH Token.")
 
         print("="*60 + "\n")
         print("Students can join by running: %mc_start_app <Token>\n")
@@ -1280,18 +1307,37 @@ class MCShell(Magics):
         if authkey:
             print("\n[TAILSCALE] Authenticating device to classroom VPN...")
             import subprocess
+            import platform
+
+            sys_os = platform.system().lower()
+            # Detect if running inside Windows Subsystem for Linux
+            is_wsl = 'linux' in sys_os and ('microsoft' in platform.release().lower() or 'wsl' in platform.release().lower())
+
+            # Build the platform-specific command
+            cmd = ["sudo", "tailscale", "up", f"--authkey={authkey}", "--accept-routes", "--force-reauth"]
+
+            if is_wsl:
+                print("[TAILSCALE] WSL Environment Detected. Routing to Windows host...")
+                cmd = ["tailscale.exe", "up", f"--authkey={authkey}", "--accept-routes", "--force-reauth"]
+            elif sys_os == 'windows':
+                cmd = ["tailscale", "up", f"--authkey={authkey}", "--accept-routes", "--force-reauth"]
+            elif sys_os == 'darwin':
+                cmd = ["/Applications/Tailscale.app/Contents/MacOS/Tailscale", "up", f"--authkey={authkey}", "--accept-routes", "--force-reauth"]
+
             try:
-                # --force-reauth ensures we overwrite any existing login securely
-                subprocess.run(
-                    ["sudo", "tailscale", "up", f"--authkey={authkey}", "--accept-routes", "--force-reauth"],
-                    check=True
-                )
+                subprocess.run(cmd, check=True)
+                self.managed_tailscale = True
                 print("[TAILSCALE] Connected to classroom VPN successfully!\n")
                 time.sleep(1) # Give the network interface a moment to stabilize
             except subprocess.CalledProcessError:
-                print("[TAILSCALE WARNING] Failed to automatically connect. You may need to run 'sudo tailscale up' manually.\n")
+                print("[TAILSCALE WARNING] Failed to automatically connect. You may need to run Tailscale manually.\n")
             except FileNotFoundError:
-                print("[TAILSCALE WARNING] 'tailscale' command not found. Is Tailscale installed?\n")
+                if sys_os == 'darwin':
+                    print("[TAILSCALE WARNING] Tailscale App not found in /Applications. Is it installed?\n")
+                elif is_wsl or sys_os == 'windows':
+                    print("[TAILSCALE WARNING] 'tailscale.exe' not found. Please install the Windows Tailscale app.\n")
+                else:
+                    print("[TAILSCALE WARNING] 'tailscale' command not found. Is Tailscale installed?\n")
 
         if not token:
             self.server_data = {
@@ -1392,6 +1438,7 @@ class MCShell(Magics):
         stop_app_server()
         # force another read of user_map.json or request user input
         self.mc_name = None
+        self._disconnect_tailscale()
 
     @line_magic
     def mc_server_status(self,line):
@@ -1844,6 +1891,10 @@ def load_ipython_extension(ip):
         print("\nIPython is shutting down. Stopping active mc-shell session...")
         if mcshell_instance.active_paper_server and mcshell_instance.active_paper_server.is_alive():
             mcshell_instance.pp_stop_world('')
+
+        # Clean up Tailscale if the user just hits Ctrl+D instead of %mc_stop_app
+        mcshell_instance._disconnect_tailscale()
+
         print("Cleanup complete.")
 
     atexit.register(shutdown_hook)
