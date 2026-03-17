@@ -447,37 +447,27 @@ class MCShell(Magics):
         """
         Starts a Paper server for a given world name.
         If another server is running, it will be stopped first.
-        Usage: %pp_start_world <world_name> [--secure [upnp]]
+        Usage: %pp_start_world <world_name> [--upnp]
         """
 
-        # Orthogonal flag extraction
-        is_secure = '--secure' in line
-        use_upnp = False
+        # Check if the user is requesting router port mapping
+        use_upnp = '--upnp' in line
 
-        if is_secure:
+        if use_upnp:
             parts = line.split()
-            idx = parts.index('--secure')
-            # Extract optional modifier (upnp) following the secure flag
-            if idx + 1 < len(parts) and not parts[idx + 1].startswith('--'):
-                mod = parts.pop(idx + 1)
-                if mod.lower() == 'upnp':
-                    use_upnp = True
-            parts.remove('--secure')
+            if '--upnp' in parts:
+                parts.remove('--upnp')
             line = ' '.join(parts)
 
-            extra_server_properties = {
-                'server-ip' : '127.0.0.1',
-                'mcjuice-host': '127.0.0.1'
-            }
-        else:
-            extra_server_properties = {
-                'server-ip': '0.0.0.0',
-                'mcjuice-host': '0.0.0.0'
-            }
+        # Omni-Routing: Always bind to 0.0.0.0 so LAN, Tailscale, and SSH can hit it simultaneously
+        extra_server_properties = {
+            'server-ip': '0.0.0.0',
+            'mcjuice-host': '0.0.0.0'
+        }
 
         world_name = line.strip()
         if not world_name:
-            print("Error: Please provide a world name. Usage: %pp_start <world_name>")
+            print("Error: Please provide a world name. Usage: %pp_start_world <world_name>")
             return
 
         # Stop any currently active server session first
@@ -524,50 +514,35 @@ class MCShell(Magics):
                 return ip
             return f"{ip}@{mc_p}-{rcon_p}-{mj_p}"
 
-        if is_secure:
-            print("Starting secure SSH tunnel gateway...")
-            token = _start_secure_tunnel_host(self.server_data['port'], self.server_data['rcon_port'], self.server_data['mj_port'], use_upnp=use_upnp)
+        # Start the background SSH Tunnel gateway automatically
+        print("Starting secure SSH tunnel gateway in the background...")
+        token = _start_secure_tunnel_host(self.server_data['port'], self.server_data['rcon_port'], self.server_data['mj_port'], use_upnp=use_upnp)
 
-            if token:
-                vpn_ip = get_vpn_ip()
+        vpn_ip = get_vpn_ip()
+        local_ip = _get_local_ip()
 
-                print(f"\n[SECURE HOST] Local Gateway active!")
-                if vpn_ip:
-                    print("\n🌐 TAILSCALE DETECTED (Recommended for all players)")
-                    print(f"Java Join Code: { _make_direct_token(vpn_ip) }")
-                    print(f"Bedrock/iPad IP: {vpn_ip}")
+        print(f"\n" + "="*60)
+        print("🌍 CONNECTION HUB: Share these tokens with friends!")
+        print("="*60)
 
-                    print("\n🔒 SSH FALLBACK (Java PC/Mac only, requires UPnP or Local LAN)")
-                    print(f"Java Join Code: {token}")
-                else:
-                    local_ip = token.split(':')[0]
-                    print(f"\n🔒 SSH TUNNEL ACTIVE (Java PC/Mac only, requires UPnP or Local LAN)")
-                    print(f"Java Join Code: {token}")
-                    print("\n🌐 TAILSCALE & LOCAL NETWORK PLAYERS:")
-                    print("If you have Tailscale installed, OR your network uses a Tailscale Subnet Router:")
-                    print(f"Java Join Code: { _make_direct_token(local_ip) }")
-                    print(f"Bedrock/iPad IP: {local_ip}")
-                    print("(If you aren't using Tailscale yet, we highly recommend it to easily bypass firewalls!)")
-            else:
-                print("\n[SECURE HOST] Failed to generate Join Code.\n")
+        if vpn_ip:
+            print("\n[ TAILSCALE DETECTED (Recommended for Internet Play) ]")
+            print(f"Java Edition Token : {_make_direct_token(vpn_ip)}")
+            print(f"Bedrock/iPad IP    : {vpn_ip}")
+
+        print("\n[ LOCAL NETWORK (Same Wi-Fi only) ]")
+        print(f"Java Edition Token : {_make_direct_token(local_ip)}")
+        print(f"Bedrock/iPad IP    : {local_ip}")
+
+        if token:
+            print("\n[ SSH FALLBACK (Java PC/Mac over Internet) ]")
+            if use_upnp:
+                print("(UPnP Negotiated with router)")
+            print(f"Java Edition Token : {token}")
         else:
-            vpn_ip = get_vpn_ip()
-            local_ip = _get_local_ip()
-
-            print(f"\n[LOCAL HOST] Server active on local interfaces!")
-            if vpn_ip:
-                print("\n🌐 TAILSCALE DETECTED (Recommended for remote players)")
-                print(f"Java Join Code: { _make_direct_token(vpn_ip) }")
-                print(f"Bedrock/iPad IP: {vpn_ip}")
-
-            print("\n🏠 LOCAL NETWORK (Same Wi-Fi only)")
-            print(f"Java Join Code: { _make_direct_token(local_ip) }")
-            print(f"Bedrock/iPad IP: {local_ip}")
-
-            if not vpn_ip:
-                print("\n💡 TIP: To play securely over the internet with friends, restart the server")
-                print("using: %pp_start_world <world_name> --secure")
-                print("OR install Tailscale for the best experience!")
+            print("\n[ SSH FALLBACK ] Failed to generate Join Code.")
+        print("="*60 + "\n")
+        print("Students can join by running: %mc_start_app <Token>\n")
 
     @line_magic
     def pp_stop_world(self, line):
