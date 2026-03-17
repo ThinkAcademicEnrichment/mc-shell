@@ -267,17 +267,23 @@ class MCShell(Magics):
             sys_os = platform.system().lower()
             is_wsl = 'linux' in sys_os and ('microsoft' in platform.release().lower() or 'wsl' in platform.release().lower())
 
-            cmd = ["sudo", "tailscale", "logout"]
+            cmd_down = ["sudo", "tailscale", "down"]
+            cmd_logout = ["sudo", "tailscale", "logout"]
             if is_wsl:
-                cmd = ["tailscale.exe", "logout"]
+                cmd_down = ["tailscale.exe", "down"]
+                cmd_logout = ["tailscale.exe", "logout"]
             elif sys_os == 'windows':
-                cmd = ["tailscale", "logout"]
+                cmd_down = ["tailscale", "down"]
+                cmd_logout = ["tailscale", "logout"]
             elif sys_os == 'darwin':
-                cmd = ["/Applications/Tailscale.app/Contents/MacOS/Tailscale", "logout"]
+                cmd_down = ["/Applications/Tailscale.app/Contents/MacOS/Tailscale", "down"]
+                cmd_logout = ["/Applications/Tailscale.app/Contents/MacOS/Tailscale", "logout"]
 
             try:
+                # 'down' brings the interface down cleanly before purging credentials
+                subprocess.run(cmd_down, check=False, capture_output=True)
                 # 'logout' completely purges the ephemeral node from the network instantly
-                subprocess.run(cmd, check=False, capture_output=True)
+                subprocess.run(cmd_logout, check=False, capture_output=True)
                 self.managed_tailscale = False
                 print("[TAILSCALE] Disconnected successfully.")
             except Exception as e:
