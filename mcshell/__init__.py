@@ -222,13 +222,17 @@ class MCShell(Magics):
         import subprocess
         import platform
         import time
+        import shutil
 
         sys_os = platform.system().lower()
         # Detect if running inside Windows Subsystem for Linux
         is_wsl = 'linux' in sys_os and ('microsoft' in platform.release().lower() or 'wsl' in platform.release().lower())
 
+        # Resolve absolute path to bypass strict 'sudo' secure_path restrictions on Linux
+        tailscale_bin = shutil.which("tailscale") or "tailscale"
+
         # Build the platform-specific command
-        cmd = ["sudo", "tailscale", "up", f"--authkey={authkey}", "--force-reauth"]
+        cmd = ["sudo", tailscale_bin, "up", f"--authkey={authkey}", "--force-reauth"]
 
         if is_wsl:
             print("[TAILSCALE] WSL Environment Detected. Routing to Windows host...")
@@ -263,12 +267,15 @@ class MCShell(Magics):
             print("\n[TAILSCALE] Disconnecting from VPN...")
             import subprocess
             import platform
+            import shutil
 
             sys_os = platform.system().lower()
             is_wsl = 'linux' in sys_os and ('microsoft' in platform.release().lower() or 'wsl' in platform.release().lower())
 
-            cmd_down = ["sudo", "tailscale", "down"]
-            cmd_logout = ["sudo", "tailscale", "logout"]
+            tailscale_bin = shutil.which("tailscale") or "tailscale"
+
+            cmd_down = ["sudo", tailscale_bin, "down"]
+            cmd_logout = ["sudo", tailscale_bin, "logout"]
             if is_wsl:
                 cmd_down = ["tailscale.exe", "down"]
                 cmd_logout = ["tailscale.exe", "logout"]
@@ -288,7 +295,6 @@ class MCShell(Magics):
                 print("[TAILSCALE] Disconnected successfully.")
             except Exception as e:
                 print(f"[TAILSCALE WARNING] Could not disconnect automatically: {e}")
-
 
     def _complete_world_command(self, ipyshell, event):
         ipyshell.user_ns.update(dict(rcon_event=event))
@@ -523,7 +529,7 @@ class MCShell(Magics):
         """
         Starts a Paper server for a given world name.
         If another server is running, it will be stopped first.
-        Usage: %pp_start_world <world_name> [--ssh] [--authkey <key>]
+        Usage: %pp_start_world <world_name> [--ssh] [--authkey <key> | --clear-authkey] [--subnet | --node]
         """
 
         # Check if the user is requesting router port mapping for the SSH tunnel
@@ -532,6 +538,14 @@ class MCShell(Magics):
             parts = line.split()
             if '--ssh' in parts:
                 parts.remove('--ssh')
+            line = ' '.join(parts)
+
+        # Check if the user wants to wipe the cached auth key
+        clear_authkey = '--clear-authkey' in line
+        if clear_authkey:
+            parts = line.split()
+            if '--clear-authkey' in parts:
+                parts.remove('--clear-authkey')
             line = ' '.join(parts)
 
         # Check for Tailscale Auth Key automation from the command line
@@ -543,6 +557,19 @@ class MCShell(Magics):
                 if idx + 1 < len(parts):
                     cli_authkey = parts.pop(idx + 1)
                 parts.remove('--authkey')
+            line = ' '.join(parts)
+
+        # Check for Tailscale routing mode overrides
+        use_subnet_override = None
+        if '--subnet' in line:
+            use_subnet_override = True
+            parts = line.split()
+            if '--subnet' in parts: parts.remove('--subnet')
+            line = ' '.join(parts)
+        elif '--node' in line:
+            use_subnet_override = False
+            parts = line.split()
+            if '--node' in parts: parts.remove('--node')
             line = ' '.join(parts)
 
         world_name = line.strip()
@@ -557,21 +584,30 @@ class MCShell(Magics):
             print(f"Please create it first with: %pp_create_world {world_name}")
             return
 
-        # 1. Load the existing credentials early to grab the cached Auth Key
+        # 1. Load the existing credentials early to grab the cached Auth Key and settings
         creds_path = world_directory / '.mc_creds.json'
         with creds_path.open('r') as f:
             self.server_data = json.load(f)
 
-        # 2. Update and securely save the Auth Key if provided, else read the cache
-        if cli_authkey:
-            self.server_data['tailscale_authkey'] = cli_authkey
+        # 2. Evaluate final authkey and routing mode from cache vs CLI
+        if clear_authkey:
+            authkey = None
+            if 'tailscale_authkey' in self.server_data:
+                del self.server_data['tailscale_authkey']
+        else:
+            authkey = cli_authkey if cli_authkey else self.server_data.get('tailscale_authkey')
+
+        use_subnet = use_subnet_override if use_subnet_override is not None else self.server_data.get('tailscale_subnet_mode', False)
+
+        # 3. Update and securely save the cache if anything changed
+        if cli_authkey or use_subnet_override is not None or clear_authkey:
+            if authkey:
+                self.server_data['tailscale_authkey'] = authkey
+            self.server_data['tailscale_subnet_mode'] = use_subnet
             with creds_path.open('w') as f:
                 json.dump(self.server_data, f)
             creds_path.chmod(0o600)  # Ensure it remains secure
-            authkey = cli_authkey
-            print(f"--- Saved new Tailscale Auth Key for world '{world_name}' ---")
-        else:
-            authkey = self.server_data.get('tailscale_authkey')
+            print(f"--- Updated Tailscale settings for world '{world_name}' ---")
 
         # Stop any currently active server session first
         if self.active_paper_server and self.active_paper_server.is_alive():
@@ -615,8 +651,8 @@ class MCShell(Magics):
         print("Starting secure SSH tunnel gateway in the background...")
         token = _start_secure_tunnel_host(self.server_data['port'], self.server_data['rcon_port'], self.server_data['mj_port'], use_ssh=use_ssh)
 
-        # Cross-platform automated host login
-        if authkey:
+        # Cross-platform automated host login (ONLY if we aren't relying on an external Subnet Router)
+        if authkey and not use_subnet:
             self._connect_tailscale(authkey, accept_routes=False)
 
         vpn_ip = get_vpn_ip()
@@ -628,10 +664,20 @@ class MCShell(Magics):
 
         if authkey:
             # Automated Classroom UX: Give the students a single copy-paste token
-            primary_ip = vpn_ip if vpn_ip else local_ip
-            vpn_token = f"{_make_direct_token(primary_ip)}^{authkey}"
-            print("\n[ CLASSROOM VPN CONNECTION (Automated Tailscale) ]")
-            print(f"Token : {vpn_token}")
+            if use_subnet:
+                primary_ip = local_ip
+                vpn_token = f"{_make_direct_token(primary_ip)}^{authkey}"
+                print("\n[ CLASSROOM VPN CONNECTION (Subnet Router Mode) ]")
+                print(f"Token : {vpn_token}")
+            else:
+                if vpn_ip:
+                    vpn_token = f"{_make_direct_token(vpn_ip)}^{authkey}"
+                    print("\n[ CLASSROOM VPN CONNECTION (Node-to-Node Mode) ]")
+                    print(f"Token : {vpn_token}")
+                else:
+                    print("\n[ CLASSROOM VPN CONNECTION (Node-to-Node Mode) ]")
+                    print("⚠️  ERROR: Tailscale failed to acquire a VPN IP.")
+                    print("⚠️  Cannot generate an automated remote token. Check your Tailscale installation.")
 
         # Standard direct tokens
         print("\n[ DIRECT CONNECTION (No SSH Required) ]")
