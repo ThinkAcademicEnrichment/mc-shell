@@ -521,26 +521,29 @@ class MCShell(Magics):
         vpn_ip = get_vpn_ip()
         local_ip = _get_local_ip()
 
+        primary_ip = vpn_ip if vpn_ip else local_ip
+        network_label = "TAILSCALE/VPN" if vpn_ip else "LOCAL NETWORK"
+
         print(f"\n" + "="*60)
         print("🌍 CONNECTION HUB: Share these tokens with friends!")
         print("="*60)
 
-        if vpn_ip:
-            print("\n[ TAILSCALE DETECTED (Recommended for Internet Play) ]")
-            print(f"Java Edition Token : {_make_direct_token(vpn_ip)}")
-            print(f"Bedrock/iPad IP    : {vpn_ip}")
-
-        print("\n[ LOCAL NETWORK (Same Wi-Fi only) ]")
-        print(f"Java Edition Token : {_make_direct_token(local_ip)}")
-        print(f"Bedrock/iPad IP    : {local_ip}")
+        print(f"\n[ {network_label} CONNECTION ]")
+        print(f"Token : {_make_direct_token(primary_ip)}")
 
         if token:
-            print("\n[ SSH FALLBACK (Java PC/Mac over Internet) ]")
-            if use_upnp:
-                print("(UPnP Negotiated with router)")
-            print(f"Java Edition Token : {token}")
+            token_ip = token.split(':')[0]
+            if token_ip == local_ip:
+                print("\n[ SSH TUNNEL (Local Network Fallback) ]")
+                print(f"Token : {token}")
+                print("(For internet play without Tailscale, restart with: --upnp)")
+            else:
+                print("\n[ SSH TUNNEL (Remote Internet Play) ]")
+                print("(UPnP Successfully Negotiated with Router)")
+                print(f"Token : {token}")
         else:
-            print("\n[ SSH FALLBACK ] Failed to generate Join Code.")
+            print("\n[ SSH TUNNEL ] Failed to generate Token.")
+
         print("="*60 + "\n")
         print("Students can join by running: %mc_start_app <Token>\n")
 
