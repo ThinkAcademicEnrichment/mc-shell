@@ -216,6 +216,47 @@ class MCShell(Magics):
         # Track if this session automatically joined Tailscale so we can clean it up
         self.managed_tailscale = False
 
+    def _connect_tailscale(self, authkey: str, accept_routes: bool = False):
+        """Automatically authenticates and connects to Tailscale cross-platform."""
+        print("\n[TAILSCALE] Authenticating device to VPN...")
+        import subprocess
+        import platform
+        import time
+
+        sys_os = platform.system().lower()
+        # Detect if running inside Windows Subsystem for Linux
+        is_wsl = 'linux' in sys_os and ('microsoft' in platform.release().lower() or 'wsl' in platform.release().lower())
+
+        # Build the platform-specific command
+        cmd = ["sudo", "tailscale", "up", f"--authkey={authkey}", "--force-reauth"]
+
+        if is_wsl:
+            print("[TAILSCALE] WSL Environment Detected. Routing to Windows host...")
+            cmd = ["tailscale.exe", "up", f"--authkey={authkey}", "--force-reauth"]
+        elif sys_os == 'windows':
+            cmd = ["tailscale", "up", f"--authkey={authkey}", "--force-reauth"]
+        elif sys_os == 'darwin':
+            cmd = ["/Applications/Tailscale.app/Contents/MacOS/Tailscale", "up", f"--authkey={authkey}", "--force-reauth"]
+
+        # Only clients need to explicitly accept subnet routes
+        if accept_routes:
+            cmd.append("--accept-routes")
+
+        try:
+            subprocess.run(cmd, check=True)
+            self.managed_tailscale = True
+            print("[TAILSCALE] Connected to VPN successfully!\n")
+            time.sleep(3) # Give the OS network interface a moment to stabilize and acquire its IP
+        except subprocess.CalledProcessError:
+            print("[TAILSCALE WARNING] Failed to automatically connect. You may need to run Tailscale manually.\n")
+        except FileNotFoundError:
+            if sys_os == 'darwin':
+                print("[TAILSCALE WARNING] Tailscale App not found in /Applications. Is it installed?\n")
+            elif is_wsl or sys_os == 'windows':
+                print("[TAILSCALE WARNING] 'tailscale.exe' not found. Please install the Windows Tailscale app.\n")
+            else:
+                print("[TAILSCALE WARNING] 'tailscale' command not found. Is Tailscale installed?\n")
+
     def _disconnect_tailscale(self):
         """Automatically logs out of Tailscale if we were the ones who brought it up."""
         if getattr(self, 'managed_tailscale', False):
@@ -568,6 +609,10 @@ class MCShell(Magics):
         print("Starting secure SSH tunnel gateway in the background...")
         token = _start_secure_tunnel_host(self.server_data['port'], self.server_data['rcon_port'], self.server_data['mj_port'], use_ssh=use_ssh)
 
+        # Cross-platform automated host login
+        if authkey:
+            self._connect_tailscale(authkey, accept_routes=False)
+
         vpn_ip = get_vpn_ip()
         local_ip = _get_local_ip()
 
@@ -745,6 +790,10 @@ class MCShell(Magics):
     @line_magic
     def pp_join_world(self,line):
         """Join an existing world using and start an app server"""
+        # Safety Check: Is this world currently running?
+        if self.active_paper_server and self.active_paper_server.is_alive():
+            print("Please stop the currently running world first with: %pp_stop_world")
+            return
         self.ip.run_line_magic('mc_start_app',line)
 
     def _send(self,kind,*args):
@@ -1321,39 +1370,8 @@ class MCShell(Magics):
             authkey = extracted_key if extracted_key else authkey
 
         if authkey:
-            print("\n[TAILSCALE] Authenticating device to classroom VPN...")
-            import subprocess
-            import platform
-
-            sys_os = platform.system().lower()
-            # Detect if running inside Windows Subsystem for Linux
-            is_wsl = 'linux' in sys_os and ('microsoft' in platform.release().lower() or 'wsl' in platform.release().lower())
-
-            # Build the platform-specific command
-            cmd = ["sudo", "tailscale", "up", f"--authkey={authkey}", "--accept-routes", "--force-reauth"]
-
-            if is_wsl:
-                print("[TAILSCALE] WSL Environment Detected. Routing to Windows host...")
-                cmd = ["tailscale.exe", "up", f"--authkey={authkey}", "--accept-routes", "--force-reauth"]
-            elif sys_os == 'windows':
-                cmd = ["tailscale", "up", f"--authkey={authkey}", "--accept-routes", "--force-reauth"]
-            elif sys_os == 'darwin':
-                cmd = ["/Applications/Tailscale.app/Contents/MacOS/Tailscale", "up", f"--authkey={authkey}", "--accept-routes", "--force-reauth"]
-
-            try:
-                subprocess.run(cmd, check=True)
-                self.managed_tailscale = True
-                print("[TAILSCALE] Connected to classroom VPN successfully!\n")
-                time.sleep(1) # Give the network interface a moment to stabilize
-            except subprocess.CalledProcessError:
-                print("[TAILSCALE WARNING] Failed to automatically connect. You may need to run Tailscale manually.\n")
-            except FileNotFoundError:
-                if sys_os == 'darwin':
-                    print("[TAILSCALE WARNING] Tailscale App not found in /Applications. Is it installed?\n")
-                elif is_wsl or sys_os == 'windows':
-                    print("[TAILSCALE WARNING] 'tailscale.exe' not found. Please install the Windows Tailscale app.\n")
-                else:
-                    print("[TAILSCALE WARNING] 'tailscale' command not found. Is Tailscale installed?\n")
+            # Cross-platform automated client login (must accept routes to see host LANs)
+            self._connect_tailscale(authkey, accept_routes=True)
 
         if not token:
             self.server_data = {
