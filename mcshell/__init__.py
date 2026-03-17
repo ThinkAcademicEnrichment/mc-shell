@@ -745,10 +745,6 @@ class MCShell(Magics):
     @line_magic
     def pp_join_world(self,line):
         """Join an existing world using and start an app server"""
-        # Safety Check: Is this world currently running?
-        if self.active_paper_server and self.active_paper_server.is_alive():
-            print("Please stop the currently running world first with: %pp_stop_world")
-            return
         self.ip.run_line_magic('mc_start_app',line)
 
     def _send(self,kind,*args):
