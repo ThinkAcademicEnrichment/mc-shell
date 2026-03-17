@@ -63,7 +63,7 @@ def _resolve_modrinth_plugin(project_id, mc_version):
         pass # Failsafe to fallback URLs
     return None
 
-def _run_tunnel_host_thread(mc_port, rcon_port, mj_port, out_token, use_upnp=False):
+def _run_tunnel_host_thread(mc_port, rcon_port, mj_port, out_token, use_ssh=False):
     async def host_task():
         # 1. Force integer types to ensure our logic works safely
         mc_port_i = int(mc_port)
@@ -78,7 +78,7 @@ def _run_tunnel_host_thread(mc_port, rcon_port, mj_port, out_token, use_upnp=Fal
 
         host_ip = None
 
-        if use_upnp:
+        if use_ssh:
             try:
                 import miniupnpc
                 upnp = miniupnpc.UPnP()
@@ -91,13 +91,13 @@ def _run_tunnel_host_thread(mc_port, rcon_port, mj_port, out_token, use_upnp=Fal
                 mapped = upnp.addportmapping(bound_port, 'TCP', upnp.lanaddr, bound_port, 'MC-Shell Secure Tunnel', '')
                 if mapped:
                     host_ip = external_ip
-                    print(f"\n[UPnP] Success! Router opened port {bound_port}.")
+                    print(f"\n[SSH TUNNEL] Success! Router opened port {bound_port}.")
                 else:
-                    print("\n[UPnP] Router denied mapping. Falling back to local network mode.")
+                    print("\n[SSH TUNNEL] Router denied UPnP mapping. Falling back to local network mode.")
             except ImportError:
-                print("\n[UPnP] 'miniupnpc' library missing. Falling back to local network mode.")
+                print("\n[SSH TUNNEL] 'miniupnpc' library missing. Falling back to local network mode.")
             except Exception as e:
-                print(f"\n[UPnP] Failed to configure router ({e}). Falling back to local network mode.")
+                print(f"\n[SSH TUNNEL] Failed to configure router UPnP ({e}). Falling back to local network mode.")
 
         if not host_ip:
             host_ip = _get_local_ip()
@@ -123,10 +123,10 @@ def _run_tunnel_host_thread(mc_port, rcon_port, mj_port, out_token, use_upnp=Fal
     except Exception as e:
         print(f"\n[Tunnel Host Error] {e}")
 
-def _start_secure_tunnel_host(mc_port, rcon_port, mj_port, use_upnp=False):
+def _start_secure_tunnel_host(mc_port, rcon_port, mj_port, use_ssh=False):
     out_token = []
     # Use daemon=True so the thread automatically dies when IPython exits
-    thread = Thread(target=_run_tunnel_host_thread, args=(mc_port, rcon_port, mj_port, out_token, use_upnp), daemon=True)
+    thread = Thread(target=_run_tunnel_host_thread, args=(mc_port, rcon_port, mj_port, out_token, use_ssh), daemon=True)
     thread.start()
 
     # Wait up to 5 seconds for the cryptographic keys and token to generate
@@ -241,6 +241,7 @@ class MCShell(Magics):
                 print("[TAILSCALE] Disconnected successfully.")
             except Exception as e:
                 print(f"[TAILSCALE WARNING] Could not disconnect automatically: {e}")
+
 
     def _complete_world_command(self, ipyshell, event):
         ipyshell.user_ns.update(dict(rcon_event=event))
@@ -475,45 +476,33 @@ class MCShell(Magics):
         """
         Starts a Paper server for a given world name.
         If another server is running, it will be stopped first.
-        Usage: %pp_start_world <world_name> [--upnp] [--authkey <key>]
+        Usage: %pp_start_world <world_name> [--ssh] [--authkey <key>]
         """
 
-        # Check if the user is requesting router port mapping
-        use_upnp = '--upnp' in line
-        if use_upnp:
+        # Check if the user is requesting router port mapping for the SSH tunnel
+        use_ssh = '--ssh' in line
+        if use_ssh:
             parts = line.split()
-            if '--upnp' in parts:
-                parts.remove('--upnp')
+            if '--ssh' in parts:
+                parts.remove('--ssh')
             line = ' '.join(parts)
 
-        # Check for Tailscale Auth Key automation
-        authkey = None
+        # Check for Tailscale Auth Key automation from the command line
+        cli_authkey = None
         if '--authkey' in line:
             parts = line.split()
             if '--authkey' in parts:
                 idx = parts.index('--authkey')
                 if idx + 1 < len(parts):
-                    authkey = parts.pop(idx + 1)
+                    cli_authkey = parts.pop(idx + 1)
                 parts.remove('--authkey')
             line = ' '.join(parts)
-
-        # Omni-Routing: Always bind to 0.0.0.0 so LAN, Tailscale, and SSH can hit it simultaneously
-        extra_server_properties = {
-            'server-ip': '0.0.0.0',
-            'mcjuice-host': '0.0.0.0'
-        }
 
         world_name = line.strip()
         if not world_name:
             print("Error: Please provide a world name. Usage: %pp_start_world <world_name>")
             return
 
-        # Stop any currently active server session first
-        if self.active_paper_server and self.active_paper_server.is_alive():
-            print(f"Stopping the currently active server for world '{self.active_paper_server.world_name}'...")
-            self.active_paper_server.stop()
-
-        # Define the directory for the new world
         world_directory = MC_WORLDS_BASE_DIR / world_name
 
         if not world_directory.exists():
@@ -521,7 +510,35 @@ class MCShell(Magics):
             print(f"Please create it first with: %pp_create_world {world_name}")
             return
 
+        # 1. Load the existing credentials early to grab the cached Auth Key
+        creds_path = world_directory / '.mc_creds.json'
+        with creds_path.open('r') as f:
+            self.server_data = json.load(f)
+
+        # 2. Update and securely save the Auth Key if provided, else read the cache
+        if cli_authkey:
+            self.server_data['tailscale_authkey'] = cli_authkey
+            with creds_path.open('w') as f:
+                json.dump(self.server_data, f)
+            creds_path.chmod(0o600)  # Ensure it remains secure
+            authkey = cli_authkey
+            print(f"--- Saved new Tailscale Auth Key for world '{world_name}' ---")
+        else:
+            authkey = self.server_data.get('tailscale_authkey')
+
+        # Stop any currently active server session first
+        if self.active_paper_server and self.active_paper_server.is_alive():
+            print(f"Stopping the currently active server for world '{self.active_paper_server.world_name}'...")
+            self.active_paper_server.stop()
+
+
         print(f"--- Starting new session for world: {world_name} ---")
+
+        # Omni-Routing: Always bind to 0.0.0.0 so LAN, Tailscale, and SSH can hit it simultaneously
+        extra_server_properties = {
+            'server-ip': '0.0.0.0',
+            'mcjuice-host': '0.0.0.0'
+        }
 
         # Start the Paper server
         self.active_paper_server = PaperServerManager(world_name, world_directory)
@@ -534,11 +551,6 @@ class MCShell(Magics):
         if not self.active_paper_server.is_alive():
             print("Could not start Paper server. Aborting.")
             return
-
-        creds_path = world_directory / '.mc_creds.json'
-
-        with creds_path.open('r') as f:
-            self.server_data = json.load(f)
 
         if not 'app_port' in list(self.server_data.keys()):
             self.server_data['app_port'] = 5001
@@ -554,7 +566,7 @@ class MCShell(Magics):
 
         # Start the background SSH Tunnel gateway automatically
         print("Starting secure SSH tunnel gateway in the background...")
-        token = _start_secure_tunnel_host(self.server_data['port'], self.server_data['rcon_port'], self.server_data['mj_port'], use_upnp=use_upnp)
+        token = _start_secure_tunnel_host(self.server_data['port'], self.server_data['rcon_port'], self.server_data['mj_port'], use_ssh=use_ssh)
 
         vpn_ip = get_vpn_ip()
         local_ip = _get_local_ip()
@@ -573,6 +585,7 @@ class MCShell(Magics):
         # Standard direct tokens
         print("\n[ DIRECT CONNECTION (No SSH Required) ]")
         print(f"Local LAN Token : {_make_direct_token(local_ip)}")
+
         # Only show the raw Tailscale token if we aren't already giving them the automated authkey command
         if vpn_ip and not authkey:
             print(f"Tailscale Token : {_make_direct_token(vpn_ip)}")
@@ -583,7 +596,7 @@ class MCShell(Magics):
             print(f"Token : {token}")
             token_ip = token.split(':')[0]
             if token_ip == local_ip:
-                print("(Warning: Token uses Local IP. For internet play, restart with: --upnp)")
+                print("(Warning: Token uses Local IP. For internet play, restart with: --ssh)")
             else:
                 print("(UPnP successfully negotiated with router)")
         else:
@@ -736,7 +749,7 @@ class MCShell(Magics):
         if self.active_paper_server and self.active_paper_server.is_alive():
             print("Please stop the currently running world first with: %pp_stop_world")
             return
-        self.ip.run_line_magic('mc_start_app',line)
+        self.ip.run_line_magic('mc_start_app','')
 
     def _send(self,kind,*args):
         assert kind in ('help','run','data')
@@ -1449,11 +1462,22 @@ class MCShell(Magics):
 
     @line_magic
     def mc_server_status(self,line):
-        '''Check if servers are running'''
+        '''Check if servers are running and list connected players.'''
         if self.app_server_thread and self.app_server_thread.is_alive():
-            print("The application server is running")
+            print("The mc-ed application server is running.")
         else:
-            print("The application server is not running")
+            print("The mc-ed application server is NOT running.")
+
+        if self.active_paper_server and self.active_paper_server.is_alive():
+            print(f"The Paper Minecraft server is running (World: {self.active_paper_server.world_name}).")
+            try:
+                # Query RCON for the player list
+                response = self._get_client().run('list')
+                print(f"\nMinecraft Players: {response}")
+            except Exception:
+                print("Could not retrieve player list via RCON.")
+        else:
+            print("The Paper Minecraft server is NOT running.")
 
     @line_magic
     def mc_invite_player(self, line):
