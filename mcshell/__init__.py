@@ -564,11 +564,11 @@ class MCShell(Magics):
         print("="*60)
 
         if authkey:
-            # Automated Classroom UX: Give the students a single copy-paste command
+            # Automated Classroom UX: Give the students a single copy-paste token
             primary_ip = vpn_ip if vpn_ip else local_ip
+            vpn_token = f"{_make_direct_token(primary_ip)}^{authkey}"
             print("\n[ CLASSROOM VPN CONNECTION (Automated Tailscale) ]")
-            print("Share this exact command with students to instantly connect them:")
-            print(f"  %mc_start_app {_make_direct_token(primary_ip)} --authkey {authkey}")
+            print(f"Token : {vpn_token}")
 
         # Standard direct tokens
         print("\n[ DIRECT CONNECTION (No SSH Required) ]")
@@ -736,7 +736,7 @@ class MCShell(Magics):
         if self.active_paper_server and self.active_paper_server.is_alive():
             print("Please stop the currently running world first with: %pp_stop_world")
             return
-        self.ip.run_line_magic('mc_start_app','')
+        self.ip.run_line_magic('mc_start_app',line)
 
     def _send(self,kind,*args):
         assert kind in ('help','run','data')
@@ -1299,10 +1299,17 @@ class MCShell(Magics):
 
         # Check for Tailscale Auth Key automation
         authkey = None
+
+        # Support legacy explicit flag
         if '--authkey' in parts:
             idx = parts.index('--authkey')
             if idx + 1 < len(parts):
                 authkey = parts[idx + 1]
+
+        # Extract embedded authkey from the new token paradigm (e.g. IP@ports^tskey-...)
+        if token and '^' in token:
+            token, extracted_key = token.split('^', 1)
+            authkey = extracted_key if extracted_key else authkey
 
         if authkey:
             print("\n[TAILSCALE] Authenticating device to classroom VPN...")
