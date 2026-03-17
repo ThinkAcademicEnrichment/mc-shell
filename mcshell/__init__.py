@@ -521,28 +521,26 @@ class MCShell(Magics):
         vpn_ip = get_vpn_ip()
         local_ip = _get_local_ip()
 
+        # If Tailscale is running directly on this machine, prefer the VPN IP.
+        # Otherwise, fall back to the Local IP (which also works for Subnet Routers).
         primary_ip = vpn_ip if vpn_ip else local_ip
-        network_label = "TAILSCALE/VPN" if vpn_ip else "LOCAL NETWORK"
 
         print(f"\n" + "="*60)
         print("🌍 CONNECTION HUB: Share these tokens with friends!")
         print("="*60)
 
-        print(f"\n[ {network_label} CONNECTION ]")
+        print("\n[ LOCAL / VPN CONNECTION ]")
         print(f"Token : {_make_direct_token(primary_ip)}")
 
+        print("\n[ REMOTE CONNECTION ]")
         if token:
-            token_ip = token.split(':')[0]
-            if token_ip == local_ip:
-                print("\n[ SSH TUNNEL (Local Network Fallback) ]")
-                print(f"Token : {token}")
-                print("(For internet play without Tailscale, restart with: --upnp)")
+            print(f"Token : {token}")
+            if use_upnp:
+                print("(UPnP successfully negotiated with router)")
             else:
-                print("\n[ SSH TUNNEL (Remote Internet Play) ]")
-                print("(UPnP Successfully Negotiated with Router)")
-                print(f"Token : {token}")
+                print("(For internet play without a VPN, restart with: --upnp)")
         else:
-            print("\n[ SSH TUNNEL ] Failed to generate Token.")
+            print("Failed to generate Remote Token.")
 
         print("="*60 + "\n")
         print("Students can join by running: %mc_start_app <Token>\n")
