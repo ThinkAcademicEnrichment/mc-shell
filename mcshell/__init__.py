@@ -447,16 +447,26 @@ class MCShell(Magics):
         """
         Starts a Paper server for a given world name.
         If another server is running, it will be stopped first.
-        Usage: %pp_start_world <world_name> [--upnp]
+        Usage: %pp_start_world <world_name> [--upnp] [--authkey <key>]
         """
 
         # Check if the user is requesting router port mapping
         use_upnp = '--upnp' in line
-
         if use_upnp:
             parts = line.split()
             if '--upnp' in parts:
                 parts.remove('--upnp')
+            line = ' '.join(parts)
+
+        # Check for Tailscale Auth Key automation
+        authkey = None
+        if '--authkey' in line:
+            parts = line.split()
+            if '--authkey' in parts:
+                idx = parts.index('--authkey')
+                if idx + 1 < len(parts):
+                    authkey = parts.pop(idx + 1)
+                parts.remove('--authkey')
             line = ' '.join(parts)
 
         # Omni-Routing: Always bind to 0.0.0.0 so LAN, Tailscale, and SSH can hit it simultaneously
@@ -525,21 +535,32 @@ class MCShell(Magics):
         print("🌍 CONNECTION HUB: Share these tokens with friends!")
         print("="*60)
 
-        print("\n[ DIRECT CONNECTION (No SSH Required) ]")
-        print(f"Local LAN Token : {_make_direct_token(local_ip)}")
-        if vpn_ip:
-            print(f"Tailscale Token : {_make_direct_token(vpn_ip)}")
+        if authkey:
+            # Automated Classroom UX: Give the students a single copy-paste command
+            primary_ip = vpn_ip if vpn_ip else local_ip
+            print("\n[ CLASSROOM VPN CONNECTION (Automated Tailscale) ]")
+            print("Share this exact command with students to instantly connect them:")
+            print(f"  %mc_start_app {_make_direct_token(primary_ip)} --authkey {authkey}")
 
-        print("\n[ SECURE SSH TUNNEL (Internet) ]")
-        if token:
-            print(f"Token : {token}")
-            token_ip = token.split(':')[0]
-            if token_ip == local_ip:
-                print("(Warning: Token uses Local IP. For internet play, restart with: --upnp)")
-            else:
-                print("(UPnP successfully negotiated with router)")
+            print("\n[ LOCAL LAN CONNECTION (Same Wi-Fi) ]")
+            print(f"Token : {_make_direct_token(local_ip)}")
         else:
-            print("Failed to generate SSH Token.")
+            # Fallback to standard token output
+            print("\n[ DIRECT CONNECTION (No SSH Required) ]")
+            print(f"Local LAN Token : {_make_direct_token(local_ip)}")
+            if vpn_ip:
+                print(f"Tailscale Token : {_make_direct_token(vpn_ip)}")
+
+            print("\n[ SECURE SSH TUNNEL (Internet) ]")
+            if token:
+                print(f"Token : {token}")
+                token_ip = token.split(':')[0]
+                if token_ip == local_ip:
+                    print("(Warning: Token uses Local IP. For internet play, restart with: --upnp)")
+                else:
+                    print("(UPnP successfully negotiated with router)")
+            else:
+                print("Failed to generate SSH Token.")
 
         print("="*60 + "\n")
         print("Students can join by running: %mc_start_app <Token>\n")
@@ -688,7 +709,7 @@ class MCShell(Magics):
         if self.active_paper_server and self.active_paper_server.is_alive():
             print("Please stop the currently running world first with: %pp_stop_world")
             return
-        self.ip.run_line_magic('mc_start_app',line)
+        self.ip.run_line_magic('mc_start_app','')
 
     def _send(self,kind,*args):
         assert kind in ('help','run','data')
@@ -1242,12 +1263,35 @@ class MCShell(Magics):
     def mc_start_app(self, line):
         """
         Starts the client application components to connect to a world.
-        Usage: %mc_start_app [token|IP] [--local-mc <port>] [--local-rcon <port>] [--local-mj <port>]
+        Usage: %mc_start_app [token|IP] [--local-mc <port>] [--local-rcon <port>] [--local-mj <port>] [--authkey <key>]
         """
         parts = line.split()
 
         # If the first argument doesn't start with '--', it's our token
         token = parts[0] if parts and not parts[0].startswith('--') else None
+
+        # Check for Tailscale Auth Key automation
+        authkey = None
+        if '--authkey' in parts:
+            idx = parts.index('--authkey')
+            if idx + 1 < len(parts):
+                authkey = parts[idx + 1]
+
+        if authkey:
+            print("\n[TAILSCALE] Authenticating device to classroom VPN...")
+            import subprocess
+            try:
+                # --force-reauth ensures we overwrite any existing login securely
+                subprocess.run(
+                    ["sudo", "tailscale", "up", f"--authkey={authkey}", "--accept-routes", "--force-reauth"],
+                    check=True
+                )
+                print("[TAILSCALE] Connected to classroom VPN successfully!\n")
+                time.sleep(1) # Give the network interface a moment to stabilize
+            except subprocess.CalledProcessError:
+                print("[TAILSCALE WARNING] Failed to automatically connect. You may need to run 'sudo tailscale up' manually.\n")
+            except FileNotFoundError:
+                print("[TAILSCALE WARNING] 'tailscale' command not found. Is Tailscale installed?\n")
 
         if not token:
             self.server_data = {
