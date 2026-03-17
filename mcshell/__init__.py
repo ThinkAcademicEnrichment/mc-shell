@@ -260,7 +260,7 @@ class MCShell(Magics):
     def _disconnect_tailscale(self):
         """Automatically logs out of Tailscale if we were the ones who brought it up."""
         if getattr(self, 'managed_tailscale', False):
-            print("\n[TAILSCALE] Disconnecting from classroom VPN...")
+            print("\n[TAILSCALE] Disconnecting from VPN...")
             import subprocess
             import platform
 
