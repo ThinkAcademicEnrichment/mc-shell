@@ -749,7 +749,7 @@ class MCShell(Magics):
         if self.active_paper_server and self.active_paper_server.is_alive():
             print("Please stop the currently running world first with: %pp_stop_world")
             return
-        self.ip.run_line_magic('mc_start_app','')
+        self.ip.run_line_magic('mc_start_app',line)
 
     def _send(self,kind,*args):
         assert kind in ('help','run','data')
