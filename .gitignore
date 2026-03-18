@@ -48,6 +48,6 @@ mcjuice/target/
 mcshell/data/mcjuice-*.jar
 
 # ignore powers and scripts
-powers
+powers/
 scripts
 poetry.toml
