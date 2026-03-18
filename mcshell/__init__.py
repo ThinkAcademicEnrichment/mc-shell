@@ -975,8 +975,9 @@ class MCShell(Magics):
 
         # 1. App Server (mc-ed) Status
         if self.app_server_thread and self.app_server_thread.is_alive():
-            print(f"🟢 Editor App Server  : RUNNING")
+            print(f"🟢 MCED App Server  : RUNNING")
             print(f"   Editor URL         : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}")
+            print(f"   Control URL         : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}/control")
         else:
             print("🔴 Editor App Server  : STOPPED")
 
@@ -1593,7 +1594,7 @@ class MCShell(Magics):
         self._disconnect_tailscale()
 
     @line_magic
-    def mc_invite_player(self, line):
+    def mc_server_status(self,line):
         """
         Sends your current server connection details to another player.
         Usage: %mc_invite_player <recipient_app_url>
