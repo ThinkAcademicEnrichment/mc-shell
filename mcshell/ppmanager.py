@@ -38,6 +38,7 @@ class PaperServerManager:
 
         try:
             mcjuice_host = kwargs.pop("mcjuice-host", None)
+            mcjuice_port = kwargs.pop("mcjuice-port", None)
             if mcjuice_host:
                 mcjuice_dir = self.world_directory / "plugins" / "McJuice"
                 mcjuice_dir.mkdir(parents=True, exist_ok=True)
@@ -49,6 +50,8 @@ class PaperServerManager:
                         config_data = yaml.safe_load(f) or {}
 
                 config_data['host'] = mcjuice_host
+                if mcjuice_port:
+                    config_data['port'] = int(mcjuice_port)
 
                 with plugin_config_path.open('w') as f:
                     yaml.safe_dump(config_data, f, default_flow_style=False)
