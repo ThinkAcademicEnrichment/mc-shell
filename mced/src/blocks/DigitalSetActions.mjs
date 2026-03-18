@@ -69,6 +69,16 @@ this.appendValueInput('dz').appendField('dz').setCheck('Number');
         }
     };
 
+    Blockly.Blocks['digitalsetactions_get_voxels'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Get Voxels");
+            this.appendValueInput('target_set').appendField('Set').setCheck('Digital_Set');
+            this.setOutput(true, 'Array');
+            this.setColour("#A57582");
+            this.setTooltip("Returns the blocks/points in the Digital Set as a list of vectors.");
+        }
+    };
+
     Blockly.Blocks['digitalsetactions_intersection'] = {
         init: function() {
             this.appendDummyInput().appendField("Intersection");

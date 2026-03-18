@@ -43,6 +43,12 @@ const dz = generator.valueToCode(block, 'dz', pythonGenerator.ORDER_ATOMIC) || '
         return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
     };
 
+    pythonGenerator.forBlock['digitalsetactions_get_voxels'] = function(block, generator) {
+        const target_set = generator.valueToCode(block, 'target_set', pythonGenerator.ORDER_ATOMIC) || 'None';
+        const code = `DigitalSetActions.get_voxels(${target_set})\n`;
+        return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
+    };
+
     pythonGenerator.forBlock['digitalsetactions_intersection'] = function(block, generator) {
         const set_a = generator.valueToCode(block, 'set_a', pythonGenerator.ORDER_ATOMIC) || 'None';
 const set_b = generator.valueToCode(block, 'set_b', pythonGenerator.ORDER_ATOMIC) || 'None';

@@ -62,7 +62,7 @@ MC_VERSION = '1.21.11' # this must match the client version
 MC_SERVER_HOST = 'localhost'
 MC_RCON_PORT = 25576
 MC_SERVER_PORT = 25566
-FJ_PLUGIN_PORT = 4712
+MJ_PLUGIN_PORT = 4721
 MC_APP_PORT = 5001
 
 
@@ -70,7 +70,7 @@ MC_SERVER_DATA = {
     'host':MC_SERVER_HOST,
     'port':MC_SERVER_PORT,
     'rcon_port':MC_RCON_PORT,
-    'fj_port': FJ_PLUGIN_PORT,
+    'mj_port': MJ_PLUGIN_PORT,
     'app_port': MC_APP_PORT,
     'password': None,
 }

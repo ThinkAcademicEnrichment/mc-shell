@@ -1,1 +1,1 @@
-export const ACTION_CLASSES = ['ServerActions', 'PlayerActions', 'TurtleShapes', 'LSystemShapes', 'DigitalGeometryActions', 'QTurtleActions', 'EventActions', 'DigitalSetActions', 'PlayerActions', 'WorldActions', 'ChatActions'];
+export const ACTION_CLASSES = ['ServerActions', 'TurtleShapes', 'LSystemShapes', 'DigitalGeometryActions', 'QTurtleActions', 'DigitalSetActions', 'PlayerActions', 'WorldActions', 'ChatActions', 'EventActions'];

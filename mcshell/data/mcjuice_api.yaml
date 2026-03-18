@@ -469,51 +469,102 @@ events:
     condition: "event.getAction() == org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null"
     # ENRICHED: Added player name (index 5)
     data: "event.getClickedBlock().getX() + \",\" + event.getClickedBlock().getY() + \",\" + event.getClickedBlock().getZ() + \",\" + event.getBlockFace().ordinal() + \",\" + event.getPlayer().getEntityId() + \",\" + event.getPlayer().getName()"
+    blockly:
+      label: "Wait for right block hit by a Player"
+      returns: "Vec3"
+      yields: "event.pos.clone()"
+      player_filter: True
 
   - name: leftBlockHit
     bukkit_event: org.bukkit.event.player.PlayerInteractEvent
     condition: "event.getAction() == org.bukkit.event.block.Action.LEFT_CLICK_BLOCK && event.getClickedBlock() != null"
     # ENRICHED: Added player name (index 5)
     data: "event.getClickedBlock().getX() + \",\" + event.getClickedBlock().getY() + \",\" + event.getClickedBlock().getZ() + \",\" + event.getBlockFace().ordinal() + \",\" + event.getPlayer().getEntityId() + \",\" + event.getPlayer().getName()"
+    blockly:
+      label: "Wait for left block hit by a Player"
+      returns: "Vec3"
+      yields: "event.pos.clone()"
+      player_filter: True
 
   - name: blockPlace
     bukkit_event: org.bukkit.event.block.BlockPlaceEvent
     # ENRICHED: Added player name (index 5)
     data: "event.getBlock().getX() + \",\" + event.getBlock().getY() + \",\" + event.getBlock().getZ() + \",\" + event.getBlock().getType().name() + \",\" + event.getPlayer().getEntityId() + \",\" + event.getPlayer().getName()"
+    blockly:
+      label: "Wait for block place by a Player"
+      returns: "Vec3"
+      yields: "event.pos.clone()"
+      player_filter: True
 
   - name: blockBreak
     bukkit_event: org.bukkit.event.block.BlockBreakEvent
     # ENRICHED: Added player name (index 4)
     data: "event.getBlock().getX() + \",\" + event.getBlock().getY() + \",\" + event.getBlock().getZ() + \",\" + event.getPlayer().getEntityId() + \",\" + event.getPlayer().getName()"
+    blockly:
+      label: "Wait for block break by a Player"
+      returns: "Vec3"
+      yields: "event.pos.clone()"
+      player_filter: True
 
   - name: chat
     bukkit_event: org.bukkit.event.player.AsyncPlayerChatEvent
     # ENRICHED: Added player name (index 1)
     data: "event.getPlayer().getEntityId() + \",\" + event.getPlayer().getName() + \",\" + event.getMessage()"
+    blockly:
+      label: "Wait for chat message from a Player"
+      returns: "str"
+      yields: "event.message"
+      player_filter: True
 
   - name: projectileHitBlock
     bukkit_event: org.bukkit.event.entity.ProjectileHitEvent
     condition: "event.getHitBlock() != null"
     data: "event.getHitBlock().getX() + \",\" + event.getHitBlock().getY() + \",\" + event.getHitBlock().getZ() + \",\" + event.getEntity().getType().name()"
+    blockly:
+      label: "Wait for projectile to hit a block"
+      returns: "Vec3"
+      yields: "event.pos.clone()"
+      player_filter: False
 
   - name: projectileHitEntity
     bukkit_event: org.bukkit.event.entity.ProjectileHitEvent
     condition: "event.getHitEntity() != null"
     # ENRICHED: Added target name (index 1)
     data: "event.getHitEntity().getEntityId() + \",\" + event.getHitEntity().getName() + \",\" + event.getEntity().getType().name() + \",\" + event.getHitEntity().getLocation().getX() + \",\" + event.getHitEntity().getLocation().getY() + \",\" + event.getHitEntity().getLocation().getZ()"
+    blockly:
+      label: "Wait for projectile to hit an entity"
+      returns: "str"
+      yields: "event.targetName"
+      player_filter: False
 
   - name: projectileLaunch
     bukkit_event: org.bukkit.event.entity.ProjectileLaunchEvent
     condition: "event.getEntity().getShooter() instanceof org.bukkit.entity.Player"
     # ENRICHED: Added shooter name (index 1)
     data: "((org.bukkit.entity.Player)event.getEntity().getShooter()).getEntityId() + \",\" + ((org.bukkit.entity.Player)event.getEntity().getShooter()).getName() + \",\" + event.getEntity().getType().name()"
+    blockly:
+      label: "Wait for projectile launch by a Player"
+      returns: "str"
+      yields: "event.projectileType"
+      player_filter: True
+      player_attr: "shooterName"
 
   - name: playerDeath
     bukkit_event: org.bukkit.event.entity.PlayerDeathEvent
     # ENRICHED: Added player name (index 1)
     data: "event.getEntity().getEntityId() + \",\" + event.getEntity().getName() + \",\" + event.getEntity().getLocation().getX() + \",\" + event.getEntity().getLocation().getY() + \",\" + event.getEntity().getLocation().getZ()"
+    blockly:
+      label: "Wait for a Player death"
+      returns: "str"
+      yields: "event.name"
+      player_filter: True
 
   - name: playerRespawn
     bukkit_event: org.bukkit.event.player.PlayerRespawnEvent
     # ENRICHED: Added player name (index 1)
     data: "event.getPlayer().getEntityId() + \",\" + event.getPlayer().getName() + \",\" + event.getRespawnLocation().getX() + \",\" + event.getRespawnLocation().getY() + \",\" + event.getRespawnLocation().getZ()"
+    blockly:
+      label: "Wait for a Player respawn"
+      returns: "Vec3"
+      yields: "event.pos.clone()"
+      player_filter: True

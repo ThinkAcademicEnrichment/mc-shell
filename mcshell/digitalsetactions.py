@@ -2,6 +2,7 @@ from typing import List
 from blockapily import mced_block
 from mcshell.mcturtle import DigitalSet
 from mcshell.mcactions_base import MCActionsBase
+from mcshell.constants import Vec3
 
 class DigitalSetActions(MCActionsBase):
     """
@@ -241,3 +242,13 @@ class DigitalSetActions(MCActionsBase):
         Returns the total number of blocks/points in the Digital Set.
         """
         return len(target_set)
+
+    @mced_block(
+        label="Get Voxels",
+        target_set={'label': "Set"}
+    )
+    def get_voxels(self, target_set: DigitalSet) -> list:
+        """
+        Returns the blocks/points in the Digital Set as a list of vectors.
+        """
+        return list(map(lambda x:Vec3(*x),target_set.voxels))
