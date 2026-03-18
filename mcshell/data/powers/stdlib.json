@@ -1,5 +1,5 @@
 {
-    "version": 74,
+    "version": 77,
     "powers": [
         {
             "power_id": "47431cdf-f99f-4207-9b9c-81290aec947e",
@@ -18971,7 +18971,7 @@
             "updated_at": "2026-03-13T14:40:48.651064"
         },
         {
-            "power_id": "70fdfbd6-4517-4c0a-90fd-c7f3e2251b96",
+            "power_id": "1ba6ccc9-19ca-4746-b59c-59b2e0beb1f6",
             "name": "theDrop",
             "description": "Describe this function...",
             "category": "Powers",
@@ -19287,6 +19287,42 @@
                                                                                                 "id": "T=k!ORJTL+qcfkyX^~O5",
                                                                                                 "fields": {
                                                                                                     "NUM": 6
+                                                                                                }
+                                                                                            },
+                                                                                            "block": {
+                                                                                                "type": "math_arithmetic",
+                                                                                                "id": "$S~PRce,][5|ZWV0*cZ:",
+                                                                                                "fields": {
+                                                                                                    "OP": "MINUS"
+                                                                                                },
+                                                                                                "inputs": {
+                                                                                                    "A": {
+                                                                                                        "shadow": {
+                                                                                                            "type": "math_number",
+                                                                                                            "id": "cjEAnUmENhS,=IUu2=V)",
+                                                                                                            "fields": {
+                                                                                                                "NUM": 1
+                                                                                                            }
+                                                                                                        },
+                                                                                                        "block": {
+                                                                                                            "type": "variables_get",
+                                                                                                            "id": "P1Jn,$Nr^vJ;+oYB%H:W",
+                                                                                                            "fields": {
+                                                                                                                "VAR": {
+                                                                                                                    "id": "PX0}!gg1Y??%ikuGJm`9"
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+                                                                                                    },
+                                                                                                    "B": {
+                                                                                                        "shadow": {
+                                                                                                            "type": "math_number",
+                                                                                                            "id": "o0L*er.qw:2Y@F9}f=:v",
+                                                                                                            "fields": {
+                                                                                                                "NUM": 4
+                                                                                                            }
+                                                                                                        }
+                                                                                                    }
                                                                                                 }
                                                                                             }
                                                                                         }
@@ -21182,12 +21218,12 @@
                     }
                 ]
             },
-            "python_code": "def theDrop(self, tower_height, tower_width):\n    import time\n    import threading\n    from mcshell.mcplayer import PowerCancelledException\n    if not hasattr(self, 'active_threads'):\n        self.active_threads = []\n\n    if self.cancel_event and self.cancel_event.is_set(): return\n    if tower_width % 2 != 0:\n        tower_width = tower_width + 1\n    self.action_implementer.server_gamemode_set('spectator', 'SELF')\n    current_position = self.action_implementer.get_tile_pos()\n    self.action_implementer.reset(current_position, 'N')\n    self.action_implementer.turtle_set_brush(self.action_implementer.get_arithmetic_plane((Vec3(0, 1, 0)), 6))\n    self.action_implementer.turtle_stamp('SLIME_BLOCK')\n    self.action_implementer.turtle_set_brush(self.action_implementer.difference(self.action_implementer.get_arithmetic_plane((Vec3(0, 1, 0)), tower_width), self.action_implementer.get_arithmetic_plane((Vec3(0, 1, 0)), (tower_width - 2))))\n    self.action_implementer.turtle_extrude(tower_height, 'U', 'OBSIDIAN')\n    for count in range(int(tower_width / 2)):\n        if self.cancel_event and self.cancel_event.is_set(): break\n        time.sleep(0)\n        y = random.randint(1, tower_height)\n        x = random.randint(-(tower_width / 2 - 1), tower_width / 2 - 1)\n        self.action_implementer.create_digital_line((current_position + Vec3((tower_width / 2), y, x)), (current_position + Vec3((-(tower_width / 2)), y, x)), 'PURPLE_CONCRETE')\n    for count2 in range(int(tower_width / 2)):\n        if self.cancel_event and self.cancel_event.is_set(): break\n        time.sleep(0)\n        y = random.randint(1, tower_height)\n        x = random.randint(-(tower_width / 2 - 1), tower_width / 2 - 1)\n        self.action_implementer.create_digital_line((current_position + Vec3(x, y, (tower_width / 2))), (current_position + Vec3(x, y, (-(tower_width / 2)))), 'PURPLE_CONCRETE')\n    self.action_implementer.server_teleport('@a', (current_position + Vec3(0, tower_height, 0)))\n    self.action_implementer.set_block((current_position + Vec3(0, (tower_height - 1), 0)), 'BEDROCK')\n    self.action_implementer.server_spawnpoint(self.action_implementer.get_tile_pos(), '@a')\n    self.action_implementer.server_gamemode_set('adventure', '@a')\n\n    # --- Auto-Injected Thread Wait Loop ---\n    while hasattr(self, 'active_threads') and any(t.is_alive() for t in getattr(self, 'active_threads', [])):\n        if getattr(self, 'cancel_event', None) and self.cancel_event.is_set(): break\n        time.sleep(0.1)\n\n",
+            "python_code": "def theDrop(self, tower_height, tower_width):\n    import time\n    import threading\n    from mcshell.mcplayer import PowerCancelledException\n    if not hasattr(self, 'active_threads'):\n        self.active_threads = []\n\n    if self.cancel_event and self.cancel_event.is_set(): return\n    if tower_width % 2 != 0:\n        tower_width = tower_width + 1\n    self.action_implementer.server_gamemode_set('spectator', 'SELF')\n    current_position = self.action_implementer.get_tile_pos()\n    self.action_implementer.reset(current_position, 'N')\n    self.action_implementer.turtle_set_brush(self.action_implementer.get_arithmetic_plane((Vec3(0, 1, 0)), (tower_width - 4)))\n    self.action_implementer.turtle_stamp('SLIME_BLOCK')\n    self.action_implementer.turtle_set_brush(self.action_implementer.difference(self.action_implementer.get_arithmetic_plane((Vec3(0, 1, 0)), tower_width), self.action_implementer.get_arithmetic_plane((Vec3(0, 1, 0)), (tower_width - 2))))\n    self.action_implementer.turtle_extrude(tower_height, 'U', 'OBSIDIAN')\n    for count in range(int(tower_width / 2)):\n        if self.cancel_event and self.cancel_event.is_set(): break\n        time.sleep(0)\n        y = random.randint(1, tower_height)\n        x = random.randint(-(tower_width / 2 - 1), tower_width / 2 - 1)\n        self.action_implementer.create_digital_line((current_position + Vec3((tower_width / 2), y, x)), (current_position + Vec3((-(tower_width / 2)), y, x)), 'PURPLE_CONCRETE')\n    for count2 in range(int(tower_width / 2)):\n        if self.cancel_event and self.cancel_event.is_set(): break\n        time.sleep(0)\n        y = random.randint(1, tower_height)\n        x = random.randint(-(tower_width / 2 - 1), tower_width / 2 - 1)\n        self.action_implementer.create_digital_line((current_position + Vec3(x, y, (tower_width / 2))), (current_position + Vec3(x, y, (-(tower_width / 2)))), 'PURPLE_CONCRETE')\n    self.action_implementer.server_teleport('@a', (current_position + Vec3(0, tower_height, 0)))\n    self.action_implementer.set_block((current_position + Vec3(0, (tower_height - 1), 0)), 'BEDROCK')\n    self.action_implementer.server_spawnpoint(self.action_implementer.get_tile_pos(), '@a')\n    self.action_implementer.server_gamemode_set('adventure', '@a')\n\n    # --- Auto-Injected Thread Wait Loop ---\n    while hasattr(self, 'active_threads') and any(t.is_alive() for t in getattr(self, 'active_threads', [])):\n        if getattr(self, 'cancel_event', None) and self.cancel_event.is_set(): break\n        time.sleep(0.1)\n\n",
             "schema_version": "1.0",
             "engine_version": null,
             "author": "System",
-            "created_at": "2026-03-18T11:37:40.167724",
-            "updated_at": "2026-03-18T11:37:40.167724"
+            "created_at": "2026-03-18T12:35:02.092748",
+            "updated_at": "2026-03-18T12:35:41.622043"
         }
     ]
 }
