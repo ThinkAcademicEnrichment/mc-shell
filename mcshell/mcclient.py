@@ -8,21 +8,15 @@ class _DEBUG:
 class MCClientException(Exception):
     pass
 
-# ------------------------------------------------------
-# for testing until we can completely replace fruit juice
-MJ_PORT = 4721
-# ------------------------------------------------------
-
 class MCClient:
-    def __init__(self, host=MC_SERVER_HOST, port=MC_SERVER_PORT, rcon_port=MC_RCON_PORT, mj_port=MJ_PLUGIN_PORT, app_port=MC_APP_PORT, password=''):
+    def __init__(self, host=MC_SERVER_HOST, port=MC_SERVER_PORT, rcon_port=MC_RCON_PORT, mj_port=MJ_PLUGIN_PORT, app_port=MC_APP_PORT, password='', **kwargs):
 
         self.host = host
         self.port = port
         self.rcon_port = rcon_port
-        self.app_port = MC_APP_PORT
+        self.app_port = app_port # Fixed: was previously hardcoded to MC_APP_PORT
         self.password = password
         self.mj_port  = mj_port
-
 
     @property
     def server_args(self):
@@ -58,7 +52,7 @@ class MCClient:
     @lru_cache(maxsize=1)
     def mj_client(self,player_name=None):
         player_name = '' if player_name is None else player_name
-        return MCJuiceClient.create(address=self.host,port=MJ_PORT,playerName=player_name)
+        return MCJuiceClient.create(address=self.host,port=self.mj_port,playerName=player_name)
 
     def help(self,*args):
         if not self.password:

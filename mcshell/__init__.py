@@ -681,7 +681,8 @@ class MCShell(Magics):
         # Omni-Routing: Always bind to 0.0.0.0 so LAN, Tailscale, and SSH can hit it simultaneously
         extra_server_properties = {
             'server-ip': '0.0.0.0',
-            'mcjuice-host': '0.0.0.0'
+            'mcjuice-host': '0.0.0.0',
+            'mcjuice-port': f"{self.server_data['mj_port']}"
         }
 
         # Start the Paper server
