@@ -83,12 +83,13 @@ def start_app_server(server_data,mc_name,ipy_shell,power_repo):
     )
     app_server_thread.start()
 
-    time.sleep(1)
-    if app_server_thread.is_alive():
-        print(f"Flask-SocketIO application server started in thread: {app_server_thread.ident}")
-        print(f"mc-ed application server started for player '{mc_name}'.")
-    else:
-        print("Error: Application server thread failed to start.")
+    return app_server_thread
+    # time.sleep(1)
+    # if app_server_thread.is_alive():
+    #     print(f"Flask-SocketIO application server started in thread: {app_server_thread.ident}")
+    #     print(f"mc-ed application server started for player '{mc_name}'.")
+    # else:
+    #     print("Error: Application server thread failed to start.")
 
 
 def stop_app_server():

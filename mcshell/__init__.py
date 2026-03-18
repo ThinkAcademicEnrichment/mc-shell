@@ -10,7 +10,7 @@ from rich.prompt import Prompt
 from mcshell.constants import *
 from mcshell.mcrepo import SQLiteRepository
 from mcshell.mcclient import MCClient
-from mcshell.mcserver import start_app_server,app_server_thread
+from mcshell.mcserver import start_app_server
 from mcshell.mcactions import *
 from mcshell.mcserver import execute_power_in_thread, RUNNING_POWERS # Import helpers
 from mcshell.ppmanager import *
@@ -209,7 +209,7 @@ class MCShell(Magics):
         self.ip.set_hook('complete_command',self._complete_world_command, re_key='%pp_start_world')
         self.ip.set_hook('complete_command',self._complete_world_command, re_key='%pp_delete_world')
 
-        self.app_server_thread = app_server_thread
+        self.app_server_thread = None
 
         self.active_paper_server: Optional[PaperServerManager ,None ] = None
 
@@ -1550,7 +1550,7 @@ class MCShell(Magics):
         print("Stopping any running application servers.")
         stop_app_server()
         print(f"Starting application server for authorized Minecraft player: {minecraft_name}")
-        start_app_server(self.server_data,minecraft_name,self.shell,power_repo)
+        self.app_server_thread = start_app_server(self.server_data,minecraft_name,self.shell,power_repo)
         print(f"Open a browser here to use the editor:")
         print(f"\thttp://{socket.gethostname()}.local:{self.server_data['app_port']}")
         print(f"Open a browser here to use the control:")
@@ -1589,6 +1589,7 @@ class MCShell(Magics):
         stop_app_server()
         # force another read of user_map.json or request user input
         self.mc_name = None
+        self.app_server_thread = None
         self._disconnect_tailscale()
 
     @line_magic
