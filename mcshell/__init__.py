@@ -1478,14 +1478,14 @@ class MCShell(Magics):
             self._connect_tailscale(authkey, accept_routes=True)
 
         if not token:
-            self.server_data = {
+            self.server_data.update({
                 'host': Prompt.ask('Server Address:', default=self.server_data['host']),
                 'port': int(Prompt.ask('Server Port:', default=str(self.server_data['port']))),
                 'rcon_port': int(Prompt.ask('Rcon Port:', default=str(self.server_data['rcon_port']))),
                 'mj_port': int(Prompt.ask('Plugin Port:', default=str(self.server_data['mj_port']))),
                 'app_port': int(Prompt.ask('Application Port:', default=str(self.server_data['app_port']))),
-                'password':None,
-            }
+                'password': None,
+            })
 
         if token:
             # 1. DEFINE VARS FIRST: Determine intended local ports from defaults
