@@ -57,11 +57,14 @@ def get_lobby_data():
         # Extract the active MCShell magic instance from IPython's registry
         mcshell_instance = shell.magics_manager.registry.get('MCShell')
         if mcshell_instance:
-            # NEW: Distinguish between the host (who owns the server) and a joined client
             is_host = bool(mcshell_instance.active_paper_server and mcshell_instance.active_paper_server.is_alive())
 
-            # Only give out the connection hub tokens if they are actually the host!
-            hub_data = mcshell_instance._get_connection_hub_data() if is_host else None
+            # ALWAYS fetch hub_data so the frontend knows the local_ip for the QR code
+            hub_data = mcshell_instance._get_connection_hub_data()
+
+            # If they aren't the host, wipe the join tokens so they can't be shared
+            if not is_host and hub_data:
+                hub_data['tokens'] = {}
 
             return jsonify({
                 "status": "active",
