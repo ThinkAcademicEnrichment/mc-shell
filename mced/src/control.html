@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MC-ED Control Deck</title>
 
-    <!-- SUBSTAGE 2A: Capture and hide the GUI Auth Token -->
+    <!-- SUBSTAGE 2A/2B: Capture Token & Bulletproof Fetch Interceptor -->
     <script>
         const params = new URLSearchParams(window.location.search);
         const auth = params.get('auth');
@@ -43,12 +43,14 @@
             }
             return originalFetch.apply(this, args);
         };
-
     </script>
 
     <link rel="icon" href="data:,">
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- SUBSTAGE 2C: Add QRCode library for sharing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <style>
         :root {
@@ -210,13 +212,61 @@
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
             background-repeat: no-repeat; background-position: right 8px center; padding-right: 28px;
         }
+
+        /* SUBSTAGE 2C: LOBBY STYLES */
+        .lobby-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 50000; display: flex; align-items: center; justify-content: center; }
+        .lobby-card { background: var(--modal-bg, #2c2c2e); padding: 2rem; border-radius: 12px; width: 90%; max-width: 450px; text-align: center; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .lobby-input { width: 100%; padding: 12px; margin: 15px 0; border-radius: 8px; border: 1px solid #444; background: #1c1c1e; color: white; box-sizing: border-box; }
+        .lobby-btn { width: 100%; padding: 12px; background: var(--accent, #0a84ff); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
+        .share-token-row { display: flex; gap: 10px; margin-top: 5px; margin-bottom: 15px; }
+        .share-btn { background: #34c759; color: white; border: none; padding: 0 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+
     </style>
 </head>
-<body x-data="controlApp">
+<body x-data="ControlDeck()">
+
+    <!-- SUBSTAGE 2C: Lobby & Share Overlay -->
+    <div x-cloak x-show="lobbyState === 'standby' || showShareModal" class="lobby-overlay">
+
+        <!-- Lobby View (Standby) -->
+        <div x-show="lobbyState === 'standby'" class="lobby-card">
+            <h2 style="margin-top: 0;">MC-ED Lobby</h2>
+            <p style="color: #aaa; margin-bottom: 20px;">Waiting for an active Minecraft session. Enter a token to join a world instantly.</p>
+            <input type="text" x-model="joinToken" placeholder="Paste Join Token..." class="lobby-input">
+            <button @click="joinWorld()" class="lobby-btn">Join World</button>
+            <div x-show="joinError" x-text="joinError" style="color: #ff453a; margin-top: 10px; font-size: 0.9rem;"></div>
+        </div>
+
+        <!-- Share View (Active) -->
+        <div x-show="lobbyState === 'active' && showShareModal" class="lobby-card" style="text-align: left;">
+            <h2 style="margin-top: 0; text-align: center;">Share Connection</h2>
+            <template x-if="lobbyData && lobbyData.hub">
+                <div>
+                    <!-- QR Code Container -->
+                    <div style="display: flex; justify-content: center; background: white; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                        <div x-ref="qrcode"></div>
+                    </div>
+
+                    <template x-for="(token, key) in lobbyData.hub.tokens" :key="key">
+                        <div>
+                            <strong style="text-transform: capitalize;" x-text="key.replace('_', ' ') + ' Token'"></strong>
+                            <div class="share-token-row">
+                                <input type="text" readonly :value="token" class="lobby-input" style="margin: 0; padding: 8px;">
+                                <button @click="copyToClipboard(token)" class="share-btn">Copy</button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+            <button @click="showShareModal = false" class="lobby-btn" style="background: #ff3b30; margin-top: 10px;">Close</button>
+        </div>
+    </div>
 
     <header>
         <h1>Control Deck</h1>
         <button class="edit-btn" :class="isEditing ? 'active' : ''" @click="toggleEditMode()" x-text="isEditing ? 'Done' : 'Edit Layout'"></button>
+        <!-- SUGGESTION: To trigger the share modal, you can add this button to your existing <header>: -->
+        <button x-show="lobbyState === 'active'" @click="openShareModal()" class="share-btn" style="padding: 8px 16px;">Share World</button>
     </header>
 
     <main class="springboard" :class="isEditing ? 'is-editing' : ''">
@@ -389,7 +439,14 @@
         });
 
         document.addEventListener('alpine:init', () => {
-            Alpine.data('controlApp', () => ({
+            Alpine.data('ControlDeck', () => ({
+                // --- SUBSTAGE 2C: Lobby State Variables ---
+                lobbyState: 'loading', // 'loading', 'standby', 'active'
+                lobbyData: null,
+                joinToken: '',
+                joinError: '',
+                showShareModal: false,
+
                 isEditing: false,
                 allPowers: [],
                 deckLayout: [],
@@ -410,6 +467,16 @@
                 },
 
                 async init() {
+                    // Fetch initial state when page loads
+                    this.checkLobbyState();
+
+                    // Listen for backend Python state changes
+                    const socket = io();
+                    socket.on('state_changed', (data) => {
+                        console.log("State changed event received:", data);
+                        this.checkLobbyState();
+                    });
+
                     const saved = localStorage.getItem('mced_deck_layout');
                     if (saved) {
                         let parsed = JSON.parse(saved);
@@ -462,6 +529,88 @@
                         }
 
                         if(data.status === 'error') alert(`Error:\n${data.message}`);
+                    });
+                },
+
+                // --- SUBSTAGE 2C: Lobby Logic ---
+                async checkLobbyState() {
+                    try {
+                        const response = await fetch('/api/lobby_data');
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.lobbyState = data.status;
+                            if (data.status === 'active') {
+                                this.lobbyData = data;
+                                // Once active, load the user's saved powers
+                                if (typeof this.fetchPowers === 'function') this.fetchPowers();
+                            }
+                        } else {
+                            this.lobbyState = 'standby';
+                        }
+                    } catch (e) {
+                        console.error("Failed to fetch lobby data:", e);
+                        this.lobbyState = 'standby';
+                    }
+                },
+
+                async joinWorld() {
+                    this.joinError = '';
+                    if (!this.joinToken.trim()) {
+                        this.joinError = "Please enter a valid token.";
+                        return;
+                    }
+
+                    try {
+                        const res = await fetch('/api/ipython_magic', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ command: 'pp_join_world', arguments: this.joinToken.trim() })
+                        });
+
+                        if (!res.ok) {
+                            this.joinError = "Failed to connect. Server rejected request.";
+                        }
+                        // Note: We don't manually set lobbyState='active' here.
+                        // The backend socket will emit 'state_changed', seamlessly driving the UI!
+                    } catch (e) {
+                        this.joinError = "Network error while joining.";
+                        console.error(e);
+                    }
+                },
+
+                openShareModal() {
+                    this.showShareModal = true;
+                    // Wait for Alpine to render the modal, then generate QR
+                    setTimeout(() => this.renderQRCode(), 50);
+                },
+
+                renderQRCode() {
+                    if (!this.$refs.qrcode || !this.lobbyData || !this.lobbyData.hub) return;
+                    this.$refs.qrcode.innerHTML = '';
+
+                    const tokens = this.lobbyData.hub.tokens;
+                    const primaryToken = tokens.classroom_vpn || tokens.lan || tokens.tailscale;
+
+                    if (primaryToken) {
+                        new QRCode(this.$refs.qrcode, {
+                            text: primaryToken,
+                            width: 160,
+                            height: 160,
+                            colorDark : "#000000",
+                            colorLight : "#ffffff",
+                            correctLevel : QRCode.CorrectLevel.M
+                        });
+                    }
+                },
+
+                copyToClipboard(text) {
+                    navigator.clipboard.writeText(text).catch(() => {
+                        const el = document.createElement('textarea');
+                        el.value = text;
+                        document.body.appendChild(el);
+                        el.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(el);
                     });
                 },
 
