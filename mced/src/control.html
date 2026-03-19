@@ -5,6 +5,47 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MC-ED Control Deck</title>
 
+    <!-- SUBSTAGE 2A: Capture and hide the GUI Auth Token -->
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const auth = params.get('auth');
+        if (auth) {
+            sessionStorage.setItem('GUI_AUTH_TOKEN', auth);
+            const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+            window.history.replaceState({path: cleanUrl}, '', cleanUrl);
+        }
+
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            let resource = args[0];
+            let config = args[1] || {};
+
+            let urlString = resource instanceof Request ? resource.url : resource.toString();
+            const parsedUrl = new URL(urlString, window.location.origin);
+
+            if (parsedUrl.pathname.startsWith('/api/')) {
+                const token = sessionStorage.getItem('GUI_AUTH_TOKEN');
+                if (token) {
+                    if (resource instanceof Request) {
+                        const newHeaders = new Headers(resource.headers);
+                        newHeaders.set('Authorization', 'Bearer ' + token);
+                        args[0] = new Request(resource, { headers: newHeaders, ...config });
+                    } else {
+                        config.headers = config.headers || {};
+                        if (config.headers instanceof Headers) {
+                            config.headers.set('Authorization', 'Bearer ' + token);
+                        } else {
+                            config.headers['Authorization'] = 'Bearer ' + token;
+                        }
+                        args[1] = config;
+                    }
+                }
+            }
+            return originalFetch.apply(this, args);
+        };
+
+    </script>
+
     <link rel="icon" href="data:,">
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>

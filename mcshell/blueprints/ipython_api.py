@@ -43,3 +43,28 @@ def execute_ipython_magic():
         print(f"Error executing magic command '{command}': {e}")
         return jsonify({"error": str(e)}), 500
 
+@ipython_bp.route('/lobby_data', methods=['GET'])
+def get_lobby_data():
+    """Returns the current server status and connection hub info for the Share UI."""
+    shell = current_app.config.get('IPYTHON_SHELL')
+    mc_name = current_app.config.get('MINECRAFT_PLAYER_NAME')
+
+    # If there is no active player context, the server is in Standby Mode
+    if not shell or not mc_name:
+        return jsonify({"status": "standby"})
+
+    try:
+        # Extract the active MCShell magic instance from IPython's registry
+        mcshell_instance = shell.magics_manager.registry.get('MCShell')
+        if mcshell_instance:
+            # Fetch the structured token data
+            hub_data = mcshell_instance._get_connection_hub_data()
+            return jsonify({
+                "status": "active",
+                "player": mc_name,
+                "hub": hub_data
+            })
+    except Exception as e:
+        print(f"Error fetching connection hub data: {e}")
+
+    return jsonify({"status": "active", "player": mc_name, "hub": {}})

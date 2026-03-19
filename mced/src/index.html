@@ -3,6 +3,49 @@
     <head>
         <meta charset="utf-8">
         <title>MC-ED Editor</title>
+        <!-- SUBSTAGE 2A: Capture and hide the GUI Auth Token -->
+        <script>
+            const params = new URLSearchParams(window.location.search);
+            const auth = params.get('auth');
+            if (auth) {
+                sessionStorage.setItem('GUI_AUTH_TOKEN', auth);
+                // Clean the URL so the token isn't visible/copied
+                const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                window.history.replaceState({path: cleanUrl}, '', cleanUrl);
+            }
+
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            let resource = args[0];
+            let config = args[1] || {};
+
+            // Resolve relative URLs (like 'api/powers') into full absolute URLs safely
+            let urlString = resource instanceof Request ? resource.url : resource.toString();
+            const parsedUrl = new URL(urlString, window.location.origin);
+
+            // Now we reliably check the absolute path
+            if (parsedUrl.pathname.startsWith('/api/')) {
+                const token = sessionStorage.getItem('GUI_AUTH_TOKEN');
+                if (token) {
+                    if (resource instanceof Request) {
+                        const newHeaders = new Headers(resource.headers);
+                        newHeaders.set('Authorization', 'Bearer ' + token);
+                        args[0] = new Request(resource, { headers: newHeaders, ...config });
+                    } else {
+                        config.headers = config.headers || {};
+                        if (config.headers instanceof Headers) {
+                            config.headers.set('Authorization', 'Bearer ' + token);
+                        } else {
+                            config.headers['Authorization'] = 'Bearer ' + token;
+                        }
+                        args[1] = config;
+                    }
+                }
+            }
+            return originalFetch.apply(this, args);
+        };
+
+        </script>
 
         <link rel="stylesheet" href="./editor.css">
 
@@ -147,7 +190,7 @@
         <script type="module" src="./index.js"></script>
         <div class="simple-keyboard"
              x-show="keyboardVisible"
-             style="position: fixed; bottom: 0; left: 0; width: 100%; z-index: 20000; background: white;">
+             style="position: fixed; bottom: 0; left: 0; width: 100%; z-index: 41000; background: white;">
         </div>
     </body>
 </html>

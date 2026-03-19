@@ -36,10 +36,15 @@ app.register_blueprint(powers_bp)
 app.register_blueprint(control_bp)
 app.register_blueprint(ipython_bp)
 
+# --- SUBSTAGE 2B: Secure API Blueprints (Hard Mode) ---
 @app.before_request
 def check_auth_token():
-    """Enforce security on all API endpoints (Soft Mode)"""
+    """Enforce strict security on all API endpoints (Hard Mode)"""
     if request.path.startswith('/api/'):
+        # Allow peer-to-peer server invitations to bypass local browser auth
+        if request.path == '/api/receive_invite':
+            return
+
         auth_header = request.headers.get('Authorization')
         token = request.args.get('auth') # Fallback if passed in URL
 
@@ -47,7 +52,9 @@ def check_auth_token():
             token = auth_header.split(" ")[1]
 
         if token != GUI_AUTH_TOKEN:
-            print(f"\n[SECURITY WARNING] Unauthorized API access attempt to {request.path}! (Soft Mode: request allowed)")
+            print(f"\n[SECURITY BLOCK] Unauthorized API access attempt to {request.path} blocked!")
+            from flask import jsonify
+            return jsonify({"error": "Unauthorized access. Invalid or missing GUI token."}), 401
 
 # --- Suppress Flask's Default Console Logging ---
 flask_logger = logging.getLogger('werkzeug')

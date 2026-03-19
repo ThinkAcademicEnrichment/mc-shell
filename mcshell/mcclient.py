@@ -28,7 +28,7 @@ class MCClient:
         Executes a command via RCON using mctools to handle fragmentation.
         """
         if not self.password:
-            print('A password is required!')
+            print('An admin password is required! Use %mc_login.')
             return
 
         if not args:
@@ -56,7 +56,7 @@ class MCClient:
 
     def help(self,*args):
         if not self.password:
-            print('A password is required!')
+            print('An admin password is required! Use %mc_login.')
             return
         _help_cmd = 'minecraft:help'
         _response = self.run(_help_cmd,*args)
@@ -64,7 +64,7 @@ class MCClient:
 
     def data(self, operation, *args):
         if not self.password:
-            print('A password is required!')
+            print('An admin password is required! Use %mc_login.')
             return
 
         _response = self.run('data', operation, *args)
@@ -83,7 +83,7 @@ class MCClient:
         fragmented responses without blocking the event loop.
         """
         if not self.password:
-            print('A password is required!')
+            print('An admin password is required! Use %mc_login.')
             return
 
         full_command = ' '.join(['data', operation, *args])

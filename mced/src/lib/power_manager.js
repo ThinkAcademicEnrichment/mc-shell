@@ -2,11 +2,22 @@ import * as Blockly from 'blockly';
 import { pythonGenerator } from 'blockly/python';
 import { MCED } from "./constants.mjs";
 
+// --- SUBSTAGE 2A: Authentication Helper ---
+// Safely retrieves the token and merges it with any existing headers
+function getAuthHeaders(extraHeaders = {}) {
+    const token = sessionStorage.getItem('GUI_AUTH_TOKEN');
+    const headers = { ...extraHeaders };
+    if (token) {
+        headers['Authorization'] = 'Bearer ' + token;
+    }
+    return headers;
+}
+
 export async function executeIPythonCommand(command, commandArguments) {
     try {
         const response = await fetch('/api/ipython_magic', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify({ command, arguments: commandArguments })
         });
         const data = await response.json();
@@ -20,7 +31,9 @@ export async function executeIPythonCommand(command, commandArguments) {
 
 export async function getExistingCategories() {
     try {
-        const response = await fetch('/api/powers/categories');
+        const response = await fetch('/api/powers/categories', {
+            headers: getAuthHeaders()
+        });
         if (response.ok) {
             return await response.json();
         }
@@ -42,24 +55,75 @@ export async function getPowerMetadata(workspace) {
 
     if (funcDefBlock) {
         powerName = funcDefBlock.getFieldValue('NAME');
-        powerDescription = funcDefBlock.getCommentText() || '';
+        powerDescription = funcDefBlock.commentModel.text;
 
-        const blockTypes = workspace.getAllBlocks(false).map(b => b.type);
-        if (blockTypes.some(t => t.includes('DigitalGeometry'))) {
-            category = 'Powers/Geometry';
-        } else if (blockTypes.some(t => t.includes('PlayerActions'))) {
-            category = 'Powers/Player';
+        const catBlock = topBlocks.find(b => b.type === 'power_category');
+        if (catBlock) {
+            category = catBlock.getFieldValue('CATEGORY');
         } else {
-            category = 'Powers';
+            category = "Powers";
         }
     }
 
-    const existingCategories = await getExistingCategories();
-
-    return {
-        name: powerName, description: powerDescription,
-        category: category, availableCategories: existingCategories
+    let powerDataObject = {
+        power_id: '',
+        name: powerName,
+        description: powerDescription,
+        category: category,
+        python_code: '',
+        xml_data: Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(workspace)),
+        function_name: null,
+        parameters: [],
     };
+
+    if (funcDefBlock) {
+        const generatedCode = pythonGenerator.workspaceToCode(workspace);
+        powerDataObject.function_name = powerName;
+        const varModels = funcDefBlock.getVarModels();
+        if (varModels && varModels.length > 0) {
+            powerDataObject.parameters = varModels.map(vm => ({ name: vm.name, type: 'Any' }));
+        }
+
+        powerDataObject.python_code = generatedCode;
+        const funcDefCode = pythonGenerator.blockToCode(funcDefBlock);
+
+        if (funcDefCode) {
+            const defIndex = powerDataObject.python_code.indexOf(funcDefCode);
+            const insertPos = defIndex + funcDefCode.length;
+
+            const headerLogic = `\n    try:\n`;
+            const footerLogic = `\n    except PowerCancelledException:\n        pass\n`;
+
+            const splitPos = powerDataObject.python_code.lastIndexOf('\n', insertPos - 1) + 1;
+
+            const part1 = powerDataObject.python_code.slice(0, insertPos);
+            const part2 = powerDataObject.python_code.slice(insertPos, splitPos);
+            const part3 = powerDataObject.python_code.slice(splitPos);
+
+            powerDataObject.python_code = part1 + headerLogic + part2 + footerLogic + part3;
+        }
+
+    } else {
+        powerDataObject.python_code = pythonGenerator.workspaceToCode(workspace);
+        powerDataObject.function_name = null;
+        powerDataObject.parameters = [];
+    }
+
+    const token = sessionStorage.getItem('GUI_AUTH_TOKEN');
+    console.log(token);
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) {
+        headers['Authorization'] = 'Bearer ' + token;
+    }
+
+    const response = await fetch('/api/powers', {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(powerDataObject),
+    });
+
+    if (!response.ok) throw new Error(await response.text());
+    return true;
 }
 
 export async function deletePower(powerId) {
