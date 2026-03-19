@@ -622,14 +622,23 @@
                 },
 
                 copyToClipboard(text) {
-                    navigator.clipboard.writeText(text).catch(() => {
+                    const fallbackCopy = (str) => {
                         const el = document.createElement('textarea');
-                        el.value = text;
+                        el.value = str;
+                        el.setAttribute('readonly', ''); // Prevent keyboard popup
+                        el.style.position = 'absolute';
+                        el.style.left = '-9999px';
                         document.body.appendChild(el);
                         el.select();
-                        document.execCommand('copy');
+                        try { document.execCommand('copy'); } catch (e) { console.error('Fallback copy failed', e); }
                         document.body.removeChild(el);
-                    });
+                    };
+
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+                    } else {
+                        fallbackCopy(text);
+                    }
                 },
 
                 async fetchPowers() {
@@ -659,7 +668,7 @@
 
                 getCategoryClass(category) {
                     if (!category) return 'cat-Default';
-                    return `cat-${category.split('/')[0].replace(/\s+/g, '')}`;
+                    return `cat-${category.split('/')[0].replace(/\\s+/g, '')}`;
                 },
 
                 async toggleEditMode() {
