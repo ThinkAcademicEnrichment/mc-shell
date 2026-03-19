@@ -1625,58 +1625,53 @@ class MCShell(Magics):
         if self.app_server_thread and self.app_server_thread.is_alive():
             if self.mc_name:
                 print(f"🟢 MCED App Server  : RUNNING (Active Player: {self.mc_name})")
-                print(f"   Editor URL         : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}")
-                print(f"   Control URL        : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}/control")
+                print(f"   Editor URL         : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}?auth={GUI_AUTH_TOKEN}")
+                print(f"   Control URL        : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}/control?auth={GUI_AUTH_TOKEN}")
             else:
                 print(f"🟡 MCED App Server  : STANDBY")
-                print(f"   Lobby URL          : http://localhost:{MC_APP_PORT}/lobby")
+                print(f"   Lobby URL          : http://localhost:{MC_APP_PORT}/lobby?auth={GUI_AUTH_TOKEN}")
         else:
             print("🔴 Editor App Server  : STOPPED")
 
         # 2. Paper Server Status (Host only)
-        args = line.split()
-        if len(args) != 1:
-            print("Usage: %mc_invite_player <recipient_app_url>")
-            return
+        is_host = self.active_paper_server and self.active_paper_server.is_alive()
+        if is_host:
+            world = self.active_paper_server.world_name
+            print(f"🟢 Local Paper Server : RUNNING (World: '{world}')")
+        else:
+            print("🔴 Local Paper Server : STOPPED")
 
-        recipient_url = args[0]
-        sender_name = self._get_mc_name()
-        host_name = socket.gethostname()
+        # 3. Connection & Player Info
+        if (self.app_server_thread and self.app_server_thread.is_alive()) or is_host:
+            print(f"\n⚙️  Active Configuration:")
+            if not is_host:
+                print(f"   Remote Host        : {self.server_data.get('host', 'Unknown')}")
+            print(f"   Minecraft Port     : {self.server_data.get('port', 25565)}")
+            print(f"   RCON Port          : {self.server_data.get('rcon_port', 25575)}")
+            print(f"   McJuice Port       : {self.server_data.get('mj_port', 4721)}")
 
-        # Ensure the user has an active server session
-        if not self.active_paper_server or not self.active_paper_server.is_alive():
-            print("Error: You must have an active world running to send an invitation.")
-            return
-        invitation_data = {
-            "sender_name": sender_name,
-            "world_name": self.active_paper_server.world_name,
-            "host": f"{host_name}.local",
-            "fj_port": self.server_data.get('fj_port'),
-            "rcon_port":None,
-            "password":None
-        }
+            password = self.server_data.get('password')
+            if password:
+                print(f"   Server Password    : {password}")
 
-        invite_as_server_op = Prompt.ask('Do you want to make the player a server op?',choices=['yes','no'],default='no')
-        if invite_as_server_op.lower() == 'yes':
-            # Construct the payload with your connection details
-            invitation_data.update({
-                "rcon_port": self.server_data.get('rcon_port'),
-                "password": self.server_data.get('password')
-            })
+            # Fetch players via RCON
+            try:
+                # Disable printing of the raw auth rejection to keep the dashboard clean
+                response = self._get_client().run('list')
+                if response:
+                    print(f"\n👥 {response}")
+                else:
+                    print("\n👥 Minecraft Players: No response from server.")
+            except Exception:
+                print("\n👥 Minecraft Players: Could not retrieve player list via RCON.")
 
-        # The endpoint on the recipient's server we will send to
-        invite_endpoint = f"{recipient_url.rstrip('/')}/api/receive_invite"
-
-        print(f"Sending invitation to {recipient_url}...")
-        try:
-            response = requests.post(invite_endpoint, json=invitation_data, timeout=10)
-            if response.ok:
-                print("Invitation sent successfully!")
-            else:
-                print(f"Failed to send invitation. Server responded with: {response.status_code}")
-                print(f"Message: {response.text}")
-        except requests.exceptions.RequestException as e:
-            print(f"Error: Could not connect to the other player's application server. {e}")
+            # Only print Connection Hub if you are the host
+            if is_host:
+                self._print_connection_hub()
+        else:
+            print("\nTo start a local world, run: %pp_start_world <world_name>")
+            print("To join a remote world, run: %pp_join_world <Token>")
+            print("="*60)
 
     @line_magic
     def mc_stdlib(self, line):
