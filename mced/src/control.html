@@ -47,7 +47,7 @@
 
     <link rel="icon" href="data:,">
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <!-- SUBSTAGE 2C: Add QRCode library for sharing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -62,101 +62,156 @@
         }
 
         body, html {
-            margin: 0; padding: 0; height: 100%;
-            background-color: var(--bg-color); color: var(--text-color);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            overflow: hidden;
-            touch-action: pan-y;
-            user-select: none;
-            -webkit-user-select: none;
+            margin: 0; padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            height: 100vh; overflow: hidden;
+            user-select: none; -webkit-touch-callout: none;
         }
 
-        .app-container { display: flex; flex-direction: column; height: 100%; }
+        [x-cloak] { display: none !important; }
 
-        .header {
+        header {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 10px 15px; background-color: #1c1c1e;
-            border-bottom: 1px solid #333; flex-shrink: 0;
+            padding: 20px 24px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%);
+        }
+        h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+
+        .edit-btn {
+            background: rgba(255,255,255,0.15); border: none; border-radius: 20px;
+            color: white; padding: 8px 16px; font-weight: 600; cursor: pointer;
+            backdrop-filter: blur(10px); transition: transform 0.1s;
+        }
+        .edit-btn:active { transform: scale(0.95); }
+        .edit-btn.active { background: #B06161; }
+
+        .springboard {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            gap: 24px 16px; padding: 20px; align-content: start;
+            height: calc(100vh - 80px); overflow-y: auto;
         }
 
-        .header h1 { margin: 0; font-size: 1.2rem; font-weight: 600; }
-        .header-actions { display: flex; gap: 10px; }
-
-        .btn {
-            background-color: var(--modal-bg); color: white; border: 1px solid #444;
-            padding: 8px 16px; border-radius: 8px; font-size: 0.9rem; cursor: pointer;
-            transition: opacity 0.1s;
+        .app-container { display: flex; flex-direction: column; align-items: center; position: relative; }
+        .app-icon {
+            width: 76px; height: 76px; border-radius: 18px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 32px; font-weight: bold; color: white;
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.2), 0 4px 10px rgba(0,0,0,0.5);
+            cursor: pointer; transition: transform 0.1s, filter 0.2s; position: relative;
+            touch-action: pan-y;
         }
-        .btn:active { opacity: 0.7; }
-
-        .grid-container {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 15px; padding: 15px; overflow-y: auto; flex-grow: 1; align-content: flex-start;
-        }
-
-        .power-card {
-            background-color: var(--modal-bg); border-radius: 12px; padding: 15px;
-            display: flex; flex-direction: column; justify-content: space-between;
-            min-height: 120px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            border: 1px solid #333; position: relative;
+        .app-icon:active { filter: brightness(0.7); transform: scale(0.95); }
+        .app-name {
+            margin-top: 8px; font-size: 12px; font-weight: 500; text-align: center;
+            width: 90px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
 
-        .power-card.mode-edit { border-color: #ff3b30; animation: shake 0.3s infinite; }
-        @keyframes shake {
-            0% { transform: rotate(0deg); }
-            25% { transform: rotate(-1deg); }
-            50% { transform: rotate(0deg); }
-            75% { transform: rotate(1deg); }
-            100% { transform: rotate(0deg); }
+        .status-overlay {
+            position: absolute; inset: 0; border-radius: 18px; background: rgba(0,0,0,0.6);
+            display: flex; justify-content: center; align-items: center; backdrop-filter: blur(2px);
+            z-index: 5;
         }
-
-        .power-title { font-weight: 600; font-size: 1rem; margin-bottom: 5px; word-wrap: break-word; }
-        .power-cat { font-size: 0.75rem; color: #8e8e93; margin-bottom: 10px; }
+        .spinner {
+            width: 24px; height: 24px; border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes jiggle { 0% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } 100% { transform: rotate(-2deg); } }
+        .is-editing .app-icon { animation: jiggle 0.3s infinite; }
 
         .delete-badge {
-            position: absolute; top: -8px; right: -8px; background: #ff3b30;
-            color: white; border-radius: 50%; width: 24px; height: 24px;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-            z-index: 10;
+            position: absolute; top: -6px; left: -6px; width: 24px; height: 24px; border-radius: 50%;
+            background: #ff3b30; color: white; font-weight: bold; font-size: 14px;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5); border: 2px solid #000; cursor: pointer; z-index: 10;
+        }
+        .add-app { background: rgba(255,255,255,0.1); border: 2px dashed rgba(255,255,255,0.3); box-shadow: none; color: rgba(255,255,255,0.5); }
+
+        .drawer-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);
+            z-index: 100; display: flex; flex-direction: column; justify-content: flex-end;
+        }
+        .drawer-content {
+            background: var(--modal-bg); border-radius: 24px 24px 0 0;
+            padding: 24px; box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+            max-height: 85vh; overflow-y: auto; display: flex; flex-direction: column;
+        }
+        .drawer-header { margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .drawer-header h2 { margin: 0 0 5px 0; font-size: 22px; }
+
+        .param-group { margin-bottom: 18px; }
+        .param-group label { display: block; font-size: 13px; color: #ccc; margin-bottom: 8px; }
+        .param-input-text {
+            width: 100%; padding: 12px; border-radius: 10px; border: none;
+            background: rgba(255,255,255,0.1); color: white; font-size: 16px; box-sizing: border-box;
+        }
+        .param-input-text:focus { outline: 2px solid var(--accent); }
+
+        select.native-select {
+            width: 100%; padding: 12px; border-radius: 10px; border: none;
+            background: rgba(255,255,255,0.1); color: white; font-size: 16px; box-sizing: border-box;
+            appearance: none; -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 14px center;
+        }
+        select.native-select:focus { outline: 2px solid var(--accent); }
+
+        .smart-picker-btn {
+            background: #3a3a3c; padding: 12px 14px; border-radius: 10px; cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center; color: var(--accent);
+            font-size: 16px; font-weight: 500;
         }
 
-        .exec-btn {
-            background-color: var(--accent); color: white; border: none;
-            padding: 12px 0; border-radius: 8px; font-weight: 600; width: 100%;
-            cursor: pointer;
+        .toggle-switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider-toggle {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #38383a; transition: .2s; border-radius: 28px;
         }
-        .exec-btn:active { opacity: 0.8; }
+        .slider-toggle:before {
+            position: absolute; content: ""; height: 24px; width: 24px; left: 2px; bottom: 2px;
+            background-color: white; transition: .2s; border-radius: 50%;
+        }
+        input:checked + .slider-toggle { background-color: #34c759; }
+        input:checked + .slider-toggle:before { transform: translateX(22px); }
 
-        /* Modal Styles */
-        .modal-overlay {
-            position: fixed; inset: 0; background: var(--overlay-bg);
-            display: flex; justify-content: center; align-items: center; z-index: 1000;
+        .action-btn {
+            width: 100%; padding: 16px; border-radius: 14px; border: none;
+            font-size: 18px; font-weight: bold; color: white; cursor: pointer; margin-top: 10px;
         }
-        .modal-content {
-            background-color: var(--modal-bg); width: 90%; max-width: 400px;
-            border-radius: 14px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            max-height: 80vh; display: flex; flex-direction: column;
-        }
+        .btn-cancel { background: #3a3a3c; }
 
-        .list-item {
-            padding: 12px; border-bottom: 1px solid #444; display: flex;
-            justify-content: space-between; align-items: center;
-        }
-        .list-item:last-child { border-bottom: none; }
+        .cat-Block { background-color: #B06161; } .cat-Item { background-color: #D4A373; }
+        .cat-Entity { background-color: #8D7EB5; } .cat-Geometry { background-color: #5B7BA1; }
+        .cat-Turtle { background-color: #C9A65B; } .cat-Default { background-color: #4a4a4a; }
 
-        .add-btn {
-            background-color: #34c759; color: white; border: none;
-            padding: 6px 12px; border-radius: 12px; font-size: 0.8rem; cursor: pointer;
+        .btn-text { background: none; border: none; color: var(--accent); font-size: 17px; cursor: pointer; padding: 0; }
+        .btn-text.bold { font-weight: 600; }
+        .search-container { padding: 12px 0; border-bottom: 1px solid #38383a; }
+        .search-input {
+            width: 100%; background: #2c2c2e; border: none; border-radius: 10px;
+            padding: 10px 14px 10px 36px; color: white; font-size: 16px; box-sizing: border-box;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238e8e93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: 10px center;
         }
+        .category-title { font-size: 13px; font-weight: 600; color: #8e8e93; text-transform: uppercase; margin: 20px 0 8px 12px; cursor: pointer; display: flex; justify-content: space-between; padding-right: 12px; }
+        .category-items { background: #2c2c2e; border-radius: 12px; overflow: hidden; }
+        .item-row { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid #38383a; cursor: pointer; }
+        .item-row:last-child { border-bottom: none; }
+        .item-row.selected .item-name { color: var(--accent); }
+        .item-name { flex: 1; font-size: 16px; font-weight: 500; }
+        .checkmark { color: var(--accent); font-size: 20px; font-weight: bold; display: none; }
+        .item-row.selected .checkmark { display: block; }
 
-        /* Picker Styles */
-        .picker-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .picker-search { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #444; background: #1c1c1e; color: white; margin-bottom: 15px; box-sizing: border-box;}
-        .picker-list { overflow-y: auto; flex-grow: 1; margin-bottom: 15px; }
-        .picker-item { padding: 12px; border-bottom: 1px solid #333; cursor: pointer; display: flex; justify-content: space-between; align-items: center;}
-        .picker-item.selected { background-color: rgba(10, 132, 255, 0.2); }
-        .picker-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: auto; }
+        .variant-select {
+            background: rgba(255, 255, 255, 0.1); color: #ffffff; border: 1px solid rgba(255,255,255,0.15);
+            padding: 6px 10px; border-radius: 8px; font-size: 14px; font-weight: 500; margin-right: 15px; cursor: pointer;
+            appearance: none; -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 8px center; padding-right: 28px;
+        }
 
         /* SUBSTAGE 2C: LOBBY STYLES */
         .lobby-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 50000; display: flex; align-items: center; justify-content: center; }
@@ -165,6 +220,7 @@
         .lobby-btn { width: 100%; padding: 12px; background: var(--accent, #0a84ff); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
         .share-token-row { display: flex; gap: 10px; margin-top: 5px; margin-bottom: 15px; }
         .share-btn { background: #34c759; color: white; border: none; padding: 0 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+
     </style>
 </head>
 <body x-data="ControlDeck()">
@@ -218,143 +274,181 @@
         </div>
     </div>
 
-    <div class="app-container">
-        <!-- Header -->
-        <header class="header">
-            <h1>MC-ED Control Deck</h1>
-            <div class="header-actions">
-                <button x-show="lobbyState === 'active'" @click="openShareModal()" class="btn" style="background-color: #34c759; border-color: #34c759;">
-                    <span x-text="lobbyData?.is_host ? 'Share World' : 'Mobile Link'"></span>
-                </button>
-                <button @click="toggleEditMode()" class="btn" :style="isEditMode ? 'background-color: #ff3b30;' : ''" x-text="isEditMode ? 'Done' : 'Edit'"></button>
-                <button @click="showLibrary = true" class="btn">Library</button>
+    <header>
+        <h1>Control Deck</h1>
+        <button class="edit-btn" :class="isEditing ? 'active' : ''" @click="toggleEditMode()" x-text="isEditing ? 'Done' : 'Edit Layout'"></button>
+        <button x-show="lobbyState === 'active'" @click="openShareModal()" class="share-btn" style="padding: 8px 16px;" x-text="lobbyData?.is_host ? 'Share World' : 'Mobile Link'"></button>
+    </header>
+
+    <main class="springboard" :class="isEditing ? 'is-editing' : ''">
+        <template x-for="instance in deckInstances" :key="instance.instanceId">
+            <div class="app-container">
+                <!-- Re-applied explicit Alpine event modifier to intercept touch-and-hold at the source -->
+                <div class="app-icon" :class="getCategoryClass(instance.category)"
+                     @pointerdown="handlePressStart(instance, $event)"
+                     @pointerup="handlePressEnd(instance, $event)"
+                     @pointerleave="handlePressCancel($event)"
+                     @pointercancel="handlePressCancel($event)"
+                     @contextmenu.prevent="true">
+
+                    <div class="delete-badge" x-show="isEditing" @click.stop="removeFromDeck(instance.instanceId)">×</div>
+                    <span x-text="instance.name.charAt(0).toUpperCase()"></span>
+                    <div class="status-overlay" x-show="powerStatus[instance.instanceId] === 'running'">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+                <div class="app-label app-name" x-text="instance.name"></div>
             </div>
-        </header>
+        </template>
 
-        <!-- Main Grid -->
-        <main class="grid-container">
-            <template x-for="item in deckLayout" :key="item.instanceId">
-                <div class="power-card" :class="isEditMode ? 'mode-edit' : ''">
-                    <div x-show="isEditMode" class="delete-badge" @click.stop="removeFromDeck(item.instanceId)">✕</div>
+        <div class="app-container" x-show="isEditing" x-cloak @click="showLibrary = true">
+            <div class="app-icon add-app">+</div>
+            <div class="app-label app-name">Add Power</div>
+        </div>
+    </main>
 
-                    <template x-if="getPowerDetails(item.powerId)">
-                        <div style="display: flex; flex-direction: column; height: 100%;">
-                            <div>
-                                <div class="power-title" x-text="getPowerDetails(item.powerId).name"></div>
-                                <div class="power-cat" x-text="getPowerDetails(item.powerId).category"></div>
-                            </div>
+    <!-- Execution/Parameters Drawer -->
+    <div class="drawer-overlay" x-show="activeInstance !== null && !showPicker" x-transition.opacity x-cloak>
+        <div class="drawer-content" @click.stop>
+            <template x-if="activeInstance">
+                <div>
+                    <div class="drawer-header">
+                        <div>
+                            <h2 x-text="activeInstance.name" style="margin: 0 0 5px 0;"></h2>
+                            <p x-text="activeInstance.description || 'No description provided.'" style="margin:0; color:#aaa; font-size:14px;"></p>
+                        </div>
+                    </div>
 
-                            <div style="margin-top: auto;">
-                                <!-- Parameters -->
-                                <template x-if="getPowerDetails(item.powerId).parameters && getPowerDetails(item.powerId).parameters.length > 0">
-                                    <div style="margin-bottom: 10px; display: flex; flex-direction: column; gap: 5px;">
-                                        <template x-for="param in getPowerDetails(item.powerId).parameters" :key="param.name">
-                                             <button class="btn" style="width: 100%; text-align: left; padding: 6px; font-size: 0.8rem; border-style: dashed;"
-                                                     @click="openPicker(item.instanceId, param.name)"
-                                                     :style="getParamValue(item.instanceId, param.name) ? 'border-style: solid; background: #3a3a3c;' : ''">
-                                                 <span style="color: #aaa;" x-text="param.name + ': '"></span>
-                                                 <span x-text="getParamValue(item.instanceId, param.name) || 'Tap to set...'"></span>
-                                             </button>
-                                        </template>
-                                    </div>
-                                </template>
+                    <template x-for="param in activeInstance.parameters" :key="param.name">
+                        <div class="param-group">
+                            <label x-text="param.name"></label>
 
-                                <!-- Execution Button -->
-                                <button class="exec-btn"
-                                        @click="executeInstance(item.instanceId)"
-                                        :style="!canExecute(item.instanceId) ? 'opacity: 0.5; cursor: not-allowed;' : ''"
-                                        x-text="getPowerDetails(item.powerId).parameters?.length > 0 ? 'Run' : 'Activate'">
-                                </button>
-                            </div>
+                            <template x-if="param.type === 'Number'">
+                                <div style="display:flex; gap:10px; align-items:center;">
+                                    <input type="range" x-model.number="executionParams[param.name]" style="flex:1" min="1" max="100">
+                                    <input type="number" class="param-input-text" x-model.number="executionParams[param.name]" style="width:70px; text-align:center; padding: 10px;">
+                                </div>
+                            </template>
+
+                            <template x-if="param.type === 'Boolean'">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" x-model="executionParams[param.name]">
+                                    <span class="slider-toggle"></span>
+                                </label>
+                            </template>
+
+                            <template x-if="param.type === '3DVector'">
+                                <div style="display:flex; gap:10px; align-items:center;">
+                                    <span style="color:#8e8e93; font-size:13px; font-weight:bold;">X</span>
+                                    <input type="number" class="param-input-text" x-model.number="executionParams[param.name].x" style="flex:1; text-align:center; padding: 10px;">
+                                    <span style="color:#8e8e93; font-size:13px; font-weight:bold;">Y</span>
+                                    <input type="number" class="param-input-text" x-model.number="executionParams[param.name].y" style="flex:1; text-align:center; padding: 10px;">
+                                    <span style="color:#8e8e93; font-size:13px; font-weight:bold;">Z</span>
+                                    <input type="number" class="param-input-text" x-model.number="executionParams[param.name].z" style="flex:1; text-align:center; padding: 10px;">
+                                </div>
+                            </template>
+
+                            <template x-if="isEnumType(param.type)">
+                                <select class="native-select" x-model="executionParams[param.name]">
+                                    <template x-for="opt in taxonomy[param.type]" :key="opt.value">
+                                        <option :value="opt.value" x-text="opt.name"></option>
+                                    </template>
+                                </select>
+                            </template>
+
+                            <template x-if="['Block', 'Item', 'Entity'].includes(param.type)">
+                                <div class="smart-picker-btn" @click="openPicker(param.type, param.name)">
+                                    <span x-text="formatDisplayValue(executionParams[param.name])"></span>
+                                    <span>▼</span>
+                                </div>
+                            </template>
+
+                            <template x-if="!['Number', 'Boolean', '3DVector', 'Block', 'Item', 'Entity'].includes(param.type) && !isEnumType(param.type)">
+                                <input type="text" class="param-input-text" x-model="executionParams[param.name]">
+                            </template>
                         </div>
                     </template>
-                    <template x-if="!getPowerDetails(item.powerId)">
-                        <div style="color: #ff453a; text-align: center; margin-top: auto; margin-bottom: auto;">Power Missing</div>
-                    </template>
+
+                    <button class="action-btn" :class="getCategoryClass(activeInstance.category)" @click="saveConfig()">Load Configuration</button>
+                    <button class="action-btn btn-cancel" @click="activeInstance = null">Cancel</button>
                 </div>
             </template>
-
-            <!-- Empty State -->
-            <div x-show="deckLayout.length === 0" style="grid-column: 1 / -1; text-align: center; color: #8e8e93; margin-top: 40px;">
-                <p>Your deck is empty.</p>
-                <p>Tap 'Library' to add powers.</p>
-            </div>
-        </main>
-    </div>
-
-    <!-- Modals -->
-
-    <!-- 1. Library Modal -->
-    <div x-cloak x-show="showLibrary" class="modal-overlay" @click.self="showLibrary = false">
-        <div class="modal-content">
-            <h2 style="margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 10px;">Power Library</h2>
-            <div style="overflow-y: auto; flex-grow: 1; margin-bottom: 15px;">
-                <template x-for="power in availablePowers" :key="power.power_id">
-                    <div class="list-item">
-                        <div>
-                            <div style="font-weight: 600;" x-text="power.name"></div>
-                            <div style="font-size: 0.8rem; color: #8e8e93;" x-text="power.category"></div>
-                        </div>
-                        <button class="add-btn" @click="addToDeck(power.power_id)">Add</button>
-                    </div>
-                </template>
-                <div x-show="availablePowers.length === 0" style="text-align: center; color: #8e8e93; padding: 20px;">
-                    No powers found.
-                </div>
-            </div>
-            <button class="btn" style="width: 100%;" @click="showLibrary = false">Close</button>
         </div>
     </div>
 
-    <!-- 2. Taxonomy Picker Modal -->
-    <div x-cloak x-show="showPicker" class="modal-overlay" @click.self="cancelPicker()">
-        <div class="modal-content" style="height: 80vh;">
-            <div class="picker-header">
-                <h3 style="margin: 0;">Select Value</h3>
-                <span style="color: #8e8e93; font-size: 0.9rem;" x-text="pendingParamName"></span>
+    <!-- The Smart Picker Drawer -->
+    <div class="drawer-overlay" x-show="showPicker" x-transition.opacity x-cloak>
+        <div class="drawer-content" style="height: 85vh; padding-top: 15px;" @click.stop>
+            <div class="drawer-header" style="margin-bottom: 5px;">
+                <button class="btn-text" @click="cancelPicker()">Cancel</button>
+                <h3 style="margin:0; font-size:18px;">Select Material</h3>
+                <button class="btn-text bold" @click="confirmPicker()">Done</button>
             </div>
 
-            <input type="text" x-model="searchQuery" placeholder="Search..." class="picker-search">
+            <div class="search-container">
+                <input type="text" class="search-input" x-model="searchQuery" placeholder="Search...">
+            </div>
 
-            <div class="picker-list">
-                <template x-for="item in filteredTaxonomy" :key="item.value">
-                    <div class="picker-item"
-                         :class="isItemSelected(item) ? 'selected' : ''"
-                         @click="pendingPickerValue = item.variants ? item.template.replace('{}', item.variants[0]) : item.value">
-
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <!-- Show icon based on item structure -->
-                            <template x-if="item.asset_id">
-                                <span style="font-size: 1.2rem;">🧱</span>
-                            </template>
-                            <template x-if="!item.asset_id">
-                                <span style="font-size: 1.2rem;">🎯</span>
-                            </template>
-
-                            <div>
-                                <div style="font-weight: 500;" x-text="item.label || item.name || item.value"></div>
-                                <div style="font-size: 0.75rem; color: #8e8e93;" x-text="item.value"></div>
-                            </div>
+            <div class="list-container" style="padding: 0 0 40px 0;">
+                <template x-for="group in filteredTaxonomy" :key="group.name">
+                    <div class="category-group" x-data="{ expanded: false }">
+                        <div class="category-title" @click="expanded = !expanded" x-init="if (filteredTaxonomy.length === 1) expanded = true">
+                            <span x-text="group.name"></span>
+                            <span x-text="(expanded || searchQuery.trim() !== '') ? '▼' : '▶'" style="font-size: 10px;"></span>
                         </div>
 
-                        <template x-if="isItemSelected(item)">
-                            <span style="color: var(--accent);">✓</span>
-                        </template>
+                        <div class="category-items" x-show="expanded || searchQuery.trim() !== ''" x-transition>
+                            <template x-for="item in group.items" :key="item.name">
+                                <div class="item-row" :class="isItemSelected(item) ? 'selected' : ''" @click="selectPickerItem(item, false)">
+                                    <div class="item-name" x-text="item.name"></div>
+
+                                    <template x-if="item.variants">
+                                        <select class="variant-select" x-model="item.currentVariant" @click.stop @change="selectPickerItem(item, true)">
+                                            <template x-for="v in item.variants" :key="v">
+                                                <option :value="v" x-text="v"></option>
+                                            </template>
+                                        </select>
+                                    </template>
+                                    <div class="checkmark">✓</div>
+                                </div>
+                            </template>
+                        </div>
                     </div>
                 </template>
-                <div x-show="filteredTaxonomy.length === 0" style="text-align: center; color: #8e8e93; padding: 20px;">
-                    No matches found.
-                </div>
             </div>
+        </div>
+    </div>
 
-            <div class="picker-actions">
-                <button class="btn" @click="cancelPicker()">Cancel</button>
-                <button class="btn" style="background: var(--accent);" @click="confirmPicker()" :disabled="!pendingPickerValue">Select</button>
+    <!-- Library Wrapper -->
+    <div class="drawer-overlay" x-show="showLibrary" x-transition.opacity x-cloak>
+        <div class="drawer-content" style="height: 80vh;" @click.stop>
+            <h2 style="margin-top:0">Power Library</h2>
+            <div style="overflow-y: auto; flex:1; margin-bottom: 20px;">
+                <template x-for="p in allPowers" :key="p.power_id">
+                    <div style="padding: 12px; border-bottom: 1px solid #38383a; cursor: pointer; display: flex; align-items: center;" @click="addToDeck(p.power_id)">
+                        <div class="app-icon" :class="getCategoryClass(p.category)" style="width: 40px; height: 40px; font-size: 18px; border-radius: 10px; margin-right: 15px;">
+                            <span x-text="p.name.charAt(0)"></span>
+                        </div>
+                        <div style="flex: 1;"><div style="font-weight: 600;" x-text="p.name"></div></div>
+                    </div>
+                </template>
             </div>
+            <button class="action-btn btn-cancel" @click="showLibrary = false">Close</button>
         </div>
     </div>
 
     <script>
+        // --- GLOBAL CONTEXT MENU INTERCEPTOR ---
+        // Bulletproof fix for Chrome OS / Android touchscreen long-presses
+        document.addEventListener('contextmenu', (e) => {
+            // Allow native right-click/long-press ONLY inside input fields (so you can still paste text)
+            if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) {
+                return;
+            }
+            // Block the "Exit full screen" / native browser menu everywhere else on the canvas
+            e.preventDefault();
+        });
+
         document.addEventListener('alpine:init', () => {
             Alpine.data('ControlDeck', () => ({
                 // --- SUBSTAGE 2C: Lobby State Variables ---
@@ -364,20 +458,26 @@
                 joinError: '',
                 showShareModal: false,
 
-                showLibrary: false,
-                isEditMode: false,
-                availablePowers: [],
-                deckLayout: JSON.parse(localStorage.getItem('mced_deck_layout')) || [],
+                isEditing: false,
+                allPowers: [],
+                deckLayout: [],
+                activeInstance: null, executionParams: {}, powerStatus: {},
 
-                // Picker State
-                showPicker: false,
-                taxonomyData: [],
-                searchQuery: '',
-                pendingInstanceId: null,
-                pendingParamName: null,
+                taxonomy: {},
+                showLibrary: false, showPicker: false,
+                pickerType: '', activeParamName: '', searchQuery: '',
                 pendingPickerValue: null,
 
-                init() {
+                pressTimer: null,
+                isLongPress: false,
+                runningQueue: {}, // Maps powerId -> Array of executing instanceIds as a fallback
+                socket: null, // --- ADD: Store the socket in the component state ---
+
+                generateId() {
+                    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+                },
+
+                async init() {
                     // Fetch initial state when page loads
                     this.checkLobbyState();
 
@@ -388,7 +488,59 @@
                         this.checkLobbyState();
                     });
 
-                    this.fetchTaxonomy();
+                    const saved = localStorage.getItem('mced_deck_layout');
+                    if (saved) {
+                        let parsed = JSON.parse(saved);
+                        let needsMigration = false;
+
+                        this.deckLayout = parsed.map(item => {
+                            if (typeof item === 'string') {
+                                needsMigration = true;
+                                return { instanceId: this.generateId(), powerId: item };
+                            }
+                            return item;
+                        });
+
+                        if (needsMigration) this.saveLayout();
+                    }
+
+                    await Promise.all([this.fetchPowers(), this.fetchTaxonomy()]);
+
+                    // --- FIX: Store the initialized socket on the component ---
+                    this.socket = io();
+                    this.socket.on('power_status', (data) => {
+                        if (data.status === 'running' || data.status === 'dispatched') {
+                            if (data.execution_id) {
+                                this.powerStatus[data.execution_id] = 'running';
+                            }
+                            return;
+                        }
+
+                        // Normalize all termination states ('idle', 'finished', 'error') to 'idle'
+                        if (data.execution_id) {
+                            this.powerStatus[data.execution_id] = 'idle';
+
+                            // Clean it out of the fallback queue to keep things tidy
+                            if (this.runningQueue[data.id]) {
+                                this.runningQueue[data.id] = this.runningQueue[data.id].filter(id => id !== data.execution_id);
+                            }
+                        }
+                        // 2. FALLBACK QUEUE: If backend hasn't been updated with execution_id yet
+                        else if (this.runningQueue[data.id] && this.runningQueue[data.id].length > 0) {
+                            const finishedInstanceId = this.runningQueue[data.id].shift();
+                            this.powerStatus[finishedInstanceId] = 'idle';
+                        }
+                        // 3. ABSOLUTE FALLBACK
+                        else {
+                            this.deckLayout.forEach(item => {
+                                if (item.powerId === data.id && this.powerStatus[item.instanceId] === 'running') {
+                                    this.powerStatus[item.instanceId] = 'idle';
+                                }
+                            });
+                        }
+
+                        if(data.status === 'error') alert(`Error:\n${data.message}`);
+                    });
                 },
 
                 // --- SUBSTAGE 2C: Lobby Logic ---
@@ -412,7 +564,8 @@
                             this.lobbyState = data.status;
                             if (data.status === 'active') {
                                 this.lobbyData = data;
-                                this.fetchPowers();
+                                // Once active, load the user's saved powers
+                                if (typeof this.fetchPowers === 'function') this.fetchPowers();
                             }
                         } else {
                             this.lobbyState = 'standby';
@@ -440,6 +593,8 @@
                         if (!res.ok) {
                             this.joinError = "Failed to connect. Server rejected request.";
                         }
+                        // Note: We don't manually set lobbyState='active' here.
+                        // The backend socket will emit 'state_changed', seamlessly driving the UI!
                     } catch (e) {
                         this.joinError = "Network error while joining.";
                         console.error(e);
@@ -477,104 +632,254 @@
                     });
                 },
 
-                generateId() { return Math.random().toString(36).substr(2, 9); },
-
                 async fetchPowers() {
                     try {
-                        const res = await fetch('/api/powers?view=control&format=json');
-                        if (res.ok) this.availablePowers = await res.json();
-                    } catch (e) { console.error("Failed to fetch powers", e); }
+                        const res = await fetch('/api/powers?view=control&format=json', { headers: { 'Accept': 'application/json' }});
+                        const data = await res.json();
+                        this.allPowers = Array.isArray(data) ? data : Object.values(data);
+                    } catch (e) { console.error("Failed to load powers", e); }
                 },
 
                 async fetchTaxonomy() {
                     try {
                         const res = await fetch('/api/taxonomy');
-                        if (res.ok) this.taxonomyData = await res.json();
-                    } catch (e) { console.error("Failed to fetch taxonomy", e); }
+                        this.taxonomy = await res.json();
+                    } catch (e) { console.error("Failed to load taxonomy", e); }
                 },
 
-                toggleEditMode() { this.isEditMode = !this.isEditMode; },
-
-                getPowerDetails(powerId) {
-                    return this.availablePowers.find(p => p.power_id === powerId);
-                },
-
-                getParamValue(instanceId, paramName) {
-                    const params = JSON.parse(localStorage.getItem('mced_widget_params_' + instanceId)) || {};
-                    return params[paramName];
-                },
-
-                canExecute(instanceId) {
-                    const item = this.deckLayout.find(i => i.instanceId === instanceId);
-                    if (!item) return false;
-                    const details = this.getPowerDetails(item.powerId);
-                    if (!details) return false;
-
-                    if (!details.parameters || details.parameters.length === 0) return true;
-
-                    const savedParams = JSON.parse(localStorage.getItem('mced_widget_params_' + instanceId)) || {};
-                    for (let p of details.parameters) {
-                        if (!savedParams[p.name]) return false;
-                    }
-                    return true;
-                },
-
-                async executeInstance(instanceId) {
-                    if (!this.canExecute(instanceId)) return;
-
-                    const item = this.deckLayout.find(i => i.instanceId === instanceId);
-                    const details = this.getPowerDetails(item.powerId);
-                    const savedParams = JSON.parse(localStorage.getItem('mced_widget_params_' + instanceId)) || {};
-
-                    const payload = {
-                        code: details.python_code,
-                        metadata: {
-                            id: details.power_id,
-                            function_name: details.function_name,
-                            params: savedParams
+                get deckInstances() {
+                    return this.deckLayout.map(item => {
+                        const power = this.allPowers.find(p => p.power_id === item.powerId);
+                        if (power) {
+                            return { ...power, instanceId: item.instanceId };
                         }
+                        return null;
+                    }).filter(p => p !== null);
+                },
+
+                getCategoryClass(category) {
+                    if (!category) return 'cat-Default';
+                    return `cat-${category.split('/')[0].replace(/\s+/g, '')}`;
+                },
+
+                async toggleEditMode() {
+                    this.isEditing = !this.isEditing;
+                    // Refresh the powers list from the server whenever we enter Edit mode
+                    if (this.isEditing) {
+                        await this.fetchPowers();
+                    }
+                },
+
+                handlePressStart(instance, event) {
+                    if (this.isEditing) return;
+                    this.isLongPress = false;
+
+                    this.pressTimer = setTimeout(() => {
+                        this.isLongPress = true;
+                        this.openConfigDrawer(instance);
+                    }, 500);
+                },
+
+                handlePressEnd(instance, event) {
+                    if (this.isEditing) return;
+
+                    if (this.pressTimer) {
+                        clearTimeout(this.pressTimer);
+                        this.pressTimer = null;
+
+                        if (!this.isLongPress) {
+                            this.quickExecute(instance);
+                        }
+                    }
+                },
+
+                handlePressCancel(event) {
+                    if (this.pressTimer) {
+                        clearTimeout(this.pressTimer);
+                        this.pressTimer = null;
+                    }
+                },
+
+                openConfigDrawer(instance) {
+                    if (this.powerStatus[instance.instanceId] === 'running') return;
+
+                    this.activeInstance = instance;
+                    this.loadParamsForPower(instance);
+                },
+
+                quickExecute(instance) {
+                    if (this.powerStatus[instance.instanceId] === 'running') {
+                         if(confirm(`Cancel ${instance.name}?`)) {
+
+                             // --- THE MAGIC CONCURRENCY FIX ---
+                             // Fire the cancellation request to your backend's dedicated WebSocket listener,
+                             // passing the exact instance ID of this specific widget button!
+                             this.socket.emit('cancel_power', { execution_id: instance.instanceId });
+
+                             this.powerStatus[instance.instanceId] = 'idle';
+                             if (this.runningQueue[instance.power_id]) {
+                                 this.runningQueue[instance.power_id] = this.runningQueue[instance.power_id].filter(id => id !== instance.instanceId);
+                             }
+                         }
+                         return;
+                    }
+
+                    this.activeInstance = instance;
+                    this.loadParamsForPower(instance);
+                    this.executePower();
+                },
+
+                loadParamsForPower(instance) {
+                    this.executionParams = {};
+                    const cacheRaw = localStorage.getItem('mced_widget_params_' + instance.instanceId);
+                    const cache = cacheRaw ? JSON.parse(cacheRaw) : {};
+
+                    if (instance.parameters) {
+                        instance.parameters.forEach(p => {
+                            let valueToSet;
+                            if (cache.hasOwnProperty(p.name)) {
+                                valueToSet = cache[p.name];
+                            } else if (p.default !== undefined && p.default !== null && p.default !== '') {
+                                valueToSet = p.default;
+                            } else {
+                                valueToSet = this.getDefaultValue(p.type);
+                            }
+
+                            if (p.type === '3DVector' && typeof valueToSet === 'object' && valueToSet !== null) {
+                                this.executionParams[p.name] = { x: valueToSet.x || 0, y: valueToSet.y || 0, z: valueToSet.z || 0 };
+                            } else {
+                                this.executionParams[p.name] = valueToSet;
+                            }
+                        });
+                    }
+                },
+
+                saveConfig() {
+                    if (this.activeInstance) {
+                        localStorage.setItem('mced_widget_params_' + this.activeInstance.instanceId, JSON.stringify(this.executionParams));
+                        this.activeInstance = null;
+                    }
+                },
+
+                getDefaultValue(type) {
+                    if (type === 'Number') return 10;
+                    if (type === 'Boolean') return false;
+                    if (type === '3DVector') return { x: 0, y: 0, z: 0 };
+
+                    if (this.taxonomy && this.taxonomy[type]) {
+                        if (['Block', 'Item', 'Entity'].includes(type)) {
+                            const firstGroup = this.taxonomy[type][0];
+                            if (firstGroup && firstGroup.items && firstGroup.items.length > 0) {
+                                const item = firstGroup.items[0];
+                                return item.variants ? item.template.replace('{}', item.currentVariant.toUpperCase().replace(/ /g, '_')) : item.value;
+                            }
+                        } else if (this.taxonomy[type].length > 0) {
+                            return this.taxonomy[type][0].value;
+                        }
+                    }
+                    return '';
+                },
+
+                async executePower() {
+                    if (!this.activeInstance) return;
+
+                    localStorage.setItem('mced_widget_params_' + this.activeInstance.instanceId, JSON.stringify(this.executionParams));
+
+                    // --- NEW: Attach the execution_id to the payload ---
+                    const payload = {
+                        power_id: this.activeInstance.power_id,
+                        execution_id: this.activeInstance.instanceId
                     };
 
+                    for (const [key, value] of Object.entries(this.executionParams)) {
+                        if (value !== null && typeof value === 'object' && 'x' in value) {
+                            payload[key] = value;
+                        } else {
+                            payload[key] = (typeof value === 'boolean' || isNaN(value) || value.toString().trim() === '') ? value : Number(value);
+                        }
+                    }
+
+                    this.powerStatus[this.activeInstance.instanceId] = 'running';
+
+                    // Add to fallback queue just in case backend isn't updated
+                    if (!this.runningQueue[this.activeInstance.power_id]) {
+                        this.runningQueue[this.activeInstance.power_id] = [];
+                    }
+                    this.runningQueue[this.activeInstance.power_id].push(this.activeInstance.instanceId);
+
+                    const executingInstanceId = this.activeInstance.instanceId;
+                    const executingPowerId = this.activeInstance.power_id;
+
+                    this.activeInstance = null;
+
                     try {
-                        await fetch('/api/ipython_magic', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                command: 'mc_debug_and_define',
-                                arguments: JSON.stringify(payload)
-                            })
+                        await fetch(`/api/execute_power`, {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
                         });
                     } catch (e) {
-                        alert("Execution failed.");
+                        this.powerStatus[executingInstanceId] = 'error';
+                        if (this.runningQueue[executingPowerId]) {
+                            this.runningQueue[executingPowerId] = this.runningQueue[executingPowerId].filter(id => id !== executingInstanceId);
+                        }
                     }
                 },
 
-                // Picker Logic
-                get filteredTaxonomy() {
-                    if (!this.searchQuery) return this.taxonomyData;
-                    const q = this.searchQuery.toLowerCase();
-                    return this.taxonomyData.filter(item => {
-                        const searchStr = `${item.label || ''} ${item.name || ''} ${item.value || ''}`.toLowerCase();
-                        return searchStr.includes(q);
-                    });
+                // --- SMART PICKER LOGIC ---
+                isEnumType(type) { return !!this.taxonomy[type] && !['Block', 'Item', 'Entity'].includes(type); },
+
+                formatDisplayValue(val) {
+                    if (!val) return 'Select...';
+                    return String(val).split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
                 },
 
-                openPicker(instanceId, paramName) {
-                    this.pendingInstanceId = instanceId;
-                    this.pendingParamName = paramName;
-                    this.pendingPickerValue = this.getParamValue(instanceId, paramName);
+                openPicker(type, paramName) {
+                    this.activeParamName = paramName;
+                    this.pickerType = type;
                     this.searchQuery = '';
+                    this.pendingPickerValue = this.executionParams[paramName] || this.getDefaultValue(type);
                     this.showPicker = true;
                 },
 
+                get filteredTaxonomy() {
+                    if (!this.pickerType || !this.taxonomy[this.pickerType]) return [];
+                    let baseGroups = this.taxonomy[this.pickerType];
+
+                    if (this.activeInstance && this.activeInstance.parameters) {
+                        const paramDef = this.activeInstance.parameters.find(p => p.name === this.activeParamName);
+                        if (paramDef && paramDef.picker_source) {
+                            const match = paramDef.picker_source.match(/^mc_(?:block|item|entity)_picker_(.+)$/);
+                            if (match) {
+                                let expectedName = match[1].split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+                                if (expectedName === 'General') expectedName = `Other ${this.pickerType}s`;
+
+                                const specificGroup = baseGroups.find(g => g.name === expectedName);
+                                if (specificGroup) {
+                                    baseGroups = [specificGroup];
+                                }
+                            }
+                        }
+                    }
+
+                    if (this.searchQuery.trim() === '') return baseGroups;
+
+                    const query = this.searchQuery.toLowerCase();
+                    return baseGroups.map(group => ({
+                        name: group.name,
+                        items: group.items.filter(b => b.name.toLowerCase().includes(query))
+                    })).filter(group => group.items.length > 0);
+                },
+
+                selectPickerItem(item, isVariantChange) {
+                    let finalValue = item.value;
+                    if (item.variants) {
+                        let variantPrefix = item.currentVariant.toUpperCase().replace(/ /g, '_');
+                        finalValue = item.template.replace('{}', variantPrefix);
+                    }
+                    this.pendingPickerValue = finalValue;
+                },
+
                 confirmPicker() {
-                    if (!this.pendingPickerValue) return;
-
-                    const storageKey = 'mced_widget_params_' + this.pendingInstanceId;
-                    const params = JSON.parse(localStorage.getItem(storageKey)) || {};
-                    params[this.pendingParamName] = this.pendingPickerValue;
-                    localStorage.setItem(storageKey, JSON.stringify(params));
-
+                    this.executionParams[this.activeParamName] = this.pendingPickerValue;
                     this.showPicker = false;
                     this.searchQuery = '';
                 },
