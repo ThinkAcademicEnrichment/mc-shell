@@ -36,6 +36,19 @@ app.register_blueprint(powers_bp)
 app.register_blueprint(control_bp)
 app.register_blueprint(ipython_bp)
 
+@app.before_request
+def check_auth_token():
+    """Enforce security on all API endpoints (Soft Mode)"""
+    if request.path.startswith('/api/'):
+        auth_header = request.headers.get('Authorization')
+        token = request.args.get('auth') # Fallback if passed in URL
+
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
+
+        if token != GUI_AUTH_TOKEN:
+            print(f"\n[SECURITY WARNING] Unauthorized API access attempt to {request.path}! (Soft Mode: request allowed)")
+
 # --- Suppress Flask's Default Console Logging ---
 flask_logger = logging.getLogger('werkzeug')
 flask_logger.setLevel(logging.DEBUG)
