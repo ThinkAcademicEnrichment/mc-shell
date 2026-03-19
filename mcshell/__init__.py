@@ -349,13 +349,13 @@ class MCShell(Magics):
 
         if data['authkey']:
             if data['vpn_mode'] == 'subnet':
-                print("\n[ CLASSROOM VPN CONNECTION (Subnet Router Mode) ]")
+                print("\n[ VPN CONNECTION (Subnet Router Mode) ]")
                 print(f"Token : {data['tokens']['classroom_vpn']}")
             elif data['vpn_mode'] == 'node':
-                print("\n[ CLASSROOM VPN CONNECTION (Node-to-Node Mode) ]")
+                print("\n[ VPN CONNECTION (Node-to-Node Mode) ]")
                 print(f"Token : {data['tokens']['classroom_vpn']}")
             elif data['vpn_mode'] == 'error':
-                print("\n[ CLASSROOM VPN CONNECTION (Node-to-Node Mode) ]")
+                print("\n[ VPN CONNECTION (Node-to-Node Mode) ]")
                 print("⚠️  ERROR: Tailscale failed to acquire a VPN IP.")
                 print("⚠️  Cannot generate an automated remote token. Check your Tailscale installation.")
 
