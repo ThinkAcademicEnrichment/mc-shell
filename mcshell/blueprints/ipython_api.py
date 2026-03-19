@@ -57,14 +57,19 @@ def get_lobby_data():
         # Extract the active MCShell magic instance from IPython's registry
         mcshell_instance = shell.magics_manager.registry.get('MCShell')
         if mcshell_instance:
-            # Fetch the structured token data
-            hub_data = mcshell_instance._get_connection_hub_data()
+            # NEW: Distinguish between the host (who owns the server) and a joined client
+            is_host = bool(mcshell_instance.active_paper_server and mcshell_instance.active_paper_server.is_alive())
+
+            # Only give out the connection hub tokens if they are actually the host!
+            hub_data = mcshell_instance._get_connection_hub_data() if is_host else None
+
             return jsonify({
                 "status": "active",
                 "player": mc_name,
+                "is_host": is_host,
                 "hub": hub_data
             })
     except Exception as e:
         print(f"Error fetching connection hub data: {e}")
 
-    return jsonify({"status": "active", "player": mc_name, "hub": {}})
+    return jsonify({"status": "active", "player": mc_name, "is_host": False, "hub": None})
