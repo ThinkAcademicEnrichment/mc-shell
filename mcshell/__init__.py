@@ -10,7 +10,7 @@ from rich.prompt import Prompt
 from mcshell.constants import *
 from mcshell.mcrepo import SQLiteRepository
 from mcshell.mcclient import MCClient
-from mcshell.mcserver import start_app_server, reset_app_server_context
+from mcshell.mcserver import start_app_server, reset_app_server_context, GUI_AUTH_TOKEN
 from mcshell.mcactions import *
 from mcshell.mcserver import execute_power_in_thread, RUNNING_POWERS # Import helpers
 from mcshell.ppmanager import *
@@ -1003,11 +1003,11 @@ class MCShell(Magics):
         if self.app_server_thread and self.app_server_thread.is_alive():
             if self.mc_name:
                 print(f"🟢 MCED App Server  : RUNNING (Active Player: {self.mc_name})")
-                print(f"   Editor URL         : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}")
-                print(f"   Control URL        : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}/control")
+                print(f"   Editor URL         : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}?auth={GUI_AUTH_TOKEN}")
+                print(f"   Control URL        : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}/control?auth={GUI_AUTH_TOKEN}")
             else:
                 print(f"🟡 MCED App Server  : STANDBY")
-                print(f"   Lobby URL          : http://localhost:{MC_APP_PORT}/lobby")
+                print(f"   Lobby URL          : http://localhost:{MC_APP_PORT}/lobby?auth={GUI_AUTH_TOKEN}")
         else:
             print("🔴 Editor App Server  : STOPPED")
 
@@ -1583,9 +1583,9 @@ class MCShell(Magics):
         self.app_server_thread = start_app_server(self.server_data, minecraft_name, self.shell, power_repo)
 
         print(f"Open a browser here to use the editor:")
-        print(f"\thttp://{socket.gethostname()}.local:{self.server_data['app_port']}")
+        print(f"\thttp://{socket.gethostname()}.local:{self.server_data['app_port']}?auth={GUI_AUTH_TOKEN}")
         print(f"Open a browser here to use the control:")
-        print(f"\thttp://{socket.gethostname()}.local:{self.server_data['app_port']}/control")
+        print(f"\thttp://{socket.gethostname()}.local:{self.server_data['app_port']}/control?auth={GUI_AUTH_TOKEN}")
 
         print(f"\n" + "="*55)
         print(f"🎮 READY TO PLAY! Enter this into Minecraft:")
@@ -2062,11 +2062,13 @@ def load_ipython_extension(ip):
     mcshell_instance = MCShell(ip)
     ip.register_magics(mcshell_instance)
 
-    # --- SUBSTAGE 1A: Launch Standby Server ---
+    from mcshell.mcserver import GUI_AUTH_TOKEN
+
+    # --- SUBSTAGE 1A & 1B: Launch Standby Server and Distribute Token ---
     print("\n" + "="*60)
     print("🚀 MC-SHELL STANDBY LOBBY ACTIVATED")
     print("="*60)
-    print(f"Lobby Access: http://localhost:{MC_APP_PORT}/lobby")
+    print(f"Lobby Access: http://localhost:{MC_APP_PORT}/lobby?auth={GUI_AUTH_TOKEN}")
     print("="*60 + "\n")
 
     mcshell_instance.app_server_thread = start_app_server(
