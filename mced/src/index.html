@@ -47,10 +47,31 @@
 
         </script>
 
+        <!-- SUBSTAGE 2C: Lobby Dependencies & Styles -->
+        <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+        <style>
+            [x-cloak] { display: none !important; }
+            .lobby-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 50000; display: flex; align-items: center; justify-content: center; }
+            .lobby-card { background: #2c2c2e; padding: 2rem; border-radius: 12px; width: 90%; max-width: 450px; text-align: center; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.3); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+            .lobby-input { width: 100%; padding: 12px; margin: 15px 0; border-radius: 8px; border: 1px solid #444; background: #1c1c1e; color: white; box-sizing: border-box; }
+            .lobby-btn { width: 100%; padding: 12px; background: #0a84ff; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
+        </style>
+
         <link rel="stylesheet" href="./editor.css">
 
     </head>
     <body x-data="{ isLibraryCollapsed: true, isCodeCollapsed: true, keyboardVisible: false }">
+           <!-- SUBSTAGE 2C: The Lobby Overlay -->
+            <div x-data="Lobby()" x-cloak x-show="lobbyState === 'standby'" class="lobby-overlay">
+                <div class="lobby-card">
+                    <h2 style="margin-top: 0;">MC-ED Editor Lobby</h2>
+                    <p style="color: #aaa; margin-bottom: 20px;">Waiting for an active Minecraft session. Enter a token to join a world instantly.</p>
+                    <input type="text" x-model="joinToken" placeholder="Paste Join Token..." class="lobby-input">
+                    <button @click="joinWorld()" class="lobby-btn">Join World</button>
+                    <div x-show="joinError" x-text="joinError" style="color: #ff453a; margin-top: 10px; font-size: 0.9rem;"></div>
+                </div>
+            </div>
+
             <div class="editor-layout" :class="{ 'library-collapsed': isLibraryCollapsed, 'code-collapsed': isCodeCollapsed }">
                 <aside id="power-library-panel">
 
@@ -188,6 +209,69 @@
         </template>
 
         <script type="module" src="./index.js"></script>
+
+        <!-- SUBSTAGE 2C: Lobby Component Logic -->
+        <script>
+            document.addEventListener('alpine:init', () => {
+                Alpine.data('Lobby', () => ({
+                    lobbyState: 'loading', // 'loading', 'standby', 'active'
+                    joinToken: '',
+                    joinError: '',
+
+                    init() {
+                        this.checkLobbyState();
+                        const socket = io();
+                        socket.on('state_changed', (data) => {
+                            this.checkLobbyState();
+                        });
+                    },
+
+                    async checkLobbyState() {
+                        try {
+                            const response = await fetch('/api/lobby_data');
+                            if (response.ok) {
+                                const data = await response.json();
+                                const previousState = this.lobbyState;
+                                this.lobbyState = data.status;
+
+                                // Automatically prompt HTMX to load the powers list upon connection!
+                                if (data.status === 'active' && previousState !== 'active') {
+                                    document.body.dispatchEvent(new Event('library-changed'));
+                                }
+                            } else {
+                                this.lobbyState = 'standby';
+                            }
+                        } catch (e) {
+                            console.error("Failed to fetch lobby state", e);
+                            this.lobbyState = 'standby';
+                        }
+                    },
+
+                    async joinWorld() {
+                        this.joinError = '';
+                        if (!this.joinToken.trim()) {
+                            this.joinError = 'Please enter a valid token.';
+                            return;
+                        }
+                        try {
+                            const res = await fetch('/api/ipython_magic', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ command: 'pp_join_world', arguments: this.joinToken.trim() })
+                            });
+                            if (!res.ok) {
+                                this.joinError = 'Failed to connect. Server rejected request.';
+                            }
+                            // The backend's success will emit 'state_changed' via socket.io, hiding this UI automatically.
+                        } catch (e) {
+                            this.joinError = 'Network error while joining.';
+                            console.error(e);
+                        }
+                    }
+                }));
+            });
+        </script>
+
         <div class="simple-keyboard"
              x-show="keyboardVisible"
              style="position: fixed; bottom: 0; left: 0; width: 100%; z-index: 41000; background: white;">
