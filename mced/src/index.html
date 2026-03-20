@@ -3,48 +3,38 @@
     <head>
         <meta charset="utf-8">
         <title>MC-ED Editor</title>
-        <!-- SUBSTAGE 2A: Capture and hide the GUI Auth Token -->
+
+        <!-- SUBSTAGE 2A: Capture Token & Global Interceptors -->
         <script>
             const params = new URLSearchParams(window.location.search);
             const auth = params.get('auth');
             if (auth) {
                 sessionStorage.setItem('GUI_AUTH_TOKEN', auth);
-                // Clean the URL so the token isn't visible/copied
                 const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
                 window.history.replaceState({path: cleanUrl}, '', cleanUrl);
             }
 
-        const originalFetch = window.fetch;
-        window.fetch = async function(...args) {
-            let resource = args[0];
-            let config = args[1] || {};
+            const { fetch: originalFetch } = window;
+            window.fetch = async (...args) => {
+                let [resource, config] = args;
+                let urlString = resource instanceof Request ? resource.url : resource.toString();
+                const parsedUrl = new URL(urlString, window.location.origin);
 
-            // Resolve relative URLs (like 'api/powers') into full absolute URLs safely
-            let urlString = resource instanceof Request ? resource.url : resource.toString();
-            const parsedUrl = new URL(urlString, window.location.origin);
-
-            // Now we reliably check the absolute path
-            if (parsedUrl.pathname.startsWith('/api/')) {
-                const token = sessionStorage.getItem('GUI_AUTH_TOKEN');
-                if (token) {
-                    if (resource instanceof Request) {
-                        const newHeaders = new Headers(resource.headers);
-                        newHeaders.set('Authorization', 'Bearer ' + token);
-                        args[0] = new Request(resource, { headers: newHeaders, ...config });
-                    } else {
-                        config.headers = config.headers || {};
+                if (parsedUrl.pathname.startsWith('/api/')) {
+                    config = config || {};
+                    config.headers = config.headers || {};
+                    const token = sessionStorage.getItem('GUI_AUTH_TOKEN');
+                    if (token) {
                         if (config.headers instanceof Headers) {
                             config.headers.set('Authorization', 'Bearer ' + token);
                         } else {
                             config.headers['Authorization'] = 'Bearer ' + token;
                         }
-                        args[1] = config;
                     }
+                    args[1] = config;
                 }
-            }
-            return originalFetch.apply(this, args);
-        };
-
+                return originalFetch(...args);
+            };
         </script>
 
         <!-- SUBSTAGE 2C: Lobby Dependencies & Styles -->
@@ -61,14 +51,29 @@
 
     </head>
     <body x-data="{ isLibraryCollapsed: true, isCodeCollapsed: true, keyboardVisible: false }">
-           <!-- SUBSTAGE 2C: The Lobby Overlay -->
-            <div x-data="Lobby()" x-cloak x-show="lobbyState === 'standby'" class="lobby-overlay">
+
+            <!-- SUBSTAGE 2C: The Lobby Overlay -->
+            <div x-data="Lobby()" x-cloak x-show="['standby', 'unauthorized'].includes(lobbyState)" class="lobby-overlay">
                 <div class="lobby-card">
-                    <h2 style="margin-top: 0;">MC-ED Editor Lobby</h2>
-                    <p style="color: #aaa; margin-bottom: 20px;">Waiting for an active Minecraft session. Enter a token to join a world instantly.</p>
-                    <input type="text" x-model="joinToken" placeholder="Paste Join Token..." class="lobby-input">
-                    <button @click="joinWorld()" class="lobby-btn">Join World</button>
-                    <div x-show="joinError" x-text="joinError" style="color: #ff453a; margin-top: 10px; font-size: 0.9rem;"></div>
+                    <!-- Standby / Join Form -->
+                    <template x-if="lobbyState === 'standby'">
+                        <div>
+                            <h2 style="margin-top: 0;">MC-ED Editor Lobby</h2>
+                            <p style="color: #aaa; margin-bottom: 20px;">Waiting for an active Minecraft session. Enter a token to join a world instantly.</p>
+                            <input type="text" x-model="joinToken" placeholder="Paste Join Token..." class="lobby-input" @keyup.enter="joinWorld()">
+                            <button @click="joinWorld()" class="lobby-btn">Join World</button>
+                            <div x-show="joinError" x-text="joinError" style="color: #ff453a; margin-top: 10px; font-size: 0.9rem;"></div>
+                        </div>
+                    </template>
+
+                    <!-- Unauthorized Viewer -->
+                    <template x-if="lobbyState === 'unauthorized'">
+                        <div>
+                            <h2 style="margin-top: 0; color: #ff453a;">Access Denied</h2>
+                            <p style="color: #aaa; margin-bottom: 10px;">The server is currently active, but you are missing the required security token.</p>
+                            <p style="color: #888; font-size: 0.9rem;">Please use the secure link provided in the host terminal, or ask the host to share their Mobile Link.</p>
+                        </div>
+                    </template>
                 </div>
             </div>
 
@@ -214,7 +219,7 @@
         <script>
             document.addEventListener('alpine:init', () => {
                 Alpine.data('Lobby', () => ({
-                    lobbyState: 'loading', // 'loading', 'standby', 'active'
+                    lobbyState: 'loading', // 'loading', 'standby', 'active', 'unauthorized'
                     joinToken: '',
                     joinError: '',
 
@@ -234,9 +239,10 @@
                                 const previousState = this.lobbyState;
                                 this.lobbyState = data.status;
 
-                                // Automatically prompt HTMX to load the powers list upon connection!
-                                if (data.status === 'active' && previousState !== 'active') {
-                                    document.body.dispatchEvent(new Event('library-changed'));
+                                if (data.status === 'active' && previousState === 'standby') {
+                                    // SPA MAGIC: Reload the page cleanly now that the GUI_AUTH_TOKEN is in sessionStorage
+                                    // This guarantees HTMX, Blockly, and Alpine completely re-initialize in an authenticated state!
+                                    window.location.reload();
                                 }
                             } else {
                                 this.lobbyState = 'standby';
@@ -254,13 +260,21 @@
                             return;
                         }
                         try {
-                            const res = await fetch('/api/ipython_magic', {
+                            const res = await fetch('/api/join_world', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ command: 'pp_join_world', arguments: this.joinToken.trim() })
+                                body: JSON.stringify({ token: this.joinToken.trim() })
                             });
-                            if (!res.ok) {
-                                this.joinError = 'Failed to connect. Server rejected request.';
+
+                            if (res.ok) {
+                                const data = await res.json();
+                                // Provision the local security token!
+                                if (data.gui_token) {
+                                    sessionStorage.setItem('GUI_AUTH_TOKEN', data.gui_token);
+                                }
+                            } else {
+                                const errData = await res.json().catch(() => ({}));
+                                this.joinError = errData.error || 'Failed to connect. Server rejected request.';
                             }
                             // The backend's success will emit 'state_changed' via socket.io, hiding this UI automatically.
                         } catch (e) {

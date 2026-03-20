@@ -226,15 +226,22 @@
 <body x-data="ControlDeck()">
 
     <!-- SUBSTAGE 2C: Lobby & Share Overlay -->
-    <div x-cloak x-show="lobbyState === 'standby' || showShareModal" class="lobby-overlay">
+    <div x-cloak x-show="['standby', 'unauthorized'].includes(lobbyState) || showShareModal" class="lobby-overlay">
 
         <!-- Lobby View (Standby) -->
         <div x-show="lobbyState === 'standby'" class="lobby-card">
             <h2 style="margin-top: 0;">MC-ED Lobby</h2>
             <p style="color: #aaa; margin-bottom: 20px;">Waiting for an active Minecraft session. Enter a token to join a world instantly.</p>
-            <input type="text" x-model="joinToken" placeholder="Paste Join Token..." class="lobby-input">
+            <input type="text" x-model="joinToken" placeholder="Paste Join Token..." class="lobby-input" @keyup.enter="joinWorld()">
             <button @click="joinWorld()" class="lobby-btn">Join World</button>
             <div x-show="joinError" x-text="joinError" style="color: #ff453a; margin-top: 10px; font-size: 0.9rem;"></div>
+        </div>
+
+        <!-- Unauthorized View -->
+        <div x-show="lobbyState === 'unauthorized'" class="lobby-card">
+            <h2 style="margin-top: 0; color: #ff453a;">Access Denied</h2>
+            <p style="color: #aaa; margin-bottom: 10px;">The server is currently active, but you are missing the required security token.</p>
+            <p style="color: #888; font-size: 0.9rem;">Please use the secure link provided in the host terminal, or ask the host to share their Mobile Link.</p>
         </div>
 
         <!-- Share View (Active) -->
@@ -452,7 +459,7 @@
         document.addEventListener('alpine:init', () => {
             Alpine.data('ControlDeck', () => ({
                 // --- SUBSTAGE 2C: Lobby State Variables ---
-                lobbyState: 'loading', // 'loading', 'standby', 'active'
+                lobbyState: 'loading', // 'loading', 'standby', 'active', 'unauthorized'
                 lobbyData: null,
                 joinToken: '',
                 joinError: '',
@@ -561,10 +568,16 @@
                         const response = await fetch('/api/lobby_data');
                         if (response.ok) {
                             const data = await response.json();
+                            const previousState = this.lobbyState;
                             this.lobbyState = data.status;
+
                             if (data.status === 'active') {
+                                if (previousState === 'standby') {
+                                    // SPA MAGIC: Reload to guarantee Alpine re-initializes taxonomy and components
+                                    window.location.reload();
+                                    return;
+                                }
                                 this.lobbyData = data;
-                                // Once active, load the user's saved powers
                                 if (typeof this.fetchPowers === 'function') this.fetchPowers();
                             }
                         } else {
@@ -584,14 +597,22 @@
                     }
 
                     try {
-                        const res = await fetch('/api/ipython_magic', {
+                        // HIT THE SECURE JOIN ENDPOINT
+                        const res = await fetch('/api/join_world', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ command: 'pp_join_world', arguments: this.joinToken.trim() })
+                            body: JSON.stringify({ token: this.joinToken.trim() })
                         });
 
-                        if (!res.ok) {
-                            this.joinError = "Failed to connect. Server rejected request.";
+                        if (res.ok) {
+                            const data = await res.json();
+                            // SPA MAGIC: Save the returned gui token to grant full access immediately!
+                            if (data.gui_token) {
+                                sessionStorage.setItem('GUI_AUTH_TOKEN', data.gui_token);
+                            }
+                        } else {
+                            const errData = await res.json().catch(() => ({}));
+                            this.joinError = errData.error || 'Failed to connect. Server rejected request.';
                         }
                         // Note: We don't manually set lobbyState='active' here.
                         // The backend socket will emit 'state_changed', seamlessly driving the UI!
@@ -608,17 +629,22 @@
                 },
 
                 renderQRCode() {
-                    if (!this.$refs.qrcode) return;
+                    if (!this.$refs.qrcode || !this.lobbyData || !this.lobbyData.hub) return;
                     this.$refs.qrcode.innerHTML = '';
 
-                    new QRCode(this.$refs.qrcode, {
-                        text: this.controlDeckUrl,
-                        width: 160,
-                        height: 160,
-                        colorDark : "#000000",
-                        colorLight : "#ffffff",
-                        correctLevel : QRCode.CorrectLevel.M
-                    });
+                    const tokens = this.lobbyData.hub.tokens;
+                    const primaryToken = tokens.classroom_vpn || tokens.lan || tokens.tailscale;
+
+                    if (primaryToken) {
+                        new QRCode(this.$refs.qrcode, {
+                            text: primaryToken,
+                            width: 160,
+                            height: 160,
+                            colorDark : "#000000",
+                            colorLight : "#ffffff",
+                            correctLevel : QRCode.CorrectLevel.M
+                        });
+                    }
                 },
 
                 copyToClipboard(text) {
@@ -668,7 +694,7 @@
 
                 getCategoryClass(category) {
                     if (!category) return 'cat-Default';
-                    return `cat-${category.split('/')[0].replace(/\\s+/g, '')}`;
+                    return `cat-${category.split('/')[0].replace(/\s+/g, '')}`;
                 },
 
                 async toggleEditMode() {

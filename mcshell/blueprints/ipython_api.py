@@ -100,3 +100,5 @@ def join_world():
             return jsonify({"success": True, "gui_token": GUI_AUTH_TOKEN})
         except Exception as e:
             return jsonify({"error": str(e)}), 500
+
+    return jsonify({"error": "Internal server error."}), 500
