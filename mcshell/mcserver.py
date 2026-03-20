@@ -40,6 +40,11 @@ app.register_blueprint(ipython_bp)
 @app.before_request
 def check_auth_token():
     """Enforce strict security on all API endpoints (Hard Mode)"""
+
+    # Allow peer-to-peer server invitations and unauthenticated lobby access
+    if request.path in ('/api/receive_invite', '/api/lobby_data', '/api/join_world'):
+        return
+
     if request.path.startswith('/api/'):
         # Allow peer-to-peer server invitations to bypass local browser auth
         if request.path == '/api/receive_invite':
@@ -398,16 +403,8 @@ def receive_invite():
 # --- Web UI Routes ---
 @app.route('/lobby')
 def serve_lobby():
-    return """
-    <html>
-    <head><title>MC-Shell Lobby</title></head>
-    <body style="font-family: sans-serif; text-align: center; margin-top: 50px;">
-        <h2>MC-Shell Lobby (Phase 1)</h2>
-        <p>The application server is in Standby Mode.</p>
-        <p>The GUI Auth Token is active in soft-mode.</p>
-    </body>
-    </html>
-    """
+    # SUBSTAGE 2C: Serve the unified SPA index.html for the Lobby as well!
+    return send_from_directory(current_app.static_folder, 'index.html')
 
 # --- Control Panel ---
 @app.route('/control')
