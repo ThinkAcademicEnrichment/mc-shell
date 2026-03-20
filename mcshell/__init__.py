@@ -1482,9 +1482,14 @@ class MCShell(Magics):
     def mc_start_app(self, line):
         """
         Starts the client application components to connect to a world.
-        Usage: %mc_start_app [token|IP] [--local-mc <port>] [--local-rcon <port>] [--local-mj <port>] [--authkey <key>]
+        Usage: %mc_start_app [token|IP] [--local-mc <port>] [--local-rcon <port>] [--local-mj <port>] [--authkey <key>] [--guest]
         """
         parts = line.split()
+
+        # Check for guest mode
+        is_guest = '--guest' in parts
+        if is_guest:
+            parts.remove('--guest')
 
         # If the first argument doesn't start with '--', it's our token
         token = parts[0] if parts and not parts[0].startswith('--') else None
@@ -1570,11 +1575,17 @@ class MCShell(Magics):
                     self.server_data['rcon_port'] = local_rcon
                     self.server_data['mj_port'] = local_mj
 
-        login_to_server = Prompt.ask('Do you want to be a server op?',choices=['yes','no'],default='no')
-        if login_to_server.lower() == 'yes':
-            self.server_data.update({
-                'password': Prompt.ask('Server Password:', password=True)
-            })
+        if is_guest:
+            # Bypass the interactive prompt and default to standard player mode safely
+            self.server_data['password'] = None
+        else:
+            login_to_server = Prompt.ask('Do you want to be a server op?',choices=['yes','no'],default='no')
+            if login_to_server.lower() == 'yes':
+                self.server_data.update({
+                    'password': Prompt.ask('Server Password:', password=True)
+                })
+            else:
+                self.server_data['password'] = None
 
         minecraft_name = self._get_mc_name()
         power_repo = SQLiteRepository(minecraft_name)
