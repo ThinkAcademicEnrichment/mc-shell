@@ -76,3 +76,27 @@ def get_lobby_data():
         print(f"Error fetching connection hub data: {e}")
 
     return jsonify({"status": "active", "player": mc_name, "is_host": False, "hub": None})
+
+@ipython_bp.route('/join_world', methods=['POST'])
+def join_world():
+    """Safely allows unauthenticated users to join a world from standby mode."""
+    if current_app.config.get('MINECRAFT_PLAYER_NAME'):
+        return jsonify({"error": "Application is already active. Cannot join a new world."}), 403
+
+    data = request.get_json()
+    token = data.get('token') if data else None
+
+    if not token:
+        return jsonify({"error": "Missing join token."}), 400
+
+    shell = current_app.config.get('IPYTHON_SHELL')
+    if shell:
+        try:
+            # Append --guest flag to safely bypass interactive prompts
+            shell.run_line_magic('mc_start_app', f"{token} --guest")
+
+            # Fetch the GUI token to return to the newly authenticated web client
+            from mcshell.mcserver import GUI_AUTH_TOKEN
+            return jsonify({"success": True, "gui_token": GUI_AUTH_TOKEN})
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
