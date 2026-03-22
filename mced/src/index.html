@@ -222,18 +222,21 @@
                     lobbyState: 'loading', // 'loading', 'standby', 'active', 'unauthorized'
                     joinToken: '',
                     joinError: '',
+                    isJoining: false,
 
                     init() {
                         this.checkLobbyState();
                         const socket = io();
                         socket.on('state_changed', (data) => {
+                            if (this.isJoining) return;
                             this.checkLobbyState();
                         });
                     },
 
                     async checkLobbyState() {
                         try {
-                            const response = await fetch('/api/lobby_data');
+                            // FORCE the browser to bypass its cache and ask the server directly
+                            const response = await fetch('/api/lobby_data', { cache: 'no-store' });
                             if (response.ok) {
                                 const data = await response.json();
                                 const previousState = this.lobbyState;
@@ -259,6 +262,7 @@
                             this.joinError = 'Please enter a valid token.';
                             return;
                         }
+                        this.isJoining = true;
                         try {
                             const res = await fetch('/api/join_world', {
                                 method: 'POST',
@@ -272,12 +276,15 @@
                                 if (data.gui_token) {
                                     sessionStorage.setItem('GUI_AUTH_TOKEN', data.gui_token);
                                 }
+                                // The token is saved, trigger the SPA reload manually!
+                                window.location.reload();
                             } else {
+                                this.isJoining = false;
                                 const errData = await res.json().catch(() => ({}));
                                 this.joinError = errData.error || 'Failed to connect. Server rejected request.';
                             }
-                            // The backend's success will emit 'state_changed' via socket.io, hiding this UI automatically.
                         } catch (e) {
+                            this.isJoining = false;
                             this.joinError = 'Network error while joining.';
                             console.error(e);
                         }

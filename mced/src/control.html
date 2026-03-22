@@ -464,6 +464,7 @@
                 joinToken: '',
                 joinError: '',
                 showShareModal: false,
+                isJoining: false,
 
                 isEditing: false,
                 allPowers: [],
@@ -491,6 +492,7 @@
                     // Listen for backend Python state changes
                     const socket = io();
                     socket.on('state_changed', (data) => {
+                        if (this.isJoining) return;
                         console.log("State changed event received:", data);
                         this.checkLobbyState();
                     });
@@ -565,7 +567,8 @@
 
                 async checkLobbyState() {
                     try {
-                        const response = await fetch('/api/lobby_data');
+                        // FORCE the browser to bypass its cache
+                        const response = await fetch('/api/lobby_data', { cache: 'no-store' });
                         if (response.ok) {
                             const data = await response.json();
                             const previousState = this.lobbyState;
@@ -595,6 +598,7 @@
                         this.joinError = "Please enter a valid token.";
                         return;
                     }
+                    this.isJoining = true;
 
                     try {
                         // HIT THE SECURE JOIN ENDPOINT
@@ -610,13 +614,15 @@
                             if (data.gui_token) {
                                 sessionStorage.setItem('GUI_AUTH_TOKEN', data.gui_token);
                             }
+                            // The token is saved, trigger the SPA reload manually!
+                            window.location.reload();
                         } else {
+                            this.isJoining = false;
                             const errData = await res.json().catch(() => ({}));
                             this.joinError = errData.error || 'Failed to connect. Server rejected request.';
                         }
-                        // Note: We don't manually set lobbyState='active' here.
-                        // The backend socket will emit 'state_changed', seamlessly driving the UI!
                     } catch (e) {
+                        this.isJoining = false;
                         this.joinError = "Network error while joining.";
                         console.error(e);
                     }
@@ -624,7 +630,6 @@
 
                 openShareModal() {
                     this.showShareModal = true;
-                    // Wait for Alpine to render the modal, then generate QR
                     setTimeout(() => this.renderQRCode(), 50);
                 },
 
@@ -669,7 +674,8 @@
 
                 async fetchPowers() {
                     try {
-                        const res = await fetch('/api/powers?view=control&format=json', { headers: { 'Accept': 'application/json' }});
+                        // FORCE the browser to bypass its cache
+                        const res = await fetch('/api/powers?view=control&format=json', { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
                         const data = await res.json();
                         this.allPowers = Array.isArray(data) ? data : Object.values(data);
                     } catch (e) { console.error("Failed to load powers", e); }
@@ -677,7 +683,8 @@
 
                 async fetchTaxonomy() {
                     try {
-                        const res = await fetch('/api/taxonomy');
+                        // FORCE the browser to bypass its cache
+                        const res = await fetch('/api/taxonomy', { cache: 'no-store' });
                         this.taxonomy = await res.json();
                     } catch (e) { console.error("Failed to load taxonomy", e); }
                 },
