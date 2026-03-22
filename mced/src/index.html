@@ -243,9 +243,8 @@
                                 this.lobbyState = data.status;
 
                                 if (data.status === 'active' && previousState === 'standby') {
-                                    // SPA MAGIC: Reload the page cleanly now that the GUI_AUTH_TOKEN is in sessionStorage
-                                    // This guarantees HTMX, Blockly, and Alpine completely re-initialize in an authenticated state!
-                                    window.location.reload();
+                                    // SPA MAGIC: Redirect to the canonical root URL instead of just reloading /lobby
+                                    window.location.href = '/';
                                 }
                             } else {
                                 this.lobbyState = 'standby';
@@ -276,8 +275,8 @@
                                 if (data.gui_token) {
                                     sessionStorage.setItem('GUI_AUTH_TOKEN', data.gui_token);
                                 }
-                                // The token is saved, trigger the SPA reload manually!
-                                window.location.reload();
+                                // The token is saved, trigger the SPA redirect manually!
+                                window.location.href = '/';
                             } else {
                                 this.isJoining = false;
                                 const errData = await res.json().catch(() => ({}));

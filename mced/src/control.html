@@ -576,8 +576,8 @@
 
                             if (data.status === 'active') {
                                 if (previousState === 'standby') {
-                                    // SPA MAGIC: Reload to guarantee Alpine re-initializes taxonomy and components
-                                    window.location.reload();
+                                    // SPA MAGIC: Redirect to the canonical control URL
+                                    window.location.href = '/control';
                                     return;
                                 }
                                 this.lobbyData = data;
@@ -614,8 +614,8 @@
                             if (data.gui_token) {
                                 sessionStorage.setItem('GUI_AUTH_TOKEN', data.gui_token);
                             }
-                            // The token is saved, trigger the SPA reload manually!
-                            window.location.reload();
+                            // The token is saved, trigger the SPA redirect manually!
+                            window.location.href = '/control';
                         } else {
                             this.isJoining = false;
                             const errData = await res.json().catch(() => ({}));
@@ -634,22 +634,17 @@
                 },
 
                 renderQRCode() {
-                    if (!this.$refs.qrcode || !this.lobbyData || !this.lobbyData.hub) return;
+                    if (!this.$refs.qrcode) return;
                     this.$refs.qrcode.innerHTML = '';
 
-                    const tokens = this.lobbyData.hub.tokens;
-                    const primaryToken = tokens.classroom_vpn || tokens.lan || tokens.tailscale;
-
-                    if (primaryToken) {
-                        new QRCode(this.$refs.qrcode, {
-                            text: primaryToken,
-                            width: 160,
-                            height: 160,
-                            colorDark : "#000000",
-                            colorLight : "#ffffff",
-                            correctLevel : QRCode.CorrectLevel.M
-                        });
-                    }
+                    new QRCode(this.$refs.qrcode, {
+                        text: this.controlDeckUrl,
+                        width: 160,
+                        height: 160,
+                        colorDark : "#000000",
+                        colorLight : "#ffffff",
+                        correctLevel : QRCode.CorrectLevel.M
+                    });
                 },
 
                 copyToClipboard(text) {
