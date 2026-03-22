@@ -7,7 +7,8 @@
     "clean": "rimraf ../mcshell/data/app",
     "build:all": "poetry run python ../build.py",
     "build:registries": "poetry run python ../update_registries.py",
-    "build": "npm run clean && npm run build:all && npm run build:registries && parcel build src/index.html src/control.html --dist-dir ../mcshell/data/app --no-cache"
+    "build:app":"parcel build src/index.html src/control.html --dist-dir ../mcshell/data/app --no-cache",
+    "build": "npm run clean && npm run build:all && npm run build:registries && npm run build:app"
   },
   "dependencies": {
     "alpinejs": "^3.14.9",

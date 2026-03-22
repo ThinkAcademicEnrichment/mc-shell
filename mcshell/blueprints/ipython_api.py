@@ -43,3 +43,73 @@ def execute_ipython_magic():
         print(f"Error executing magic command '{command}': {e}")
         return jsonify({"error": str(e)}), 500
 
+@ipython_bp.route('/lobby_data', methods=['GET'])
+def get_lobby_data():
+    """Returns the current server status and connection hub info for the Share UI."""
+    shell = current_app.config.get('IPYTHON_SHELL')
+    mc_name = current_app.config.get('MINECRAFT_PLAYER_NAME')
+
+    # If there is no active player context, the server is in Standby Mode
+    if not shell or not mc_name:
+        return jsonify({"status": "standby"})
+
+    # Security Check: Ensure the user actually holds the token.
+    # If they don't, they are an unauthorized observer looking at an active server.
+    from mcshell.mcserver import GUI_AUTH_TOKEN
+    auth_header = request.headers.get('Authorization')
+    token = request.args.get('auth')
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ")[1]
+
+    if token != GUI_AUTH_TOKEN:
+        return jsonify({"status": "unauthorized"})
+
+    try:
+        # Extract the active MCShell magic instance from IPython's registry
+        mcshell_instance = shell.magics_manager.registry.get('MCShell')
+        if mcshell_instance:
+            is_host = bool(mcshell_instance.active_paper_server and mcshell_instance.active_paper_server.is_alive())
+
+            # ALWAYS fetch hub_data so the frontend knows the local_ip for the QR code
+            hub_data = mcshell_instance._get_connection_hub_data()
+
+            # If they aren't the host, wipe the join tokens so they can't be shared
+            if not is_host and hub_data:
+                hub_data['tokens'] = {}
+
+            return jsonify({
+                "status": "active",
+                "player": mc_name,
+                "is_host": is_host,
+                "hub": hub_data
+            })
+    except Exception as e:
+        print(f"Error fetching connection hub data: {e}")
+
+    return jsonify({"status": "active", "player": mc_name, "is_host": False, "hub": None})
+
+@ipython_bp.route('/join_world', methods=['POST'])
+def join_world():
+    """Safely allows unauthenticated users to join a world from standby mode."""
+    if current_app.config.get('MINECRAFT_PLAYER_NAME'):
+        return jsonify({"error": "Application is already active. Cannot join a new world."}), 403
+
+    data = request.get_json()
+    token = data.get('token') if data else None
+
+    if not token:
+        return jsonify({"error": "Missing join token."}), 400
+
+    shell = current_app.config.get('IPYTHON_SHELL')
+    if shell:
+        try:
+            # Append --guest flag to safely bypass interactive prompts
+            shell.run_line_magic('mc_start_app', f"{token} --guest")
+
+            # Fetch the GUI token to return to the newly authenticated web client
+            from mcshell.mcserver import GUI_AUTH_TOKEN
+            return jsonify({"success": True, "gui_token": GUI_AUTH_TOKEN})
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    return jsonify({"error": "Internal server error."}), 500

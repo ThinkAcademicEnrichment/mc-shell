@@ -3,6 +3,18 @@
  * This should be called once when each application page (editor, control) starts.
  */
 
+// --- SUBSTAGE 2A: The Auth Interceptor ---
+// Moved OUTSIDE the initialization function to the top-level module scope!
+// This executes immediately during module parsing, guaranteeing it beats
+// HTMX's initial 'hx-trigger="load"' requests. We attach to 'document'
+// rather than 'document.body' so it works even before the body is fully parsed.
+document.addEventListener('htmx:configRequest', function(evt) {
+    const token = sessionStorage.getItem('GUI_AUTH_TOKEN');
+    if (token) {
+        evt.detail.headers['Authorization'] = 'Bearer ' + token;
+    }
+});
+
 export function initializeHtmxListeners() {
     console.log("Initializing global htmx event listeners...");
 
@@ -30,6 +42,8 @@ export function initializeHtmxListeners() {
 
         alert(alertMessage);
     });
+
+
 
     // You can add other global listeners here as well. For example,
     // showing a global loading indicator during any htmx request.

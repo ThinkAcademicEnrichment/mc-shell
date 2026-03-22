@@ -5,9 +5,52 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MC-ED Control Deck</title>
 
+    <!-- SUBSTAGE 2A/2B: Capture Token & Bulletproof Fetch Interceptor -->
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const auth = params.get('auth');
+        if (auth) {
+            sessionStorage.setItem('GUI_AUTH_TOKEN', auth);
+            const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+            window.history.replaceState({path: cleanUrl}, '', cleanUrl);
+        }
+
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            let resource = args[0];
+            let config = args[1] || {};
+
+            let urlString = resource instanceof Request ? resource.url : resource.toString();
+            const parsedUrl = new URL(urlString, window.location.origin);
+
+            if (parsedUrl.pathname.startsWith('/api/')) {
+                const token = sessionStorage.getItem('GUI_AUTH_TOKEN');
+                if (token) {
+                    if (resource instanceof Request) {
+                        const newHeaders = new Headers(resource.headers);
+                        newHeaders.set('Authorization', 'Bearer ' + token);
+                        args[0] = new Request(resource, { headers: newHeaders, ...config });
+                    } else {
+                        config.headers = config.headers || {};
+                        if (config.headers instanceof Headers) {
+                            config.headers.set('Authorization', 'Bearer ' + token);
+                        } else {
+                            config.headers['Authorization'] = 'Bearer ' + token;
+                        }
+                        args[1] = config;
+                    }
+                }
+            }
+            return originalFetch.apply(this, args);
+        };
+    </script>
+
     <link rel="icon" href="data:,">
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- SUBSTAGE 2C: Add QRCode library for sharing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <style>
         :root {
@@ -169,13 +212,79 @@
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
             background-repeat: no-repeat; background-position: right 8px center; padding-right: 28px;
         }
+
+        /* SUBSTAGE 2C: LOBBY STYLES */
+        .lobby-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 50000; display: flex; align-items: center; justify-content: center; }
+        .lobby-card { background: var(--modal-bg, #2c2c2e); padding: 2rem; border-radius: 12px; width: 90%; max-width: 450px; text-align: center; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .lobby-input { width: 100%; padding: 12px; margin: 15px 0; border-radius: 8px; border: 1px solid #444; background: #1c1c1e; color: white; box-sizing: border-box; }
+        .lobby-btn { width: 100%; padding: 12px; background: var(--accent, #0a84ff); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
+        .share-token-row { display: flex; gap: 10px; margin-top: 5px; margin-bottom: 15px; }
+        .share-btn { background: #34c759; color: white; border: none; padding: 0 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+
     </style>
 </head>
-<body x-data="controlApp">
+<body x-data="ControlDeck()">
+
+    <!-- SUBSTAGE 2C: Lobby & Share Overlay -->
+    <div x-cloak x-show="['standby', 'unauthorized'].includes(lobbyState) || showShareModal" class="lobby-overlay">
+
+        <!-- Lobby View (Standby) -->
+        <div x-show="lobbyState === 'standby'" class="lobby-card">
+            <h2 style="margin-top: 0;">MC-ED Lobby</h2>
+            <p style="color: #aaa; margin-bottom: 20px;">Waiting for an active Minecraft session. Enter a token to join a world instantly.</p>
+            <input type="text" x-model="joinToken" placeholder="Paste Join Token..." class="lobby-input" @keyup.enter="joinWorld()">
+            <button @click="joinWorld()" class="lobby-btn">Join World</button>
+            <div x-show="joinError" x-text="joinError" style="color: #ff453a; margin-top: 10px; font-size: 0.9rem;"></div>
+        </div>
+
+        <!-- Unauthorized View -->
+        <div x-show="lobbyState === 'unauthorized'" class="lobby-card">
+            <h2 style="margin-top: 0; color: #ff453a;">Access Denied</h2>
+            <p style="color: #aaa; margin-bottom: 10px;">The server is currently active, but you are missing the required security token.</p>
+            <p style="color: #888; font-size: 0.9rem;">Please use the secure link provided in the host terminal, or ask the host to share their Mobile Link.</p>
+        </div>
+
+        <!-- Share View (Active) -->
+        <div x-show="lobbyState === 'active' && showShareModal" class="lobby-card" style="text-align: left;">
+            <h2 style="margin-top: 0; text-align: center;" x-text="lobbyData?.is_host ? 'Share Connection' : 'Mobile Control'"></h2>
+
+            <!-- ALWAYS show QR Code for Control Deck -->
+            <div>
+                <p style="text-align: center; color: #aaa; font-size: 0.9em; margin-bottom: 5px;">Scan to open Control Deck on another device</p>
+                <div style="display: flex; justify-content: center; background: white; padding: 15px; border-radius: 8px; margin: 0 0 15px 0;">
+                    <div x-ref="qrcode"></div>
+                </div>
+
+                <div class="share-token-row">
+                    <input type="text" readonly :value="controlDeckUrl" class="lobby-input" style="margin: 0; padding: 8px; font-size: 0.8rem;">
+                    <button @click="copyToClipboard(controlDeckUrl)" class="share-btn">Copy</button>
+                </div>
+            </div>
+
+            <!-- ONLY show Hub Tokens if Host -->
+            <template x-if="lobbyData?.is_host && lobbyData?.hub?.tokens && Object.keys(lobbyData.hub.tokens).length > 0">
+                <div style="margin-top: 20px; border-top: 1px solid #444; padding-top: 15px;">
+                    <p style="text-align: center; color: #aaa; font-size: 0.9em; margin-bottom: 10px;">World Join Tokens</p>
+                    <template x-for="(token, key) in lobbyData.hub.tokens" :key="key">
+                        <div>
+                            <strong style="text-transform: capitalize;" x-text="key.replace('_', ' ') + ' Token'"></strong>
+                            <div class="share-token-row">
+                                <input type="text" readonly :value="token" class="lobby-input" style="margin: 0; padding: 8px;">
+                                <button @click="copyToClipboard(token)" class="share-btn">Copy</button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+
+            <button @click="showShareModal = false" class="lobby-btn" style="background: #ff3b30; margin-top: 10px;">Close</button>
+        </div>
+    </div>
 
     <header>
         <h1>Control Deck</h1>
         <button class="edit-btn" :class="isEditing ? 'active' : ''" @click="toggleEditMode()" x-text="isEditing ? 'Done' : 'Edit Layout'"></button>
+        <button x-show="lobbyState === 'active'" @click="openShareModal()" class="share-btn" style="padding: 8px 16px;" x-text="lobbyData?.is_host ? 'Share World' : 'Mobile Link'"></button>
     </header>
 
     <main class="springboard" :class="isEditing ? 'is-editing' : ''">
@@ -348,7 +457,15 @@
         });
 
         document.addEventListener('alpine:init', () => {
-            Alpine.data('controlApp', () => ({
+            Alpine.data('ControlDeck', () => ({
+                // --- SUBSTAGE 2C: Lobby State Variables ---
+                lobbyState: 'loading', // 'loading', 'standby', 'active', 'unauthorized'
+                lobbyData: null,
+                joinToken: '',
+                joinError: '',
+                showShareModal: false,
+                isJoining: false,
+
                 isEditing: false,
                 allPowers: [],
                 deckLayout: [],
@@ -369,6 +486,17 @@
                 },
 
                 async init() {
+                    // Fetch initial state when page loads
+                    this.checkLobbyState();
+
+                    // Listen for backend Python state changes
+                    const socket = io();
+                    socket.on('state_changed', (data) => {
+                        if (this.isJoining) return;
+                        console.log("State changed event received:", data);
+                        this.checkLobbyState();
+                    });
+
                     const saved = localStorage.getItem('mced_deck_layout');
                     if (saved) {
                         let parsed = JSON.parse(saved);
@@ -424,9 +552,125 @@
                     });
                 },
 
+                // --- SUBSTAGE 2C: Lobby Logic ---
+                get controlDeckUrl() {
+                    const token = sessionStorage.getItem('GUI_AUTH_TOKEN') || '';
+                    let hostToUse = window.location.host;
+
+                    // Upgrade localhost to a real network IP if available
+                    if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && this.lobbyData?.hub?.local_ip) {
+                        hostToUse = this.lobbyData.hub.local_ip + (window.location.port ? ':' + window.location.port : '');
+                    }
+
+                    return `${window.location.protocol}//${hostToUse}/control?auth=${token}`;
+                },
+
+                async checkLobbyState() {
+                    try {
+                        // FORCE the browser to bypass its cache
+                        const response = await fetch('/api/lobby_data', { cache: 'no-store' });
+                        if (response.ok) {
+                            const data = await response.json();
+                            const previousState = this.lobbyState;
+                            this.lobbyState = data.status;
+
+                            if (data.status === 'active') {
+                                if (previousState === 'standby') {
+                                    // SPA MAGIC: Redirect to the canonical control URL
+                                    window.location.href = '/control';
+                                    return;
+                                }
+                                this.lobbyData = data;
+                                if (typeof this.fetchPowers === 'function') this.fetchPowers();
+                            }
+                        } else {
+                            this.lobbyState = 'standby';
+                        }
+                    } catch (e) {
+                        console.error("Failed to fetch lobby data:", e);
+                        this.lobbyState = 'standby';
+                    }
+                },
+
+                async joinWorld() {
+                    this.joinError = '';
+                    if (!this.joinToken.trim()) {
+                        this.joinError = "Please enter a valid token.";
+                        return;
+                    }
+                    this.isJoining = true;
+
+                    try {
+                        // HIT THE SECURE JOIN ENDPOINT
+                        const res = await fetch('/api/join_world', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ token: this.joinToken.trim() })
+                        });
+
+                        if (res.ok) {
+                            const data = await res.json();
+                            // SPA MAGIC: Save the returned gui token to grant full access immediately!
+                            if (data.gui_token) {
+                                sessionStorage.setItem('GUI_AUTH_TOKEN', data.gui_token);
+                            }
+                            // The token is saved, trigger the SPA redirect manually!
+                            window.location.href = '/control';
+                        } else {
+                            this.isJoining = false;
+                            const errData = await res.json().catch(() => ({}));
+                            this.joinError = errData.error || 'Failed to connect. Server rejected request.';
+                        }
+                    } catch (e) {
+                        this.isJoining = false;
+                        this.joinError = "Network error while joining.";
+                        console.error(e);
+                    }
+                },
+
+                openShareModal() {
+                    this.showShareModal = true;
+                    setTimeout(() => this.renderQRCode(), 50);
+                },
+
+                renderQRCode() {
+                    if (!this.$refs.qrcode) return;
+                    this.$refs.qrcode.innerHTML = '';
+
+                    new QRCode(this.$refs.qrcode, {
+                        text: this.controlDeckUrl,
+                        width: 160,
+                        height: 160,
+                        colorDark : "#000000",
+                        colorLight : "#ffffff",
+                        correctLevel : QRCode.CorrectLevel.M
+                    });
+                },
+
+                copyToClipboard(text) {
+                    const fallbackCopy = (str) => {
+                        const el = document.createElement('textarea');
+                        el.value = str;
+                        el.setAttribute('readonly', ''); // Prevent keyboard popup
+                        el.style.position = 'absolute';
+                        el.style.left = '-9999px';
+                        document.body.appendChild(el);
+                        el.select();
+                        try { document.execCommand('copy'); } catch (e) { console.error('Fallback copy failed', e); }
+                        document.body.removeChild(el);
+                    };
+
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+                    } else {
+                        fallbackCopy(text);
+                    }
+                },
+
                 async fetchPowers() {
                     try {
-                        const res = await fetch('/api/powers?view=control&format=json', { headers: { 'Accept': 'application/json' }});
+                        // FORCE the browser to bypass its cache
+                        const res = await fetch('/api/powers?view=control&format=json', { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
                         const data = await res.json();
                         this.allPowers = Array.isArray(data) ? data : Object.values(data);
                     } catch (e) { console.error("Failed to load powers", e); }
@@ -434,7 +678,8 @@
 
                 async fetchTaxonomy() {
                     try {
-                        const res = await fetch('/api/taxonomy');
+                        // FORCE the browser to bypass its cache
+                        const res = await fetch('/api/taxonomy', { cache: 'no-store' });
                         this.taxonomy = await res.json();
                     } catch (e) { console.error("Failed to load taxonomy", e); }
                 },

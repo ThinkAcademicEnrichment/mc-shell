@@ -4,10 +4,79 @@
         <meta charset="utf-8">
         <title>MC-ED Editor</title>
 
+        <!-- SUBSTAGE 2A: Capture Token & Global Interceptors -->
+        <script>
+            const params = new URLSearchParams(window.location.search);
+            const auth = params.get('auth');
+            if (auth) {
+                sessionStorage.setItem('GUI_AUTH_TOKEN', auth);
+                const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                window.history.replaceState({path: cleanUrl}, '', cleanUrl);
+            }
+
+            const { fetch: originalFetch } = window;
+            window.fetch = async (...args) => {
+                let [resource, config] = args;
+                let urlString = resource instanceof Request ? resource.url : resource.toString();
+                const parsedUrl = new URL(urlString, window.location.origin);
+
+                if (parsedUrl.pathname.startsWith('/api/')) {
+                    config = config || {};
+                    config.headers = config.headers || {};
+                    const token = sessionStorage.getItem('GUI_AUTH_TOKEN');
+                    if (token) {
+                        if (config.headers instanceof Headers) {
+                            config.headers.set('Authorization', 'Bearer ' + token);
+                        } else {
+                            config.headers['Authorization'] = 'Bearer ' + token;
+                        }
+                    }
+                    args[1] = config;
+                }
+                return originalFetch(...args);
+            };
+        </script>
+
+        <!-- SUBSTAGE 2C: Lobby Dependencies & Styles -->
+        <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+        <style>
+            [x-cloak] { display: none !important; }
+            .lobby-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 50000; display: flex; align-items: center; justify-content: center; }
+            .lobby-card { background: #2c2c2e; padding: 2rem; border-radius: 12px; width: 90%; max-width: 450px; text-align: center; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.3); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+            .lobby-input { width: 100%; padding: 12px; margin: 15px 0; border-radius: 8px; border: 1px solid #444; background: #1c1c1e; color: white; box-sizing: border-box; }
+            .lobby-btn { width: 100%; padding: 12px; background: #0a84ff; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
+        </style>
+
         <link rel="stylesheet" href="./editor.css">
 
     </head>
     <body x-data="{ isLibraryCollapsed: true, isCodeCollapsed: true, keyboardVisible: false }">
+
+            <!-- SUBSTAGE 2C: The Lobby Overlay -->
+            <div x-data="Lobby()" x-cloak x-show="['standby', 'unauthorized'].includes(lobbyState)" class="lobby-overlay">
+                <div class="lobby-card">
+                    <!-- Standby / Join Form -->
+                    <template x-if="lobbyState === 'standby'">
+                        <div>
+                            <h2 style="margin-top: 0;">MC-ED Editor Lobby</h2>
+                            <p style="color: #aaa; margin-bottom: 20px;">Waiting for an active Minecraft session. Enter a token to join a world instantly.</p>
+                            <input type="text" x-model="joinToken" placeholder="Paste Join Token..." class="lobby-input" @keyup.enter="joinWorld()">
+                            <button @click="joinWorld()" class="lobby-btn">Join World</button>
+                            <div x-show="joinError" x-text="joinError" style="color: #ff453a; margin-top: 10px; font-size: 0.9rem;"></div>
+                        </div>
+                    </template>
+
+                    <!-- Unauthorized Viewer -->
+                    <template x-if="lobbyState === 'unauthorized'">
+                        <div>
+                            <h2 style="margin-top: 0; color: #ff453a;">Access Denied</h2>
+                            <p style="color: #aaa; margin-bottom: 10px;">The server is currently active, but you are missing the required security token.</p>
+                            <p style="color: #888; font-size: 0.9rem;">Please use the secure link provided in the host terminal, or ask the host to share their Mobile Link.</p>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
             <div class="editor-layout" :class="{ 'library-collapsed': isLibraryCollapsed, 'code-collapsed': isCodeCollapsed }">
                 <aside id="power-library-panel">
 
@@ -145,9 +214,87 @@
         </template>
 
         <script type="module" src="./index.js"></script>
+
+        <!-- SUBSTAGE 2C: Lobby Component Logic -->
+        <script>
+            document.addEventListener('alpine:init', () => {
+                Alpine.data('Lobby', () => ({
+                    lobbyState: 'loading', // 'loading', 'standby', 'active', 'unauthorized'
+                    joinToken: '',
+                    joinError: '',
+                    isJoining: false,
+
+                    init() {
+                        this.checkLobbyState();
+                        const socket = io();
+                        socket.on('state_changed', (data) => {
+                            if (this.isJoining) return;
+                            this.checkLobbyState();
+                        });
+                    },
+
+                    async checkLobbyState() {
+                        try {
+                            // FORCE the browser to bypass its cache and ask the server directly
+                            const response = await fetch('/api/lobby_data', { cache: 'no-store' });
+                            if (response.ok) {
+                                const data = await response.json();
+                                const previousState = this.lobbyState;
+                                this.lobbyState = data.status;
+
+                                if (data.status === 'active' && previousState === 'standby') {
+                                    // SPA MAGIC: Redirect to the canonical root URL instead of just reloading /lobby
+                                    window.location.href = '/';
+                                }
+                            } else {
+                                this.lobbyState = 'standby';
+                            }
+                        } catch (e) {
+                            console.error("Failed to fetch lobby state", e);
+                            this.lobbyState = 'standby';
+                        }
+                    },
+
+                    async joinWorld() {
+                        this.joinError = '';
+                        if (!this.joinToken.trim()) {
+                            this.joinError = 'Please enter a valid token.';
+                            return;
+                        }
+                        this.isJoining = true;
+                        try {
+                            const res = await fetch('/api/join_world', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ token: this.joinToken.trim() })
+                            });
+
+                            if (res.ok) {
+                                const data = await res.json();
+                                // Provision the local security token!
+                                if (data.gui_token) {
+                                    sessionStorage.setItem('GUI_AUTH_TOKEN', data.gui_token);
+                                }
+                                // The token is saved, trigger the SPA redirect manually!
+                                window.location.href = '/';
+                            } else {
+                                this.isJoining = false;
+                                const errData = await res.json().catch(() => ({}));
+                                this.joinError = errData.error || 'Failed to connect. Server rejected request.';
+                            }
+                        } catch (e) {
+                            this.isJoining = false;
+                            this.joinError = 'Network error while joining.';
+                            console.error(e);
+                        }
+                    }
+                }));
+            });
+        </script>
+
         <div class="simple-keyboard"
              x-show="keyboardVisible"
-             style="position: fixed; bottom: 0; left: 0; width: 100%; z-index: 20000; background: white;">
+             style="position: fixed; bottom: 0; left: 0; width: 100%; z-index: 41000; background: white;">
         </div>
     </body>
 </html>
