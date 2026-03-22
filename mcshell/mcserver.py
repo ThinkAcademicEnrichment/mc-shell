@@ -60,13 +60,14 @@ def check_auth_token():
             print(f"\n[SECURITY BLOCK] Unauthorized API access attempt to {request.path} blocked!")
             from flask import jsonify
             return jsonify({"error": "Unauthorized access. Invalid or missing GUI token."}), 401
-
+        
 # --- Suppress Flask's Default Console Logging ---
 flask_logger = logging.getLogger('werkzeug')
-flask_logger.setLevel(logging.DEBUG)
+flask_logger.setLevel(logging.ERROR) # Changed to ERROR to silence HTTP logs
 
+# Disabled engineio_logger and logger to silence PING/PONG noise
 socketio = SocketIO(
-    app, cors_allowed_origins="*", async_handlers=True, async_mode='threading',engineio_logger=flask_logger,logger=flask_logger)
+    app, cors_allowed_origins="*", async_handlers=True, async_mode='threading', engineio_logger=False, logger=False)
 
 # --- State Management for Running Powers ---
 RUNNING_POWERS = {}
