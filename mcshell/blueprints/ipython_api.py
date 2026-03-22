@@ -53,6 +53,17 @@ def get_lobby_data():
     if not shell or not mc_name:
         return jsonify({"status": "standby"})
 
+    # Security Check: Ensure the user actually holds the token.
+    # If they don't, they are an unauthorized observer looking at an active server.
+    from mcshell.mcserver import GUI_AUTH_TOKEN
+    auth_header = request.headers.get('Authorization')
+    token = request.args.get('auth')
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ")[1]
+
+    if token != GUI_AUTH_TOKEN:
+        return jsonify({"status": "unauthorized"})
+
     try:
         # Extract the active MCShell magic instance from IPython's registry
         mcshell_instance = shell.magics_manager.registry.get('MCShell')
