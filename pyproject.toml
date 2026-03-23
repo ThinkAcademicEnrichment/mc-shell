@@ -1,12 +1,12 @@
 [tool.poetry]
 name = "mc-shell"
-version = "0.9.1"
-description = "An interactive shell and editor for controlling Minecraft servers and creating powers."
+version = "0.9.2"
+description = "An interactive shell, Blockly editor and control for managing, programming and sharing Minecraft servers."
 authors = ["Jeff <jeff@thinkae.org>"]
 readme = "README.md"
 packages = [{include = "mcshell"}]
 
-# MERGED INCLUDE: Must be under [tool.poetry], overriding any .gitignore rules
+# Must be in tool.poetry
 include = [
     "mcshell/data/app/**/*",
     "mcshell/data/*.jar"
@@ -23,6 +23,7 @@ build-backend = "poetry.core.masonry.api"
 python = "^3.10"
 
 # Core Application Dependencies
+mctools = "^1.4.1"
 pexpect = "*"
 flask = "*"
 flask-cors = "*"
@@ -32,7 +33,12 @@ requests = "*"
 numpy = "*"
 yarl = "==1.20.1"
 beautifulsoup4 = "*"
-pyyaml = "^6.0.2"
+pvoxelmap = "^5.1.1"
+asyncssh = "^2.22.0"
+miniupnpc = "^2.3.3"
+psutil = "^7.2.2"
+yyaml = "^6.0.2"
+blockapily = "^0.3.1"
 
 # IPython Shell Dependencies
 ipython = "*"
@@ -40,16 +46,7 @@ pickleshare = "*" # For %store magic
 rich = "*"
 click = "*" # For the mcshell CLI entry point
 
-# Minecraft-specific Libraries
-
-# We now use blockapily.BlockGenerator !
-blockapily = "^0.3.1"
 pytest = "^9.0.2"
-mctools = "^1.4.1"
-voxelmap = "^5.1.1"
-asyncssh = "^2.22.0"
-miniupnpc = "^2.3.3"
-psutil = "^7.2.2"
 
 [tool.poetry.scripts]
 mcshell = "mcshell.mcshell:cli"
