@@ -877,6 +877,35 @@ class MCShell(Magics):
         """Join an existing world using and start an app server"""
         self.ip.run_line_magic('mc_start_app',line)
 
+    @line_magic
+    def pp_leave_world(self, line):
+        """
+        Leaves the current world, shutting down any local servers and returning the app to the Lobby.
+        Usage: %pp_leave_world
+        """
+        print("\n--- Leaving World ---")
+
+        # Stop local Paper server if we are the host
+        if self.active_paper_server and self.active_paper_server.is_alive():
+            print(f"Stopping local Paper server for world '{self.active_paper_server.world_name}'...")
+            self.active_paper_server.stop()
+            self.active_paper_server = None
+
+        # Reset Flask application context to put UI into standby mode
+        print("Returning application server to standby mode...")
+        reset_app_server_context()
+        self.mc_name = None
+
+        # Drop VPN connection if it was auto-managed
+        self._disconnect_tailscale()
+
+        from mcshell.mcserver import GUI_AUTH_TOKEN
+        print("="*60)
+        print("🚀 RETURNED TO LOBBY")
+        print("="*60)
+        print(f"Lobby Access: http://localhost:{MC_APP_PORT}/lobby?auth={GUI_AUTH_TOKEN}")
+        print("="*60 + "\n")
+
     def _send(self,kind,*args):
         assert kind in ('help','run','data')
 

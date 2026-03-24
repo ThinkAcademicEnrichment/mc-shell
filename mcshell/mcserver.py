@@ -78,7 +78,6 @@ def reset_app_server_context():
     with app.app_context():
         current_app.config['MCSHELL_SERVER_DATA'] = None
         current_app.config['MINECRAFT_PLAYER_NAME'] = None
-        current_app.config['IPYTHON_SHELL'] = None
         current_app.config['POWER_REPO'] = None
         socketio.emit('state_changed', {'status': 'standby'})
 

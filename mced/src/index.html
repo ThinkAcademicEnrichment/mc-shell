@@ -107,6 +107,7 @@
                         <button class="btn-entity" id="clearWorkspaceButton">Clear Workspace</button>
                         <button class="btn-item" @click="keyboardVisible = !keyboardVisible">Keyboard</button>
                         <button class="btn-geometry" @click="isCodeCollapsed = !isCodeCollapsed">Toggle Python</button>
+                        <button class="btn-picker" id="leaveWorldButton" style="background-color: #ff3b30; color: white; border: none; margin-left: auto;">Leave World</button>
                     </div>
                     <div id="blocklyDiv"></div>
                 </main>
@@ -245,6 +246,9 @@
                                 if (data.status === 'active' && previousState === 'standby') {
                                     // SPA MAGIC: Redirect to the canonical root URL instead of just reloading /lobby
                                     window.location.href = '/';
+                                } else if (data.status === 'standby' && previousState === 'active') {
+                                    // SPA MAGIC: Force reload when returning to the lobby to clean up the Blockly workspace
+                                    window.location.reload();
                                 }
                             } else {
                                 this.lobbyState = 'standby';

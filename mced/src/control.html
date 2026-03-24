@@ -283,8 +283,11 @@
 
     <header>
         <h1>Control Deck</h1>
-        <button class="edit-btn" :class="isEditing ? 'active' : ''" @click="toggleEditMode()" x-text="isEditing ? 'Done' : 'Edit Layout'"></button>
-        <button x-show="lobbyState === 'active'" @click="openShareModal()" class="share-btn" style="padding: 8px 16px;" x-text="lobbyData?.is_host ? 'Share World' : 'Mobile Link'"></button>
+        <div style="display: flex; gap: 10px;">
+            <button class="edit-btn" :class="isEditing ? 'active' : ''" @click="toggleEditMode()" x-text="isEditing ? 'Done' : 'Edit Layout'"></button>
+            <button x-show="lobbyState === 'active'" @click="openShareModal()" class="share-btn" style="padding: 8px 16px;" x-text="lobbyData?.is_host ? 'Share World' : 'Mobile Link'"></button>
+            <button x-show="lobbyState === 'active'" @click="leaveWorld()" class="share-btn" style="padding: 8px 16px; background-color: #ff3b30;">Leave</button>
+        </div>
     </header>
 
     <main class="springboard" :class="isEditing ? 'is-editing' : ''">
@@ -582,6 +585,9 @@
                                 }
                                 this.lobbyData = data;
                                 if (typeof this.fetchPowers === 'function') this.fetchPowers();
+                            } else if (data.status === 'standby' && previousState === 'active') {
+                                // SPA MAGIC: Reload when returning to lobby to wipe state
+                                window.location.reload();
                             }
                         } else {
                             this.lobbyState = 'standby';
@@ -625,6 +631,21 @@
                         this.isJoining = false;
                         this.joinError = "Network error while joining.";
                         console.error(e);
+                    }
+                },
+
+                async leaveWorld() {
+                    if (confirm("Are you sure you want to leave this world?")) {
+                        try {
+                            await fetch('/api/ipython_magic', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ command: 'pp_leave_world', arguments: '' })
+                            });
+                            // Backend emits state_changed, triggering UI switch via checkLobbyState
+                        } catch (e) {
+                            console.error("Failed to leave world:", e);
+                        }
                     }
                 },
 

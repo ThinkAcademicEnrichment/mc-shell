@@ -220,13 +220,6 @@ async function init() {
 
     const debouncedAutosave = debounce(autosaveWorkspace, 1000);
 
-    // const debouncedCodeUpdate = debounce(() => {
-    //     const display = document.getElementById('pythonCodeDisplay');
-    //     if (display) {
-    //         display.textContent = pythonGenerator.workspaceToCode(workspace);
-    //         if (window.Prism) Prism.highlightElement(display);
-    //     }
-    // });
     const debouncedCodeUpdate = debounce(() => {
         const display = document.getElementById('pythonCodeDisplay');
         if (display) {
@@ -291,6 +284,13 @@ async function init() {
         if (confirm("Clear workspace?")) {
             workspace.clear();
             localStorage.removeItem(AUTOSAVE_KEY);
+        }
+    });
+
+    document.getElementById('leaveWorldButton')?.addEventListener('click', async () => {
+        if (confirm("Are you sure you want to leave this world?")) {
+            await PowerManager.executeIPythonCommand('%pp_leave_world', '');
+            // Backend will emit the state_changed signal to handle the SPA logic
         }
     });
 
