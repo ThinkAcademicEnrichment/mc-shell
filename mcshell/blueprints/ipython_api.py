@@ -45,7 +45,7 @@ def execute_ipython_magic():
 
 @ipython_bp.route('/lobby_data', methods=['GET'])
 def get_lobby_data():
-    """Returns the current server status and connection hub info for the Share UI."""
+    """Returns the current server status, connection hub info, and privilege level."""
     shell = current_app.config.get('IPYTHON_SHELL')
     mc_name = current_app.config.get('MINECRAFT_PLAYER_NAME')
 
@@ -54,7 +54,6 @@ def get_lobby_data():
         return jsonify({"status": "standby"})
 
     # Security Check: Ensure the user actually holds the token.
-    # If they don't, they are an unauthorized observer looking at an active server.
     from mcshell.mcserver import GUI_AUTH_TOKEN
     auth_header = request.headers.get('Authorization')
     token = request.args.get('auth')
@@ -70,6 +69,9 @@ def get_lobby_data():
         if mcshell_instance:
             is_host = bool(mcshell_instance.active_paper_server and mcshell_instance.active_paper_server.is_alive())
 
+            # --- NEW: Check if the user holds OP privileges ---
+            is_admin = bool(mcshell_instance.server_data.get('password'))
+
             # ALWAYS fetch hub_data so the frontend knows the local_ip for the QR code
             hub_data = mcshell_instance._get_connection_hub_data()
 
@@ -81,12 +83,13 @@ def get_lobby_data():
                 "status": "active",
                 "player": mc_name,
                 "is_host": is_host,
+                "is_admin": is_admin,
                 "hub": hub_data
             })
     except Exception as e:
         print(f"Error fetching connection hub data: {e}")
 
-    return jsonify({"status": "active", "player": mc_name, "is_host": False, "hub": None})
+    return jsonify({"status": "active", "player": mc_name, "is_host": False, "is_admin": False, "hub": None})
 
 @ipython_bp.route('/join_world', methods=['POST'])
 def join_world():
