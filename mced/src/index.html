@@ -50,10 +50,10 @@
         <link rel="stylesheet" href="./editor.css">
 
     </head>
-    <body x-data="{ isLibraryCollapsed: true, isCodeCollapsed: true, keyboardVisible: false }">
+    <body x-data="EditorApp()">
 
             <!-- SUBSTAGE 2C: The Lobby Overlay -->
-            <div x-data="Lobby()" x-cloak x-show="['standby', 'unauthorized'].includes(lobbyState)" class="lobby-overlay">
+            <div x-cloak x-show="['standby', 'unauthorized'].includes(lobbyState)" class="lobby-overlay">
                 <div class="lobby-card">
                     <!-- Standby / Join Form -->
                     <template x-if="lobbyState === 'standby'">
@@ -79,13 +79,10 @@
 
             <div class="editor-layout" :class="{ 'library-collapsed': isLibraryCollapsed, 'code-collapsed': isCodeCollapsed }">
                 <aside id="power-library-panel">
-
                     <div class="panel-header">
                         <h2 x-show="!isLibraryCollapsed">Power Library</h2>
                             <button class="toggle-btn"
-                                @click="
-                                    isLibraryCollapsed = !isLibraryCollapsed;
-                                "
+                                @click="isLibraryCollapsed = !isLibraryCollapsed;"
                                 title="Toggle Library Panel">
                             <span x-text="isLibraryCollapsed ? '▶' : '◀'"></span>
                         </button>
@@ -93,13 +90,12 @@
                     <div id="power-list"
                          hx-get="/api/powers?view=editor"
                          hx-trigger="load, library-changed from:window" hx-swap="innerHTML">
-
                         <p style="padding: 0 8px; color: #888;">Loading powers...</p>
                     </div>
                 </aside>
 
                 <main id="main-content-panel">
-                    <div id="controls">
+                    <div id="controls" style="display: flex; width: 100%; align-items: center;">
                         <button class="btn-picker" @click="isLibraryCollapsed = !isLibraryCollapsed">Toggle Library</button>
                         <button class="btn-events" id="executePowerButton">Run Power</button>
                         <button class="btn-block" id="cancelPowerButton">Cancel Power</button>
@@ -107,7 +103,14 @@
                         <button class="btn-entity" id="clearWorkspaceButton">Clear Workspace</button>
                         <button class="btn-item" @click="keyboardVisible = !keyboardVisible">Keyboard</button>
                         <button class="btn-geometry" @click="isCodeCollapsed = !isCodeCollapsed">Toggle Python</button>
-                        <button class="btn-picker" id="leaveWorldButton" style="background-color: #ff3b30; color: white; border: none; margin-left: auto;">Leave World</button>
+
+                        <div style="margin-left: auto; display: flex; align-items: center; gap: 10px;">
+                            <!-- The State Awareness Badge -->
+                            <div x-cloak x-show="lobbyState === 'active'" style="padding: 6px 12px; border-radius: 8px; background: rgba(0,0,0,0.4); color: white; font-size: 0.9rem; border: 1px solid #444; cursor: help;" :title="lobbyData?.is_admin ? 'You have Server OP privileges.' : 'Guest Mode. Run %mc_login in the terminal to elevate privileges.'">
+                                <span x-text="lobbyData?.is_admin ? '👑 Admin' : '👤 Guest'"></span>
+                            </div>
+                            <button class="btn-picker" id="leaveWorldButton" style="background-color: #ff3b30; color: white; border: none;">Leave World</button>
+                        </div>
                     </div>
                     <div id="blocklyDiv"></div>
                 </main>
@@ -115,10 +118,7 @@
                 <aside id="code-preview-panel">
                     <div class="panel-header code-header">
                         <span>Python Code</span>
-                        <button class="toggle-btn" @click="
-                            isCodeCollapsed = !isCodeCollapsed;
-                            "
-                            title="Toggle Code Preview">
+                        <button class="toggle-btn" @click="isCodeCollapsed = !isCodeCollapsed;" title="Toggle Code Preview">
                             <span x-text="isCodeCollapsed ? '◀' : '▶'"></span>
                         </button>
                     </div>
@@ -130,13 +130,14 @@
         <template x-teleport="body">
             <div>
                 <!-- Save Power Modal -->
-                <div x-data="{ show: false, name: '', description: '', category: 'Workspaces', power_id: null, availableCategories: [] }"
+                <div x-data="{ show: false, name: '', description: '', category: 'Workspaces', power_id: null, admin_required: false, availableCategories: [] }"
                      @open-save-modal.window="
                         show = true;
                         name = $event.detail.name;
                         description = $event.detail.description;
                         category = $event.detail.category;
                         power_id = $event.detail.power_id || null;
+                        admin_required = false;
                         availableCategories = $event.detail.availableCategories || [];
                      "
                      x-show="show"
@@ -162,7 +163,12 @@
                                 <label for="powerDescription">Description:</label>
                                 <textarea id="powerDescription" name="description" x-model="description"></textarea>
                             </div>
-                            <div class="modal-buttons">
+                            <!-- Admin Required Flag -->
+                            <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 15px;">
+                                <input type="checkbox" id="adminRequired" name="admin_required" x-model="admin_required" style="width: 18px; height: 18px; cursor: pointer;">
+                                <label for="adminRequired" style="margin: 0; cursor: pointer;">🛡️ Requires Admin Privileges</label>
+                            </div>
+                            <div class="modal-buttons" style="margin-top: 20px;">
                                 <button type="submit" class="btn-events" id="confirmSaveButton">Save</button>
                                 <button type="button" class="btn-picker" @click="show = false">Cancel</button>
                             </div>
@@ -216,11 +222,18 @@
 
         <script type="module" src="./index.js"></script>
 
-        <!-- SUBSTAGE 2C: Lobby Component Logic -->
+        <!-- SUBSTAGE 2C: Global Application Context -->
         <script>
             document.addEventListener('alpine:init', () => {
-                Alpine.data('Lobby', () => ({
-                    lobbyState: 'loading', // 'loading', 'standby', 'active', 'unauthorized'
+                Alpine.data('EditorApp', () => ({
+                    // Visual Layout State
+                    isLibraryCollapsed: true,
+                    isCodeCollapsed: true,
+                    keyboardVisible: false,
+
+                    // Lobby State
+                    lobbyState: 'loading',
+                    lobbyData: null,
                     joinToken: '',
                     joinError: '',
                     isJoining: false,
@@ -236,18 +249,16 @@
 
                     async checkLobbyState() {
                         try {
-                            // FORCE the browser to bypass its cache and ask the server directly
                             const response = await fetch('/api/lobby_data', { cache: 'no-store' });
                             if (response.ok) {
                                 const data = await response.json();
                                 const previousState = this.lobbyState;
                                 this.lobbyState = data.status;
+                                this.lobbyData = data;
 
                                 if (data.status === 'active' && previousState === 'standby') {
-                                    // SPA MAGIC: Redirect to the canonical root URL instead of just reloading /lobby
                                     window.location.href = '/';
                                 } else if (data.status === 'standby' && previousState === 'active') {
-                                    // SPA MAGIC: Force reload when returning to the lobby to clean up the Blockly workspace
                                     window.location.reload();
                                 }
                             } else {
@@ -275,11 +286,9 @@
 
                             if (res.ok) {
                                 const data = await res.json();
-                                // Provision the local security token!
                                 if (data.gui_token) {
                                     sessionStorage.setItem('GUI_AUTH_TOKEN', data.gui_token);
                                 }
-                                // The token is saved, trigger the SPA redirect manually!
                                 window.location.href = '/';
                             } else {
                                 this.isJoining = false;

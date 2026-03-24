@@ -54,18 +54,12 @@ function stripAnsi(str) {
  * --- Global Bridge (for HTML events) ---
  */
 
-/**
- * Updated for Issue #3: Metadata extraction with expanded-block priority.
- * This ensures the save modal pre-populates with the name of the power currently being
- * edited, even if dependency powers (which are collapsed) exist in the workspace.
- */
 window.prepareAndOpenSaveModal = async () => {
     try {
         if (!workspace) return;
 
         const topBlocks = workspace.getTopBlocks(false);
 
-        // Issue #3 Fix: Prioritize expanded function blocks over collapsed dependencies.
         const funcDefBlock = topBlocks.find(b =>
             (b.type === 'procedures_defnoreturn' || b.type === 'procedures_defreturn') && !b.isCollapsed()
         ) || topBlocks.find(b =>
@@ -80,7 +74,6 @@ window.prepareAndOpenSaveModal = async () => {
             name = funcDefBlock.getFieldValue('NAME');
             description = funcDefBlock.getCommentText() || '';
 
-            // Heuristic for sub-categorization based on blocks present in workspace
             const blockTypes = workspace.getAllBlocks(false).map(b => b.type);
             if (blockTypes.some(t => t.includes('DigitalGeometry'))) {
                 category = 'Powers/Geometry';
@@ -91,7 +84,6 @@ window.prepareAndOpenSaveModal = async () => {
             }
         }
 
-        // Fetch available categories from the SQLite database for the dropdown
         const availableCategories = await PowerManager.getExistingCategories();
 
         const detail = { name, description, category, availableCategories };
@@ -223,10 +215,9 @@ async function init() {
     const debouncedCodeUpdate = debounce(() => {
         const display = document.getElementById('pythonCodeDisplay');
         if (display) {
-            // Issue #4 Fix: Enable schematic mode for the display only
             pythonGenerator.isSchematic = true;
             display.textContent = pythonGenerator.workspaceToCode(workspace);
-            pythonGenerator.isSchematic = false; // Reset to ensure full code for execution
+            pythonGenerator.isSchematic = false;
 
             if (window.Prism) Prism.highlightElement(display);
         }
@@ -239,12 +230,8 @@ async function init() {
     workspace.addChangeListener((e) => {
         if (!e.isUiEvent) { debouncedAutosave(); debouncedCodeUpdate(); }
 
-        // --- NEW: Dynamic Space Elimination Logic ---
-        // Listen for blocks being collapsed or expanded
         if (e.type === Blockly.Events.BLOCK_CHANGE && e.element === 'collapsed') {
-            // Use a short timeout to let the collapse animation finish visually
             setTimeout(() => {
-                // cleanUp() re-arranges all top-level blocks to eliminate empty vertical space
                 workspace.cleanUp();
             }, 50);
         }
@@ -254,7 +241,11 @@ async function init() {
     document.getElementById('confirmSaveButton')?.addEventListener('click', async () => {
         const form = document.getElementById('savePowerForm');
         if (!form) return;
+
         const formData = Object.fromEntries(new FormData(form).entries());
+        // NEW: Explicitly grab the checkbox, since unchecked boxes aren't serialized by FormData
+        formData.admin_required = form.querySelector('#adminRequired').checked;
+
         try {
             if (await PowerManager.savePower(workspace, formData)) {
                 window.dispatchEvent(new CustomEvent('library-changed'));

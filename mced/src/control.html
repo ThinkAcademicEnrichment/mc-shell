@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MC-ED Control Deck</title>
 
-    <!-- SUBSTAGE 2A/2B: Capture Token & Bulletproof Fetch Interceptor -->
     <script>
         const params = new URLSearchParams(window.location.search);
         const auth = params.get('auth');
@@ -47,9 +46,7 @@
 
     <link rel="icon" href="data:,">
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-
-    <!-- SUBSTAGE 2C: Add QRCode library for sharing -->
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <style>
@@ -213,7 +210,6 @@
             background-repeat: no-repeat; background-position: right 8px center; padding-right: 28px;
         }
 
-        /* SUBSTAGE 2C: LOBBY STYLES */
         .lobby-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 50000; display: flex; align-items: center; justify-content: center; }
         .lobby-card { background: var(--modal-bg, #2c2c2e); padding: 2rem; border-radius: 12px; width: 90%; max-width: 450px; text-align: center; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
         .lobby-input { width: 100%; padding: 12px; margin: 15px 0; border-radius: 8px; border: 1px solid #444; background: #1c1c1e; color: white; box-sizing: border-box; }
@@ -225,10 +221,7 @@
 </head>
 <body x-data="ControlDeck()">
 
-    <!-- SUBSTAGE 2C: Lobby & Share Overlay -->
     <div x-cloak x-show="['standby', 'unauthorized'].includes(lobbyState) || showShareModal" class="lobby-overlay">
-
-        <!-- Lobby View (Standby) -->
         <div x-show="lobbyState === 'standby'" class="lobby-card">
             <h2 style="margin-top: 0;">MC-ED Lobby</h2>
             <p style="color: #aaa; margin-bottom: 20px;">Waiting for an active Minecraft session. Enter a token to join a world instantly.</p>
@@ -237,31 +230,25 @@
             <div x-show="joinError" x-text="joinError" style="color: #ff453a; margin-top: 10px; font-size: 0.9rem;"></div>
         </div>
 
-        <!-- Unauthorized View -->
         <div x-show="lobbyState === 'unauthorized'" class="lobby-card">
             <h2 style="margin-top: 0; color: #ff453a;">Access Denied</h2>
             <p style="color: #aaa; margin-bottom: 10px;">The server is currently active, but you are missing the required security token.</p>
             <p style="color: #888; font-size: 0.9rem;">Please use the secure link provided in the host terminal, or ask the host to share their Mobile Link.</p>
         </div>
 
-        <!-- Share View (Active) -->
         <div x-show="lobbyState === 'active' && showShareModal" class="lobby-card" style="text-align: left;">
             <h2 style="margin-top: 0; text-align: center;" x-text="lobbyData?.is_host ? 'Share Connection' : 'Mobile Control'"></h2>
-
-            <!-- ALWAYS show QR Code for Control Deck -->
             <div>
                 <p style="text-align: center; color: #aaa; font-size: 0.9em; margin-bottom: 5px;">Scan to open Control Deck on another device</p>
                 <div style="display: flex; justify-content: center; background: white; padding: 15px; border-radius: 8px; margin: 0 0 15px 0;">
                     <div x-ref="qrcode"></div>
                 </div>
-
                 <div class="share-token-row">
                     <input type="text" readonly :value="controlDeckUrl" class="lobby-input" style="margin: 0; padding: 8px; font-size: 0.8rem;">
                     <button @click="copyToClipboard(controlDeckUrl)" class="share-btn">Copy</button>
                 </div>
             </div>
 
-            <!-- ONLY show Hub Tokens if Host -->
             <template x-if="lobbyData?.is_host && lobbyData?.hub?.tokens && Object.keys(lobbyData.hub.tokens).length > 0">
                 <div style="margin-top: 20px; border-top: 1px solid #444; padding-top: 15px;">
                     <p style="text-align: center; color: #aaa; font-size: 0.9em; margin-bottom: 10px;">World Join Tokens</p>
@@ -276,13 +263,18 @@
                     </template>
                 </div>
             </template>
-
             <button @click="showShareModal = false" class="lobby-btn" style="background: #ff3b30; margin-top: 10px;">Close</button>
         </div>
     </div>
 
     <header>
-        <h1>Control Deck</h1>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <h1>Control Deck</h1>
+            <!-- State Awareness Badge -->
+            <div x-show="lobbyState === 'active'" style="padding: 4px 10px; border-radius: 12px; background: rgba(255,255,255,0.1); color: white; font-size: 0.8rem; font-weight: bold; border: 1px solid #444; cursor: help;" :title="lobbyData?.is_admin ? 'You have Server OP privileges.' : 'Guest Mode. Run %mc_login in the terminal to elevate privileges.'">
+                <span x-text="lobbyData?.is_admin ? '👑 Admin' : '👤 Guest'"></span>
+            </div>
+        </div>
         <div style="display: flex; gap: 10px;">
             <button class="edit-btn" :class="isEditing ? 'active' : ''" @click="toggleEditMode()" x-text="isEditing ? 'Done' : 'Edit Layout'"></button>
             <button x-show="lobbyState === 'active'" @click="openShareModal()" class="share-btn" style="padding: 8px 16px;" x-text="lobbyData?.is_host ? 'Share World' : 'Mobile Link'"></button>
@@ -293,7 +285,6 @@
     <main class="springboard" :class="isEditing ? 'is-editing' : ''">
         <template x-for="instance in deckInstances" :key="instance.instanceId">
             <div class="app-container">
-                <!-- Re-applied explicit Alpine event modifier to intercept touch-and-hold at the source -->
                 <div class="app-icon" :class="getCategoryClass(instance.category)"
                      @pointerdown="handlePressStart(instance, $event)"
                      @pointerup="handlePressEnd(instance, $event)"
@@ -307,7 +298,11 @@
                         <div class="spinner"></div>
                     </div>
                 </div>
-                <div class="app-label app-name" x-text="instance.name"></div>
+                <div class="app-label app-name">
+                    <span x-text="instance.name"></span>
+                    <!-- Shield icon for Admin Powers -->
+                    <span x-show="instance.admin_required" title="Requires Admin" style="color: #ffcc00; font-size: 0.9em; margin-left: 2px;">🛡️</span>
+                </div>
             </div>
         </template>
 
@@ -439,7 +434,13 @@
                         <div class="app-icon" :class="getCategoryClass(p.category)" style="width: 40px; height: 40px; font-size: 18px; border-radius: 10px; margin-right: 15px;">
                             <span x-text="p.name.charAt(0)"></span>
                         </div>
-                        <div style="flex: 1;"><div style="font-weight: 600;" x-text="p.name"></div></div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                                <span x-text="p.name"></span>
+                                <!-- Shield icon for Admin Powers in Library -->
+                                <span x-show="p.admin_required" title="Requires Admin" style="font-size: 0.9em;">🛡️</span>
+                            </div>
+                        </div>
                     </div>
                 </template>
             </div>
@@ -448,21 +449,14 @@
     </div>
 
     <script>
-        // --- GLOBAL CONTEXT MENU INTERCEPTOR ---
-        // Bulletproof fix for Chrome OS / Android touchscreen long-presses
         document.addEventListener('contextmenu', (e) => {
-            // Allow native right-click/long-press ONLY inside input fields (so you can still paste text)
-            if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) {
-                return;
-            }
-            // Block the "Exit full screen" / native browser menu everywhere else on the canvas
+            if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
             e.preventDefault();
         });
 
         document.addEventListener('alpine:init', () => {
             Alpine.data('ControlDeck', () => ({
-                // --- SUBSTAGE 2C: Lobby State Variables ---
-                lobbyState: 'loading', // 'loading', 'standby', 'active', 'unauthorized'
+                lobbyState: 'loading',
                 lobbyData: null,
                 joinToken: '',
                 joinError: '',
@@ -481,30 +475,19 @@
 
                 pressTimer: null,
                 isLongPress: false,
-                runningQueue: {}, // Maps powerId -> Array of executing instanceIds as a fallback
-                socket: null, // --- ADD: Store the socket in the component state ---
+                runningQueue: {},
+                socket: null,
 
                 generateId() {
                     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
                 },
 
                 async init() {
-                    // Fetch initial state when page loads
                     this.checkLobbyState();
-
-                    // Listen for backend Python state changes
-                    const socket = io();
-                    socket.on('state_changed', (data) => {
-                        if (this.isJoining) return;
-                        console.log("State changed event received:", data);
-                        this.checkLobbyState();
-                    });
-
                     const saved = localStorage.getItem('mced_deck_layout');
                     if (saved) {
                         let parsed = JSON.parse(saved);
                         let needsMigration = false;
-
                         this.deckLayout = parsed.map(item => {
                             if (typeof item === 'string') {
                                 needsMigration = true;
@@ -512,65 +495,52 @@
                             }
                             return item;
                         });
-
                         if (needsMigration) this.saveLayout();
                     }
 
                     await Promise.all([this.fetchPowers(), this.fetchTaxonomy()]);
 
-                    // --- FIX: Store the initialized socket on the component ---
                     this.socket = io();
+                    this.socket.on('state_changed', (data) => {
+                        if (this.isJoining) return;
+                        this.checkLobbyState();
+                    });
+
                     this.socket.on('power_status', (data) => {
                         if (data.status === 'running' || data.status === 'dispatched') {
-                            if (data.execution_id) {
-                                this.powerStatus[data.execution_id] = 'running';
-                            }
+                            if (data.execution_id) this.powerStatus[data.execution_id] = 'running';
                             return;
                         }
-
-                        // Normalize all termination states ('idle', 'finished', 'error') to 'idle'
                         if (data.execution_id) {
                             this.powerStatus[data.execution_id] = 'idle';
-
-                            // Clean it out of the fallback queue to keep things tidy
                             if (this.runningQueue[data.id]) {
                                 this.runningQueue[data.id] = this.runningQueue[data.id].filter(id => id !== data.execution_id);
                             }
-                        }
-                        // 2. FALLBACK QUEUE: If backend hasn't been updated with execution_id yet
-                        else if (this.runningQueue[data.id] && this.runningQueue[data.id].length > 0) {
+                        } else if (this.runningQueue[data.id] && this.runningQueue[data.id].length > 0) {
                             const finishedInstanceId = this.runningQueue[data.id].shift();
                             this.powerStatus[finishedInstanceId] = 'idle';
-                        }
-                        // 3. ABSOLUTE FALLBACK
-                        else {
+                        } else {
                             this.deckLayout.forEach(item => {
                                 if (item.powerId === data.id && this.powerStatus[item.instanceId] === 'running') {
                                     this.powerStatus[item.instanceId] = 'idle';
                                 }
                             });
                         }
-
                         if(data.status === 'error') alert(`Error:\n${data.message}`);
                     });
                 },
 
-                // --- SUBSTAGE 2C: Lobby Logic ---
                 get controlDeckUrl() {
                     const token = sessionStorage.getItem('GUI_AUTH_TOKEN') || '';
                     let hostToUse = window.location.host;
-
-                    // Upgrade localhost to a real network IP if available
                     if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && this.lobbyData?.hub?.local_ip) {
                         hostToUse = this.lobbyData.hub.local_ip + (window.location.port ? ':' + window.location.port : '');
                     }
-
                     return `${window.location.protocol}//${hostToUse}/control?auth=${token}`;
                 },
 
                 async checkLobbyState() {
                     try {
-                        // FORCE the browser to bypass its cache
                         const response = await fetch('/api/lobby_data', { cache: 'no-store' });
                         if (response.ok) {
                             const data = await response.json();
@@ -579,14 +549,12 @@
 
                             if (data.status === 'active') {
                                 if (previousState === 'standby') {
-                                    // SPA MAGIC: Redirect to the canonical control URL
                                     window.location.href = '/control';
                                     return;
                                 }
                                 this.lobbyData = data;
                                 if (typeof this.fetchPowers === 'function') this.fetchPowers();
                             } else if (data.status === 'standby' && previousState === 'active') {
-                                // SPA MAGIC: Reload when returning to lobby to wipe state
                                 window.location.reload();
                             }
                         } else {
@@ -605,22 +573,15 @@
                         return;
                     }
                     this.isJoining = true;
-
                     try {
-                        // HIT THE SECURE JOIN ENDPOINT
                         const res = await fetch('/api/join_world', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ token: this.joinToken.trim() })
                         });
-
                         if (res.ok) {
                             const data = await res.json();
-                            // SPA MAGIC: Save the returned gui token to grant full access immediately!
-                            if (data.gui_token) {
-                                sessionStorage.setItem('GUI_AUTH_TOKEN', data.gui_token);
-                            }
-                            // The token is saved, trigger the SPA redirect manually!
+                            if (data.gui_token) sessionStorage.setItem('GUI_AUTH_TOKEN', data.gui_token);
                             window.location.href = '/control';
                         } else {
                             this.isJoining = false;
@@ -642,10 +603,7 @@
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ command: 'pp_leave_world', arguments: '' })
                             });
-                            // Backend emits state_changed, triggering UI switch via checkLobbyState
-                        } catch (e) {
-                            console.error("Failed to leave world:", e);
-                        }
+                        } catch (e) { console.error("Failed to leave world:", e); }
                     }
                 },
 
@@ -657,7 +615,6 @@
                 renderQRCode() {
                     if (!this.$refs.qrcode) return;
                     this.$refs.qrcode.innerHTML = '';
-
                     new QRCode(this.$refs.qrcode, {
                         text: this.controlDeckUrl,
                         width: 160,
@@ -672,25 +629,21 @@
                     const fallbackCopy = (str) => {
                         const el = document.createElement('textarea');
                         el.value = str;
-                        el.setAttribute('readonly', ''); // Prevent keyboard popup
+                        el.setAttribute('readonly', '');
                         el.style.position = 'absolute';
                         el.style.left = '-9999px';
                         document.body.appendChild(el);
                         el.select();
-                        try { document.execCommand('copy'); } catch (e) { console.error('Fallback copy failed', e); }
+                        try { document.execCommand('copy'); } catch (e) {}
                         document.body.removeChild(el);
                     };
-
                     if (navigator.clipboard && navigator.clipboard.writeText) {
                         navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
-                    } else {
-                        fallbackCopy(text);
-                    }
+                    } else fallbackCopy(text);
                 },
 
                 async fetchPowers() {
                     try {
-                        // FORCE the browser to bypass its cache
                         const res = await fetch('/api/powers?view=control&format=json', { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
                         const data = await res.json();
                         this.allPowers = Array.isArray(data) ? data : Object.values(data);
@@ -699,7 +652,6 @@
 
                 async fetchTaxonomy() {
                     try {
-                        // FORCE the browser to bypass its cache
                         const res = await fetch('/api/taxonomy', { cache: 'no-store' });
                         this.taxonomy = await res.json();
                     } catch (e) { console.error("Failed to load taxonomy", e); }
@@ -708,9 +660,7 @@
                 get deckInstances() {
                     return this.deckLayout.map(item => {
                         const power = this.allPowers.find(p => p.power_id === item.powerId);
-                        if (power) {
-                            return { ...power, instanceId: item.instanceId };
-                        }
+                        if (power) return { ...power, instanceId: item.instanceId };
                         return null;
                     }).filter(p => p !== null);
                 },
@@ -722,16 +672,12 @@
 
                 async toggleEditMode() {
                     this.isEditing = !this.isEditing;
-                    // Refresh the powers list from the server whenever we enter Edit mode
-                    if (this.isEditing) {
-                        await this.fetchPowers();
-                    }
+                    if (this.isEditing) await this.fetchPowers();
                 },
 
                 handlePressStart(instance, event) {
                     if (this.isEditing) return;
                     this.isLongPress = false;
-
                     this.pressTimer = setTimeout(() => {
                         this.isLongPress = true;
                         this.openConfigDrawer(instance);
@@ -740,14 +686,10 @@
 
                 handlePressEnd(instance, event) {
                     if (this.isEditing) return;
-
                     if (this.pressTimer) {
                         clearTimeout(this.pressTimer);
                         this.pressTimer = null;
-
-                        if (!this.isLongPress) {
-                            this.quickExecute(instance);
-                        }
+                        if (!this.isLongPress) this.quickExecute(instance);
                     }
                 },
 
@@ -760,20 +702,20 @@
 
                 openConfigDrawer(instance) {
                     if (this.powerStatus[instance.instanceId] === 'running') return;
-
                     this.activeInstance = instance;
                     this.loadParamsForPower(instance);
                 },
 
                 quickExecute(instance) {
+                    // THE NEW SECURITY GUARD: Intercept execution before the payload is even built!
+                    if (instance.admin_required && (!this.lobbyData || !this.lobbyData.is_admin)) {
+                        alert("🛡️ Access Denied: This power requires Server Admin privileges.\n\nPlease open your terminal and run %mc_login to elevate your permissions.");
+                        return;
+                    }
+
                     if (this.powerStatus[instance.instanceId] === 'running') {
                          if(confirm(`Cancel ${instance.name}?`)) {
-
-                             // --- THE MAGIC CONCURRENCY FIX ---
-                             // Fire the cancellation request to your backend's dedicated WebSocket listener,
-                             // passing the exact instance ID of this specific widget button!
                              this.socket.emit('cancel_power', { execution_id: instance.instanceId });
-
                              this.powerStatus[instance.instanceId] = 'idle';
                              if (this.runningQueue[instance.power_id]) {
                                  this.runningQueue[instance.power_id] = this.runningQueue[instance.power_id].filter(id => id !== instance.instanceId);
@@ -843,7 +785,6 @@
 
                     localStorage.setItem('mced_widget_params_' + this.activeInstance.instanceId, JSON.stringify(this.executionParams));
 
-                    // --- NEW: Attach the execution_id to the payload ---
                     const payload = {
                         power_id: this.activeInstance.power_id,
                         execution_id: this.activeInstance.instanceId
@@ -858,11 +799,7 @@
                     }
 
                     this.powerStatus[this.activeInstance.instanceId] = 'running';
-
-                    // Add to fallback queue just in case backend isn't updated
-                    if (!this.runningQueue[this.activeInstance.power_id]) {
-                        this.runningQueue[this.activeInstance.power_id] = [];
-                    }
+                    if (!this.runningQueue[this.activeInstance.power_id]) this.runningQueue[this.activeInstance.power_id] = [];
                     this.runningQueue[this.activeInstance.power_id].push(this.activeInstance.instanceId);
 
                     const executingInstanceId = this.activeInstance.instanceId;
@@ -882,7 +819,6 @@
                     }
                 },
 
-                // --- SMART PICKER LOGIC ---
                 isEnumType(type) { return !!this.taxonomy[type] && !['Block', 'Item', 'Entity'].includes(type); },
 
                 formatDisplayValue(val) {
@@ -909,17 +845,12 @@
                             if (match) {
                                 let expectedName = match[1].split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
                                 if (expectedName === 'General') expectedName = `Other ${this.pickerType}s`;
-
                                 const specificGroup = baseGroups.find(g => g.name === expectedName);
-                                if (specificGroup) {
-                                    baseGroups = [specificGroup];
-                                }
+                                if (specificGroup) baseGroups = [specificGroup];
                             }
                         }
                     }
-
                     if (this.searchQuery.trim() === '') return baseGroups;
-
                     const query = this.searchQuery.toLowerCase();
                     return baseGroups.map(group => ({
                         name: group.name,
@@ -958,7 +889,6 @@
                     return currentVal === item.value;
                 },
 
-                // Springboard Utilities
                 addToDeck(powerId) {
                     this.deckLayout.push({ instanceId: this.generateId(), powerId: powerId });
                     this.saveLayout();
