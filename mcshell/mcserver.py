@@ -29,42 +29,98 @@ app_server_thread = None
 app = Flask(__name__, static_folder=str(MC_APP_DIR)) # Serve files from Parcel's build output
 app.secret_key = str(uuid.uuid4())
 
+GUI_AUTH_TOKEN = uuid.uuid4().hex
+
 # --- Register Endpoints
 app.register_blueprint(powers_bp)
 app.register_blueprint(control_bp)
 app.register_blueprint(ipython_bp)
 
+# --- SUBSTAGE 2B: Secure API Blueprints (Hard Mode) ---
+@app.before_request
+def check_auth_token():
+    """Enforce strict security on all API endpoints (Hard Mode)"""
+
+    # Allow peer-to-peer server invitations and unauthenticated lobby access
+    if request.path in ('/api/receive_invite', '/api/lobby_data', '/api/join_world'):
+        return
+
+    if request.path.startswith('/api/'):
+        # Allow peer-to-peer server invitations to bypass local browser auth
+        if request.path == '/api/receive_invite':
+            return
+
+        auth_header = request.headers.get('Authorization')
+        token = request.args.get('auth') # Fallback if passed in URL
+
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
+
+        if token != GUI_AUTH_TOKEN:
+            print(f"\n[SECURITY BLOCK] Unauthorized API access attempt to {request.path} blocked!")
+            from flask import jsonify
+            return jsonify({"error": "Unauthorized access. Invalid or missing GUI token."}), 401
 
 # --- Suppress Flask's Default Console Logging ---
 flask_logger = logging.getLogger('werkzeug')
-flask_logger.setLevel(logging.DEBUG)
+flask_logger.setLevel(logging.ERROR) # Changed to ERROR to silence HTTP logs
 
+# Disabled engineio_logger and logger to silence PING/PONG noise
 socketio = SocketIO(
-    app, cors_allowed_origins="*", async_handlers=True, async_mode='threading',engineio_logger=flask_logger,logger=flask_logger)
+    app, cors_allowed_origins="*", async_handlers=True, async_mode='threading', engineio_logger=False, logger=False)
 
 # --- State Management for Running Powers ---
 RUNNING_POWERS = {}
 
 # --- Server Control ---
-def start_app_server(server_data,mc_name,ipy_shell,power_repo):
-    """Starts the main Flask-SocketIO application server in a separate thread."""
-    app.config['MCSHELL_SERVER_DATA'] = server_data
-    app.config['MINECRAFT_PLAYER_NAME'] = mc_name
-    app.config['IPYTHON_SHELL'] = ipy_shell
-    app.config['POWER_REPO'] = power_repo
+def reset_app_server_context():
+    """Clears the Minecraft context from the Flask app but leaves the server running."""
+    with app.app_context():
+        current_app.config['MCSHELL_SERVER_DATA'] = None
+        current_app.config['MINECRAFT_PLAYER_NAME'] = None
+        current_app.config['POWER_REPO'] = None
+        socketio.emit('state_changed', {'status': 'standby'})
+
+def start_app_server(server_data=None, minecraft_name=None, shell=None, power_repo=None, port=5001):
+    """Starts or updates the main Flask-SocketIO application server in a separate thread."""
+
+    # Safely inject the new Minecraft parameters into the active Flask Application Context
+    with app.app_context():
+        if server_data is not None: current_app.config['MCSHELL_SERVER_DATA'] = server_data
+        if minecraft_name is not None: current_app.config['MINECRAFT_PLAYER_NAME'] = minecraft_name
+        if shell is not None: current_app.config['IPYTHON_SHELL'] = shell
+        if power_repo is not None: current_app.config['POWER_REPO'] = power_repo
+
+        # Ping the frontend via WebSocket to drop the 401 error and reload the editor
+        socketio.emit('state_changed', {'status': 'active'})
+
+    use_port = port
+    if app.config.get('MCSHELL_SERVER_DATA') and 'app_port' in app.config['MCSHELL_SERVER_DATA']:
+        use_port = app.config['MCSHELL_SERVER_DATA']['app_port']
+
+    global app_server_thread
+    if app_server_thread and app_server_thread.is_alive():
+        current_port = getattr(app_server_thread, 'port', 5001)
+        if current_port == use_port:
+            return app_server_thread
+        else:
+            # --- PORT TRANSITION LOGIC ---
+            print(f"Port transition detected ({current_port} -> {use_port}). Notifying UI to jump...")
+            socketio.emit('port_switch', {'new_port': use_port})
+            time.sleep(0.5) # Allow the network to flush the event to the browser before we die
+            stop_app_server()
+            time.sleep(1.0)
 
     def _start_flask_server():
         import errno
         import socket
 
-        logging.getLogger('werkzeug').setLevel(logging.ERROR)
-
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            if s.connect_ex(('127.0.0.1', server_data['app_port'])) == 0:
+            if s.connect_ex(('127.0.0.1', use_port)) == 0:
                 return
 
         try:
-            socketio.run(app, host='0.0.0.0', port=server_data['app_port'], debug=False, use_reloader=False, allow_unsafe_werkzeug=True)
+            socketio.run(app, host='0.0.0.0', port=use_port, debug=False, use_reloader=False, allow_unsafe_werkzeug=True)
         except OSError as e:
             if getattr(e, 'errno', None) == errno.EADDRINUSE or 'Address already in use' in str(e):
                 pass
@@ -76,21 +132,14 @@ def start_app_server(server_data,mc_name,ipy_shell,power_repo):
             else:
                 raise
 
-    global app_server_thread
     app_server_thread = Thread(
         target=_start_flask_server,
         daemon=True
     )
+    app_server_thread.port = use_port
     app_server_thread.start()
 
     return app_server_thread
-    # time.sleep(1)
-    # if app_server_thread.is_alive():
-    #     print(f"Flask-SocketIO application server started in thread: {app_server_thread.ident}")
-    #     print(f"mc-ed application server started for player '{mc_name}'.")
-    # else:
-    #     print("Error: Application server thread failed to start.")
-
 
 def stop_app_server():
     """Gracefully stops the Flask-SocketIO application server by emitting a socket.io event."""
@@ -103,42 +152,42 @@ def stop_app_server():
     import socketio as socketio_client
     sio = socketio_client.Client()
     try:
-        print("CLient connecting to server to send shutdown event...")
-        sio.connect(f"http://127.0.0.1:{app.config['MCSHELL_SERVER_DATA']['app_port']}")
+        app_port = getattr(app_server_thread, 'port', 5001)
+        print("Client connecting to server to send shutdown event...")
+        sio.connect(f"http://127.0.0.1:{app_port}")
     except Exception as e:
         print(f"Could not connect to server to send shutdown event: {e}")
         print("The server might already be down or unresponsive.")
         return
 
     sio.emit('shutdown_request')
+    app_server_thread.join(timeout=3.0)
     app_server_thread = None
-
 
 # --- Socket.io Handlers ---
 @socketio.on('connect')
 def handle_connect():
-    print(f"CLIENT CONNECTED: A new client has connected. SID: {request.sid}")
+    pass # Silenced for clean terminal
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    print(f"CLIENT DISCONNECTED: A client has disconnected. SID: {request.sid}")
+    pass # Silenced for clean terminal
 
 @socketio.on('cancel_power')
 def handle_cancel_power_event(data):
     execution_id = data.get('execution_id')
-    print(f"Received cancel request for execution ID: {execution_id}")
     power_to_cancel = RUNNING_POWERS.get(execution_id)
     if power_to_cancel and execution_id in RUNNING_POWERS:
-        print(f"Cancellation request received for execution ID: {execution_id}")
         power_to_cancel['cancel_event'].set()
         return {'status': 'cancellation_requested', 'execution_id': execution_id}
     else:
-        print(f"Received cancel request for unknown execution ID: {execution_id}")
         return {'status': 'error', 'message': 'Unknown execution ID'}
 
 @socketio.on('shutdown_request')
 def handle_shutdown_request():
     print("Shutdown request received via Socket.IO. Stopping server.")
+    # THE TERMINAL STATE: Alert all clients that the server is going down!
+    socketio.emit('state_changed', {'status': 'terminated'})
     try:
         with app.app_context():
             socketio.stop()
@@ -242,11 +291,23 @@ class BlocklyProgramRunner:
 
             try:
                 runner.run_program()
-            except PowerCancelledException:
-                pass
+            except Exception as e:
+                # Ignore PowerCancelledException which is a normal, clean exit
+                if type(e).__name__ == "PowerCancelledException":
+                    pass
+                elif isinstance(e, PermissionError):
+                    print(f"\n[Access Denied] {e}")
+                    socketio.emit('power_status', {
+                        'id': power_id,
+                        'execution_id': execution_id,
+                        'status': 'error',
+                        'message': 'Access Denied: Server Admin privileges required.'
+                    })
+                    return
+                else:
+                    raise e
 
             if cancel_event.is_set():
-                print(f"THREAD {execution_id}: Emitting 'cancelled' status...")
                 socketio.emit('power_status', {
                     'id': power_id,
                     'execution_id': execution_id,
@@ -255,7 +316,6 @@ class BlocklyProgramRunner:
                 })
                 return
 
-        print(f"THREAD {execution_id}: Emitting 'finished' status...")
         socketio.emit('power_status', {
             'id': power_id,
             'execution_id': execution_id,
@@ -263,15 +323,26 @@ class BlocklyProgramRunner:
             'message': 'Completed successfully.'
         })
     except Exception as e:
-        print(f"Thread {execution_id}: Error during execution: {e}")
-        import traceback
-        traceback.print_exc()
-        socketio.emit('power_status', {
-            'id': power_id,
-            'execution_id': execution_id,
-            'status': 'error',
-            'message': str(e)
-        })
+        if type(e).__name__ == "PowerCancelledException":
+            pass
+        elif isinstance(e, PermissionError):
+            print(f"\n[Access Denied] {e}")
+            socketio.emit('power_status', {
+                'id': power_id,
+                'execution_id': execution_id,
+                'status': 'error',
+                'message': 'Access Denied: Server Admin privileges required.'
+            })
+        else:
+            print(f"Thread {execution_id}: Error during execution: {e}")
+            import traceback
+            traceback.print_exc()
+            socketio.emit('power_status', {
+                'id': power_id,
+                'execution_id': execution_id,
+                'status': 'error',
+                'message': str(e)
+            })
     finally:
         if tracking_id in RUNNING_POWERS:
             del RUNNING_POWERS[tracking_id]
@@ -353,6 +424,12 @@ def receive_invite():
     except Exception as e:
         print(f"Error processing invitation: {e}")
         return jsonify({"error": "Invalid invitation format."}), 400
+
+# --- Web UI Routes ---
+@app.route('/lobby')
+def serve_lobby():
+    # SUBSTAGE 2C: Serve the unified SPA index.html for the Lobby as well!
+    return send_from_directory(current_app.static_folder, 'index.html')
 
 # --- Control Panel ---
 @app.route('/control')

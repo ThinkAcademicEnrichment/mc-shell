@@ -12,6 +12,24 @@ class MCPlayer(MCClient):
 
         self.state = {}
 
+    def run(self, *args, **kwargs):
+        """Override to instantly cancel powers if an Admin RCON command is attempted without a password."""
+        try:
+            return super().run(*args, **kwargs)
+        except PermissionError as e:
+            if self.cancel_event:
+                self.cancel_event.set()
+            raise e
+
+    def data(self, *args, **kwargs):
+        """Override to instantly cancel powers if an Admin RCON data query is attempted without a password."""
+        try:
+            return super().data(*args, **kwargs)
+        except PermissionError as e:
+            if self.cancel_event:
+                self.cancel_event.set()
+            raise e
+
     def get_data(self,data_path):
         _args = ['get','entity',f'@p[name={self.name}]',data_path]
         return self.data(*_args)

@@ -4,19 +4,94 @@
         <meta charset="utf-8">
         <title>MC-ED Editor</title>
 
+        <!-- SUBSTAGE 2A: Capture Token & Global Interceptors -->
+        <script>
+            const params = new URLSearchParams(window.location.search);
+            const auth = params.get('auth');
+            if (auth) {
+                sessionStorage.setItem('GUI_AUTH_TOKEN', auth);
+                const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                window.history.replaceState({path: cleanUrl}, '', cleanUrl);
+            }
+
+            const { fetch: originalFetch } = window;
+            window.fetch = async (...args) => {
+                let [resource, config] = args;
+                let urlString = resource instanceof Request ? resource.url : resource.toString();
+                const parsedUrl = new URL(urlString, window.location.origin);
+
+                if (parsedUrl.pathname.startsWith('/api/')) {
+                    config = config || {};
+                    config.headers = config.headers || {};
+                    const token = sessionStorage.getItem('GUI_AUTH_TOKEN');
+                    if (token) {
+                        if (config.headers instanceof Headers) {
+                            config.headers.set('Authorization', 'Bearer ' + token);
+                        } else {
+                            config.headers['Authorization'] = 'Bearer ' + token;
+                        }
+                    }
+                    args[1] = config;
+                }
+                return originalFetch(...args);
+            };
+        </script>
+
+        <!-- SUBSTAGE 2C: Lobby Dependencies & Styles -->
+        <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+        <style>
+            [x-cloak] { display: none !important; }
+            .lobby-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 50000; display: flex; align-items: center; justify-content: center; }
+            .lobby-card { background: #2c2c2e; padding: 2rem; border-radius: 12px; width: 90%; max-width: 450px; text-align: center; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.3); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+            .lobby-input { width: 100%; padding: 12px; margin: 15px 0; border-radius: 8px; border: 1px solid #444; background: #1c1c1e; color: white; box-sizing: border-box; }
+            .lobby-btn { width: 100%; padding: 12px; background: #0a84ff; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
+        </style>
+
         <link rel="stylesheet" href="./editor.css">
 
     </head>
-    <body x-data="{ isLibraryCollapsed: true, isCodeCollapsed: true, keyboardVisible: false }">
+    <body x-data="EditorApp()">
+
+            <!-- SUBSTAGE 2C: The Lobby Overlay -->
+            <div x-cloak x-show="['standby', 'unauthorized', 'terminated'].includes(lobbyState)" class="lobby-overlay">
+                <div class="lobby-card">
+                    <!-- Standby / Join Form -->
+                    <template x-if="lobbyState === 'standby'">
+                        <div>
+                            <h2 style="margin-top: 0;">MC-ED Editor Lobby</h2>
+                            <p style="color: #aaa; margin-bottom: 20px;">Waiting for an active Minecraft session. Enter a token to join a world instantly.</p>
+                            <input type="text" x-model="joinToken" placeholder="Paste Join Token..." class="lobby-input" @keyup.enter="joinWorld()">
+                            <button @click="joinWorld()" class="lobby-btn">Join World</button>
+                            <div x-show="joinError" x-text="joinError" style="color: #ff453a; margin-top: 10px; font-size: 0.9rem;"></div>
+                        </div>
+                    </template>
+
+                    <!-- Unauthorized Viewer -->
+                    <template x-if="lobbyState === 'unauthorized'">
+                        <div>
+                            <h2 style="margin-top: 0; color: #ff453a;">Access Denied</h2>
+                            <p style="color: #aaa; margin-bottom: 10px;">The server is currently active, but you are missing the required security token.</p>
+                            <p style="color: #888; font-size: 0.9rem;">Please use the secure link provided in the host terminal, or ask the host to share their Mobile Link.</p>
+                        </div>
+                    </template>
+
+                    <!-- Terminated Viewer -->
+                    <template x-if="lobbyState === 'terminated'">
+                        <div>
+                            <h2 style="margin-top: 0; color: #ff453a;">Session Ended</h2>
+                            <p style="color: #aaa; margin-bottom: 10px;">The mc-shell terminal application has been closed.</p>
+                            <p style="color: #888; font-size: 0.9rem;">This connection is no longer active. You may safely close this browser tab.</p>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
             <div class="editor-layout" :class="{ 'library-collapsed': isLibraryCollapsed, 'code-collapsed': isCodeCollapsed }">
                 <aside id="power-library-panel">
-
                     <div class="panel-header">
                         <h2 x-show="!isLibraryCollapsed">Power Library</h2>
                             <button class="toggle-btn"
-                                @click="
-                                    isLibraryCollapsed = !isLibraryCollapsed;
-                                "
+                                @click="isLibraryCollapsed = !isLibraryCollapsed;"
                                 title="Toggle Library Panel">
                             <span x-text="isLibraryCollapsed ? '▶' : '◀'"></span>
                         </button>
@@ -24,13 +99,12 @@
                     <div id="power-list"
                          hx-get="/api/powers?view=editor"
                          hx-trigger="load, library-changed from:window" hx-swap="innerHTML">
-
                         <p style="padding: 0 8px; color: #888;">Loading powers...</p>
                     </div>
                 </aside>
 
                 <main id="main-content-panel">
-                    <div id="controls">
+                    <div id="controls" style="display: flex; width: 100%; align-items: center;">
                         <button class="btn-picker" @click="isLibraryCollapsed = !isLibraryCollapsed">Toggle Library</button>
                         <button class="btn-events" id="executePowerButton">Run Power</button>
                         <button class="btn-block" id="cancelPowerButton">Cancel Power</button>
@@ -38,6 +112,15 @@
                         <button class="btn-entity" id="clearWorkspaceButton">Clear Workspace</button>
                         <button class="btn-item" @click="keyboardVisible = !keyboardVisible">Keyboard</button>
                         <button class="btn-geometry" @click="isCodeCollapsed = !isCodeCollapsed">Toggle Python</button>
+                        <button class="btn-picker" @click="openControlDeck()">Control</button>
+
+                        <div style="margin-left: auto; display: flex; align-items: center; gap: 10px;">
+                            <!-- The State Awareness Badge -->
+                            <div x-cloak x-show="lobbyState === 'active'" style="padding: 6px 12px; border-radius: 8px; background: rgba(0,0,0,0.4); color: white; font-size: 0.9rem; border: 1px solid #444; cursor: help;" :title="lobbyData?.is_admin ? 'You have Server OP privileges.' : 'Guest Mode. Run %mc_login in the terminal to elevate privileges.'">
+                                <span x-text="lobbyData?.is_admin ? '👑 Admin' : '👤 Guest'"></span>
+                            </div>
+                            <button class="btn-picker" id="leaveWorldButton" style="background-color: #ff3b30; color: white; border: none;">Leave World</button>
+                        </div>
                     </div>
                     <div id="blocklyDiv"></div>
                 </main>
@@ -45,10 +128,7 @@
                 <aside id="code-preview-panel">
                     <div class="panel-header code-header">
                         <span>Python Code</span>
-                        <button class="toggle-btn" @click="
-                            isCodeCollapsed = !isCodeCollapsed;
-                            "
-                            title="Toggle Code Preview">
+                        <button class="toggle-btn" @click="isCodeCollapsed = !isCodeCollapsed;" title="Toggle Code Preview">
                             <span x-text="isCodeCollapsed ? '◀' : '▶'"></span>
                         </button>
                     </div>
@@ -60,13 +140,14 @@
         <template x-teleport="body">
             <div>
                 <!-- Save Power Modal -->
-                <div x-data="{ show: false, name: '', description: '', category: 'Workspaces', power_id: null, availableCategories: [] }"
+                <div x-data="{ show: false, name: '', description: '', category: 'Workspaces', power_id: null, admin_required: false, availableCategories: [] }"
                      @open-save-modal.window="
                         show = true;
                         name = $event.detail.name;
                         description = $event.detail.description;
                         category = $event.detail.category;
                         power_id = $event.detail.power_id || null;
+                        admin_required = false;
                         availableCategories = $event.detail.availableCategories || [];
                      "
                      x-show="show"
@@ -92,7 +173,12 @@
                                 <label for="powerDescription">Description:</label>
                                 <textarea id="powerDescription" name="description" x-model="description"></textarea>
                             </div>
-                            <div class="modal-buttons">
+                            <!-- Admin Required Flag -->
+                            <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 15px;">
+                                <input type="checkbox" id="adminRequired" name="admin_required" x-model="admin_required" style="width: 18px; height: 18px; cursor: pointer;">
+                                <label for="adminRequired" style="margin: 0; cursor: pointer;">🛡️ Requires Admin Privileges</label>
+                            </div>
+                            <div class="modal-buttons" style="margin-top: 20px;">
                                 <button type="submit" class="btn-events" id="confirmSaveButton">Save</button>
                                 <button type="button" class="btn-picker" @click="show = false">Cancel</button>
                             </div>
@@ -145,9 +231,137 @@
         </template>
 
         <script type="module" src="./index.js"></script>
+
+        <!-- SUBSTAGE 2C: Global Application Context -->
+        <script>
+            document.addEventListener('alpine:init', () => {
+                Alpine.data('EditorApp', () => ({
+                    // Visual Layout State
+                    isLibraryCollapsed: true,
+                    isCodeCollapsed: true,
+                    keyboardVisible: false,
+
+                    // Lobby State
+                    lobbyState: 'loading', // 'loading', 'standby', 'active', 'unauthorized', 'terminated'
+                    lobbyData: null,
+                    joinToken: '',
+                    joinError: '',
+                    isJoining: false,
+                    isSwitchingPorts: false,
+
+                    init() {
+                        this.checkLobbyState();
+                        const socket = io();
+                        socket.on('state_changed', (data) => {
+                            if (data && data.status === 'terminated') {
+                                if (this.isJoining || this.isSwitchingPorts) return;
+                                this.lobbyState = 'terminated';
+                                return;
+                            }
+                            if (this.isJoining || this.isSwitchingPorts) return;
+                            this.checkLobbyState();
+                        });
+                        socket.on('port_switch', (data) => {
+                            this.isSwitchingPorts = true;
+                            this.isJoining = true;
+
+                            const targetPort = String(data.new_port);
+                            const currentPort = window.location.port || (window.location.protocol === 'https:' ? '443' : '80');
+
+                            if (targetPort !== currentPort) {
+                                // Keep checking the new port until the background thread starts it
+                                const checkAndRedirect = async () => {
+                                    try {
+                                        const testUrl = `${window.location.protocol}//${window.location.hostname}:${targetPort}/api/lobby_data`;
+                                        await fetch(testUrl, { method: 'GET', mode: 'no-cors' });
+
+                                        // The new server is alive! Append the token securely cross-origin.
+                                        const token = sessionStorage.getItem('GUI_AUTH_TOKEN') || '';
+                                        window.location.href = `${window.location.protocol}//${window.location.hostname}:${targetPort}/?auth=${token}`;
+                                    } catch (e) {
+                                        setTimeout(checkAndRedirect, 500); // Retry in 500ms
+                                    }
+                                };
+                                setTimeout(checkAndRedirect, 1000);
+                            }
+                        });
+                        socket.on('reload', () => {
+                            if (!this.isSwitchingPorts) window.location.reload();
+                        });
+                    },
+
+                    async checkLobbyState() {
+                        try {
+                            const response = await fetch('/api/lobby_data', { cache: 'no-store' });
+                            if (response.ok) {
+                                const data = await response.json();
+                                const previousState = this.lobbyState;
+                                this.lobbyState = data.status;
+                                this.lobbyData = data;
+
+                                if (data.status === 'active' && previousState === 'standby') {
+                                    window.location.href = '/';
+                                } else if (data.status === 'standby' && previousState === 'active') {
+                                    window.location.reload();
+                                }
+                            } else {
+                                this.lobbyState = 'standby';
+                            }
+                        } catch (e) {
+                            console.error("Failed to fetch lobby state", e);
+                            this.lobbyState = 'standby';
+                        }
+                    },
+
+                    async joinWorld() {
+                        this.joinError = '';
+                        if (!this.joinToken.trim()) {
+                            this.joinError = 'Please enter a valid token.';
+                            return;
+                        }
+                        this.isJoining = true;
+                        try {
+                            const res = await fetch('/api/join_world', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ token: this.joinToken.trim() })
+                            });
+
+                            if (res.ok) {
+                                const data = await res.json();
+                                if (data.gui_token) {
+                                    sessionStorage.setItem('GUI_AUTH_TOKEN', data.gui_token);
+                                }
+                                if (!this.isSwitchingPorts) {
+                                    window.location.href = '/';
+                                }
+                            } else {
+                                this.isJoining = false;
+                                const errData = await res.json().catch(() => ({}));
+                                this.joinError = errData.error || 'Failed to connect. Server rejected request.';
+                            }
+                        } catch (e) {
+                            // If the backend drops connection during a port switch, ignore the network error!
+                            if (this.isSwitchingPorts) return;
+
+                            this.isJoining = false;
+                            this.joinError = 'Network error while joining.';
+                            console.error(e);
+                        }
+                    },
+
+                    // Safely spawn a new authenticated Control Deck tab
+                    openControlDeck() {
+                        const token = sessionStorage.getItem('GUI_AUTH_TOKEN') || '';
+                        window.open(`/control?auth=${token}`, '_blank');
+                    }
+                }));
+            });
+        </script>
+
         <div class="simple-keyboard"
              x-show="keyboardVisible"
-             style="position: fixed; bottom: 0; left: 0; width: 100%; z-index: 20000; background: white;">
+             style="position: fixed; bottom: 0; left: 0; width: 100%; z-index: 41000; background: white;">
         </div>
     </body>
 </html>

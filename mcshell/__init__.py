@@ -10,7 +10,7 @@ from rich.prompt import Prompt
 from mcshell.constants import *
 from mcshell.mcrepo import SQLiteRepository
 from mcshell.mcclient import MCClient
-from mcshell.mcserver import start_app_server
+from mcshell.mcserver import start_app_server, reset_app_server_context, GUI_AUTH_TOKEN
 from mcshell.mcactions import *
 from mcshell.mcserver import execute_power_in_thread, RUNNING_POWERS # Import helpers
 from mcshell.ppmanager import *
@@ -297,10 +297,9 @@ class MCShell(Magics):
             except Exception as e:
                 print(f"[TAILSCALE WARNING] Could not disconnect automatically: {e}")
 
-    def _print_connection_hub(self):
-        """Helper method to print the share tokens cleanly."""
+    def _get_connection_hub_data(self):
+        """Returns the raw connection hub data in a structured, JSON-friendly dictionary."""
         def _make_direct_token(ip):
-            """Generates a direct connection token, appending ports only if they deviate from defaults."""
             mc_p = self.server_data.get('port', 25565)
             rcon_p = self.server_data.get('rcon_port', 25575)
             mj_p = self.server_data.get('mj_port', 4721)
@@ -313,41 +312,67 @@ class MCShell(Magics):
         authkey = self.server_data.get('tailscale_authkey')
         use_subnet = self.server_data.get('tailscale_subnet_mode', False)
 
+        data = {
+            "local_ip": local_ip,
+            "vpn_ip": vpn_ip,
+            "authkey": authkey,
+            "use_subnet": use_subnet,
+            "ssh_token": self.current_ssh_token,
+            "vpn_mode": "none",
+            "tokens": {
+                "lan": _make_direct_token(local_ip)
+            }
+        }
+
+        if authkey:
+            if use_subnet:
+                data['vpn_mode'] = 'subnet'
+                data['tokens']['classroom_vpn'] = f"{_make_direct_token(local_ip)}^{authkey}"
+            else:
+                if vpn_ip:
+                    data['vpn_mode'] = 'node'
+                    data['tokens']['classroom_vpn'] = f"{_make_direct_token(vpn_ip)}^{authkey}"
+                else:
+                    data['vpn_mode'] = 'error'
+        elif vpn_ip:
+            data['tokens']['tailscale'] = _make_direct_token(vpn_ip)
+
+        return data
+
+    def _print_connection_hub(self):
+        """Helper method to print the share tokens cleanly."""
+        data = self._get_connection_hub_data()
+
         print(f"\n" + "="*60)
         print("🌍 CONNECTION HUB: Share these tokens with friends!")
         print("="*60)
 
-        if authkey:
-            # Automated Classroom UX: Give the students a single copy-paste token
-            if use_subnet:
-                primary_ip = local_ip
-                vpn_token = f"{_make_direct_token(primary_ip)}^{authkey}"
-                print("\n[ CLASSROOM VPN CONNECTION (Subnet Router Mode) ]")
-                print(f"Token : {vpn_token}")
-            else:
-                if vpn_ip:
-                    vpn_token = f"{_make_direct_token(vpn_ip)}^{authkey}"
-                    print("\n[ CLASSROOM VPN CONNECTION (Node-to-Node Mode) ]")
-                    print(f"Token : {vpn_token}")
-                else:
-                    print("\n[ CLASSROOM VPN CONNECTION (Node-to-Node Mode) ]")
-                    print("⚠️  ERROR: Tailscale failed to acquire a VPN IP.")
-                    print("⚠️  Cannot generate an automated remote token. Check your Tailscale installation.")
+        if data['authkey']:
+            if data['vpn_mode'] == 'subnet':
+                print("\n[ VPN CONNECTION (Subnet Router Mode) ]")
+                print(f"Token : {data['tokens']['classroom_vpn']}")
+            elif data['vpn_mode'] == 'node':
+                print("\n[ VPN CONNECTION (Node-to-Node Mode) ]")
+                print(f"Token : {data['tokens']['classroom_vpn']}")
+            elif data['vpn_mode'] == 'error':
+                print("\n[ VPN CONNECTION (Node-to-Node Mode) ]")
+                print("⚠️  ERROR: Tailscale failed to acquire a VPN IP.")
+                print("⚠️  Cannot generate an automated remote token. Check your Tailscale installation.")
 
         # Standard direct tokens
         print("\n[ DIRECT CONNECTION (No SSH Required) ]")
-        print(f"Local LAN Token : {_make_direct_token(local_ip)}")
+        print(f"Local LAN Token : {data['tokens']['lan']}")
 
         # Only show the raw Tailscale token if we aren't already giving them the automated authkey command
-        if vpn_ip and not authkey:
-            print(f"Tailscale Token : {_make_direct_token(vpn_ip)}")
+        if data['vpn_mode'] == 'none' and data['vpn_ip']:
+            print(f"Tailscale Token : {data['tokens']['tailscale']}")
 
         # SSH Tunnel
         print("\n[ SECURE SSH TUNNEL (Internet Fallback) ]")
-        if self.current_ssh_token:
-            print(f"Token : {self.current_ssh_token}")
-            token_ip = self.current_ssh_token.split(':')[0]
-            if token_ip == local_ip:
+        if data['ssh_token']:
+            print(f"Token : {data['ssh_token']}")
+            token_ip = data['ssh_token'].split(':')[0]
+            if token_ip == data['local_ip']:
                 print("(Warning: Token uses Local IP. For internet play, restart with: --ssh)")
             else:
                 print("(UPnP successfully negotiated with router)")
@@ -721,8 +746,8 @@ class MCShell(Magics):
 
         print(f"--- Stopping session for world: {self.active_paper_server.world_name} ---")
 
-        print("Stopping application server...")
-        stop_app_server()
+        print("Returning application server to standby mode...")
+        reset_app_server_context()
         self.mc_name = None
 
         print("Stopping Paper server (this may take a moment)...")
@@ -852,6 +877,35 @@ class MCShell(Magics):
         """Join an existing world using and start an app server"""
         self.ip.run_line_magic('mc_start_app',line)
 
+    @line_magic
+    def pp_leave_world(self, line):
+        """
+        Leaves the current world, shutting down any local servers and returning the app to the Lobby.
+        Usage: %pp_leave_world
+        """
+        print("\n--- Leaving World ---")
+
+        # Stop local Paper server if we are the host
+        if self.active_paper_server and self.active_paper_server.is_alive():
+            print(f"Stopping local Paper server for world '{self.active_paper_server.world_name}'...")
+            self.active_paper_server.stop()
+            self.active_paper_server = None
+
+        # Reset Flask application context to put UI into standby mode
+        print("Returning application server to standby mode...")
+        reset_app_server_context()
+        self.mc_name = None
+
+        # Drop VPN connection if it was auto-managed
+        self._disconnect_tailscale()
+
+        from mcshell.mcserver import GUI_AUTH_TOKEN
+        print("="*60)
+        print("🚀 RETURNED TO LOBBY")
+        print("="*60)
+        print(f"Lobby Access: http://localhost:{MC_APP_PORT}/lobby?auth={GUI_AUTH_TOKEN}")
+        print("="*60 + "\n")
+
     def _send(self,kind,*args):
         assert kind in ('help','run','data')
 
@@ -869,7 +923,7 @@ class MCShell(Magics):
             print("[red bold]Unable to send command. Is the server running?[/]")
             pprint(self.server_data)
         except RCONAuthenticationError as e:
-            print("[red bold]The password is wrong. Use %mc_login reset[/]")
+            print("[red bold]The password is wrong. Use %mc_login[/]")
 
     def _get_client(self):
         return MCClient(**self.server_data)
@@ -954,7 +1008,6 @@ class MCShell(Magics):
         %mc_login
         '''
 
-
         self.server_data.update({
             'host': Prompt.ask('Server Address:', default=self.server_data['host']),
             'rcon_port': int(Prompt.ask('Server Port:', default=str(self.server_data['rcon_port']))),
@@ -964,6 +1017,12 @@ class MCShell(Magics):
 
         try:
             self._get_client().help()
+            print("[green bold]Login successful! Admin privileges unlocked.[/]")
+
+            # --- NEW: Trigger a UI refresh to update the Admin Badge ---
+            from mcshell.mcserver import socketio
+            socketio.emit('state_changed', {'status': 'active'})
+
         except Exception as e:
             print("[red bold]login failed[/]")
 
@@ -976,9 +1035,13 @@ class MCShell(Magics):
 
         # 1. App Server (mc-ed) Status
         if self.app_server_thread and self.app_server_thread.is_alive():
-            print(f"🟢 MCED App Server  : RUNNING")
-            print(f"   Editor URL         : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}")
-            print(f"   Control URL         : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}/control")
+            if self.mc_name:
+                print(f"🟢 MCED App Server  : RUNNING (Active Player: {self.mc_name})")
+                print(f"   Editor URL         : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}?auth={GUI_AUTH_TOKEN}")
+                print(f"   Control URL        : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}/control?auth={GUI_AUTH_TOKEN}")
+            else:
+                print(f"🟡 MCED App Server  : STANDBY")
+                print(f"   Lobby URL          : http://localhost:{MC_APP_PORT}/lobby?auth={GUI_AUTH_TOKEN}")
         else:
             print("🔴 Editor App Server  : STOPPED")
 
@@ -1321,7 +1384,11 @@ class MCShell(Magics):
                     runner.run_program()
                 except Exception as e:
                     # Ignore PowerCancelledException which is a normal, clean exit
-                    if type(e).__name__ != "PowerCancelledException":
+                    if type(e).__name__ == "PowerCancelledException":
+                        pass
+                    elif isinstance(e, PermissionError):
+                        print(f"\n[Access Denied] {e}")
+                    else:
                         import traceback
                         print(f"\n--- Error executing {execution_id}: {e} ---")
                         traceback.print_exc()
@@ -1342,11 +1409,27 @@ class MCShell(Magics):
 
             thread.start()
 
+            # --- INSTANT FAILURE DETECTION ---
+            # Wait briefly to see if the script immediately aborts (e.g., from a permission error)
+            thread.join(timeout=0.2)
+
+            # If the thread died OR the cancel event was tripped by a PermissionError inside a block wrapper
+            if not thread.is_alive() or cancel_event.is_set():
+                if execution_id in RUNNING_POWERS:
+                    del RUNNING_POWERS[execution_id]
+                if filepath.exists():
+                    filepath.unlink()
+                # Suppress the success messages so the UI doesn't register it as running
+                return
+
+            print(f"Successfully saved power to: {filepath}")
+            print(f"To use it, you can now run:\nfrom powers.blockcode.{filename.replace('.py','')} import *")
             print(f"--- Power '{metadata.get('function_name', 'None')}' metadata defined/updated. ---")
             print(f"--- Started debug execution with ID: {execution_id} ---")
             # The editor explicitly looks for this string format to hook its STOP button
             print(f"MCED_EXECUTION_ID:{execution_id}")
             print(f"--- To stop it, run: %mc_cancel_power {execution_id} ---")
+
 
         except Exception as e:
             import traceback
@@ -1453,9 +1536,14 @@ class MCShell(Magics):
     def mc_start_app(self, line):
         """
         Starts the client application components to connect to a world.
-        Usage: %mc_start_app [token|IP] [--local-mc <port>] [--local-rcon <port>] [--local-mj <port>] [--authkey <key>]
+        Usage: %mc_start_app [token|IP] [--local-mc <port>] [--local-rcon <port>] [--local-mj <port>] [--authkey <key>] [--guest]
         """
         parts = line.split()
+
+        # Check for guest mode
+        is_guest = '--guest' in parts
+        if is_guest:
+            parts.remove('--guest')
 
         # If the first argument doesn't start with '--', it's our token
         token = parts[0] if parts and not parts[0].startswith('--') else None
@@ -1541,22 +1629,28 @@ class MCShell(Magics):
                     self.server_data['rcon_port'] = local_rcon
                     self.server_data['mj_port'] = local_mj
 
-        login_to_server = Prompt.ask('Do you want to be a server op?',choices=['yes','no'],default='no')
-        if login_to_server.lower() == 'yes':
-            self.server_data.update({
-                'password': Prompt.ask('Server Password:', password=True)
-            })
+        if is_guest:
+            # Bypass the interactive prompt and default to standard player mode safely
+            self.server_data['password'] = None
+        else:
+            login_to_server = Prompt.ask('Do you want to be a server op?',choices=['yes','no'],default='no')
+            if login_to_server.lower() == 'yes':
+                self.server_data.update({
+                    'password': Prompt.ask('Server Password:', password=True)
+                })
+            else:
+                self.server_data['password'] = None
 
         minecraft_name = self._get_mc_name()
         power_repo = SQLiteRepository(minecraft_name)
-        print("Stopping any running application servers.")
-        stop_app_server()
-        print(f"Starting application server for authorized Minecraft player: {minecraft_name}")
-        self.app_server_thread = start_app_server(self.server_data,minecraft_name,self.shell,power_repo)
+
+        print(f"Assigning application server context to Minecraft player: {minecraft_name}")
+        self.app_server_thread = start_app_server(self.server_data, minecraft_name, self.shell, power_repo)
+
         print(f"Open a browser here to use the editor:")
-        print(f"\thttp://{socket.gethostname()}.local:{self.server_data['app_port']}")
+        print(f"\thttp://{socket.gethostname()}.local:{self.server_data['app_port']}?auth={GUI_AUTH_TOKEN}")
         print(f"Open a browser here to use the control:")
-        print(f"\thttp://{socket.gethostname()}.local:{self.server_data['app_port']}/control")
+        print(f"\thttp://{socket.gethostname()}.local:{self.server_data['app_port']}/control?auth={GUI_AUTH_TOKEN}")
 
         print(f"\n" + "="*55)
         print(f"🎮 READY TO PLAY! Enter this into Minecraft:")
@@ -1586,68 +1680,63 @@ class MCShell(Magics):
         return
 
     @line_magic
-    def mc_stop_app(self, line):
-        """Stops the app mcserver thread."""
-        stop_app_server()
-        # force another read of user_map.json or request user input
-        self.mc_name = None
-        self.app_server_thread = None
-        self._disconnect_tailscale()
+    def mc_server_info(self, line):
+        """Check server status, list connected players, configuration, and connection hub."""
+        print("="*60)
+        print("🖥️  MC-SHELL SERVER DASHBOARD")
+        print("="*60)
 
-    @line_magic
-    def mc_server_status(self,line):
-        """
-        Sends your current server connection details to another player.
-        Usage: %mc_invite_player <recipient_app_url>
-        Example: %mc_invite_player http://192.168.1.102:5000
-        """
-        if not MC_CENTRAL_CONFIG_FILE.exists():
-            print("Invitations are not allowed without a central config file.")
-            return
-
-        args = line.split()
-        if len(args) != 1:
-            print("Usage: %mc_invite_player <recipient_app_url>")
-            return
-
-        recipient_url = args[0]
-        sender_name = self._get_mc_name()
-        host_name = socket.gethostname()
-
-        # Ensure the user has an active server session
-        if not self.active_paper_server or not self.active_paper_server.is_alive():
-            print("Error: You must have an active world running to send an invitation.")
-            return
-        invitation_data = {
-            "sender_name": sender_name,
-            "world_name": self.active_paper_server.world_name,
-            "host": f"{host_name}.local",
-            "fj_port": self.server_data.get('fj_port'),
-            "rcon_port":None,
-            "password":None
-        }
-
-        invite_as_server_op = Prompt.ask('Do you want to make the player a server op?',choices=['yes','no'],default='no')
-        if invite_as_server_op.lower() == 'yes':
-            # Construct the payload with your connection details
-            invitation_data.update({
-                "rcon_port": self.server_data.get('rcon_port'),
-                "password": self.server_data.get('password')
-            })
-
-        # The endpoint on the recipient's server we will send to
-        invite_endpoint = f"{recipient_url.rstrip('/')}/api/receive_invite"
-
-        print(f"Sending invitation to {recipient_url}...")
-        try:
-            response = requests.post(invite_endpoint, json=invitation_data, timeout=10)
-            if response.ok:
-                print("Invitation sent successfully!")
+        # 1. App Server (mc-ed) Status
+        if self.app_server_thread and self.app_server_thread.is_alive():
+            if self.mc_name:
+                print(f"🟢 MCED App Server  : RUNNING (Active Player: {self.mc_name})")
+                print(f"   Editor URL         : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}?auth={GUI_AUTH_TOKEN}")
+                print(f"   Control URL        : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}/control?auth={GUI_AUTH_TOKEN}")
             else:
-                print(f"Failed to send invitation. Server responded with: {response.status_code}")
-                print(f"Message: {response.text}")
-        except requests.exceptions.RequestException as e:
-            print(f"Error: Could not connect to the other player's application server. {e}")
+                print(f"🟡 MCED App Server  : STANDBY")
+                print(f"   Lobby URL          : http://localhost:{MC_APP_PORT}/lobby?auth={GUI_AUTH_TOKEN}")
+        else:
+            print("🔴 Editor App Server  : STOPPED")
+
+        # 2. Paper Server Status (Host only)
+        is_host = self.active_paper_server and self.active_paper_server.is_alive()
+        if is_host:
+            world = self.active_paper_server.world_name
+            print(f"🟢 Local Paper Server : RUNNING (World: '{world}')")
+        else:
+            print("🔴 Local Paper Server : STOPPED")
+
+        # 3. Connection & Player Info
+        if (self.app_server_thread and self.app_server_thread.is_alive()) or is_host:
+            print(f"\n⚙️  Active Configuration:")
+            if not is_host:
+                print(f"   Remote Host        : {self.server_data.get('host', 'Unknown')}")
+            print(f"   Minecraft Port     : {self.server_data.get('port', 25565)}")
+            print(f"   RCON Port          : {self.server_data.get('rcon_port', 25575)}")
+            print(f"   McJuice Port       : {self.server_data.get('mj_port', 4721)}")
+
+            password = self.server_data.get('password')
+            if password:
+                print(f"   Server Password    : {password}")
+
+            # Fetch players via RCON
+            try:
+                # Disable printing of the raw auth rejection to keep the dashboard clean
+                response = self._get_client().run('list')
+                if response:
+                    print(f"\n👥 {response}")
+                else:
+                    print("\n👥 Minecraft Players: No response from server.")
+            except Exception:
+                print("\n👥 Minecraft Players: Could not retrieve player list via RCON.")
+
+            # Only print Connection Hub if you are the host
+            if is_host:
+                self._print_connection_hub()
+        else:
+            print("\nTo start a local world, run: %pp_start_world <world_name>")
+            print("To join a remote world, run: %pp_join_world <Token>")
+            print("="*60)
 
     @line_magic
     def mc_stdlib(self, line):
@@ -2033,6 +2122,23 @@ def load_ipython_extension(ip):
     mcshell_instance = MCShell(ip)
     ip.register_magics(mcshell_instance)
 
+    from mcshell.mcserver import GUI_AUTH_TOKEN
+
+    # --- SUBSTAGE 1A & 1B: Launch Standby Server and Distribute Token ---
+    print("\n" + "="*60)
+    print("🚀 MC-SHELL STANDBY LOBBY ACTIVATED")
+    print("="*60)
+    print(f"Lobby Access: http://localhost:{MC_APP_PORT}/lobby?auth={GUI_AUTH_TOKEN}")
+    print("="*60 + "\n")
+
+    mcshell_instance.app_server_thread = start_app_server(
+        server_data=None,
+        minecraft_name=None,
+        shell=ip,
+        power_repo=None,
+        port=MC_APP_PORT
+    )
+
     def shutdown_hook():
         print("\nIPython is shutting down. Stopping active mc-shell session...")
         if mcshell_instance.active_paper_server and mcshell_instance.active_paper_server.is_alive():
@@ -2040,6 +2146,10 @@ def load_ipython_extension(ip):
 
         # Clean up Tailscale if the user just hits Ctrl+D instead of %mc_stop_app
         mcshell_instance._disconnect_tailscale()
+
+        # Ensure the background Flask thread is fully killed on exit
+        from mcshell.mcserver import stop_app_server
+        stop_app_server()
 
         print("Cleanup complete.")
 
