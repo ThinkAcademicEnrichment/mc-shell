@@ -923,7 +923,7 @@ class MCShell(Magics):
             print("[red bold]Unable to send command. Is the server running?[/]")
             pprint(self.server_data)
         except RCONAuthenticationError as e:
-            print("[red bold]The password is wrong. Use %mc_login reset[/]")
+            print("[red bold]The password is wrong. Use %mc_login[/]")
 
     def _get_client(self):
         return MCClient(**self.server_data)
@@ -1008,7 +1008,6 @@ class MCShell(Magics):
         %mc_login
         '''
 
-
         self.server_data.update({
             'host': Prompt.ask('Server Address:', default=self.server_data['host']),
             'rcon_port': int(Prompt.ask('Server Port:', default=str(self.server_data['rcon_port']))),
@@ -1018,6 +1017,12 @@ class MCShell(Magics):
 
         try:
             self._get_client().help()
+            print("[green bold]Login successful! Admin privileges unlocked.[/]")
+
+            # --- NEW: Trigger a UI refresh to update the Admin Badge ---
+            from mcshell.mcserver import socketio
+            socketio.emit('state_changed', {'status': 'active'})
+
         except Exception as e:
             print("[red bold]login failed[/]")
 
@@ -1378,15 +1383,15 @@ class MCShell(Magics):
                 try:
                     runner.run_program()
                 except Exception as e:
-                    print(e)
                     # Ignore PowerCancelledException which is a normal, clean exit
-                    if type(e).__name__ != "PowerCancelledException":
-                        if isinstance(e, PermissionError):
-                            print(f"\n[Access Denied] {e}")
-                        else:
-                            import traceback
-                            print(f"\n--- Error executing {execution_id}: {e} ---")
-                            traceback.print_exc()
+                    if type(e).__name__ == "PowerCancelledException":
+                        pass
+                    elif isinstance(e, PermissionError):
+                        print(f"\n[Access Denied] {e}")
+                    else:
+                        import traceback
+                        print(f"\n--- Error executing {execution_id}: {e} ---")
+                        traceback.print_exc()
                 finally:
                     # Automatically remove from running registry when done
                     if execution_id in RUNNING_POWERS:
