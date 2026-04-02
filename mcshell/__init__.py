@@ -1378,11 +1378,15 @@ class MCShell(Magics):
                 try:
                     runner.run_program()
                 except Exception as e:
+                    print(e)
                     # Ignore PowerCancelledException which is a normal, clean exit
                     if type(e).__name__ != "PowerCancelledException":
-                        import traceback
-                        print(f"\n--- Error executing {execution_id}: {e} ---")
-                        traceback.print_exc()
+                        if isinstance(e, PermissionError):
+                            print(f"\n[Access Denied] {e}")
+                        else:
+                            import traceback
+                            print(f"\n--- Error executing {execution_id}: {e} ---")
+                            traceback.print_exc()
                 finally:
                     # Automatically remove from running registry when done
                     if execution_id in RUNNING_POWERS:
@@ -1400,11 +1404,27 @@ class MCShell(Magics):
 
             thread.start()
 
+            # --- INSTANT FAILURE DETECTION ---
+            # Wait briefly to see if the script immediately aborts (e.g., from a permission error)
+            thread.join(timeout=0.2)
+
+            # If the thread died OR the cancel event was tripped by a PermissionError inside a block wrapper
+            if not thread.is_alive() or cancel_event.is_set():
+                if execution_id in RUNNING_POWERS:
+                    del RUNNING_POWERS[execution_id]
+                if filepath.exists():
+                    filepath.unlink()
+                # Suppress the success messages so the UI doesn't register it as running
+                return
+
+            print(f"Successfully saved power to: {filepath}")
+            print(f"To use it, you can now run:\nfrom powers.blockcode.{filename.replace('.py','')} import *")
             print(f"--- Power '{metadata.get('function_name', 'None')}' metadata defined/updated. ---")
             print(f"--- Started debug execution with ID: {execution_id} ---")
             # The editor explicitly looks for this string format to hook its STOP button
             print(f"MCED_EXECUTION_ID:{execution_id}")
             print(f"--- To stop it, run: %mc_cancel_power {execution_id} ---")
+
 
         except Exception as e:
             import traceback
