@@ -111,7 +111,12 @@ def join_world():
 
             # Fetch the GUI token to return to the newly authenticated web client
             from mcshell.mcserver import GUI_AUTH_TOKEN
-            return jsonify({"success": True, "gui_token": GUI_AUTH_TOKEN})
+
+            # Retrieve the final port the server bound to
+            mcshell_instance = shell.magics_manager.registry.get('MCShell')
+            target_port = mcshell_instance.server_data.get('app_port', 5001) if mcshell_instance else 5001
+
+            return jsonify({"success": True, "gui_token": GUI_AUTH_TOKEN, "app_port": target_port})
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 

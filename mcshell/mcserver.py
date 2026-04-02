@@ -104,6 +104,10 @@ def start_app_server(server_data=None, minecraft_name=None, shell=None, power_re
         if current_port == use_port:
             return app_server_thread
         else:
+            # --- PORT TRANSITION LOGIC ---
+            print(f"Port transition detected ({current_port} -> {use_port}). Notifying UI to jump...")
+            socketio.emit('port_switch', {'new_port': use_port})
+            time.sleep(0.5) # Allow the network to flush the event to the browser before we die
             stop_app_server()
             time.sleep(1.0)
 

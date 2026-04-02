@@ -247,20 +247,46 @@
                     joinToken: '',
                     joinError: '',
                     isJoining: false,
+                    isSwitchingPorts: false,
 
                     init() {
                         this.checkLobbyState();
                         const socket = io();
                         socket.on('state_changed', (data) => {
                             if (data && data.status === 'terminated') {
+                                if (this.isJoining || this.isSwitchingPorts) return;
                                 this.lobbyState = 'terminated';
                                 return;
                             }
-                            if (this.isJoining) return;
+                            if (this.isJoining || this.isSwitchingPorts) return;
                             this.checkLobbyState();
                         });
+                        socket.on('port_switch', (data) => {
+                            this.isSwitchingPorts = true;
+                            this.isJoining = true;
+
+                            const targetPort = String(data.new_port);
+                            const currentPort = window.location.port || (window.location.protocol === 'https:' ? '443' : '80');
+
+                            if (targetPort !== currentPort) {
+                                // Keep checking the new port until the background thread starts it
+                                const checkAndRedirect = async () => {
+                                    try {
+                                        const testUrl = `${window.location.protocol}//${window.location.hostname}:${targetPort}/api/lobby_data`;
+                                        await fetch(testUrl, { method: 'GET', mode: 'no-cors' });
+
+                                        // The new server is alive! Append the token securely cross-origin.
+                                        const token = sessionStorage.getItem('GUI_AUTH_TOKEN') || '';
+                                        window.location.href = `${window.location.protocol}//${window.location.hostname}:${targetPort}/?auth=${token}`;
+                                    } catch (e) {
+                                        setTimeout(checkAndRedirect, 500); // Retry in 500ms
+                                    }
+                                };
+                                setTimeout(checkAndRedirect, 1000);
+                            }
+                        });
                         socket.on('reload', () => {
-                            window.location.reload();
+                            if (!this.isSwitchingPorts) window.location.reload();
                         });
                     },
 
@@ -306,13 +332,18 @@
                                 if (data.gui_token) {
                                     sessionStorage.setItem('GUI_AUTH_TOKEN', data.gui_token);
                                 }
-                                window.location.href = '/';
+                                if (!this.isSwitchingPorts) {
+                                    window.location.href = '/';
+                                }
                             } else {
                                 this.isJoining = false;
                                 const errData = await res.json().catch(() => ({}));
                                 this.joinError = errData.error || 'Failed to connect. Server rejected request.';
                             }
                         } catch (e) {
+                            // If the backend drops connection during a port switch, ignore the network error!
+                            if (this.isSwitchingPorts) return;
+
                             this.isJoining = false;
                             this.joinError = 'Network error while joining.';
                             console.error(e);
