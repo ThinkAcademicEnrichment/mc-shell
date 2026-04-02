@@ -112,6 +112,7 @@
                         <button class="btn-entity" id="clearWorkspaceButton">Clear Workspace</button>
                         <button class="btn-item" @click="keyboardVisible = !keyboardVisible">Keyboard</button>
                         <button class="btn-geometry" @click="isCodeCollapsed = !isCodeCollapsed">Toggle Python</button>
+                        <button class="btn-picker" @click="openControlDeck()">Control</button>
 
                         <div style="margin-left: auto; display: flex; align-items: center; gap: 10px;">
                             <!-- The State Awareness Badge -->
@@ -316,6 +317,12 @@
                             this.joinError = 'Network error while joining.';
                             console.error(e);
                         }
+                    },
+
+                    // Safely spawn a new authenticated Control Deck tab
+                    openControlDeck() {
+                        const token = sessionStorage.getItem('GUI_AUTH_TOKEN') || '';
+                        window.open(`/control?auth=${token}`, '_blank');
                     }
                 }));
             });
