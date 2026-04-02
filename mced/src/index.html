@@ -53,7 +53,7 @@
     <body x-data="EditorApp()">
 
             <!-- SUBSTAGE 2C: The Lobby Overlay -->
-            <div x-cloak x-show="['standby', 'unauthorized'].includes(lobbyState)" class="lobby-overlay">
+            <div x-cloak x-show="['standby', 'unauthorized', 'terminated'].includes(lobbyState)" class="lobby-overlay">
                 <div class="lobby-card">
                     <!-- Standby / Join Form -->
                     <template x-if="lobbyState === 'standby'">
@@ -72,6 +72,15 @@
                             <h2 style="margin-top: 0; color: #ff453a;">Access Denied</h2>
                             <p style="color: #aaa; margin-bottom: 10px;">The server is currently active, but you are missing the required security token.</p>
                             <p style="color: #888; font-size: 0.9rem;">Please use the secure link provided in the host terminal, or ask the host to share their Mobile Link.</p>
+                        </div>
+                    </template>
+
+                    <!-- Terminated Viewer -->
+                    <template x-if="lobbyState === 'terminated'">
+                        <div>
+                            <h2 style="margin-top: 0; color: #ff453a;">Session Ended</h2>
+                            <p style="color: #aaa; margin-bottom: 10px;">The mc-shell terminal application has been closed.</p>
+                            <p style="color: #888; font-size: 0.9rem;">This connection is no longer active. You may safely close this browser tab.</p>
                         </div>
                     </template>
                 </div>
@@ -232,7 +241,7 @@
                     keyboardVisible: false,
 
                     // Lobby State
-                    lobbyState: 'loading',
+                    lobbyState: 'loading', // 'loading', 'standby', 'active', 'unauthorized', 'terminated'
                     lobbyData: null,
                     joinToken: '',
                     joinError: '',
@@ -242,8 +251,15 @@
                         this.checkLobbyState();
                         const socket = io();
                         socket.on('state_changed', (data) => {
+                            if (data && data.status === 'terminated') {
+                                this.lobbyState = 'terminated';
+                                return;
+                            }
                             if (this.isJoining) return;
                             this.checkLobbyState();
+                        });
+                        socket.on('reload', () => {
+                            window.location.reload();
                         });
                     },
 

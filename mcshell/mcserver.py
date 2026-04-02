@@ -60,7 +60,7 @@ def check_auth_token():
             print(f"\n[SECURITY BLOCK] Unauthorized API access attempt to {request.path} blocked!")
             from flask import jsonify
             return jsonify({"error": "Unauthorized access. Invalid or missing GUI token."}), 401
-        
+
 # --- Suppress Flask's Default Console Logging ---
 flask_logger = logging.getLogger('werkzeug')
 flask_logger.setLevel(logging.ERROR) # Changed to ERROR to silence HTTP logs
@@ -163,28 +163,27 @@ def stop_app_server():
 # --- Socket.io Handlers ---
 @socketio.on('connect')
 def handle_connect():
-    print(f"CLIENT CONNECTED: A new client has connected. SID: {request.sid}")
+    pass # Silenced for clean terminal
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    print(f"CLIENT DISCONNECTED: A client has disconnected. SID: {request.sid}")
+    pass # Silenced for clean terminal
 
 @socketio.on('cancel_power')
 def handle_cancel_power_event(data):
     execution_id = data.get('execution_id')
-    print(f"Received cancel request for execution ID: {execution_id}")
     power_to_cancel = RUNNING_POWERS.get(execution_id)
     if power_to_cancel and execution_id in RUNNING_POWERS:
-        print(f"Cancellation request received for execution ID: {execution_id}")
         power_to_cancel['cancel_event'].set()
         return {'status': 'cancellation_requested', 'execution_id': execution_id}
     else:
-        print(f"Received cancel request for unknown execution ID: {execution_id}")
         return {'status': 'error', 'message': 'Unknown execution ID'}
 
 @socketio.on('shutdown_request')
 def handle_shutdown_request():
     print("Shutdown request received via Socket.IO. Stopping server.")
+    # THE TERMINAL STATE: Alert all clients that the server is going down!
+    socketio.emit('state_changed', {'status': 'terminated'})
     try:
         with app.app_context():
             socketio.stop()
@@ -288,11 +287,23 @@ class BlocklyProgramRunner:
 
             try:
                 runner.run_program()
-            except PowerCancelledException:
-                pass
+            except Exception as e:
+                # Ignore PowerCancelledException which is a normal, clean exit
+                if type(e).__name__ == "PowerCancelledException":
+                    pass
+                elif isinstance(e, PermissionError):
+                    print(f"\n[Access Denied] {e}")
+                    socketio.emit('power_status', {
+                        'id': power_id,
+                        'execution_id': execution_id,
+                        'status': 'error',
+                        'message': 'Access Denied: Server Admin privileges required.'
+                    })
+                    return
+                else:
+                    raise e
 
             if cancel_event.is_set():
-                print(f"THREAD {execution_id}: Emitting 'cancelled' status...")
                 socketio.emit('power_status', {
                     'id': power_id,
                     'execution_id': execution_id,
@@ -301,7 +312,6 @@ class BlocklyProgramRunner:
                 })
                 return
 
-        print(f"THREAD {execution_id}: Emitting 'finished' status...")
         socketio.emit('power_status', {
             'id': power_id,
             'execution_id': execution_id,
@@ -309,15 +319,26 @@ class BlocklyProgramRunner:
             'message': 'Completed successfully.'
         })
     except Exception as e:
-        print(f"Thread {execution_id}: Error during execution: {e}")
-        import traceback
-        traceback.print_exc()
-        socketio.emit('power_status', {
-            'id': power_id,
-            'execution_id': execution_id,
-            'status': 'error',
-            'message': str(e)
-        })
+        if type(e).__name__ == "PowerCancelledException":
+            pass
+        elif isinstance(e, PermissionError):
+            print(f"\n[Access Denied] {e}")
+            socketio.emit('power_status', {
+                'id': power_id,
+                'execution_id': execution_id,
+                'status': 'error',
+                'message': 'Access Denied: Server Admin privileges required.'
+            })
+        else:
+            print(f"Thread {execution_id}: Error during execution: {e}")
+            import traceback
+            traceback.print_exc()
+            socketio.emit('power_status', {
+                'id': power_id,
+                'execution_id': execution_id,
+                'status': 'error',
+                'message': str(e)
+            })
     finally:
         if tracking_id in RUNNING_POWERS:
             del RUNNING_POWERS[tracking_id]

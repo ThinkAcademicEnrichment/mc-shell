@@ -46,7 +46,7 @@
 
     <link rel="icon" href="data:,">
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <style>
@@ -221,7 +221,7 @@
 </head>
 <body x-data="ControlDeck()">
 
-    <div x-cloak x-show="['standby', 'unauthorized'].includes(lobbyState) || showShareModal" class="lobby-overlay">
+    <div x-cloak x-show="['standby', 'unauthorized', 'terminated'].includes(lobbyState) || showShareModal" class="lobby-overlay">
         <div x-show="lobbyState === 'standby'" class="lobby-card">
             <h2 style="margin-top: 0;">MC-ED Lobby</h2>
             <p style="color: #aaa; margin-bottom: 20px;">Waiting for an active Minecraft session. Enter a token to join a world instantly.</p>
@@ -234,6 +234,13 @@
             <h2 style="margin-top: 0; color: #ff453a;">Access Denied</h2>
             <p style="color: #aaa; margin-bottom: 10px;">The server is currently active, but you are missing the required security token.</p>
             <p style="color: #888; font-size: 0.9rem;">Please use the secure link provided in the host terminal, or ask the host to share their Mobile Link.</p>
+        </div>
+
+        <!-- Terminated Viewer -->
+        <div x-show="lobbyState === 'terminated'" class="lobby-card">
+            <h2 style="margin-top: 0; color: #ff453a;">Session Ended</h2>
+            <p style="color: #aaa; margin-bottom: 10px;">The mc-shell terminal application has been closed.</p>
+            <p style="color: #888; font-size: 0.9rem;">This connection is no longer active. You may safely close this browser tab.</p>
         </div>
 
         <div x-show="lobbyState === 'active' && showShareModal" class="lobby-card" style="text-align: left;">
@@ -456,7 +463,7 @@
 
         document.addEventListener('alpine:init', () => {
             Alpine.data('ControlDeck', () => ({
-                lobbyState: 'loading',
+                lobbyState: 'loading', // 'loading', 'standby', 'active', 'unauthorized', 'terminated'
                 lobbyData: null,
                 joinToken: '',
                 joinError: '',
@@ -502,8 +509,15 @@
 
                     this.socket = io();
                     this.socket.on('state_changed', (data) => {
+                        if (data && data.status === 'terminated') {
+                            this.lobbyState = 'terminated';
+                            return;
+                        }
                         if (this.isJoining) return;
                         this.checkLobbyState();
+                    });
+                    this.socket.on('reload', () => {
+                        window.location.reload();
                     });
 
                     this.socket.on('power_status', (data) => {
@@ -707,7 +721,6 @@
                 },
 
                 quickExecute(instance) {
-                    // THE NEW SECURITY GUARD: Intercept execution before the payload is even built!
                     if (instance.admin_required && (!this.lobbyData || !this.lobbyData.is_admin)) {
                         alert("🛡️ Access Denied: This power requires Server Admin privileges.\n\nPlease open your terminal and run %mc_login to elevate your permissions.");
                         return;
