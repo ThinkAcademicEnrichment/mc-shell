@@ -130,6 +130,18 @@ class ServerActions(MCActionsBase):
         self._run_command(f"give {target_name} {self._get_item_id_from_bukkit_name(item)} {count}")
 
     @mced_block(
+        label="Give [count] [projectile] to [target]",
+        item={'label': 'Projectile', 'shadow': 'minecraft_picker_projectile'},
+        count={'label': 'Count', 'shadow': 'math_number'},
+        target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'}
+    )
+    def server_give_projectile(self, item: 'Entity', count: int = 1, target: str = "SELF"):
+        """Gives a projectile to a player."""
+        target_name = self.mcplayer.name if target.upper() == "SELF" else target
+        self._run_command(f"give {target_name} {self._get_item_id_from_bukkit_name(item)} {count}")
+
+
+    @mced_block(
         label="Clear Inventory of [target]",
         target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'}
     )
