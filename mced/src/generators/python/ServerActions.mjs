@@ -129,6 +129,14 @@ const target = generator.valueToCode(block, 'target', pythonGenerator.ORDER_ATOM
         return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
     };
 
+    pythonGenerator.forBlock['serveractions_server_give_projectile'] = function(block, generator) {
+        const item = generator.valueToCode(block, 'item', pythonGenerator.ORDER_ATOMIC) || 'None';
+const count = generator.valueToCode(block, 'count', pythonGenerator.ORDER_ATOMIC) || 'None';
+const target = generator.valueToCode(block, 'target', pythonGenerator.ORDER_ATOMIC) || 'None';
+        const code = `ServerActions.server_give_projectile(${item}, ${count}, ${target})\n`;
+        return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
+    };
+
     pythonGenerator.forBlock['serveractions_server_list'] = function(block, generator) {
         
         const code = `ServerActions.server_list()\n`;

@@ -16,7 +16,6 @@ import { defineWorldActionsGenerators } from "./WorldActions.mjs";
 import { defineBlocksGenerators } from "./blocks.mjs";
 import { defineEntitiesGenerators } from "./entities.mjs";
 import { defineItemsGenerators } from "./items.mjs";
-import { defineMaterialsGenerators } from "./materials.mjs";
 
 export function registerAllGenerators(pythonGenerator) {
     defineMineCraftGenerators(pythonGenerator);
@@ -34,5 +33,4 @@ export function registerAllGenerators(pythonGenerator) {
     defineBlocksGenerators(pythonGenerator);
     defineEntitiesGenerators(pythonGenerator);
     defineItemsGenerators(pythonGenerator);
-    defineMaterialsGenerators(pythonGenerator);
 }

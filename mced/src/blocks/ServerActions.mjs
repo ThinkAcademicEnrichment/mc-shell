@@ -596,6 +596,18 @@ this.appendValueInput('target').appendField('Target Player').setCheck('String');
         }
     };
 
+    Blockly.Blocks['serveractions_server_give_projectile'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Give [count] [projectile] to [target]");
+            this.appendValueInput('item').appendField('Projectile').setCheck('Entity');
+this.appendValueInput('count').appendField('Count').setCheck('Number');
+this.appendValueInput('target').appendField('Target Player').setCheck('String');
+            this.setPreviousStatement(true); this.setNextStatement(true);
+            this.setColour("#5C7457");
+            this.setTooltip("Gives a projectile to a player.");
+        }
+    };
+
     Blockly.Blocks['serveractions_server_list'] = {
         init: function() {
             this.appendDummyInput().appendField("List Players on Server");

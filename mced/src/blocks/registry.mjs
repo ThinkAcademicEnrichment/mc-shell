@@ -16,7 +16,6 @@ import { defineWorldActionsBlocks } from "./WorldActions.mjs";
 import { defineBlocksBlocks } from "./blocks.mjs";
 import { defineEntitiesBlocks } from "./entities.mjs";
 import { defineItemsBlocks } from "./items.mjs";
-import { defineMaterialsBlocks } from "./materials.mjs";
 
 export function registerAllBlocks(Blockly) {
     defineMineCraftBlocks(Blockly);
@@ -34,5 +33,4 @@ export function registerAllBlocks(Blockly) {
     defineBlocksBlocks(Blockly);
     defineEntitiesBlocks(Blockly);
     defineItemsBlocks(Blockly);
-    defineMaterialsBlocks(Blockly);
 }
