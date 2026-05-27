@@ -6,6 +6,8 @@ import re
 import json
 from pathlib import Path
 
+from mcshell.constants import ic
+
 # --- EXTRACTED CONFIGURATION IMPORT ---
 import registry_config as rc
 
@@ -41,7 +43,7 @@ def get_action_class(module_name, class_name):
 
 class RegistryBuilder:
     # --- UI & Design Tokens (Sourced from registry_config.py) ---
-    COLORS = rc.COLORS
+    COLORS = rc.CAT_COLORS
     TYPE_MAP = rc.TYPE_MAP
     SHADOW_MAP = rc.SHADOW_MAP
     DATA_PATHS = rc.DATA_PATHS
@@ -67,12 +69,7 @@ class RegistryBuilder:
     WOOD_TYPES = rc.WOOD_TYPES
     COLORS_LIST = rc.COLORS_LIST
 
-    # Map both names and inject the 'prefixes' key to ensure backwards compatibility with local methods
     VARIANT_CONFIG = rc.VARIANT_CONFIG
-    # VARIANT_CONFIG = {
-    #     'WOOD': {**rc.VARIANT_MAP.get('WOOD', {}), 'prefixes': rc.WOOD_TYPES},
-    #     'COLOR': {**rc.VARIANT_MAP.get('COLOR', {}), 'prefixes': rc.COLORS_LIST}
-    # }
 
     MATERIAL_PICKER_GROUPS = rc.MATERIAL_PICKER_GROUPS
     ENTITY_GROUPS = rc.ENTITY_GROUPS
@@ -190,13 +187,15 @@ class RegistryBuilder:
             if len(info["mats"]) > 3:
                 var_config = self.VARIANT_CONFIG[info["type"]]
                 template_name = f"{var_key}_{suffix}"
+                label = f"{suffix}"
                 python_template = f"{{}}_{suffix}"
 
                 parameterized[template_name] = {
                     "template": python_template,
                     "input_type": var_config["input_type"],
                     "shadow": var_config["shadow"],
-                    "label": self._normalize_name(template_name),
+                    # "label": self._normalize_name(template_name),
+                    "label": self._normalize_name(label),
                     "available_variants": sorted(info["variants"]),
                     "mats": info["mats"] # <--- NEW: Explicitly output the raw underlying materials
                 }
@@ -257,6 +256,9 @@ class RegistryBuilder:
 
         self._write_output("blocks", "Blocks", js, py)
         BlocklyGenerator.update_toolbox(f'<category name="Blocks" colour="{self.COLORS["Block"]}">{"".join(xml)}</category>', self.toolbox_path)
+
+        # for curating uncategorized blocks in development
+        return rem
 
     def build_items(self):
         js, py, xml = [], [], []
