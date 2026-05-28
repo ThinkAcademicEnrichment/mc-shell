@@ -1,3 +1,4 @@
+from mcshell import MC_MATERIALS_PATH
 import urllib.request
 import urllib.robotparser
 import pickle
@@ -121,6 +122,13 @@ def make_materials():
     Scrapes the Spigot Material Javadocs and categorizes them into
     Blocks, Items, and Entities using semantic markers and method descriptions.
     """
+
+    # if it exists, it was probably already classified
+    if MC_MATERIALS_PATH.exists():
+        print(f"loading exising classified materials from {MC_MATERIALS_PATH.name}")
+        with MC_MATERIALS_PATH.open('rb') as f:
+            return pickle.load(f)
+
     html_content = fetch_with_browser(MC_MATERIAL_URL)
 
     if not html_content:
@@ -154,7 +162,6 @@ def make_materials():
 
         elif "col-last" in classes and current_name:
             description = row.text.strip().lower()
-
             # Semantic Classification Logic
             is_block = False
             is_item = True  # Default to Item
@@ -193,6 +200,46 @@ def make_materials():
 
     print(f"Scraped and categorized {len(materials_data)} materials.")
     return materials_data
+
+def classify_materials_with_bukkit(mcplayer_name):
+    ...
+    try:
+        from mcshell.mcplayer import MCPlayer
+        mc_player = MCPlayer(mcplayer_name) 
+    except:
+        print("Could not join the default local server; material classification not possible")
+        return
+
+    with MC_MATERIALS_PATH.open('rb') as f:
+        materials_data = pickle.load(f)
+
+    from mcshell.generated_actions import AdminActions
+    bukkit_actions = AdminActions(mc_player)
+
+    new_materials_data = {}
+    print(f"Classifying materials by querying the server...")
+    def mkbool(x):
+        if x == 'true':
+            return True
+        return False
+    for material_name,material_data in materials_data.items():
+        res = bukkit_actions.all_material_properties(material_name)
+        if res != 'null':
+            new_materials_data[material_name] = dict(zip(('is_item','is_block','is_edible','is_fuel'),list(map(mkbool,res.split(',')))))
+
+    # Save structured data
+    with MC_MATERIALS_PATH.open('wb') as f:
+        pickle.dump(new_materials_data, f)
+
+    print(f"Categorized {len(new_materials_data)} materials.")
+
+    return new_materials_data
+        
+
+
+
+
+
 
 
 def make_entity_id_map():
