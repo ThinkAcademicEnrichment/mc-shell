@@ -201,6 +201,24 @@ def make_materials():
     print(f"Scraped and categorized {len(materials_data)} materials.")
     return materials_data
 
+def anaylze_materials():
+    with MC_MATERIALS_PATH.open('rb') as f:
+        materials_data = pickle.load(f)
+
+    pure_items, pure_blocks, block_and_items, rem = [],[],[],[]
+
+    for material_name,material_data in materials_data.items():
+        if material_data["is_block"] and material_data["is_item"]:
+            block_and_items.append(material_name) 
+        elif not material_data["is_block"] and material_data["is_item"]:
+            pure_items.append(material_name) 
+        elif material_data["is_block"] and not material_data["is_item"]:
+            pure_blocks.append(material_name) 
+        else:
+            rem.append(material_name) 
+
+    return block_and_items,pure_items,pure_blocks,rem
+
 def classify_materials_with_bukkit(mcplayer_name):
     ...
     try:
