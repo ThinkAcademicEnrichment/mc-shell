@@ -7,6 +7,7 @@ from mcshell.mcactions_base import MCActionsBase
 # from mcshell.eventactions import EventActions
 from mcshell.serveractions import ServerActions
 from mcshell.qturtleactions import QTurtleActions
+from mcshell.qactions import QActions 
 from mcshell.digitalgeometryactions import DigitalGeometryActions
 from mcshell.digitalsetactions import DigitalSetActions
 from mcshell.mclsystem import LSystem
@@ -14,11 +15,10 @@ from mcshell.mclsystem import LSystem
 # FIX: Robustly import generated actions to prevent build-time crashes
 try:
     from mcshell.generated_actions import (
-        PlayerActions, ChatActions, WorldActions, EventActions
+        PlayerActions,WorldActions, EventActions
     )
 except ImportError:
     PlayerActions = None
-    ChatActions = None
     WorldActions = None
     EventActions = None
 
@@ -104,8 +104,8 @@ class LSystemShapes(MCActionsBase):
         return accumulated_shape
 
 class MCActions(
-    PlayerActions, WorldActions,ChatActions,
-    EventActions,ServerActions,QTurtleActions,DigitalGeometryActions,DigitalSetActions,
+    WorldActions, PlayerActions,
+    EventActions,ServerActions,QTurtleActions,QActions,DigitalGeometryActions,DigitalSetActions,
     TurtleShapes,LSystemShapes):
     """
     Unified API for Blockly combining all action groups.
@@ -114,10 +114,10 @@ class MCActions(
         # Initialize all parent classes properly
         PlayerActions.__init__(self, mc_player_instance, delay_between_blocks)
         WorldActions.__init__(self, mc_player_instance, delay_between_blocks)
-        ChatActions.__init__(self, mc_player_instance, delay_between_blocks)
         EventActions.__init__(self, mc_player_instance, delay_between_blocks)
         ServerActions.__init__(self, mc_player_instance, delay_between_blocks)
         QTurtleActions.__init__(self, mc_player_instance, delay_between_blocks)
+        QActions.__init__(self, mc_player_instance, delay_between_blocks)
         DigitalGeometryActions.__init__(self,mc_player_instance, delay_between_blocks)
         DigitalSetActions.__init__(self,mc_player_instance, delay_between_blocks)
         TurtleShapes.__init__(self,mc_player_instance,delay_between_blocks)

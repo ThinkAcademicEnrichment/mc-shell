@@ -2,9 +2,19 @@ import { MCED } from "../lib/constants.mjs";
 
 export function defineEventActionsBlocks(Blockly) {
 
-    Blockly.Blocks['eventactions_wait_for_block_break'] = {
+    Blockly.Blocks['eventactions_wait_for_right_block_hit'] = {
         init: function() {
-            this.appendDummyInput().appendField("Wait for block break by a Player");
+            this.appendDummyInput().appendField("Wait for right block hit by a Player");
+            this.appendValueInput('player_name').appendField('Player name').setCheck('String');
+            this.setOutput(true, '3DVector');
+            this.setColour("#D68C45");
+            this.setTooltip("");
+        }
+    };
+
+    Blockly.Blocks['eventactions_wait_for_left_block_hit'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Wait for left block hit by a Player");
             this.appendValueInput('player_name').appendField('Player name').setCheck('String');
             this.setOutput(true, '3DVector');
             this.setColour("#D68C45");
@@ -22,41 +32,21 @@ export function defineEventActionsBlocks(Blockly) {
         }
     };
 
+    Blockly.Blocks['eventactions_wait_for_block_break'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Wait for block break by a Player");
+            this.appendValueInput('player_name').appendField('Player name').setCheck('String');
+            this.setOutput(true, '3DVector');
+            this.setColour("#D68C45");
+            this.setTooltip("");
+        }
+    };
+
     Blockly.Blocks['eventactions_wait_for_chat'] = {
         init: function() {
             this.appendDummyInput().appendField("Wait for chat message from a Player");
             this.appendValueInput('player_name').appendField('Player name').setCheck('String');
             this.setOutput(true, 'String');
-            this.setColour("#D68C45");
-            this.setTooltip("");
-        }
-    };
-
-    Blockly.Blocks['eventactions_wait_for_left_block_hit'] = {
-        init: function() {
-            this.appendDummyInput().appendField("Wait for left block hit by a Player");
-            this.appendValueInput('player_name').appendField('Player name').setCheck('String');
-            this.setOutput(true, '3DVector');
-            this.setColour("#D68C45");
-            this.setTooltip("");
-        }
-    };
-
-    Blockly.Blocks['eventactions_wait_for_player_death'] = {
-        init: function() {
-            this.appendDummyInput().appendField("Wait for a Player death");
-            this.appendValueInput('player_name').appendField('Player name').setCheck('String');
-            this.setOutput(true, 'String');
-            this.setColour("#D68C45");
-            this.setTooltip("");
-        }
-    };
-
-    Blockly.Blocks['eventactions_wait_for_player_respawn'] = {
-        init: function() {
-            this.appendDummyInput().appendField("Wait for a Player respawn");
-            this.appendValueInput('player_name').appendField('Player name').setCheck('String');
-            this.setOutput(true, '3DVector');
             this.setColour("#D68C45");
             this.setTooltip("");
         }
@@ -92,9 +82,19 @@ export function defineEventActionsBlocks(Blockly) {
         }
     };
 
-    Blockly.Blocks['eventactions_wait_for_right_block_hit'] = {
+    Blockly.Blocks['eventactions_wait_for_player_death'] = {
         init: function() {
-            this.appendDummyInput().appendField("Wait for right block hit by a Player");
+            this.appendDummyInput().appendField("Wait for a Player death");
+            this.appendValueInput('player_name').appendField('Player name').setCheck('String');
+            this.setOutput(true, 'String');
+            this.setColour("#D68C45");
+            this.setTooltip("");
+        }
+    };
+
+    Blockly.Blocks['eventactions_wait_for_player_respawn'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Wait for a Player respawn");
             this.appendValueInput('player_name').appendField('Player name').setCheck('String');
             this.setOutput(true, '3DVector');
             this.setColour("#D68C45");

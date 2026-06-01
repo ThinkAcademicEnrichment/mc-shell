@@ -258,16 +258,44 @@ class WorldActions(MCActionsBase):
     def get_entity_name(self, id: 'int') -> 'str':
         return self.mcplayer.mj.world.getEntityName(int(id))
 
-class ChatActions(MCActionsBase):
+class AdminActions(MCActionsBase):
     def __init__(self, mc_player_instance, delay_between_blocks=0):
         super().__init__(mc_player_instance, delay_between_blocks)
 
     @mced_block(
-        label="Post to Chat",
-        message={'label': 'Message'}
+        label="Is [material] an item?",
+        material={'label': 'Material Name (e.g. ACACIA_BOAT)'}
     )
-    def post(self, message: 'str'):
-        self.mcplayer.mj.chat.post(str(message))
+    def is_material_item(self, material: 'str') -> 'str':
+        return self.mcplayer.mj.admin.isMaterialItem(str(material))
+
+    @mced_block(
+        label="Is [material] a placeable block?",
+        material={'label': 'Material Name (e.g. ACACIA_BOAT)'}
+    )
+    def is_material_block(self, material: 'str') -> 'str':
+        return self.mcplayer.mj.admin.isMaterialBlock(str(material))
+
+    @mced_block(
+        label="Is [material] edible?",
+        material={'label': 'Material Name (e.g. ACACIA_BOAT)'}
+    )
+    def is_material_edible(self, material: 'str') -> 'str':
+        return self.mcplayer.mj.admin.isMaterialEdible(str(material))
+
+    @mced_block(
+        label="Is [material] fuel?",
+        material={'label': 'Material Name (e.g. ACACIA_BOAT)'}
+    )
+    def is_material_fuel(self, material: 'str') -> 'str':
+        return self.mcplayer.mj.admin.isMaterialFuel(str(material))
+
+    @mced_block(
+        label="Is [material] an item, a block, edible, fuel?",
+        material={'label': 'Material Name (e.g. ACACIA_BOAT)'}
+    )
+    def all_material_properties(self, material: 'str') -> 'str':
+        return self.mcplayer.mj.admin.allMaterialProperties(str(material))
 
 class EventActions(MCActionsBase):
     def __init__(self, mc_player_instance, delay_between_blocks=0):
