@@ -354,7 +354,13 @@ class RegistryBuilder:
             js_out = pick_js + [b_js] if i == 0 else [b_js]
             py_out = pick_py + [p_py] if i == 0 else [p_py]
             self._write_output(cls.__name__, cls.__name__, js_out, py_out)
-            BlocklyGenerator.update_toolbox(c_xml, self.toolbox_path)
+
+            # this is so fragile
+            append_separator = False
+            if i < len(self.ACTION_CLASSES) - 1 and self.ACTION_CLASSES[i+1][0].__name__ == 'ServerActions' or cls.__name__ == 'ServerActions':
+                append_separator = True
+
+            BlocklyGenerator.update_toolbox(c_xml, self.toolbox_path,append_separator=append_separator)
 
     def build_pickers_category(self):
         """
