@@ -10,7 +10,6 @@ import { defineEventActionsBlocks } from "./EventActions.mjs";
 import { defineLSystemShapesBlocks } from "./LSystemShapes.mjs";
 import { definePlayerActionsBlocks } from "./PlayerActions.mjs";
 import { defineQActionsBlocks } from "./QActions.mjs";
-import { defineQPlayerActionsBlocks } from "./QPlayerActions.mjs";
 import { defineQTurtleActionsBlocks } from "./QTurtleActions.mjs";
 import { defineServerActionsBlocks } from "./ServerActions.mjs";
 import { defineThreadsBlocks } from "./Threads.mjs";
@@ -31,7 +30,6 @@ export function registerAllBlocks(Blockly) {
     defineLSystemShapesBlocks(Blockly);
     definePlayerActionsBlocks(Blockly);
     defineQActionsBlocks(Blockly);
-    defineQPlayerActionsBlocks(Blockly);
     defineQTurtleActionsBlocks(Blockly);
     defineServerActionsBlocks(Blockly);
     defineThreadsBlocks(Blockly);

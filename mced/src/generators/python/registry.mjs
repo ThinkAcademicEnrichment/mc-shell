@@ -10,7 +10,6 @@ import { defineEventActionsGenerators } from "./EventActions.mjs";
 import { defineLSystemShapesGenerators } from "./LSystemShapes.mjs";
 import { definePlayerActionsGenerators } from "./PlayerActions.mjs";
 import { defineQActionsGenerators } from "./QActions.mjs";
-import { defineQPlayerActionsGenerators } from "./QPlayerActions.mjs";
 import { defineQTurtleActionsGenerators } from "./QTurtleActions.mjs";
 import { defineServerActionsGenerators } from "./ServerActions.mjs";
 import { defineThreadsGenerators } from "./Threads.mjs";
@@ -31,7 +30,6 @@ export function registerAllGenerators(pythonGenerator) {
     defineLSystemShapesGenerators(pythonGenerator);
     definePlayerActionsGenerators(pythonGenerator);
     defineQActionsGenerators(pythonGenerator);
-    defineQPlayerActionsGenerators(pythonGenerator);
     defineQTurtleActionsGenerators(pythonGenerator);
     defineServerActionsGenerators(pythonGenerator);
     defineThreadsGenerators(pythonGenerator);

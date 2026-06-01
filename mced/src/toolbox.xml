@@ -436,6 +436,8 @@
 <block type="worldactions_drop_random_loot"><value name="pos"><shadow type="minecraft_vector_3d"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow></value></block>
 <block type="worldactions_set_container_item"><value name="pos"><shadow type="minecraft_vector_3d"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow></value> <value name="slot"><shadow type="math_number"><field name="NUM">1</field></shadow></value> <value name="item"><shadow type="mc_item_picker_food"><field name="VALUE">APPLE</field></shadow></value> <value name="amount"><shadow type="math_number"><field name="NUM">1</field></shadow></value></block>
 <block type="worldactions_get_entity_name"><value name="id"><shadow type="math_number"><field name="NUM">1</field></shadow></value></block>
+</category><category name="Chat" colour="#D68C45">
+<block type="chatactions_post"><value name="message"><shadow type="text"><field name="TEXT" /></shadow></value></block>
 </category><category name="Event" colour="#D68C45">
 <block type="eventactions_wait_for_right_block_hit"><value name="player_name"><shadow type="text"><field name="TEXT">SELF</field></shadow></value></block>
 <block type="eventactions_wait_for_left_block_hit"><value name="player_name"><shadow type="text"><field name="TEXT">SELF</field></shadow></value></block>
