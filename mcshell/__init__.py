@@ -1417,6 +1417,11 @@ class MCShell(Magics):
             if not thread.is_alive() or cancel_event.is_set():
                 if execution_id in RUNNING_POWERS:
                     del RUNNING_POWERS[execution_id]
+                # save it for post-mortem
+                broken_filepath = f"broken_{filepath}"
+                print(f"Broken power saved to: {broken_filepath}")
+                with open(broken_filepath, 'w') as f:
+                    f.write(code_to_execute)
                 if filepath.exists():
                     filepath.unlink()
                 # Suppress the success messages so the UI doesn't register it as running
@@ -1429,7 +1434,6 @@ class MCShell(Magics):
             # The editor explicitly looks for this string format to hook its STOP button
             print(f"MCED_EXECUTION_ID:{execution_id}")
             print(f"--- To stop it, run: %mc_cancel_power {execution_id} ---")
-
 
         except Exception as e:
             import traceback
