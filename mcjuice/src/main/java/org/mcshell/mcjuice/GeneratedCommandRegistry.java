@@ -443,6 +443,12 @@ public class GeneratedCommandRegistry {
 
             });
         });
+        registry.put("chat.post", (args, session) -> {
+            final String _arg_message = args[0];
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                Bukkit.broadcastMessage(_arg_message);
+            });
+        });
         registry.put("admin.isMaterialItem", (args, session) -> {
             final String _arg_material = args[0];
             Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
