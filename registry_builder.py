@@ -153,7 +153,7 @@ class RegistryBuilder:
         self.export_taxonomy()
 
     def build_action_classes_export(self):
-        class_names = [cls.__name__ for cls, _, _ in self.ACTION_CLASSES]
+        class_names = [cls.__name__ for cls, _, _ in self.ACTION_CLASSES + self.GENERATED_ACTION_CLASSES]
         js_content = f"export const ACTION_CLASSES = {class_names!r};\n"
         out_path = self.gens_dir / "action_classes.mjs"
         out_path.write_text(js_content, encoding='utf-8')
