@@ -15,11 +15,12 @@ from mcshell.mclsystem import LSystem
 # FIX: Robustly import generated actions to prevent build-time crashes
 try:
     from mcshell.generated_actions import (
-        PlayerActions,WorldActions, EventActions
+        PlayerActions,WorldActions,ChatActions,EventActions
     )
 except ImportError:
     PlayerActions = None
     WorldActions = None
+    ChatActions = None
     EventActions = None
 
 # Advanced Digital Geometry and Turtle
@@ -104,7 +105,7 @@ class LSystemShapes(MCActionsBase):
         return accumulated_shape
 
 class MCActions(
-    WorldActions, PlayerActions,
+    WorldActions, PlayerActions,ChatActions,
     EventActions,ServerActions,QTurtleActions,QActions,DigitalGeometryActions,DigitalSetActions,
     TurtleShapes,LSystemShapes):
     """
@@ -114,6 +115,7 @@ class MCActions(
         # Initialize all parent classes properly
         PlayerActions.__init__(self, mc_player_instance, delay_between_blocks)
         WorldActions.__init__(self, mc_player_instance, delay_between_blocks)
+        ChatActions.__init__(self, mc_player_instance, delay_between_blocks)
         EventActions.__init__(self, mc_player_instance, delay_between_blocks)
         ServerActions.__init__(self, mc_player_instance, delay_between_blocks)
         QTurtleActions.__init__(self, mc_player_instance, delay_between_blocks)

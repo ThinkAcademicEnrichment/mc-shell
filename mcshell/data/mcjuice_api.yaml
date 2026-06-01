@@ -449,18 +449,19 @@ namespaces:
             id: { type: int, label: "Entity ID" }
           call_args: [int(id)]
 
-  # chat:
-  #   target: Server
-  #   commands:
-  #     - name: post
-  #       bukkit: broadcastMessage({message})
-  #       args: [{ name: message, type: String }]
-  #       returns: void
-  #       blockly:
-  #         label: "Post to Chat"
-  #         args:
-  #           message: { type: str, label: "Message" }
-  #         call_args: [str(message)]
+  chat:
+    target: Server
+    commands:
+      - name: post
+        bukkit: broadcastMessage({message})
+        args: [{ name: message, type: String }]
+        returns: void
+        blockly:
+          label: "Post to Chat"
+          args:
+            message: { type: str, label: "Message" }
+          call_args: [str(message)]
+
   admin:
     target: Admin
     commands:
