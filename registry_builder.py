@@ -76,7 +76,7 @@ class RegistryBuilder:
     ENTITY_GROUPS = rc.ENTITY_GROUPS
 
     # sometimes we make Actions classes for local utilities
-    GENERATED_ACTIONS_BLACKLIST = ['AdminActions','DigitalGeometryActions']
+    GENERATED_ACTIONS_BLACKLIST = ['AdminActions']
 
     def __init__(self, toolbox_path: pathlib.Path, blocks_dir: pathlib.Path, gens_dir: pathlib.Path, materials_path: pathlib.Path, entity_id_map_path: pathlib.Path):
         self.toolbox_path = toolbox_path
@@ -125,14 +125,14 @@ class RegistryBuilder:
                 print(f"Skipping {','.join(self.GENERATED_ACTIONS_BLACKLIST)} block generation")
 
             self.GENERATED_ACTION_CLASSES.extend([(c, n, col) for c, n, col in classes if c is not None and not c.__name__ in self.GENERATED_ACTIONS_BLACKLIST])
-            print(self.GENERATED_ACTION_CLASSES)
 
             classes = [
                 (get_action_class("qactions", "QActions"), "Q-Stuff", self.COLORS["Turtle"]),
                 (get_action_class("qturtleactions", "QTurtleActions"), "Q-Turtle", self.COLORS["Turtle"]),
-                (get_action_class("mcactions", "TurtleShapes"), "Turtle Shapes", self.COLORS["Turtle"]),
-                (get_action_class("mcactions", "LSystemShapes"), "LSystem Shapes", self.COLORS["LSystem"]),
-                (get_action_class("digitalsetactions", "DigitalSetActions"), "Digital Set", self.COLORS["Digital Set"]),
+                (get_action_class("mcactions", "TurtleShapes"), "Turtle Sets", self.COLORS["Turtle"]),
+                (get_action_class("mcactions", "LSystemShapes"), "LSystem Sets", self.COLORS["LSystem"]),
+                (get_action_class("digitalsetactions", "DigitalSetActions"), "Digital Set Ops", self.COLORS["Digital Set"]),
+                (get_action_class("digitalgeometryactions", "DigitalGeometryActions"), "Digital Geometry", self.COLORS["Geometry"]),
                 (get_action_class("serveractions", "ServerActions"), "Server", self.COLORS["Server"]),
             ]
 
@@ -356,9 +356,13 @@ class RegistryBuilder:
             self._write_output(cls.__name__, cls.__name__, js_out, py_out)
 
             # this is so fragile
+            separated_action_classes = ['ServerActions','DigitalGeometryActions']
             append_separator = False
-            if i < len(self.ACTION_CLASSES) - 1 and self.ACTION_CLASSES[i+1][0].__name__ == 'ServerActions' or cls.__name__ == 'ServerActions':
+            if i < len(self.ACTION_CLASSES) - 1 and self.ACTION_CLASSES[i+1][0].__name__ in separated_action_classes:
                 append_separator = True
+            elif i == len(self.ACTION_CLASSES) - 1:
+                append_separator = True
+
 
             BlocklyGenerator.update_toolbox(c_xml, self.toolbox_path,append_separator=append_separator)
 
