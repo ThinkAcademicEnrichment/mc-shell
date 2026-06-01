@@ -18,6 +18,7 @@ class MCJuiceClient:
         self.reader_thread.start()
         self.player = PlayerNamespace(self.conn, self.entity_id)
         self.world = WorldNamespace(self.conn, self.entity_id)
+        self.chat = ChatNamespace(self.conn, self.entity_id)
         self.admin = AdminNamespace(self.conn, self.entity_id)
         self.events = EventsNamespace(self)
 
@@ -183,6 +184,12 @@ class WorldNamespace:
     def getEntityName(self, id):
         res = self.conn.sendReceive('world.getEntityName', id)
         return res
+
+class ChatNamespace:
+    def __init__(self, conn, entity_id): self.conn = conn; self.entity_id = entity_id
+    def post(self, message):
+        self.conn.send('chat.post', message)
+        return 'OK'
 
 class AdminNamespace:
     def __init__(self, conn, entity_id): self.conn = conn; self.entity_id = entity_id
