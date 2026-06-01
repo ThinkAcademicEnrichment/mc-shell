@@ -227,7 +227,8 @@ class RegistryBuilder:
         base = self._generate_base_pickers()
         js.append(base['js']); py.append(base['py'])
 
-        blocks = [k for k, v in self.materials_data.items() if v.get('is_block')]
+        # a material should be classified as a block only if it is not also an item
+        blocks = [k for k, v in self.materials_data.items() if (v.get('is_block') and  v.get('is_item'))]
         templates, consumed, suffix_map = self._classify_variants(blocks)
 
         for t_key, info in templates.items():
@@ -271,12 +272,9 @@ class RegistryBuilder:
         self._write_output("blocks", "Blocks", js, py)
         BlocklyGenerator.update_toolbox(f'<category name="Blocks" colour="{self.COLORS["Block"]}">{"".join(xml)}</category>', self.toolbox_path)
 
-        # for curating uncategorized blocks in development
-        return rem
-
     def build_items(self):
         js, py, xml = [], [], []
-        items = [k for k, v in self.materials_data.items() if v.get('is_item')]
+        items = [k for k, v in self.materials_data.items() if v.get('is_item') and not v.get('is_block')]
         templates, consumed, suffix_map = self._classify_variants(items)
 
         for t_key, info in templates.items():
