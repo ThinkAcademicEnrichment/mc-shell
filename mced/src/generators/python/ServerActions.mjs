@@ -63,27 +63,11 @@ const value = generator.valueToCode(block, 'value', pythonGenerator.ORDER_ATOMIC
         return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
     };
 
-    pythonGenerator.forBlock['serveractions_server_give_item'] = function(block, generator) {
-        const item = generator.valueToCode(block, 'item', pythonGenerator.ORDER_ATOMIC) || 'None';
+    pythonGenerator.forBlock['serveractions_server_give_block_item_projectile'] = function(block, generator) {
+        const material = generator.valueToCode(block, 'material', pythonGenerator.ORDER_ATOMIC) || 'None';
 const count = generator.valueToCode(block, 'count', pythonGenerator.ORDER_ATOMIC) || 'None';
 const target = generator.valueToCode(block, 'target', pythonGenerator.ORDER_ATOMIC) || 'None';
-        const code = `ServerActions.server_give_item(${item}, ${count}, ${target})\n`;
-        return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
-    };
-
-    pythonGenerator.forBlock['serveractions_server_give_block'] = function(block, generator) {
-        const item = generator.valueToCode(block, 'item', pythonGenerator.ORDER_ATOMIC) || 'None';
-const count = generator.valueToCode(block, 'count', pythonGenerator.ORDER_ATOMIC) || 'None';
-const target = generator.valueToCode(block, 'target', pythonGenerator.ORDER_ATOMIC) || 'None';
-        const code = `ServerActions.server_give_block(${item}, ${count}, ${target})\n`;
-        return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
-    };
-
-    pythonGenerator.forBlock['serveractions_server_give_projectile'] = function(block, generator) {
-        const item = generator.valueToCode(block, 'item', pythonGenerator.ORDER_ATOMIC) || 'None';
-const count = generator.valueToCode(block, 'count', pythonGenerator.ORDER_ATOMIC) || 'None';
-const target = generator.valueToCode(block, 'target', pythonGenerator.ORDER_ATOMIC) || 'None';
-        const code = `ServerActions.server_give_projectile(${item}, ${count}, ${target})\n`;
+        const code = `ServerActions.server_give_block_item_projectile(${material}, ${count}, ${target})\n`;
         return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
     };
 

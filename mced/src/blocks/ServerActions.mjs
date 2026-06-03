@@ -105,39 +105,15 @@ this.appendValueInput('value').appendField('Value').setCheck('Number');
         }
     };
 
-    Blockly.Blocks['serveractions_server_give_item'] = {
+    Blockly.Blocks['serveractions_server_give_block_item_projectile'] = {
         init: function() {
-            this.appendDummyInput().appendField("Give [count] [item] to [target]");
-            this.appendValueInput('item').appendField('Item').setCheck('Item');
+            this.appendDummyInput().appendField("Give [count] [block|item|entity] to [target]");
+            this.appendValueInput('material').appendField('Block or Item or Entity').setCheck(['Item', 'Entity', 'Block']);
 this.appendValueInput('count').appendField('Count').setCheck('Number');
 this.appendValueInput('target').appendField('Target Player').setCheck('String');
             this.setPreviousStatement(true); this.setNextStatement(true);
             this.setColour("#5C7457");
             this.setTooltip("Gives an item to a player.");
-        }
-    };
-
-    Blockly.Blocks['serveractions_server_give_block'] = {
-        init: function() {
-            this.appendDummyInput().appendField("Give [count] [block] to [target]");
-            this.appendValueInput('item').appendField('Block').setCheck('Block');
-this.appendValueInput('count').appendField('Count').setCheck('Number');
-this.appendValueInput('target').appendField('Target Player').setCheck('String');
-            this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#5C7457");
-            this.setTooltip("Gives an item to a player.");
-        }
-    };
-
-    Blockly.Blocks['serveractions_server_give_projectile'] = {
-        init: function() {
-            this.appendDummyInput().appendField("Give [count] [projectile] to [target]");
-            this.appendValueInput('item').appendField('Projectile').setCheck('Entity');
-this.appendValueInput('count').appendField('Count').setCheck('Number');
-this.appendValueInput('target').appendField('Target Player').setCheck('String');
-            this.setPreviousStatement(true); this.setNextStatement(true);
-            this.setColour("#5C7457");
-            this.setTooltip("Gives a projectile to a player.");
         }
     };
 
