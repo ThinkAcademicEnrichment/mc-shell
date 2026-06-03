@@ -310,14 +310,91 @@ async function init() {
         } else {
             Blockly.Events.disable();
             try {
-                if (powerData.blockly_json.blocks?.blocks) {
-                    powerData.blockly_json.blocks.blocks.forEach(b => {
-                        if (b.type.startsWith('procedures_def')) b.collapsed = true;
+                // 1. Deep clone the JSON so we don't permanently mutate the source data
+                const importData = JSON.parse(JSON.stringify(powerData.blockly_json));
+
+                // Map to track which variable IDs got a new name (ID -> New Name)
+                const renamedVars = {};
+
+                // 2. Handle Variables & Detect Collisions
+                if (importData.variables) {
+                    importData.variables.forEach(v => {
+                        // Check if a variable with this name already exists in the workspace
+                        const existingVar = workspace.getVariable(v.name, v.type);
+
+                        if (existingVar && existingVar.getId() !== v.id) {
+                            // Collision detected! Find the lowest available integer suffix.
+                            let count = 2; // Start at 2 (e.g., 'i' becomes 'i2')
+                            let newName = `${v.name}${count}`;
+
+                            // Keep incrementing until we find a name that is completely free
+                            while (workspace.getVariable(newName, v.type)) {
+                                count++;
+                                newName = `${v.name}${count}`;
+                            }
+
+                            renamedVars[v.id] = newName;
+                            v.name = newName; // Update the name in the JSON array
+                        }
+
+                        // Create the variable in the workspace immediately.
+                        // This ensures that if the imported JSON has multiple variables
+                        // colliding, the while-loop above will "see" this newly created one.
+                        if (!workspace.getVariableById(v.id)) {
+                            workspace.createVariable(v.name, v.type, v.id);
+                        }
+                    });
+                }
+
+                // 3. Patch the Procedure Definition Blocks
+                // We must update the hardcoded strings in the procedure's extraState
+                // so the visual block signature matches the newly renamed variables.
+                if (importData.blocks?.blocks && Object.keys(renamedVars).length > 0) {
+
+                    // Recursive function to walk the block tree
+                    const patchBlocks = (blocksArray) => {
+                        blocksArray.forEach(b => {
+                            // Patch the procedure declaration
+                            if (b.type.startsWith('procedures_def') && b.extraState?.params) {
+                                b.extraState.params.forEach(param => {
+                                    if (renamedVars[param.id]) {
+                                        param.name = renamedVars[param.id]; // Apply the new name
+                                    }
+                                });
+                            }
+
+                            // Recursively check nested blocks (inputs or next statements)
+                            if (b.inputs) {
+                                Object.values(b.inputs).forEach(input => {
+                                    if (input.block) patchBlocks([input.block]);
+                                });
+                            }
+                            if (b.next?.block) {
+                                patchBlocks([b.next.block]);
+                            }
+                        });
+                    };
+
+                    patchBlocks(importData.blocks.blocks);
+                }
+
+                // 4. Safely Append the Blocks
+                if (importData.blocks?.blocks) {
+                    importData.blocks.blocks.forEach(b => {
+                        if (b.type.startsWith('procedures_call')) {
+                            return;
+                        }
+
+                        if (b.type.startsWith('procedures_def')) {
+                            b.collapsed = true;
+                        }
                         Blockly.serialization.blocks.append(b, workspace);
                     });
                     workspace.cleanUp();
                 }
-            } finally { Blockly.Events.enable(); }
+            } finally {
+                Blockly.Events.enable();
+            }
         }
         autosaveWorkspace();
     });
