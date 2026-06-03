@@ -73,7 +73,7 @@ class TurtleShapes(MCActionsBase):
 class LSystemShapes(MCActionsBase):
     def __init__(self, player, delay_between_blocks=0.01):
         super().__init__(player, delay_between_blocks)
-        self.local_turtle = QTurtle()
+        # self.local_turtle = QTurtle()
 
     @mced_block(
         label="L-System: Define Rule",
@@ -94,12 +94,13 @@ class LSystemShapes(MCActionsBase):
         rule_dict = {r[0]: r[1] for r in rules if len(r) >= 2}
         lsys = LSystem(axiom, rule_dict)
         final_string = lsys.iterate(int(iterations))
-        self.local_turtle.pos = np.array([0,0,0], dtype=int)
-        self.local_turtle.brush = DigitalSet()
-        self.local_turtle.brush.add((0,0,0))
+        local_turtle = QTurtle()
+        local_turtle.pos = np.array([0,0,0], dtype=int)
+        local_turtle.brush = DigitalSet()
+        local_turtle.brush.add((0,0,0))
         accumulated_shape = DigitalSet()
         for char in final_string:
-            shape_segment = self.local_turtle.interpret_symbol(char, int(step_length))
+            shape_segment = local_turtle.interpret_symbol(char, int(step_length))
             if shape_segment:
                 accumulated_shape = accumulated_shape.union(shape_segment)
         return accumulated_shape
