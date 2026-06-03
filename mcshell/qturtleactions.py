@@ -95,7 +95,7 @@ class QTurtleActions(MCActionsBase):
         self.turtle.set_brush(shape)
 
     @mced_block(label="QTurtle: Stamp Brush", block_type={'label': 'Material'})
-    def turtle_stamp(self, block_type: 'Block'):
+    def turtle_stamp(self, block_type: Union['Block','Item']):
         shape = self.turtle.stamp()
         self._place_digital_set(shape, block_type)
 

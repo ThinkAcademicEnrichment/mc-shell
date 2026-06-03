@@ -162,38 +162,15 @@ class ServerActions(MCActionsBase):
         self._run_command(f"clear {target_name}")
 
     @mced_block(
-        label="Give [count] [item] to [target]",
-        item={'label': 'Item', 'shadow': 'minecraft_picker_food'},
+        label="Give [count] [block|item|entity] to [target]",
+        material={'label': 'Block or Item or Entity', 'shadow': 'minecraft_picker_world'},
         count={'label': 'Count', 'shadow': 'math_number'},
         target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'}
     )
-    def server_give_item(self, item: 'Item', count: int = 1, target: str = "SELF"):
+    def server_give_block_item_projectile(self, material: Union['Block','Item','Entity'], count: int = 1, target: str = "SELF"):
         """Gives an item to a player."""
         target_name = self.mcplayer.name if target.upper() == "SELF" else target
-        self._run_command(f"give {target_name} {self._get_item_id_from_bukkit_name(item)} {count}")
-
-    @mced_block(
-        label="Give [count] [block] to [target]",
-        item={'label': 'Block', 'shadow': 'minecraft_picker_world'},
-        count={'label': 'Count', 'shadow': 'math_number'},
-        target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'}
-    )
-    def server_give_block(self, item: 'Block', count: int = 1, target: str = "SELF"):
-        """Gives an item to a player."""
-        target_name = self.mcplayer.name if target.upper() == "SELF" else target
-        self._run_command(f"give {target_name} {self._get_item_id_from_bukkit_name(item)} {count}")
-
-
-    @mced_block(
-        label="Give [count] [projectile] to [target]",
-        item={'label': 'Projectile', 'shadow': 'minecraft_picker_projectile'},
-        count={'label': 'Count', 'shadow': 'math_number'},
-        target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'}
-    )
-    def server_give_projectile(self, item: 'Entity', count: int = 1, target: str = "SELF"):
-        """Gives a projectile to a player."""
-        target_name = self.mcplayer.name if target.upper() == "SELF" else target
-        self._run_command(f"give {target_name} {self._get_item_id_from_bukkit_name(item)} {count}")
+        self._run_command(f"give {target_name} {self._get_item_id_from_bukkit_name(material)} {count}")
 
     @mced_block(
         label="Summon [entity] at [pos]",
