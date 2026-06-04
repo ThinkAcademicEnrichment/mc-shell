@@ -1,4 +1,4 @@
-from mcshell.mcactions_base import MCActionsBase, QTurtle
+from mcshell.mcactions_base import MCActionsBase, QTurtle, _GLOBAL_QTURTLE
 from blockapily import mced_block
 from mcshell.constants import *
 from mcshell.mcturtle import DigitalSet
@@ -6,7 +6,7 @@ from mcshell.mcturtle import DigitalSet
 class QTurtleActions(MCActionsBase):
     def __init__(self, mc_player_instance, delay_between_blocks=0.001):
         super().__init__(mc_player_instance, delay_between_blocks)
-        self.turtle = QTurtle() 
+        self.turtle = _GLOBAL_QTURTLE
 
     @mced_block(
         label="QTurtle: Reset to",
