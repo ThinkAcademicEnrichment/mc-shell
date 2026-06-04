@@ -22,7 +22,7 @@ class DigitalSet:
 
     def __len__(self):
         return len(self.voxels)
-
+    
     def add(self, voxel):
         self.voxels.add((int(voxel[0]), int(voxel[1]), int(voxel[2])))
 
@@ -257,6 +257,18 @@ class QTurtle:
         self.brush = DigitalSet()
         self.stack = []
 
+    def reset(self, position, heading_q_str='N'):
+        self.pos = np.array(position, dtype=int)
+        global_forward = self._parse_global_q(heading_q_str)
+        if not np.any(global_forward): global_forward = np.array([0, 0, -1])
+        self.forward = global_forward
+        ref_up = np.array([0, 1, 0])
+        if np.array_equal(np.abs(global_forward), ref_up): ref_up = np.array([0, 0, -1])
+        right_raw = np.cross(self.forward, ref_up)
+        self.right = self._quantize_vector(right_raw) if np.any(right_raw) else np.array([1, 0, 0])
+        self.up = self._quantize_vector(np.cross(self.right, self.forward))
+        self.stack = []
+
     def set_scale_factor(self, factor):
         self.scale_factor = float(factor)
 
@@ -375,17 +387,6 @@ class QTurtle:
                  self.scale /= self.scale_factor
              return self.extrude(scaled_step)
 
-    def reset(self, position, heading_q_str='N'):
-        self.pos = np.array(position, dtype=int)
-        global_forward = self._parse_global_q(heading_q_str)
-        if not np.any(global_forward): global_forward = np.array([0, 0, -1])
-        self.forward = global_forward
-        ref_up = np.array([0, 1, 0])
-        if np.array_equal(np.abs(global_forward), ref_up): ref_up = np.array([0, 0, -1])
-        right_raw = np.cross(self.forward, ref_up)
-        self.right = self._quantize_vector(right_raw) if np.any(right_raw) else np.array([1, 0, 0])
-        self.up = self._quantize_vector(np.cross(self.right, self.forward))
-        self.stack = []
 
     def capture_brush(self, world_voxels: DigitalSet):
         """
