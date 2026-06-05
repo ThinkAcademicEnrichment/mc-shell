@@ -9,6 +9,11 @@ inputs:
     description: 'Whether to run the full integration suite'
     required: false
     default: 'false'
+ # --- New: Toggle for Container Environments ---
+  skip-python-setup:
+    description: 'Skip setup-python if the environment already provides it'
+    required: false
+    default: 'false'   
 
 runs:
   using: "composite"
@@ -21,7 +26,9 @@ runs:
         distribution: 'temurin'
         cache: 'maven'
 
+    # --- Fix: Apply the conditional toggle ---
     - name: Set up Python ${{ inputs.python-version }}
+      if: inputs.skip-python-setup != 'true'
       uses: actions/setup-python@v5
       with:
         python-version: ${{ inputs.python-version }}
