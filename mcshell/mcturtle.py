@@ -357,6 +357,8 @@ class QTurtle:
             return self.extrude(scaled_step)
         elif symbol == 'f':
             self.move(scaled_step)
+        elif symbol == 'd':
+            return self.drop()
         elif symbol == '+':
             self.rotate_90('y', 1)
         elif symbol == '-':
@@ -379,13 +381,21 @@ class QTurtle:
              self.shear('z', 'x', 1)
         elif symbol == '<': # "Bend Left"
              self.shear('z', 'x', -1)
-        elif symbol == '@': # Shrink
+        elif symbol == '@': # Shrink and extrude
              self.scale *= self.scale_factor
              return self.extrude(scaled_step)
-        elif symbol == '!': # Grow
+        elif symbol == '!': # Grow and extrude
              if self.scale_factor > 0:
                  self.scale /= self.scale_factor
              return self.extrude(scaled_step)
+        elif symbol == '$': # Shrink and jump ahead
+             self.scale *= self.scale_factor
+             self.move(scaled_step)
+        elif symbol == '#': # Grow and jump ahead
+             if self.scale_factor > 0:
+                 self.scale /= self.scale_factor
+             self.move(scaled_step)
+
 
 
     def capture_brush(self, world_voxels: DigitalSet):
@@ -463,6 +473,16 @@ class QTurtle:
                 final_pos = current_center + brush_offset
                 world_voxels.add((int(final_pos[0]), int(final_pos[1]), int(final_pos[2])))
         self.pos += total_displacement
+        return DigitalSet(world_voxels)
+
+    def drop(self):
+        # LSystemShape.get_lsystem_shape ensures that brush starts with (0,0,0) in it
+        if not self.brush: return DigitalSet()
+        world_voxels = []
+        for bx, by, bz in self.brush:
+            offset = (bx * self.right) + (by * self.up) + (bz * self.forward)
+            final_pos = self.pos + offset
+            world_voxels.append((int(final_pos[0]), int(final_pos[1]), int(final_pos[2])))
         return DigitalSet(world_voxels)
 
     def set_brush(self, digital_set):
