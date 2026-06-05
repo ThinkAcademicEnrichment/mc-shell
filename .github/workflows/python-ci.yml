@@ -14,6 +14,9 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    # --- Fix: Opt into Node.js 24 for GitHub Actions before the June 16th cutoff ---
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     strategy:
       matrix:
          # If it's a scheduled run, test the full matrix. Otherwise, stay fast on 3.10.
@@ -36,10 +39,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      # --- Fix: Updated Node.js version from 20 to 24 ---
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24' 
           cache: 'npm'
           cache-dependency-path: mced/package-lock.json
 
