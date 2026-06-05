@@ -41,9 +41,13 @@ jobs:
     if: github.ref == 'refs/heads/main' || github.ref_name == 'main'
     strategy:
       matrix:
-        container-os: ['debian:bullseye', 'debian:bookworm']
+        # Fix: Store only the version names to avoid colon characters
+        debian-version: ['bullseye', 'bookworm']
+        
+    # Fix: Construct the container image name here
     container:
-      image: ${{ matrix.container-os }}
+      image: debian:${{ matrix.debian-version }}
+      
     steps:
       - name: Install base container dependencies
         run: apt-get update && apt-get install -y curl git build-essential
@@ -51,7 +55,6 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      # Reuse the exact same steps!
       - name: Run core build and test steps
         uses: ./.github/actions/build-test-mcjuice
         with:
@@ -61,5 +64,6 @@ jobs:
       - name: Upload McJuice JAR (Debian)
         uses: actions/upload-artifact@v4
         with:
-          name: mcjuice-jar-${{ replace(matrix.container-os, ':', '-') }}
+          # Fix: Safely construct the artifact name without needing functions
+          name: mcjuice-jar-debian-${{ matrix.debian-version }}
           path: mcjuice/target/*.jar
