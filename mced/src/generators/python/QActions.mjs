@@ -66,15 +66,15 @@ export function defineQActionsGenerators(pythonGenerator) {
         return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
     };
 
-    pythonGenerator.forBlock['qactions_get_q_direction'] = function(block, generator) {
-        
-        const code = `QActions.get_q_direction()\n`;
-        return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
-    };
-
     pythonGenerator.forBlock['qactions_get_q_compass_direction'] = function(block, generator) {
         
         const code = `QActions.get_q_compass_direction()\n`;
+        return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
+    };
+
+    pythonGenerator.forBlock['qactions_get_q_direction'] = function(block, generator) {
+        
+        const code = `QActions.get_q_direction()\n`;
         return block.outputConnection ? [code.trim(), pythonGenerator.ORDER_ATOMIC] : code;
     };
 

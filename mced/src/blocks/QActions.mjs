@@ -426,16 +426,6 @@ export function defineQActionsBlocks(Blockly) {
         }
     };
 
-    Blockly.Blocks['qactions_get_q_direction'] = {
-        init: function() {
-            this.appendDummyInput().appendField("Get Player Q-Direction");
-            
-            this.setOutput(true, '3DVector');
-            this.setColour("#C9A65B");
-            this.setTooltip("Returns the quantized direction the player is looking as a unit vector.");
-        }
-    };
-
     Blockly.Blocks['qactions_get_q_compass_direction'] = {
         init: function() {
             this.appendDummyInput().appendField("Get Player Q-Compass Direction");
@@ -443,6 +433,16 @@ export function defineQActionsBlocks(Blockly) {
             this.setOutput(true, 'QCompass');
             this.setColour("#C9A65B");
             this.setTooltip("");
+        }
+    };
+
+    Blockly.Blocks['qactions_get_q_direction'] = {
+        init: function() {
+            this.appendDummyInput().appendField("Get Player Q-Direction");
+            
+            this.setOutput(true, '3DVector');
+            this.setColour("#C9A65B");
+            this.setTooltip("Returns the quantized direction the player is looking as a unit vector.");
         }
     };
 

@@ -451,8 +451,8 @@
 <block type="eventactions_wait_for_player_respawn"><value name="player_name"><shadow type="text"><field name="TEXT">SELF</field></shadow></value></block>
 </category><sep /><category name="Q-Stuff" colour="#C9A65B">
 <block type="qactions_set_q_compass_direction"><value name="direction"><shadow type="picker_qcompass"><field name="VALUE">N</field></shadow></value></block>
-<block type="qactions_get_q_direction" />
 <block type="qactions_get_q_compass_direction" />
+<block type="qactions_get_q_direction" />
 <block type="qactions_get_height_at"><value name="position"><shadow type="minecraft_vector_3d"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow></value></block>
 </category><category name="Q-Turtle" colour="#C9A65B">
 <block type="qturtleactions_reset"><value name="position"><shadow type="minecraft_vector_3d"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow></value> <value name="heading_q_str"><shadow type="picker_qcompass"><field name="VALUE">N</field></shadow></value></block>
