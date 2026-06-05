@@ -13,17 +13,16 @@ class QActions(MCActionsBase):
     def set_q_compass_direction(self, direction: 'QCompass'):
         self.mcplayer.set_q_compass_direction(direction)
 
-
-    @mced_block(label="Get Player Q-Direction")
-    def get_q_direction(self) -> Vec3:
-        """Returns the quantized direction the player is looking as a unit vector."""
-        return self.mcplayer.q_direction
-
     @mced_block(
         label="Get Player Q-Compass Direction",
     )
     def get_q_compass_direction(self) -> 'QCompass':
         return self.mcplayer.q_compass_direction
+
+    @mced_block(label="Get Player Q-Direction")
+    def get_q_direction(self) -> Vec3:
+        """Returns the quantized direction the player is looking as a unit vector."""
+        return self.mcplayer.q_direction
 
     @mced_block(
         label="Get Height",
