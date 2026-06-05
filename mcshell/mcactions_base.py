@@ -7,8 +7,7 @@ from mcshell.mcturtle import (
 )
 
 # Global turtle instance (needed by subclasses)
-# Let's try local turtles
-# _GLOBAL_QTURTLE = QTurtle()
+_GLOBAL_QTURTLE = QTurtle()
 
 class MCActionsBase:
     """
