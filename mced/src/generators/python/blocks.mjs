@@ -4,6 +4,10 @@ export function defineBlocksGenerators(pythonGenerator) {
         return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
     };
 
+    pythonGenerator.forBlock['picker_copper_types'] = function(block, generator) {
+        return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
+    };
+
     pythonGenerator.forBlock['picker_colours'] = function(block, generator) {
         return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
     };
@@ -106,18 +110,6 @@ export function defineBlocksGenerators(pythonGenerator) {
         return [`'${val}_TRAPDOOR'`, pythonGenerator.ORDER_ATOMIC];
     };
 
-    pythonGenerator.forBlock['mc_block_wood_wall_hanging_sign'] = function(block, generator) {
-        const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
-        const val = rawVal.replace(/['"]/g, '');
-        return [`'${val}_WALL_HANGING_SIGN'`, pythonGenerator.ORDER_ATOMIC];
-    };
-
-    pythonGenerator.forBlock['mc_block_wood_wall_sign'] = function(block, generator) {
-        const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
-        const val = rawVal.replace(/['"]/g, '');
-        return [`'${val}_WALL_SIGN'`, pythonGenerator.ORDER_ATOMIC];
-    };
-
     pythonGenerator.forBlock['mc_block_wood_wood'] = function(block, generator) {
         const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
         const val = rawVal.replace(/['"]/g, '');
@@ -136,22 +128,10 @@ export function defineBlocksGenerators(pythonGenerator) {
         return [`'${val}_BED'`, pythonGenerator.ORDER_ATOMIC];
     };
 
-    pythonGenerator.forBlock['mc_block_color_bundle'] = function(block, generator) {
-        const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
-        const val = rawVal.replace(/['"]/g, '');
-        return [`'${val}_BUNDLE'`, pythonGenerator.ORDER_ATOMIC];
-    };
-
     pythonGenerator.forBlock['mc_block_color_candle'] = function(block, generator) {
         const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
         const val = rawVal.replace(/['"]/g, '');
         return [`'${val}_CANDLE'`, pythonGenerator.ORDER_ATOMIC];
-    };
-
-    pythonGenerator.forBlock['mc_block_color_candle_cake'] = function(block, generator) {
-        const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
-        const val = rawVal.replace(/['"]/g, '');
-        return [`'${val}_CANDLE_CAKE'`, pythonGenerator.ORDER_ATOMIC];
     };
 
     pythonGenerator.forBlock['mc_block_color_carpet'] = function(block, generator) {
@@ -172,22 +152,10 @@ export function defineBlocksGenerators(pythonGenerator) {
         return [`'${val}_CONCRETE_POWDER'`, pythonGenerator.ORDER_ATOMIC];
     };
 
-    pythonGenerator.forBlock['mc_block_color_dye'] = function(block, generator) {
-        const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
-        const val = rawVal.replace(/['"]/g, '');
-        return [`'${val}_DYE'`, pythonGenerator.ORDER_ATOMIC];
-    };
-
     pythonGenerator.forBlock['mc_block_color_glazed_terracotta'] = function(block, generator) {
         const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
         const val = rawVal.replace(/['"]/g, '');
         return [`'${val}_GLAZED_TERRACOTTA'`, pythonGenerator.ORDER_ATOMIC];
-    };
-
-    pythonGenerator.forBlock['mc_block_color_harness'] = function(block, generator) {
-        const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
-        const val = rawVal.replace(/['"]/g, '');
-        return [`'${val}_HARNESS'`, pythonGenerator.ORDER_ATOMIC];
     };
 
     pythonGenerator.forBlock['mc_block_color_shulker_box'] = function(block, generator) {
@@ -214,88 +182,82 @@ export function defineBlocksGenerators(pythonGenerator) {
         return [`'${val}_TERRACOTTA'`, pythonGenerator.ORDER_ATOMIC];
     };
 
-    pythonGenerator.forBlock['mc_block_color_wall_banner'] = function(block, generator) {
-        const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
-        const val = rawVal.replace(/['"]/g, '');
-        return [`'${val}_WALL_BANNER'`, pythonGenerator.ORDER_ATOMIC];
-    };
-
     pythonGenerator.forBlock['mc_block_color_wool'] = function(block, generator) {
         const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
         const val = rawVal.replace(/['"]/g, '');
         return [`'${val}_WOOL'`, pythonGenerator.ORDER_ATOMIC];
     };
 
-    pythonGenerator.forBlock['mc_block_armor_tier_boots'] = function(block, generator) {
+    pythonGenerator.forBlock['mc_block_armor_tier_block'] = function(block, generator) {
         const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
         const val = rawVal.replace(/['"]/g, '');
-        return [`'${val}_BOOTS'`, pythonGenerator.ORDER_ATOMIC];
+        return [`'${val}_BLOCK'`, pythonGenerator.ORDER_ATOMIC];
     };
 
-    pythonGenerator.forBlock['mc_block_armor_tier_chestplate'] = function(block, generator) {
+    pythonGenerator.forBlock['mc_block_copper_slab'] = function(block, generator) {
         const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
         const val = rawVal.replace(/['"]/g, '');
-        return [`'${val}_CHESTPLATE'`, pythonGenerator.ORDER_ATOMIC];
+        return [`'${val}_SLAB'`, pythonGenerator.ORDER_ATOMIC];
     };
 
-    pythonGenerator.forBlock['mc_block_armor_tier_helmet'] = function(block, generator) {
+    pythonGenerator.forBlock['mc_block_copper_stairs'] = function(block, generator) {
         const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
         const val = rawVal.replace(/['"]/g, '');
-        return [`'${val}_HELMET'`, pythonGenerator.ORDER_ATOMIC];
+        return [`'${val}_STAIRS'`, pythonGenerator.ORDER_ATOMIC];
     };
 
-    pythonGenerator.forBlock['mc_block_armor_tier_leggings'] = function(block, generator) {
+    pythonGenerator.forBlock['mc_block_copper_bars'] = function(block, generator) {
         const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
         const val = rawVal.replace(/['"]/g, '');
-        return [`'${val}_LEGGINGS'`, pythonGenerator.ORDER_ATOMIC];
+        return [`'${val}_BARS'`, pythonGenerator.ORDER_ATOMIC];
     };
 
-    pythonGenerator.forBlock['mc_block_armor_tier_axe'] = function(block, generator) {
+    pythonGenerator.forBlock['mc_block_copper_bulb'] = function(block, generator) {
         const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
         const val = rawVal.replace(/['"]/g, '');
-        return [`'${val}_AXE'`, pythonGenerator.ORDER_ATOMIC];
+        return [`'${val}_BULB'`, pythonGenerator.ORDER_ATOMIC];
     };
 
-    pythonGenerator.forBlock['mc_block_armor_tier_hoe'] = function(block, generator) {
+    pythonGenerator.forBlock['mc_block_copper_chain'] = function(block, generator) {
         const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
         const val = rawVal.replace(/['"]/g, '');
-        return [`'${val}_HOE'`, pythonGenerator.ORDER_ATOMIC];
+        return [`'${val}_CHAIN'`, pythonGenerator.ORDER_ATOMIC];
     };
 
-    pythonGenerator.forBlock['mc_block_armor_tier_horse_armor'] = function(block, generator) {
+    pythonGenerator.forBlock['mc_block_copper_chest'] = function(block, generator) {
         const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
         const val = rawVal.replace(/['"]/g, '');
-        return [`'${val}_HORSE_ARMOR'`, pythonGenerator.ORDER_ATOMIC];
+        return [`'${val}_CHEST'`, pythonGenerator.ORDER_ATOMIC];
     };
 
-    pythonGenerator.forBlock['mc_block_armor_tier_nautilus_armor'] = function(block, generator) {
+    pythonGenerator.forBlock['mc_block_copper_door'] = function(block, generator) {
         const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
         const val = rawVal.replace(/['"]/g, '');
-        return [`'${val}_NAUTILUS_ARMOR'`, pythonGenerator.ORDER_ATOMIC];
+        return [`'${val}_DOOR'`, pythonGenerator.ORDER_ATOMIC];
     };
 
-    pythonGenerator.forBlock['mc_block_armor_tier_pickaxe'] = function(block, generator) {
+    pythonGenerator.forBlock['mc_block_copper_golem_statue'] = function(block, generator) {
         const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
         const val = rawVal.replace(/['"]/g, '');
-        return [`'${val}_PICKAXE'`, pythonGenerator.ORDER_ATOMIC];
+        return [`'${val}_GOLEM_STATUE'`, pythonGenerator.ORDER_ATOMIC];
     };
 
-    pythonGenerator.forBlock['mc_block_armor_tier_shovel'] = function(block, generator) {
+    pythonGenerator.forBlock['mc_block_copper_grate'] = function(block, generator) {
         const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
         const val = rawVal.replace(/['"]/g, '');
-        return [`'${val}_SHOVEL'`, pythonGenerator.ORDER_ATOMIC];
+        return [`'${val}_GRATE'`, pythonGenerator.ORDER_ATOMIC];
     };
 
-    pythonGenerator.forBlock['mc_block_armor_tier_spear'] = function(block, generator) {
+    pythonGenerator.forBlock['mc_block_copper_lantern'] = function(block, generator) {
         const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
         const val = rawVal.replace(/['"]/g, '');
-        return [`'${val}_SPEAR'`, pythonGenerator.ORDER_ATOMIC];
+        return [`'${val}_LANTERN'`, pythonGenerator.ORDER_ATOMIC];
     };
 
-    pythonGenerator.forBlock['mc_block_armor_tier_sword'] = function(block, generator) {
+    pythonGenerator.forBlock['mc_block_copper_trapdoor'] = function(block, generator) {
         const rawVal = generator.valueToCode(block, 'VARIANT', pythonGenerator.ORDER_ATOMIC) || "''";
         const val = rawVal.replace(/['"]/g, '');
-        return [`'${val}_SWORD'`, pythonGenerator.ORDER_ATOMIC];
+        return [`'${val}_TRAPDOOR'`, pythonGenerator.ORDER_ATOMIC];
     };
 
     pythonGenerator.forBlock['mc_block_color_tulip'] = function(block, generator) {
@@ -356,11 +318,39 @@ export function defineBlocksGenerators(pythonGenerator) {
         return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
     };
 
-    pythonGenerator.forBlock['mc_block_picker_tools'] = function(block, generator) {
+    pythonGenerator.forBlock['mc_block_picker_spawn_eggs'] = function(block, generator) {
         return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
     };
 
-    pythonGenerator.forBlock['mc_block_picker_armour'] = function(block, generator) {
+    pythonGenerator.forBlock['mc_block_picker_bars'] = function(block, generator) {
+        return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
+    };
+
+    pythonGenerator.forBlock['mc_block_picker_chains'] = function(block, generator) {
+        return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
+    };
+
+    pythonGenerator.forBlock['mc_block_picker_walls'] = function(block, generator) {
+        return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
+    };
+
+    pythonGenerator.forBlock['mc_block_picker_plants'] = function(block, generator) {
+        return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
+    };
+
+    pythonGenerator.forBlock['mc_block_picker_music'] = function(block, generator) {
+        return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
+    };
+
+    pythonGenerator.forBlock['mc_block_picker_various'] = function(block, generator) {
+        return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
+    };
+
+    pythonGenerator.forBlock['mc_block_picker_miscelleneous'] = function(block, generator) {
+        return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
+    };
+
+    pythonGenerator.forBlock['mc_block_picker_commands'] = function(block, generator) {
         return [`'${block.getFieldValue('VALUE')}'`, pythonGenerator.ORDER_ATOMIC];
     };
 

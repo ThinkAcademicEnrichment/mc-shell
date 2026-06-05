@@ -1377,6 +1377,9 @@ class MCShell(Magics):
             # 6. Instantiate the Runner
             runner = module.BlocklyProgramRunner(actions, cancel_event=cancel_event)
 
+            # --- NEW: Create a mutable container to catch exceptions ---
+            task_error = []
+
             # 7. Define the Thread Execution Wrapper
             execution_id = f"debug_{file_hash}"
             def run_task():
@@ -1388,10 +1391,12 @@ class MCShell(Magics):
                         pass
                     elif isinstance(e, PermissionError):
                         print(f"\n[Access Denied] {e}")
+                        task_error.append(e)  # Record the failure
                     else:
                         import traceback
                         print(f"\n--- Error executing {execution_id}: {e} ---")
                         traceback.print_exc()
+                        task_error.append(e)  # Record the failure
                 finally:
                     # Automatically remove from running registry when done
                     if execution_id in RUNNING_POWERS:
@@ -1411,15 +1416,25 @@ class MCShell(Magics):
 
             # --- INSTANT FAILURE DETECTION ---
             # Wait briefly to see if the script immediately aborts (e.g., from a permission error)
-            thread.join(timeout=0.2)
+            thread.join(timeout=0.3)
 
-            # If the thread died OR the cancel event was tripped by a PermissionError inside a block wrapper
-            if not thread.is_alive() or cancel_event.is_set():
+            # Check our explicit error state, NOT just if the thread is dead
+            if task_error or cancel_event.is_set():
                 if execution_id in RUNNING_POWERS:
                     del RUNNING_POWERS[execution_id]
+
+                # Your TODO block will now work perfectly here!
+                broken_power_dir = pathlib.Path("./powers/blockcode/broken")
+                broken_power_dir.mkdir(parents=True, exist_ok=True)
+                broken_filepath = broken_power_dir / filename
+                print(f"Broken power saved to: {broken_filepath}")
+                
+                # Move the file
+                import shutil
                 if filepath.exists():
-                    filepath.unlink()
-                # Suppress the success messages so the UI doesn't register it as running
+                    shutil.move(str(filepath), str(broken_filepath))
+
+                # Suppress the success messages
                 return
 
             print(f"Successfully saved power to: {filepath}")
@@ -1429,7 +1444,6 @@ class MCShell(Magics):
             # The editor explicitly looks for this string format to hook its STOP button
             print(f"MCED_EXECUTION_ID:{execution_id}")
             print(f"--- To stop it, run: %mc_cancel_power {execution_id} ---")
-
 
         except Exception as e:
             import traceback

@@ -3,6 +3,7 @@ export let MCED;
 export function defineMineCraftConstants(Blockly) {
 
     MCED = {
+        VECTOR_3D_SHADOW: '<shadow type="minecraft_vector_3d"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow>',
 
         BlocklyUtils: {
             configureShadow: function (block, inputName) {

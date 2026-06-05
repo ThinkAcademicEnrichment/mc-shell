@@ -7,6 +7,7 @@ from mcshell.mcactions_base import MCActionsBase
 # from mcshell.eventactions import EventActions
 from mcshell.serveractions import ServerActions
 from mcshell.qturtleactions import QTurtleActions
+from mcshell.qactions import QActions 
 from mcshell.digitalgeometryactions import DigitalGeometryActions
 from mcshell.digitalsetactions import DigitalSetActions
 from mcshell.mclsystem import LSystem
@@ -14,12 +15,12 @@ from mcshell.mclsystem import LSystem
 # FIX: Robustly import generated actions to prevent build-time crashes
 try:
     from mcshell.generated_actions import (
-        PlayerActions, ChatActions, WorldActions, EventActions
+        PlayerActions,WorldActions,ChatActions,EventActions
     )
 except ImportError:
     PlayerActions = None
-    ChatActions = None
     WorldActions = None
+    ChatActions = None
     EventActions = None
 
 # Advanced Digital Geometry and Turtle
@@ -72,7 +73,7 @@ class TurtleShapes(MCActionsBase):
 class LSystemShapes(MCActionsBase):
     def __init__(self, player, delay_between_blocks=0.01):
         super().__init__(player, delay_between_blocks)
-        self.local_turtle = QTurtle()
+        # self.local_turtle = QTurtle()
 
     @mced_block(
         label="L-System: Define Rule",
@@ -93,19 +94,20 @@ class LSystemShapes(MCActionsBase):
         rule_dict = {r[0]: r[1] for r in rules if len(r) >= 2}
         lsys = LSystem(axiom, rule_dict)
         final_string = lsys.iterate(int(iterations))
-        self.local_turtle.pos = np.array([0,0,0], dtype=int)
-        self.local_turtle.brush = DigitalSet()
-        self.local_turtle.brush.add((0,0,0))
+        local_turtle = QTurtle()
+        local_turtle.pos = np.array([0,0,0], dtype=int)
+        local_turtle.brush = DigitalSet()
+        local_turtle.brush.add((0,0,0))
         accumulated_shape = DigitalSet()
         for char in final_string:
-            shape_segment = self.local_turtle.interpret_symbol(char, int(step_length))
+            shape_segment = local_turtle.interpret_symbol(char, int(step_length))
             if shape_segment:
                 accumulated_shape = accumulated_shape.union(shape_segment)
         return accumulated_shape
 
 class MCActions(
-    PlayerActions, WorldActions,ChatActions,
-    EventActions,ServerActions,QTurtleActions,DigitalGeometryActions,DigitalSetActions,
+    WorldActions, PlayerActions,ChatActions,
+    EventActions,ServerActions,QTurtleActions,QActions,DigitalGeometryActions,DigitalSetActions,
     TurtleShapes,LSystemShapes):
     """
     Unified API for Blockly combining all action groups.
@@ -118,6 +120,7 @@ class MCActions(
         EventActions.__init__(self, mc_player_instance, delay_between_blocks)
         ServerActions.__init__(self, mc_player_instance, delay_between_blocks)
         QTurtleActions.__init__(self, mc_player_instance, delay_between_blocks)
+        QActions.__init__(self, mc_player_instance, delay_between_blocks)
         DigitalGeometryActions.__init__(self,mc_player_instance, delay_between_blocks)
         DigitalSetActions.__init__(self,mc_player_instance, delay_between_blocks)
         TurtleShapes.__init__(self,mc_player_instance,delay_between_blocks)

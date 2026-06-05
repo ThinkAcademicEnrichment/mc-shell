@@ -462,6 +462,92 @@ namespaces:
             message: { type: str, label: "Message" }
           call_args: [str(message)]
 
+  admin:
+    target: Admin
+    commands:
+      - name: isMaterialItem
+        bukkit: |
+          {
+             org.bukkit.Material material = org.bukkit.Material.matchMaterial({material}.toUpperCase());
+             if (material != null) { session.send(String.valueOf(material.isItem())); }
+             else { session.send("null");}
+          }
+        args: [{name: material, type: String}]
+        returns: string
+        blockly:
+          label: "Is [material] an item?"
+          args:
+            material: { type: str, label: "Material Name (e.g. ACACIA_BOAT)" }
+          call_args: [str(material)]
+      - name: isMaterialBlock
+        bukkit: |
+          {
+             org.bukkit.Material material = org.bukkit.Material.matchMaterial({material}.toUpperCase());
+             if (material != null) { session.send(String.valueOf(material.isBlock())); }
+             else { session.send("null");}
+          }
+        args: [{name: material, type: String}]
+        returns: string
+        blockly:
+          label: "Is [material] a placeable block?"
+          args:
+            material: { type: str, label: "Material Name (e.g. ACACIA_BOAT)" }
+          call_args: [str(material)]
+      - name: isMaterialEdible
+        bukkit: |
+          {
+             org.bukkit.Material material = org.bukkit.Material.matchMaterial({material}.toUpperCase());
+             if (material != null) { session.send(String.valueOf(material.isEdible())); }
+             else { session.send("null");}
+          }
+        args: [{name: material, type: String}]
+        returns: string
+        blockly:
+          label: "Is [material] edible?"
+          args:
+            material: { type: str, label: "Material Name (e.g. ACACIA_BOAT)" }
+          call_args: [str(material)]
+      - name: isMaterialFuel
+        bukkit: |
+          {
+             org.bukkit.Material material = org.bukkit.Material.matchMaterial({material}.toUpperCase());
+             if (material != null) { session.send(String.valueOf(material.isFuel())); }
+             else { session.send("null");}
+          }
+        args: [{name: material, type: String}]
+        returns: string
+        blockly:
+          label: "Is [material] fuel?"
+          args:
+            material: { type: str, label: "Material Name (e.g. ACACIA_BOAT)" }
+          call_args: [str(material)]
+      - name: allMaterialProperties
+        bukkit: |
+          {
+             org.bukkit.Material material = org.bukkit.Material.matchMaterial({material}.toUpperCase());
+
+             if (material != null) { 
+              String data = String.valueOf(material.isItem()) + "," 
+                + String.valueOf(material.isBlock()) + "," 
+                + String.valueOf(material.isEdible()) + "," 
+                + String.valueOf(material.isFuel());
+              session.send(data); }
+             else { session.send("null");}
+          }
+        args: [{name: material, type: String}]
+        returns: string 
+        blockly:
+          label: "Is [material] an item, a block, edible, fuel?"
+          args:
+            material: { type: str, label: "Material Name (e.g. ACACIA_BOAT)" }
+          call_args: [str(material)]
+
+
+
+
+
+
+
 # --- EVENT SUBSCRIPTION SECTION ---
 events:
   - name: rightBlockHit

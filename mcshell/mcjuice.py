@@ -19,6 +19,7 @@ class MCJuiceClient:
         self.player = PlayerNamespace(self.conn, self.entity_id)
         self.world = WorldNamespace(self.conn, self.entity_id)
         self.chat = ChatNamespace(self.conn, self.entity_id)
+        self.admin = AdminNamespace(self.conn, self.entity_id)
         self.events = EventsNamespace(self)
 
     def _event_reader_loop(self):
@@ -189,6 +190,24 @@ class ChatNamespace:
     def post(self, message):
         self.conn.send('chat.post', message)
         return 'OK'
+
+class AdminNamespace:
+    def __init__(self, conn, entity_id): self.conn = conn; self.entity_id = entity_id
+    def isMaterialItem(self, material):
+        res = self.conn.sendReceive('admin.isMaterialItem', material)
+        return res
+    def isMaterialBlock(self, material):
+        res = self.conn.sendReceive('admin.isMaterialBlock', material)
+        return res
+    def isMaterialEdible(self, material):
+        res = self.conn.sendReceive('admin.isMaterialEdible', material)
+        return res
+    def isMaterialFuel(self, material):
+        res = self.conn.sendReceive('admin.isMaterialFuel', material)
+        return res
+    def allMaterialProperties(self, material):
+        res = self.conn.sendReceive('admin.allMaterialProperties', material)
+        return res
 
 class EventsNamespace:
     def __init__(self, client):

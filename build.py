@@ -6,7 +6,7 @@ sys.path.append(str(Path(__file__).parent))
 
 from registry_builder import RegistryBuilder,ApiGenerator
 
-from mcshell.mcscraper import make_materials, make_entity_id_map, make_item_id_map
+from mcshell.mcscraper import make_materials, classify_materials_with_bukkit, make_entity_id_map, make_item_id_map
 from mcshell.constants import MC_MATERIALS_PATH,MC_ENTITY_ID_MAP_PATH,MC_APP_SRC_DIR, MC_DATA_DIR, MC_JUICE_SRC_DIR,MC_SHELL_DIR,subprocess,shutil
 
 def rebuild():
@@ -25,6 +25,7 @@ def rebuild():
     print("Step 1: Scraping latest Minecraft data...")
     # These functions now produce structured dictionaries for Blocks/Items/Entities
     make_materials()
+    print("[!!] Remember to use classify_materials_with_bukkit manually...")
     make_entity_id_map()
     make_item_id_map()
 

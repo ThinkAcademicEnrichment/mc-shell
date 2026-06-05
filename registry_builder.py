@@ -6,6 +6,8 @@ import re
 import json
 from pathlib import Path
 
+from mcshell.constants import ic
+
 # --- EXTRACTED CONFIGURATION IMPORT ---
 import registry_config as rc
 
@@ -41,7 +43,7 @@ def get_action_class(module_name, class_name):
 
 class RegistryBuilder:
     # --- UI & Design Tokens (Sourced from registry_config.py) ---
-    COLORS = rc.COLORS
+    COLORS = rc.CAT_COLORS
     TYPE_MAP = rc.TYPE_MAP
     SHADOW_MAP = rc.SHADOW_MAP
     DATA_PATHS = rc.DATA_PATHS
@@ -64,18 +66,18 @@ class RegistryBuilder:
     EFFECTS = rc.EFFECTS
     TITLEACTIONS = rc.TITLEACTIONS
     ACTION_PICKERS = rc.ACTION_PICKERS
+    GENERATED_ACTION_PICKERS = rc.GENERATED_ACTION_PICKERS
     WOOD_TYPES = rc.WOOD_TYPES
     COLORS_LIST = rc.COLORS_LIST
 
-    # Map both names and inject the 'prefixes' key to ensure backwards compatibility with local methods
     VARIANT_CONFIG = rc.VARIANT_CONFIG
-    # VARIANT_CONFIG = {
-    #     'WOOD': {**rc.VARIANT_MAP.get('WOOD', {}), 'prefixes': rc.WOOD_TYPES},
-    #     'COLOR': {**rc.VARIANT_MAP.get('COLOR', {}), 'prefixes': rc.COLORS_LIST}
-    # }
 
     MATERIAL_PICKER_GROUPS = rc.MATERIAL_PICKER_GROUPS
     ENTITY_GROUPS = rc.ENTITY_GROUPS
+
+    # sometimes we make Actions classes for local utilities
+    GENERATED_ACTIONS_BLACKLIST = ['AdminActions']
+
     def __init__(self, toolbox_path: pathlib.Path, blocks_dir: pathlib.Path, gens_dir: pathlib.Path, materials_path: pathlib.Path, entity_id_map_path: pathlib.Path):
         self.toolbox_path = toolbox_path
         self.blocks_dir = blocks_dir
@@ -94,17 +96,10 @@ class RegistryBuilder:
         except (FileNotFoundError, EOFError):
             self.entity_data = {}
 
+        self.GENERATED_ACTION_CLASSES = []
         self.ACTION_CLASSES = []
         if BlocklyGenerator is not None:
-            classes = [
-                (get_action_class("serveractions", "ServerActions"), "Server", self.COLORS["Server"]),
-                (get_action_class("mcactions", "TurtleShapes"), "Turtle Shapes", self.COLORS["Turtle"]),
-                (get_action_class("mcactions", "LSystemShapes"), "LSystem Shapes", self.COLORS["LSystem"]),
-                (get_action_class("digitalgeometryactions", "DigitalGeometryActions"), "Digital Geometry", self.COLORS["Geometry"]),
-                (get_action_class("qturtleactions", "QTurtleActions"), "Q-Turtle", self.COLORS["Turtle"]),
-                (get_action_class("digitalsetactions", "DigitalSetActions"), "Digital Set", self.COLORS["Digital Set"]),
-            ]
-
+            classes = []
             yaml_path = MC_DATA_DIR / "mcjuice_api.yaml"
             if yaml_path.exists():
                 try:
@@ -118,12 +113,28 @@ class RegistryBuilder:
                             color = self.COLORS.get(label, self.COLORS["World"])
                             classes.append((get_action_class("generated_actions", class_name), label, color))
 
+
                         # 2. Discover generated Event Actions
                         if schema.get('events') and any('blockly' in e for e in schema['events']):
                             classes.append((get_action_class("generated_actions", "EventActions"), "Event", self.COLORS.get("Events", "#D68C45")))
 
                 except Exception as e:
                     print(f"Warning: Failed to auto-discover generated classes: {e}")
+
+            if self.GENERATED_ACTIONS_BLACKLIST:
+                print(f"Skipping {','.join(self.GENERATED_ACTIONS_BLACKLIST)} block generation")
+
+            self.GENERATED_ACTION_CLASSES.extend([(c, n, col) for c, n, col in classes if c is not None and not c.__name__ in self.GENERATED_ACTIONS_BLACKLIST])
+
+            classes = [
+                (get_action_class("qactions", "QActions"), "Q-Stuff", self.COLORS["Turtle"]),
+                (get_action_class("qturtleactions", "QTurtleActions"), "Q-Turtle", self.COLORS["Turtle"]),
+                (get_action_class("mcactions", "TurtleShapes"), "Turtle Sets", self.COLORS["Turtle"]),
+                (get_action_class("mcactions", "LSystemShapes"), "LSystem Sets", self.COLORS["LSystem"]),
+                (get_action_class("digitalsetactions", "DigitalSetActions"), "Digital Set Ops", self.COLORS["Digital Set"]),
+                (get_action_class("digitalgeometryactions", "DigitalGeometryActions"), "Digital Geometry", self.COLORS["Geometry"]),
+                (get_action_class("serveractions", "ServerActions"), "Server", self.COLORS["Server"]),
+            ]
 
             self.ACTION_CLASSES.extend([(c, n, col) for c, n, col in classes if c is not None])
 
@@ -142,7 +153,7 @@ class RegistryBuilder:
         self.export_taxonomy()
 
     def build_action_classes_export(self):
-        class_names = [cls.__name__ for cls, _, _ in self.ACTION_CLASSES]
+        class_names = [cls.__name__ for cls, _, _ in self.ACTION_CLASSES + self.GENERATED_ACTION_CLASSES]
         js_content = f"export const ACTION_CLASSES = {class_names!r};\n"
         out_path = self.gens_dir / "action_classes.mjs"
         out_path.write_text(js_content, encoding='utf-8')
@@ -190,13 +201,15 @@ class RegistryBuilder:
             if len(info["mats"]) > 3:
                 var_config = self.VARIANT_CONFIG[info["type"]]
                 template_name = f"{var_key}_{suffix}"
+                label = f"{suffix}"
                 python_template = f"{{}}_{suffix}"
 
                 parameterized[template_name] = {
                     "template": python_template,
                     "input_type": var_config["input_type"],
                     "shadow": var_config["shadow"],
-                    "label": self._normalize_name(template_name),
+                    # "label": self._normalize_name(template_name),
+                    "label": self._normalize_name(label),
                     "available_variants": sorted(info["variants"]),
                     "mats": info["mats"] # <--- NEW: Explicitly output the raw underlying materials
                 }
@@ -214,7 +227,8 @@ class RegistryBuilder:
         base = self._generate_base_pickers()
         js.append(base['js']); py.append(base['py'])
 
-        blocks = [k for k, v in self.materials_data.items() if v.get('is_block')]
+        # a material should be classified as a block only if it is not also an item
+        blocks = [k for k, v in self.materials_data.items() if (v.get('is_block') and  v.get('is_item'))]
         templates, consumed, suffix_map = self._classify_variants(blocks)
 
         for t_key, info in templates.items():
@@ -260,7 +274,7 @@ class RegistryBuilder:
 
     def build_items(self):
         js, py, xml = [], [], []
-        items = [k for k, v in self.materials_data.items() if v.get('is_item')]
+        items = [k for k, v in self.materials_data.items() if v.get('is_item') and not v.get('is_block')]
         templates, consumed, suffix_map = self._classify_variants(items)
 
         for t_key, info in templates.items():
@@ -306,9 +320,29 @@ class RegistryBuilder:
             res = BlocklyGenerator.generate_picker(f"mc_entity_picker_{group}", self._normalize_name(group), opts, "Entity", self.COLORS["Entity"])
             js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
         self._write_output("entities", "Entities", js, py)
-        BlocklyGenerator.update_toolbox(f'<category name="Entities" colour="{self.COLORS["Entity"]}">{"".join(xml)}</category>', self.toolbox_path)
+        BlocklyGenerator.update_toolbox(f'<category name="Entities" colour="{self.COLORS["Entity"]}">{"".join(xml)}</category>', self.toolbox_path, append_separator=True)
 
     def build_actions(self):
+        pick_js, pick_py = [], []
+        for p in self.GENERATED_ACTION_PICKERS:
+            res = BlocklyGenerator.generate_picker(p['id'], p['label'], p['options'], p['input_type'], self.COLORS["Picker"])
+            pick_js.append(res['js']); pick_py.append(res['py'])
+
+        for i, (cls, name, color) in enumerate(self.GENERATED_ACTION_CLASSES):
+            gen = BlocklyGenerator(cls, self.TYPE_MAP, self.SHADOW_MAP, color, name)
+            b_js, p_py, c_xml = gen.generate()
+            js_out = pick_js + [b_js] if i == 0 else [b_js]
+            py_out = pick_py + [p_py] if i == 0 else [p_py]
+            self._write_output(cls.__name__, cls.__name__, js_out, py_out)
+
+            # fragile
+            append_separator = False
+            if i == len(self.GENERATED_ACTION_CLASSES) -1:
+                append_separator = True
+
+            BlocklyGenerator.update_toolbox(c_xml, self.toolbox_path,append_separator=append_separator)
+
+
         pick_js, pick_py = [], []
         for p in self.ACTION_PICKERS:
             res = BlocklyGenerator.generate_picker(p['id'], p['label'], p['options'], p['input_type'], self.COLORS["Picker"])
@@ -320,7 +354,17 @@ class RegistryBuilder:
             js_out = pick_js + [b_js] if i == 0 else [b_js]
             py_out = pick_py + [p_py] if i == 0 else [p_py]
             self._write_output(cls.__name__, cls.__name__, js_out, py_out)
-            BlocklyGenerator.update_toolbox(c_xml, self.toolbox_path)
+
+            # this is so fragile
+            separated_action_classes = ['ServerActions','DigitalGeometryActions']
+            append_separator = False
+            if i < len(self.ACTION_CLASSES) - 1 and self.ACTION_CLASSES[i+1][0].__name__ in separated_action_classes:
+                append_separator = True
+            elif i == len(self.ACTION_CLASSES) - 1:
+                append_separator = True
+
+
+            BlocklyGenerator.update_toolbox(c_xml, self.toolbox_path,append_separator=append_separator)
 
     def build_pickers_category(self):
         """
@@ -329,6 +373,7 @@ class RegistryBuilder:
         """
         xml = [f'<block type="{info["id"]}"></block>' for info in self.VARIANT_CONFIG.values()]
         xml += [f'<block type="{p["id"]}"></block>' for p in self.ACTION_PICKERS]
+        xml += [f'<block type="{p["id"]}"></block>' for p in self.GENERATED_ACTION_PICKERS]
 
         # Pull exactly what was verified and built in build_blocks()
         for b_type in getattr(self, 'generated_block_pickers', []):

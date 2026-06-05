@@ -22,7 +22,7 @@ class DigitalSet:
 
     def __len__(self):
         return len(self.voxels)
-
+    
     def add(self, voxel):
         self.voxels.add((int(voxel[0]), int(voxel[1]), int(voxel[2])))
 
@@ -257,19 +257,20 @@ class QTurtle:
         self.brush = DigitalSet()
         self.stack = []
 
+    def reset(self, position, heading_q_str='N'):
+        self.pos = np.array(position, dtype=int)
+        global_forward = self._parse_global_q(heading_q_str)
+        if not np.any(global_forward): global_forward = np.array([0, 0, -1])
+        self.forward = global_forward
+        ref_up = np.array([0, 1, 0])
+        if np.array_equal(np.abs(global_forward), ref_up): ref_up = np.array([0, 0, -1])
+        right_raw = np.cross(self.forward, ref_up)
+        self.right = self._quantize_vector(right_raw) if np.any(right_raw) else np.array([1, 0, 0])
+        self.up = self._quantize_vector(np.cross(self.right, self.forward))
+        self.stack = []
+
     def set_scale_factor(self, factor):
         self.scale_factor = float(factor)
-
-    def move(self, distance: int, direction='forward'):
-        vec = np.array([0,0,0], dtype=int)
-        d = direction.lower()
-        if d == 'forward': vec = self.forward
-        elif d == 'back':  vec = -self.forward
-        elif d == 'up':    vec = self.up
-        elif d == 'down':  vec = -self.up
-        elif d == 'right': vec = self.right
-        elif d == 'left':  vec = -self.right
-        self.pos += vec * int(distance)
 
     def rotate_90(self, axis='y', steps=1):
         axis = axis.lower()
@@ -308,27 +309,6 @@ class QTurtle:
     def pop_state(self):
         if self.stack: self.pos, self.forward, self.up, self.right, self.scale = self.stack.pop()
 
-    # def interpret_symbol(self, symbol, step_size):
-    #     scaled_step = max(1, int(step_size * self.scale))
-    #     if symbol == 'F': return self.extrude(scaled_step)
-    #     elif symbol == 'f': self.move(scaled_step)
-    #     elif symbol == '+': self.rotate_90('y', 1)
-    #     elif symbol == '-': self.rotate_90('y', -1)
-    #     elif symbol == '&': self.rotate_90('x', 1)
-    #     elif symbol == '^': self.rotate_90('x', -1)
-    #     elif symbol == '\\': self.rotate_90('z', 1)
-    #     elif symbol == '/': self.rotate_90('z', -1)
-    #     elif symbol == '|': self.rotate_90('y', 2)
-    #     elif symbol == '[': self.push_state()
-    #     elif symbol == ']': self.pop_state()
-    #     elif symbol == '>': self.shear('z', 'x', 1)
-    #     elif symbol == '<': self.shear('z', 'x', -1)
-    #     elif symbol == '@': self.scale *= self.scale_factor; return self.extrude(scaled_step)
-    #     elif symbol == '!':
-    #         if self.scale_factor > 0: self.scale /= self.scale_factor
-    #         return self.extrude(scaled_step)
-    #     return None
-
     def interpret_symbol(self, symbol, step_size):
         """
         Executes a single L-System symbol.
@@ -345,6 +325,8 @@ class QTurtle:
             return self.extrude(scaled_step)
         elif symbol == 'f':
             self.move(scaled_step)
+        elif symbol == 'd':
+            return self.drop()
         elif symbol == '+':
             self.rotate_90('y', 1)
         elif symbol == '-':
@@ -367,25 +349,22 @@ class QTurtle:
              self.shear('z', 'x', 1)
         elif symbol == '<': # "Bend Left"
              self.shear('z', 'x', -1)
-        elif symbol == '@': # Shrink
+        elif symbol == '@': # Shrink and extrude
              self.scale *= self.scale_factor
              return self.extrude(scaled_step)
-        elif symbol == '!': # Grow
+        elif symbol == '!': # Grow and extrude
              if self.scale_factor > 0:
                  self.scale /= self.scale_factor
              return self.extrude(scaled_step)
+        elif symbol == '$': # Shrink and jump ahead
+             self.scale *= self.scale_factor
+             self.move(scaled_step)
+        elif symbol == '#': # Grow and jump ahead
+             if self.scale_factor > 0:
+                 self.scale /= self.scale_factor
+             self.move(scaled_step)
 
-    def reset(self, position, heading_q_str='N'):
-        self.pos = np.array(position, dtype=int)
-        global_forward = self._parse_global_q(heading_q_str)
-        if not np.any(global_forward): global_forward = np.array([0, 0, -1])
-        self.forward = global_forward
-        ref_up = np.array([0, 1, 0])
-        if np.array_equal(np.abs(global_forward), ref_up): ref_up = np.array([0, 0, -1])
-        right_raw = np.cross(self.forward, ref_up)
-        self.right = self._quantize_vector(right_raw) if np.any(right_raw) else np.array([1, 0, 0])
-        self.up = self._quantize_vector(np.cross(self.right, self.forward))
-        self.stack = []
+
 
     def capture_brush(self, world_voxels: DigitalSet):
         """
@@ -462,6 +441,16 @@ class QTurtle:
                 final_pos = current_center + brush_offset
                 world_voxels.add((int(final_pos[0]), int(final_pos[1]), int(final_pos[2])))
         self.pos += total_displacement
+        return DigitalSet(world_voxels)
+
+    def drop(self):
+        # LSystemShape.get_lsystem_shape ensures that brush starts with (0,0,0) in it
+        if not self.brush: return DigitalSet()
+        world_voxels = []
+        for bx, by, bz in self.brush:
+            offset = (bx * self.right) + (by * self.up) + (bz * self.forward)
+            final_pos = self.pos + offset
+            world_voxels.append((int(final_pos[0]), int(final_pos[1]), int(final_pos[2])))
         return DigitalSet(world_voxels)
 
     def set_brush(self, digital_set):

@@ -8,36 +8,6 @@ class QTurtleActions(MCActionsBase):
         super().__init__(mc_player_instance, delay_between_blocks)
         self.turtle = _GLOBAL_QTURTLE
 
-    @mced_block(label="Get Player Q-Direction")
-    def get_q_direction(self) -> Vec3:
-        """Returns the quantized direction the player is looking as a unit vector."""
-        return self.mcplayer.q_direction
-
-    @mced_block(
-        label="Get Player Q-Compass Direction",
-    )
-    def get_q_compass_direction(self) -> 'QCompass':
-        return self.mcplayer.q_compass_direction
-
-    @mced_block(
-        label="Set Player Q-Compass Direction",
-        direction={'label':'Q-Compass Direction'}
-    )
-    def set_q_compass_direction(self, direction: 'QCompass'):
-        self.mcplayer.set_q_compass_direction(direction)
-
-    @mced_block(
-        label="Get Height",
-        position={'label': 'At Position [(X,Y,Z)]'}
-    )
-    def get_height_at(self, position: Vec3) -> int:
-        """
-        Gets the Y coordinate of the highest block at the X,Z of the given position.
-        """
-        x, z = (int(position.x), int(position.z))
-        height = self.mcplayer.mj.world.getHeight(x, z)
-        return int(height)
-
     @mced_block(
         label="QTurtle: Reset to",
         position={'label': 'Position'},
@@ -107,6 +77,12 @@ class QTurtleActions(MCActionsBase):
         self.turtle.move(distance, direction)
 
     @mced_block(
+        label="QTurtle: Get Position",
+    )
+    def turtle_position(self) -> Vec3:
+        return Vec3(*self.turtle.pos)
+
+    @mced_block(
         label="QTurtle: Rotate 90",
         axis={'label': 'Axis'},
         steps={'label': 'Steps (90 deg)'}
@@ -114,24 +90,12 @@ class QTurtleActions(MCActionsBase):
     def turtle_rotate(self, axis: 'Axis', steps: int):
         self.turtle.rotate_90(axis, steps)
 
-    @mced_block(label="QTurtle: Push State")
-    def turtle_push(self):
-        self.turtle.push_state()
-
-    @mced_block(label="QTurtle: Pop State")
-    def turtle_pop(self):
-        self.turtle.pop_state()
-
     @mced_block(label="QTurtle: Set Brush", shape={'label': 'Shape'})
     def turtle_set_brush(self, shape: DigitalSet):
         self.turtle.set_brush(shape)
 
-    @mced_block(label="QTurtle: Capture Brush", shape={'label': 'Shape'})
-    def turtle_capture_brush(self, shape: DigitalSet):
-        self.turtle.capture_brush(shape)
-
     @mced_block(label="QTurtle: Stamp Brush", block_type={'label': 'Material'})
-    def turtle_stamp(self, block_type: 'Block'):
+    def turtle_stamp(self, block_type: Union['Block','Item']):
         shape = self.turtle.stamp()
         self._place_digital_set(shape, block_type)
 
@@ -145,8 +109,15 @@ class QTurtleActions(MCActionsBase):
         shape = self.turtle.extrude(length,direction)
         self._place_digital_set(shape, block_type)
 
-    @mced_block(
-        label="QTurtle: Position",
-    )
-    def turtle_position(self) -> Vec3:
-        return Vec3(*self.turtle.pos)
+    @mced_block(label="QTurtle: Capture Brush", shape={'label': 'Shape'})
+    def turtle_capture_brush(self, shape: DigitalSet):
+        self.turtle.capture_brush(shape)
+
+    @mced_block(label="QTurtle: Push State")
+    def turtle_push(self):
+        self.turtle.push_state()
+
+    @mced_block(label="QTurtle: Pop State")
+    def turtle_pop(self):
+        self.turtle.pop_state()
+

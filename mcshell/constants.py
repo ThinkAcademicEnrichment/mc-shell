@@ -25,7 +25,7 @@ import pickle
 import time
 import sys
 import uuid
-from typing import List,Optional,Dict,Any
+from typing import List,Optional,Dict,Any,Union
 import threading
 import random
 
@@ -64,7 +64,6 @@ MC_RCON_PORT = 25576
 MC_SERVER_PORT = 25566
 MJ_PLUGIN_PORT = 4721
 MC_APP_PORT = 5001
-
 
 MC_SERVER_DATA = {
     'host':MC_SERVER_HOST,

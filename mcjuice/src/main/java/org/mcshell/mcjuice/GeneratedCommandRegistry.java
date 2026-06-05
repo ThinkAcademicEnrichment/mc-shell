@@ -449,6 +449,67 @@ public class GeneratedCommandRegistry {
                 Bukkit.broadcastMessage(_arg_message);
             });
         });
+        registry.put("admin.isMaterialItem", (args, session) -> {
+            final String _arg_material = args[0];
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                {
+   org.bukkit.Material material = org.bukkit.Material.matchMaterial(_arg_material.toUpperCase());
+   if (material != null) { session.send(String.valueOf(material.isItem())); }
+   else { session.send("null");}
+}
+
+            });
+        });
+        registry.put("admin.isMaterialBlock", (args, session) -> {
+            final String _arg_material = args[0];
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                {
+   org.bukkit.Material material = org.bukkit.Material.matchMaterial(_arg_material.toUpperCase());
+   if (material != null) { session.send(String.valueOf(material.isBlock())); }
+   else { session.send("null");}
+}
+
+            });
+        });
+        registry.put("admin.isMaterialEdible", (args, session) -> {
+            final String _arg_material = args[0];
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                {
+   org.bukkit.Material material = org.bukkit.Material.matchMaterial(_arg_material.toUpperCase());
+   if (material != null) { session.send(String.valueOf(material.isEdible())); }
+   else { session.send("null");}
+}
+
+            });
+        });
+        registry.put("admin.isMaterialFuel", (args, session) -> {
+            final String _arg_material = args[0];
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                {
+   org.bukkit.Material material = org.bukkit.Material.matchMaterial(_arg_material.toUpperCase());
+   if (material != null) { session.send(String.valueOf(material.isFuel())); }
+   else { session.send("null");}
+}
+
+            });
+        });
+        registry.put("admin.allMaterialProperties", (args, session) -> {
+            final String _arg_material = args[0];
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                {
+   org.bukkit.Material material = org.bukkit.Material.matchMaterial(_arg_material.toUpperCase());
+
+   if (material != null) { 
+    String data = String.valueOf(material.isItem()) + "," 
+      + String.valueOf(material.isBlock()) + "," 
+      + String.valueOf(material.isEdible()) + "," 
+      + String.valueOf(material.isFuel());
+    session.send(data); }
+   else { session.send("null");}
+}
+
+            });
+        });
     }
 
     public CommandExecutor getExecutor(String name) { return registry.get(name); }
