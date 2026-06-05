@@ -1,4 +1,4 @@
-from mcshell.mcactions_base import MCActionsBase, QTurtle, _GLOBAL_QTURTLE
+from mcshell.mcactions_base import MCActionsBase, _GLOBAL_QTURTLE
 from blockapily import mced_block
 from mcshell.constants import *
 from mcshell.mcturtle import DigitalSet
