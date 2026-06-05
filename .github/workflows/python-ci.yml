@@ -44,9 +44,9 @@ jobs:
         # Fix: Store only the version names to avoid colon characters
         debian-version: ['bullseye', 'bookworm']
         
-    # Fix: Construct the container image name here
+    # Fix: Target the official Python images rather than bare Debian
     container:
-      image: debian:${{ matrix.debian-version }}
+      image: python:3.10-${{ matrix.debian-version }}
       
     steps:
       - name: Install base container dependencies
@@ -60,6 +60,8 @@ jobs:
         with:
           python-version: '3.10'
           run-integration-tests: 'true'
+          # Fix: Instruct the composite action to rely on the container's native Python
+          skip-python-setup: 'true'
           
       - name: Upload McJuice JAR (Debian)
         uses: actions/upload-artifact@v4
