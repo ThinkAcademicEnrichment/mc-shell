@@ -272,17 +272,6 @@ class QTurtle:
     def set_scale_factor(self, factor):
         self.scale_factor = float(factor)
 
-    def move(self, distance: int, direction='forward'):
-        vec = np.array([0,0,0], dtype=int)
-        d = direction.lower()
-        if d == 'forward': vec = self.forward
-        elif d == 'back':  vec = -self.forward
-        elif d == 'up':    vec = self.up
-        elif d == 'down':  vec = -self.up
-        elif d == 'right': vec = self.right
-        elif d == 'left':  vec = -self.right
-        self.pos += vec * int(distance)
-
     def rotate_90(self, axis='y', steps=1):
         axis = axis.lower()
         def apply_rotation(vec, axis_char):
@@ -319,27 +308,6 @@ class QTurtle:
 
     def pop_state(self):
         if self.stack: self.pos, self.forward, self.up, self.right, self.scale = self.stack.pop()
-
-    # def interpret_symbol(self, symbol, step_size):
-    #     scaled_step = max(1, int(step_size * self.scale))
-    #     if symbol == 'F': return self.extrude(scaled_step)
-    #     elif symbol == 'f': self.move(scaled_step)
-    #     elif symbol == '+': self.rotate_90('y', 1)
-    #     elif symbol == '-': self.rotate_90('y', -1)
-    #     elif symbol == '&': self.rotate_90('x', 1)
-    #     elif symbol == '^': self.rotate_90('x', -1)
-    #     elif symbol == '\\': self.rotate_90('z', 1)
-    #     elif symbol == '/': self.rotate_90('z', -1)
-    #     elif symbol == '|': self.rotate_90('y', 2)
-    #     elif symbol == '[': self.push_state()
-    #     elif symbol == ']': self.pop_state()
-    #     elif symbol == '>': self.shear('z', 'x', 1)
-    #     elif symbol == '<': self.shear('z', 'x', -1)
-    #     elif symbol == '@': self.scale *= self.scale_factor; return self.extrude(scaled_step)
-    #     elif symbol == '!':
-    #         if self.scale_factor > 0: self.scale /= self.scale_factor
-    #         return self.extrude(scaled_step)
-    #     return None
 
     def interpret_symbol(self, symbol, step_size):
         """
