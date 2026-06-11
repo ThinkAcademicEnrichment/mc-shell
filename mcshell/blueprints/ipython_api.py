@@ -2,6 +2,7 @@ import sys
 from io import StringIO
 from flask import Blueprint, jsonify, current_app, request
 from IPython.utils.capture import capture_output
+import re
 ipython_bp = Blueprint('ipython_api',__name__,url_prefix='/api')
 
 @ipython_bp.route('/ipython_magic', methods=['POST'])
