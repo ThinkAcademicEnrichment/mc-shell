@@ -343,6 +343,19 @@ class MCShell(Magics):
         """Helper method to print the share tokens cleanly."""
         data = self._get_connection_hub_data()
 
+        # 1. App Server (mc-ed) Status
+        if self.app_server_thread and self.app_server_thread.is_alive():
+            if self.mc_name:
+                print(f"🟢 MCED App Server  : RUNNING (Active Player: {self.mc_name})")
+                print(f"   Editor URL         : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}?auth={GUI_AUTH_TOKEN}")
+                print(f"   Control URL        : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}/control?auth={GUI_AUTH_TOKEN}")
+            else:
+                print(f"🟡 MCED App Server  : STANDBY")
+                print(f"   Lobby URL          : http://localhost:{MC_APP_PORT}/lobby?auth={GUI_AUTH_TOKEN}")
+        else:
+            print("🔴 Editor App Server  : STOPPED")
+
+
         print(f"\n" + "="*60)
         print("🌍 CONNECTION HUB: Share these tokens with friends!")
         print("="*60)
