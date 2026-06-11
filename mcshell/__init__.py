@@ -922,10 +922,13 @@ class MCShell(Magics):
         self._disconnect_tailscale()
 
         from mcshell.mcserver import GUI_AUTH_TOKEN
+        # Ensure MC_APP_PORT is defined in your scope, usually via current_app.config or global
+        app_port = globals().get('MC_APP_PORT', 5001) 
+
         print("="*60)
         print("🚀 RETURNED TO LOBBY")
         print("="*60)
-        print(f"Lobby Access: http://localhost:{MC_APP_PORT}/lobby?auth={GUI_AUTH_TOKEN}")
+        print(f"Lobby Access: http://localhost:{app_port}/lobby?auth={GUI_AUTH_TOKEN}")
         print("="*60 + "\n")
 
     def _send(self,kind,*args):
