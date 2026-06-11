@@ -81,6 +81,25 @@ def reset_app_server_context():
         current_app.config['POWER_REPO'] = None
         socketio.emit('state_changed', {'status': 'standby'})
 
+def throw_app_server_error(error):
+    """
+    Transitions the application into an error state and notifies connected web clients.
+    Accepts either an Exception object or a string.
+    """
+    error_message = str(error)
+    print(f"[Server Error] {error_message}")
+
+    # Safely inject the error state into the active Flask Application Context
+    with app.app_context():
+        current_app.config['APP_SERVER_ERROR'] = error_message
+        current_app.config['MCSHELL_STATUS'] = 'error'
+        
+        # Ping the frontend via WebSocket to switch to the error UI template
+        socketio.emit('state_changed', {
+            'status': 'error', 
+            'message': error_message
+        })
+
 def start_app_server(server_data=None, minecraft_name=None, shell=None, power_repo=None, port=5001):
     """Starts or updates the main Flask-SocketIO application server in a separate thread."""
 

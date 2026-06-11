@@ -91,6 +91,7 @@ def get_lobby_data():
 
     return jsonify({"status": "active", "player": mc_name, "is_host": False, "is_admin": False, "hub": None})
 
+
 @ipython_bp.route('/join_world', methods=['POST'])
 def join_world():
     """Safely allows unauthenticated users to join a world from standby mode."""
@@ -99,15 +100,25 @@ def join_world():
 
     data = request.get_json()
     token = data.get('token') if data else None
+    minecraft_name = data.get('minecraft_name') if data else None
 
+    # Validate presence of inputs
+    if not minecraft_name:
+        return jsonify({"error": "Missing Minecraft username."}), 400
     if not token:
         return jsonify({"error": "Missing join token."}), 400
+
+    # Safety constraint: Validate Minecraft username format
+    # Standard Minecraft usernames are 3-16 characters, alphanumeric and underscores.
+    # This prevents shell injection into the IPython magic command parser.
+    if not re.match(r"^[a-zA-Z0-9_]{3,16}$", minecraft_name):
+        return jsonify({"error": "Invalid Minecraft username format."}), 400
 
     shell = current_app.config.get('IPYTHON_SHELL')
     if shell:
         try:
-            # Append --guest flag to safely bypass interactive prompts
-            shell.run_line_magic('mc_start_app', f"{token} --guest")
+            # Append --guest flag and the newly validated --mc_name
+            shell.run_line_magic('mc_start_app', f"{token} --guest --mc_name {minecraft_name}")
 
             # Fetch the GUI token to return to the newly authenticated web client
             from mcshell.mcserver import GUI_AUTH_TOKEN

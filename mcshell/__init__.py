@@ -10,7 +10,7 @@ from rich.prompt import Prompt
 from mcshell.constants import *
 from mcshell.mcrepo import SQLiteRepository
 from mcshell.mcclient import MCClient
-from mcshell.mcserver import start_app_server, reset_app_server_context, GUI_AUTH_TOKEN
+from mcshell.mcserver import throw_app_server_error, start_app_server, reset_app_server_context, GUI_AUTH_TOKEN
 from mcshell.mcactions import *
 from mcshell.mcserver import execute_power_in_thread, RUNNING_POWERS # Import helpers
 from mcshell.ppmanager import *
@@ -1550,7 +1550,7 @@ class MCShell(Magics):
     def mc_start_app(self, line):
         """
         Starts the client application components to connect to a world.
-        Usage: %mc_start_app [token|IP] [--local-mc <port>] [--local-rcon <port>] [--local-mj <port>] [--authkey <key>] [--guest]
+        Usage: %mc_start_app [token|IP] [--local-mc <port>] [--local-rcon <port>] [--local-mj <port>] [--authkey <key>] [--guest] [--mc_name <minecraft user name>]
         """
         parts = line.split()
 
@@ -1558,6 +1558,22 @@ class MCShell(Magics):
         is_guest = '--guest' in parts
         if is_guest:
             parts.remove('--guest')
+
+        # Safely extract mc_name
+        if '--mc_name' in parts:
+            idx = parts.index('--mc_name')
+            
+            # Check if there's a value after the flag AND that it isn't another flag
+            if idx + 1 < len(parts) and not parts[idx + 1].startswith('--'):
+                minecraft_name = parts[idx + 1]
+                # Remove both the flag and the extracted username from parts
+                del parts[idx:idx+2]
+            else:
+                parts.pop(idx) # Remove the dangling flag
+                throw_app_server_error("Initialization failed: '--mc_name' was provided without a valid username.")
+                return # Abort further execution so the server doesn't start in a broken state     
+        else:
+            minecraft_name = self._get_mc_name()
 
         # If the first argument doesn't start with '--', it's our token
         token = parts[0] if parts and not parts[0].startswith('--') else None
@@ -1655,7 +1671,6 @@ class MCShell(Magics):
             else:
                 self.server_data['password'] = None
 
-        minecraft_name = self._get_mc_name()
         power_repo = SQLiteRepository(minecraft_name)
 
         print(f"Assigning application server context to Minecraft player: {minecraft_name}")
