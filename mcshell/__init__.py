@@ -1600,6 +1600,9 @@ class MCShell(Magics):
         else:
             minecraft_name = self._get_mc_name()
 
+        # cache it
+        self.mc_name = minecraft_name
+
         # If the first argument doesn't start with '--', it's our token
         token = parts[0] if parts and not parts[0].startswith('--') else None
 
