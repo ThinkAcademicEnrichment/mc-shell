@@ -260,11 +260,12 @@
                     keyboardVisible: false,
 
                     // Lobby State
-                    lobbyState: 'loading', // 'loading', 'standby', 'active', 'unauthorized', 'terminated'
+                    lobbyState: 'loading', // 'loading', 'standby', 'active', 'unauthorized', 'terminated', 'error'
                     lobbyData: null,
                     joinToken: '',
-                    minecraftName: '',  
+                    minecraftName: '',
                     joinError: '',
+                    errorMessage: '',      // <-- NEW: Added to track the server error text
                     isJoining: false,
                     isSwitchingPorts: false,
 
@@ -273,18 +274,28 @@
                         const socket = io();
                         socket.on('state_changed', (data) => {
                             if (data && data.status === 'terminated') {
-                                if (this.isJoining || this.isSwitchingPorts) return;
+                                this.isJoining = false; // Reset to prevent getting stuck
+                                this.isSwitchingPorts = false;
                                 this.lobbyState = 'terminated';
                                 return;
                             }
+
+                            // --- ROBUST ERROR HANDLING ---
                             if (data && data.status === 'error') {
-                                if (this.isJoining || this.isSwitchingPorts) return;
+                                // Forcefully clear loading states so the UI updates
+                                this.isJoining = false;
+                                this.isSwitchingPorts = false;
+
                                 this.lobbyState = 'error';
+                                // Extract the message passed from throw_app_server_error()
+                                this.errorMessage = data.message || 'An unexpected error occurred.';
                                 return;
                             }
+
                             if (this.isJoining || this.isSwitchingPorts) return;
                             this.checkLobbyState();
                         });
+
                         socket.on('port_switch', (data) => {
                             this.isSwitchingPorts = true;
                             this.isJoining = true;
@@ -309,6 +320,7 @@
                                 setTimeout(checkAndRedirect, 1000);
                             }
                         });
+
                         socket.on('reload', () => {
                             if (!this.isSwitchingPorts) window.location.reload();
                         });
@@ -320,8 +332,14 @@
                             if (response.ok) {
                                 const data = await response.json();
                                 const previousState = this.lobbyState;
+
                                 this.lobbyState = data.status;
                                 this.lobbyData = data;
+
+                                // Extract the message if we are booting up directly into an error state
+                                if (data.status === 'error') {
+                                    this.errorMessage = data.message || 'An unexpected error occurred.';
+                                }
 
                                 if (data.status === 'active' && previousState === 'standby') {
                                     window.location.href = '/';
@@ -390,7 +408,7 @@
                     // Safely spawn a new authenticated Control Deck tab
                     openControlDeck() {
                         const token = sessionStorage.getItem('GUI_AUTH_TOKEN') || '';
-                        window.open(`/control?auth=${token}`, '_blank');
+                        window.location.open(`/control?auth=${token}`, '_blank');
                     }
                 }));
             });
