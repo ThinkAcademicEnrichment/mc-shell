@@ -12,13 +12,15 @@ from mcshell.constants import *
 
 class PaperDownloader:
     """Handles downloading Paper server JARs and the required JRE from official APIs."""
-    API_URL = "https://api.papermc.io/v2/projects/paper"
+    # API v3 Change: The API domain is now fill.papermc.io and the path is upgraded to v3
+    API_URL = "https://fill.papermc.io/v3/projects/paper"
+
 
     def __init__(self, download_dir: Path):
         self.download_dir = download_dir
         self.download_dir.mkdir(parents=True, exist_ok=True)
 
-    def ensure_jre(self, version: str = "21") -> bool:
+    def ensure_jre(self, version: str = "25") -> bool:
         """Ensures a local JRE is present in the specified jre directory."""
         if MC_JRE_PATH.exists():
             return True
@@ -84,50 +86,47 @@ class PaperDownloader:
         if not build_info:
             return None
 
-        # FIX: Use the mc_version passed into the function directly.
-        # The build_info dict in v2 API results does not contain a 'version' key.
-        project = build_info.get('project_id', 'paper')
-        build_num = build_info.get('build')
-        jar_name = build_info.get('downloads', {}).get('application', {}).get('name')
+        # API v3 Change: 'application' key is now 'server:default'
+        download_info = build_info.get('downloads', {}).get('server:default', {})
+        
+        jar_name = download_info.get('name')
+        # API v3 Change: Download URL is now provided directly in the response
+        download_url = download_info.get('url')
 
-        if not jar_name:
-            print("Error: JAR filename not found in API response.")
+        if not jar_name or not download_url:
+            print("Error: JAR filename or embedded download URL not found in API response.")
             return None
 
         jar_path = self.download_dir / jar_name
         if jar_path.exists():
             return jar_path
 
-        # Construct the download URL using the verified mc_version string
-        download_url = f"https://api.papermc.io/v2/projects/{project}/versions/{mc_version}/builds/{build_num}/downloads/{jar_name}"
+        # No need to manually construct the URL string anymore
         return self._download_jar(download_url, jar_path)
 
     def _get_latest_build_for_version(self, mc_version: str) -> Optional[dict]:
         """Fetches the latest build metadata for a given Minecraft version."""
         builds_url = f"{self.API_URL}/versions/{mc_version}/builds"
+        
+        headers = {
+            "User-Agent": "MyPaperDownloader/1.0 (jeff@thinkae.org)"
+        }
+        
         try:
-            response = requests.get(builds_url)
+            response = requests.get(builds_url, headers=headers)
             response.raise_for_status()
-            data = response.json()
-            builds = data.get('builds', [])
-            return builds[-1] if builds else None
+            
+            # API v3 Change: The endpoint returns a JSON array directly,
+            # so response.json() is a Python list, not a dict.
+            builds = response.json()
+            
+            # Ensure it is a list and not empty before grabbing the last build
+            if isinstance(builds, list) and builds:
+                return builds[-1]
+            return None
+            
         except Exception as e:
             print(f"Error: Could not fetch build info for version {mc_version}: {e}")
-            return None
-
-    def _download_jar(self, download_url: str, jar_path: Path) -> Optional[Path]:
-        """Downloads the specified JAR file."""
-        print(f"Downloading Paper JAR from: {download_url}")
-        try:
-            with requests.get(download_url, stream=True) as r:
-                r.raise_for_status()
-                with open(jar_path, 'wb') as f:
-                    for chunk in r.iter_content(chunk_size=8192):
-                        f.write(chunk)
-            return jar_path
-        except Exception as e:
-            print(f"Error: Failed to download JAR file. {e}")
-            if jar_path.exists(): jar_path.unlink()
             return None
 
     def install_plugins(self, plugin_urls: list[str], world_plugins_dir: Path) -> list[str]:
@@ -158,6 +157,29 @@ class PaperDownloader:
                 jar = self._download_and_extract_zip(url, world_plugins_dir)
                 if jar: successful_installs.append(jar)
         return successful_installs
+
+    def _download_jar(self, download_url: str, jar_path: Path) -> Optional[Path]:
+        """Downloads the specified JAR file."""
+        print(f"Downloading Paper JAR from: {download_url}")
+        
+        # API v3 Requirement: A descriptive User-Agent is required to prevent 
+        # being blocked or rate-limited by Paper's download servers.
+        headers = {
+            "User-Agent": "MyPaperDownloader/1.0 (jeff@thinkae.org)" 
+        }
+
+        try:
+            with requests.get(download_url, headers=headers, stream=True) as r:
+                r.raise_for_status()
+                with open(jar_path, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=8192):
+                        f.write(chunk)
+            return jar_path
+        except Exception as e:
+            print(f"Error: Failed to download JAR file. {e}")
+            if jar_path.exists(): 
+                jar_path.unlink()
+            return None
 
     def _download_file(self, url: str, destination: Path) -> bool:
         try:
