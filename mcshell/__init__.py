@@ -40,15 +40,29 @@ from mcshell.mctunnelserver import start_host_gateway, connect_client_tunnel, ge
 # Secure Tunnel & Plugin Helper Functions
 # =====================================================================
 
+def _resolve_geysermc_plugin(project_id: str, platform: str = "spigot") -> str:
+    """
+    Returns the direct download URL from the official GeyserMC API.
+    project_id: 'geyser' or 'floodgate'
+    platform: 'spigot' (works for both Spigot and Paper servers)
+    """
+    return f"https://download.geysermc.org/v2/projects/{project_id}/versions/latest/builds/latest/downloads/{platform}"
+
 def _resolve_modrinth_plugin(project_id, mc_version):
     """Queries the Modrinth API for the exact plugin download URL matching the Minecraft version."""
     api_url = f"https://api.modrinth.com/v2/project/{project_id}/version"
+
     params = {
         "game_versions": f'["{mc_version}"]',
         "loaders": '["paper", "spigot"]'
     }
+
+    headers = {
+    "User-Agent": "MyServerManager/1.0 (jeff@thinkae.org)"
+    }
+
     try:
-        resp = requests.get(api_url, params=params, timeout=5)
+        resp = requests.get(api_url, params=params, headers=headers, timeout=5)
         if resp.ok:
             data = resp.json()
             if data and len(data) > 0:
@@ -537,8 +551,10 @@ class MCShell(Magics):
 
         print(f"Resolving compatible Geyser/Floodgate plugins for Minecraft {mc_version}...")
         # Resolve dynamic Modrinth URLs based on the MC version, falling back to Geyser's official 'latest' endpoints
-        geyser_url = _resolve_modrinth_plugin("geyser", mc_version) or "https://download.geysermc.org/v2/projects/geyser/versions/latest/builds/latest/downloads/spigot"
-        floodgate_url = _resolve_modrinth_plugin("floodgate", mc_version) or "https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/spigot"
+        # geyser_url: Literal['https://download.geysermc.org/v2/projects/geyser/versions/latest/builds/latest/downloads/spigot'] | Unknown = _resolve_modrinth_plugin("geyser", mc_version) or "https://download.geysermc.org/v2/projects/geyser/versions/latest/builds/latest/downloads/spigot"
+        # floodgate_url = _resolve_modrinth_plugin("floodgate", mc_version) or "https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/spigot"
+        geyser_url = _resolve_geysermc_plugin('geyser')
+        floodgate_url = _resolve_geysermc_plugin('floodgate')
 
         # Create the world_manifest.json file with required Geyser/Floodgate plugins
         manifest = {
