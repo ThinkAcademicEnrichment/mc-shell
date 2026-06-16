@@ -56,7 +56,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run core build and test steps
-        uses: ./.github/actions/build-test-mcjuice
+        uses: ./.github/actions/build-test-mc-shell
         with:
           python-version: '3.10'
           run-integration-tests: 'true'
