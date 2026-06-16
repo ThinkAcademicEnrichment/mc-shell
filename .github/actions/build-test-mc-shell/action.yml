@@ -25,7 +25,12 @@ runs:
         java-version: '21'
         distribution: 'temurin'
         cache: 'maven'
-
+    - name: Set up JDK 25
+      uses: actions/setup-java@v4
+      with:
+        java-version: '25'
+        distribution: 'temurin'
+        cache: 'maven' # Apply the Maven cache on the final setup step
     # --- Fix: Apply the conditional toggle ---
     - name: Set up Python ${{ inputs.python-version }}
       if: inputs.skip-python-setup != 'true'
