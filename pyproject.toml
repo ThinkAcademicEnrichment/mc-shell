@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mc-shell"
-version = "0.9.3"
+version = "0.9.4"
 description = "An interactive shell, Blockly editor and control for managing, programming and sharing Minecraft servers."
 authors = ["Jeff <jeff@thinkae.org>"]
 readme = "README.md"
