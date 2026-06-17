@@ -59,8 +59,12 @@
                     <template x-if="lobbyState === 'standby'">
                         <div>
                             <h2 style="margin-top: 0;">MC-ED Editor Lobby</h2>
-                            <p style="color: #aaa; margin-bottom: 20px;">Waiting for an active Minecraft session. Enter a token to join a world instantly.</p>
+                            <p style="color: #aaa; margin-bottom: 20px;">Waiting for an active Minecraft session. Enter your username and token to join a world instantly.</p>
+
+                            <input type="text" x-model="minecraftName" placeholder="Minecraft Username" class="lobby-input" style="margin-bottom: 10px;" @keyup.enter="joinWorld()">
+
                             <input type="text" x-model="joinToken" placeholder="Paste Join Token..." class="lobby-input" @keyup.enter="joinWorld()">
+
                             <button @click="joinWorld()" class="lobby-btn">Join World</button>
                             <div x-show="joinError" x-text="joinError" style="color: #ff453a; margin-top: 10px; font-size: 0.9rem;"></div>
                         </div>
@@ -83,7 +87,21 @@
                             <p style="color: #888; font-size: 0.9rem;">This connection is no longer active. You may safely close this browser tab.</p>
                         </div>
                     </template>
+
+                    <template x-if="lobbyState === 'error'">
+                        <div>
+                            <h2 style="margin-top: 0; color: #ff453a;">Application Error</h2>
+                            <p style="color: #aaa; margin-bottom: 10px;" x-text="errorMessage || 'An unexpected error occurred.'"></p>
+                            <p style="color: #888; font-size: 0.9rem;">Please check the backend console for more details.</p>
+
+                            <button @click="lobbyState = 'standby'; errorMessage = ''; joinError = '';" class="lobby-btn" style="margin-top: 15px;">
+                                Return to Lobby
+                            </button>
+                        </div>
+                    </template>
+
                 </div>
+
             </div>
 
             <div class="editor-layout" :class="{ 'library-collapsed': isLibraryCollapsed, 'code-collapsed': isCodeCollapsed }">
@@ -242,10 +260,12 @@
                     keyboardVisible: false,
 
                     // Lobby State
-                    lobbyState: 'loading', // 'loading', 'standby', 'active', 'unauthorized', 'terminated'
+                    lobbyState: 'loading', // 'loading', 'standby', 'active', 'unauthorized', 'terminated', 'error'
                     lobbyData: null,
                     joinToken: '',
+                    minecraftName: '',
                     joinError: '',
+                    errorMessage: '',      // <-- NEW: Added to track the server error text
                     isJoining: false,
                     isSwitchingPorts: false,
 
@@ -254,13 +274,28 @@
                         const socket = io();
                         socket.on('state_changed', (data) => {
                             if (data && data.status === 'terminated') {
-                                if (this.isJoining || this.isSwitchingPorts) return;
+                                this.isJoining = false; // Reset to prevent getting stuck
+                                this.isSwitchingPorts = false;
                                 this.lobbyState = 'terminated';
                                 return;
                             }
+
+                            // --- ROBUST ERROR HANDLING ---
+                            if (data && data.status === 'error') {
+                                // Forcefully clear loading states so the UI updates
+                                this.isJoining = false;
+                                this.isSwitchingPorts = false;
+
+                                this.lobbyState = 'error';
+                                // Extract the message passed from throw_app_server_error()
+                                this.errorMessage = data.message || 'An unexpected error occurred.';
+                                return;
+                            }
+
                             if (this.isJoining || this.isSwitchingPorts) return;
                             this.checkLobbyState();
                         });
+
                         socket.on('port_switch', (data) => {
                             this.isSwitchingPorts = true;
                             this.isJoining = true;
@@ -285,6 +320,7 @@
                                 setTimeout(checkAndRedirect, 1000);
                             }
                         });
+
                         socket.on('reload', () => {
                             if (!this.isSwitchingPorts) window.location.reload();
                         });
@@ -296,8 +332,14 @@
                             if (response.ok) {
                                 const data = await response.json();
                                 const previousState = this.lobbyState;
+
                                 this.lobbyState = data.status;
                                 this.lobbyData = data;
+
+                                // Extract the message if we are booting up directly into an error state
+                                if (data.status === 'error') {
+                                    this.errorMessage = data.message || 'An unexpected error occurred.';
+                                }
 
                                 if (data.status === 'active' && previousState === 'standby') {
                                     window.location.href = '/';
@@ -313,47 +355,60 @@
                         }
                     },
 
-                    async joinWorld() {
-                        this.joinError = '';
-                        if (!this.joinToken.trim()) {
-                            this.joinError = 'Please enter a valid token.';
-                            return;
-                        }
-                        this.isJoining = true;
-                        try {
-                            const res = await fetch('/api/join_world', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ token: this.joinToken.trim() })
-                            });
+                async joinWorld() {
+                    this.joinError = '';
 
-                            if (res.ok) {
-                                const data = await res.json();
-                                if (data.gui_token) {
-                                    sessionStorage.setItem('GUI_AUTH_TOKEN', data.gui_token);
-                                }
-                                if (!this.isSwitchingPorts) {
-                                    window.location.href = '/';
-                                }
-                            } else {
-                                this.isJoining = false;
-                                const errData = await res.json().catch(() => ({}));
-                                this.joinError = errData.error || 'Failed to connect. Server rejected request.';
+                    // Safely trim inputs
+                    const username = this.minecraftName ? this.minecraftName.trim() : '';
+                    const token = this.joinToken ? this.joinToken.trim() : '';
+
+                    // Step-by-step UX validation
+                    if (!username) {
+                        this.joinError = 'Please enter your Minecraft username.';
+                        return;
+                    }
+                    if (!token) {
+                        this.joinError = 'Please enter a valid join token.';
+                        return;
+                    }
+
+                    this.isJoining = true;
+                    try {
+                        const res = await fetch('/api/join_world', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                token: token,
+                                minecraft_name: username
+                            })
+                        });
+
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (data.gui_token) {
+                                sessionStorage.setItem('GUI_AUTH_TOKEN', data.gui_token);
                             }
-                        } catch (e) {
-                            // If the backend drops connection during a port switch, ignore the network error!
-                            if (this.isSwitchingPorts) return;
-
+                            if (!this.isSwitchingPorts) {
+                                window.location.href = '/';
+                            }
+                        } else {
                             this.isJoining = false;
-                            this.joinError = 'Network error while joining.';
-                            console.error(e);
+                            const errData = await res.json().catch(() => ({}));
+                            this.joinError = errData.error || 'Failed to connect. Server rejected request.';
                         }
-                    },
+                    } catch (e) {
+                        // If the backend drops connection during a port switch, ignore the network error
+                        if (this.isSwitchingPorts) return;
 
+                        this.isJoining = false;
+                        this.joinError = 'Network error while joining.';
+                        console.error(e);
+                    }
+                },
                     // Safely spawn a new authenticated Control Deck tab
                     openControlDeck() {
                         const token = sessionStorage.getItem('GUI_AUTH_TOKEN') || '';
-                        window.open(`/control?auth=${token}`, '_blank');
+                        window.location.open(`/control?auth=${token}`, '_blank');
                     }
                 }));
             });

@@ -10,7 +10,7 @@ from rich.prompt import Prompt
 from mcshell.constants import *
 from mcshell.mcrepo import SQLiteRepository
 from mcshell.mcclient import MCClient
-from mcshell.mcserver import start_app_server, reset_app_server_context, GUI_AUTH_TOKEN
+from mcshell.mcserver import throw_app_server_error, start_app_server, reset_app_server_context, GUI_AUTH_TOKEN
 from mcshell.mcactions import *
 from mcshell.mcserver import execute_power_in_thread, RUNNING_POWERS # Import helpers
 from mcshell.ppmanager import *
@@ -40,15 +40,29 @@ from mcshell.mctunnelserver import start_host_gateway, connect_client_tunnel, ge
 # Secure Tunnel & Plugin Helper Functions
 # =====================================================================
 
+def _resolve_geysermc_plugin(project_id: str, platform: str = "spigot") -> str:
+    """
+    Returns the direct download URL from the official GeyserMC API.
+    project_id: 'geyser' or 'floodgate'
+    platform: 'spigot' (works for both Spigot and Paper servers)
+    """
+    return f"https://download.geysermc.org/v2/projects/{project_id}/versions/latest/builds/latest/downloads/{platform}"
+
 def _resolve_modrinth_plugin(project_id, mc_version):
     """Queries the Modrinth API for the exact plugin download URL matching the Minecraft version."""
     api_url = f"https://api.modrinth.com/v2/project/{project_id}/version"
+
     params = {
         "game_versions": f'["{mc_version}"]',
         "loaders": '["paper", "spigot"]'
     }
+
+    headers = {
+    "User-Agent": "MyServerManager/1.0 (jeff@thinkae.org)"
+    }
+
     try:
-        resp = requests.get(api_url, params=params, timeout=5)
+        resp = requests.get(api_url, params=params, headers=headers, timeout=5)
         if resp.ok:
             data = resp.json()
             if data and len(data) > 0:
@@ -343,6 +357,19 @@ class MCShell(Magics):
         """Helper method to print the share tokens cleanly."""
         data = self._get_connection_hub_data()
 
+        # 1. App Server (mc-ed) Status
+        if self.app_server_thread and self.app_server_thread.is_alive():
+            if self.mc_name:
+                print(f"🟢 MCED App Server  : RUNNING (Active Player: {self.mc_name})")
+                print(f"   Editor URL         : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}?auth={GUI_AUTH_TOKEN}")
+                print(f"   Control URL        : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}/control?auth={GUI_AUTH_TOKEN}")
+            else:
+                print(f"🟡 MCED App Server  : STANDBY")
+                print(f"   Lobby URL          : http://localhost:{MC_APP_PORT}/lobby?auth={GUI_AUTH_TOKEN}")
+        else:
+            print("🔴 Editor App Server  : STOPPED")
+
+
         print(f"\n" + "="*60)
         print("🌍 CONNECTION HUB: Share these tokens with friends!")
         print("="*60)
@@ -524,8 +551,10 @@ class MCShell(Magics):
 
         print(f"Resolving compatible Geyser/Floodgate plugins for Minecraft {mc_version}...")
         # Resolve dynamic Modrinth URLs based on the MC version, falling back to Geyser's official 'latest' endpoints
-        geyser_url = _resolve_modrinth_plugin("geyser", mc_version) or "https://download.geysermc.org/v2/projects/geyser/versions/latest/builds/latest/downloads/spigot"
-        floodgate_url = _resolve_modrinth_plugin("floodgate", mc_version) or "https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/spigot"
+        # geyser_url: Literal['https://download.geysermc.org/v2/projects/geyser/versions/latest/builds/latest/downloads/spigot'] | Unknown = _resolve_modrinth_plugin("geyser", mc_version) or "https://download.geysermc.org/v2/projects/geyser/versions/latest/builds/latest/downloads/spigot"
+        # floodgate_url = _resolve_modrinth_plugin("floodgate", mc_version) or "https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/spigot"
+        geyser_url = _resolve_geysermc_plugin('geyser')
+        floodgate_url = _resolve_geysermc_plugin('floodgate')
 
         # Create the world_manifest.json file with required Geyser/Floodgate plugins
         manifest = {
@@ -880,16 +909,25 @@ class MCShell(Magics):
     @line_magic
     def pp_leave_world(self, line):
         """
-        Leaves the current world, shutting down any local servers and returning the app to the Lobby.
+        Leaves the current world and returns the app to the Lobby. 
+        Hosts must safely shut down their local server first using %pp_stop_world.
         Usage: %pp_leave_world
         """
         print("\n--- Leaving World ---")
 
-        # Stop local Paper server if we are the host
-        if self.active_paper_server and self.active_paper_server.is_alive():
-            print(f"Stopping local Paper server for world '{self.active_paper_server.world_name}'...")
-            self.active_paper_server.stop()
-            self.active_paper_server = None
+        # Intercept if we are the host
+        if getattr(self, 'active_paper_server', None) and self.active_paper_server.is_alive():
+            world_name = getattr(self.active_paper_server, 'world_name', 'Unknown World')
+            error_msg = (
+                f"Cannot leave world '{world_name}'. You are the current host. "
+                f"Please use '%pp_stop_world' in the console to safely shut down the server first."
+            )
+            print(f"[Error] {error_msg}")
+            
+            # Assuming throw_app_server_error is imported/available in this scope
+            throw_app_server_error(error_msg)
+            
+            return  # Abort the leave sequence
 
         # Reset Flask application context to put UI into standby mode
         print("Returning application server to standby mode...")
@@ -900,10 +938,13 @@ class MCShell(Magics):
         self._disconnect_tailscale()
 
         from mcshell.mcserver import GUI_AUTH_TOKEN
+        # Ensure MC_APP_PORT is defined in your scope, usually via current_app.config or global
+        app_port = globals().get('MC_APP_PORT', 5001) 
+
         print("="*60)
         print("🚀 RETURNED TO LOBBY")
         print("="*60)
-        print(f"Lobby Access: http://localhost:{MC_APP_PORT}/lobby?auth={GUI_AUTH_TOKEN}")
+        print(f"Lobby Access: http://localhost:{app_port}/lobby?auth={GUI_AUTH_TOKEN}")
         print("="*60 + "\n")
 
     def _send(self,kind,*args):
@@ -1550,7 +1591,7 @@ class MCShell(Magics):
     def mc_start_app(self, line):
         """
         Starts the client application components to connect to a world.
-        Usage: %mc_start_app [token|IP] [--local-mc <port>] [--local-rcon <port>] [--local-mj <port>] [--authkey <key>] [--guest]
+        Usage: %mc_start_app [token|IP] [--local-mc <port>] [--local-rcon <port>] [--local-mj <port>] [--authkey <key>] [--guest] [--mc_name <minecraft user name>]
         """
         parts = line.split()
 
@@ -1558,6 +1599,25 @@ class MCShell(Magics):
         is_guest = '--guest' in parts
         if is_guest:
             parts.remove('--guest')
+
+        # Safely extract mc_name
+        if '--mc_name' in parts:
+            idx = parts.index('--mc_name')
+            
+            # Check if there's a value after the flag AND that it isn't another flag
+            if idx + 1 < len(parts) and not parts[idx + 1].startswith('--'):
+                minecraft_name = parts[idx + 1]
+                # Remove both the flag and the extracted username from parts
+                del parts[idx:idx+2]
+            else:
+                parts.pop(idx) # Remove the dangling flag
+                throw_app_server_error("Initialization failed: '--mc_name' was provided without a valid username.")
+                return # Abort further execution so the server doesn't start in a broken state     
+        else:
+            minecraft_name = self._get_mc_name()
+
+        # cache it
+        self.mc_name = minecraft_name
 
         # If the first argument doesn't start with '--', it's our token
         token = parts[0] if parts and not parts[0].startswith('--') else None
@@ -1655,7 +1715,6 @@ class MCShell(Magics):
             else:
                 self.server_data['password'] = None
 
-        minecraft_name = self._get_mc_name()
         power_repo = SQLiteRepository(minecraft_name)
 
         print(f"Assigning application server context to Minecraft player: {minecraft_name}")
