@@ -117,7 +117,6 @@ MC_DATAPACK_LIB_DIR = MC_WORLDS_BASE_DIR / 'datapacks-library'
 
 #new: mcjuice server
 MC_JUICE_SRC_DIR = pathlib.Path(__file__).parent.parent / 'mcjuice' / 'src'
-MC_JUICE_JAR_PATH = MC_DATA_DIR / "mcjuice-0.1.0.jar"
 
 MC_JRE_DIR = MC_WORLDS_BASE_DIR / 'jre'
 # Determine the binary name based on the OS
