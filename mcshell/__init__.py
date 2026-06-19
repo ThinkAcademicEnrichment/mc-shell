@@ -604,7 +604,12 @@ class MCShell(Magics):
             return
 
         # Always install McJuice from bundled version
-        plugins_dir.joinpath(MC_JUICE_JAR_PATH.name).symlink_to(MC_JUICE_JAR_PATH)
+        # plugins_dir.joinpath(MC_JUICE_JAR_PATH.name).symlink_to(MC_JUICE_JAR_PATH)
+        # NEW: symlink by version
+        mc_major_version = '.'.join(mc_version.split('.')[:2])
+        mc_juice_jar_path =  MC_DATA_DIR / f"mcjuice-{mc_major_version}.jar"
+        plugins_dir.joinpath(mc_juice_jar_path.name).symlink_to(mc_juice_jar_path)
+        
 
         # Install the plugins listed in the manifest (Downloads Geyser & Floodgate automatically)
         plugin_urls = manifest.get("plugins", [])
