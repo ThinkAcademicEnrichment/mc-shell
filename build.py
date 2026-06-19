@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+import xml.etree.ElementTree as ET
 
 # Ensure we can import from mcshell
 sys.path.append(str(Path(__file__).parent))
@@ -56,15 +57,42 @@ def rebuild():
     # 3. Updates toolbox.xml via blockapily's structured XML injection
     builder.build_all()
 
+    pom_path = MC_JUICE_SRC_DIR.parent / 'pom.xml'
 
-    # 2. Compile via Maven
-    print("Building McJuice JAR...")
-    subprocess.run(["mvn", "clean", "package"], cwd=str(MC_JUICE_SRC_DIR.parent), check=True)
+    # Parse the pom.xml to dynamically detect all profile IDs
+    print(f"Probing {pom_path} for Maven profiles...")
+    tree = ET.parse(pom_path)
+    ns = {'m': 'http://maven.apache.org/POM/4.0.0'}
+    profile_ids = [p.text for p in tree.findall('.//m:profile/m:id', ns)]
 
-    # 3. Move the artifact to the mc-shell data directory for PyPI packaging
-    built_jar = list(MC_JUICE_SRC_DIR.parent.joinpath('target').glob('mcjuice-*.jar')).pop()
-    dest_jar = MC_DATA_DIR
-    shutil.copy2(built_jar, dest_jar)
+    if not profile_ids:
+        print("Warning: No profiles detected in pom.xml. Defaulting to standard build.")
+        profile_ids = [None] # Allows the loop to run once with a standard build command
+
+    # Build each profile and copy the artifact immediately
+    for profile in profile_ids:
+        if profile:
+            print(f"\nBuilding McJuice JAR for profile: {profile}...")
+            build_cmd = ["mvn", "clean", "package", "-P", profile]
+        else:
+            print("\nBuilding McJuice JAR...")
+            build_cmd = ["mvn", "clean", "package"]
+            
+        # Execute the Maven build
+        subprocess.run(build_cmd, cwd=str(MC_JUICE_SRC_DIR.parent), check=True)
+
+        # 3. Move the artifact to the data directory before the next iteration's 'clean' wipes it
+        built_jars = list(MC_JUICE_SRC_DIR.parent.joinpath('target').glob('mcjuice-*.jar'))
+        
+        if not built_jars:
+            print(f"Error: No generated JARs found in target/ after building profile {profile}")
+            continue
+            
+        for built_jar in built_jars:
+            print(f"Copying {built_jar.name} to {MC_DATA_DIR}")
+            shutil.copy2(built_jar, MC_DATA_DIR)
+
+    print("\nAll builds completed and copied successfully.")
 
     print(f"McJuice JAR integrated into mcshell/data/")
     print("\nRebuild Complete!")
