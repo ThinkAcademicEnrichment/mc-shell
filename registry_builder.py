@@ -491,12 +491,14 @@ class ApiGenerator:
             "import org.bukkit.Bukkit;",
             "import org.bukkit.World;",
             "import org.bukkit.entity.Player;",
+            "import org.bukkit.entity.EntityType;", # Add this import
             "import org.bukkit.Location;",
             "import org.bukkit.util.Vector;",
             "import org.bukkit.Material;",
             "import java.util.HashMap;",
             "import java.util.Map;",
             "",
+            "@SuppressWarnings(\"deprecation\")", # Good to add for those earlier warnings
             "public class GeneratedCommandRegistry {",
             "    private final Map<String, CommandExecutor> registry = new HashMap<>();",
             "",
@@ -513,10 +515,32 @@ class ApiGenerator:
             for cmd in data.get('commands', []):
                 code.append(self._build_java_lambda(f"{ns}.{cmd['name']}", cmd, target))
 
+        # Append the new method at the end of the class
         code.extend([
             "    }",
             "",
             "    public CommandExecutor getExecutor(String name) { return registry.get(name); }",
+            "",
+            "    public static EntityType matchEntityRobustly(String type) {",
+            "        try {",
+            "            Class<?> registryClass = Class.forName(\"org.bukkit.Registry\");",
+            "            Object entityTypeRegistry = registryClass.getField(\"ENTITY_TYPE\").get(null);",
+            "            ",
+            "            Class<?> namespacedKeyClass = Class.forName(\"org.bukkit.NamespacedKey\");",
+            "            Object key = namespacedKeyClass.getMethod(\"fromString\", String.class).invoke(null, type.toLowerCase(java.util.Locale.ROOT));",
+            "            ",
+            "            if (key != null) {",
+            "                return (EntityType) registryClass.getMethod(\"get\", namespacedKeyClass).invoke(entityTypeRegistry, key);",
+            "            }",
+            "        } catch (Exception e) {",
+            "            try {",
+            "                return EntityType.valueOf(type.toUpperCase(java.util.Locale.ROOT));",
+            "            } catch (IllegalArgumentException ex) {",
+            "                return null;",
+            "            }",
+            "        }",
+            "        return null;",
+            "    }",
             "}"
         ])
 
@@ -569,14 +593,17 @@ class ApiGenerator:
             bukkit_call = bukkit_call.replace(f"{{{n}}}", arg_var)
 
         lines.append('            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {')
+        
+        # INJECT TRY BLOCK HERE
+        lines.append('                try {')
 
         if target_type == "Player":
-            lines.append('                int eid = Integer.parseInt(args[0]);')
-            lines.append('                Player player = session.getPlayerById(eid);')
-            lines.append('                if (player == null) { session.send("Fail,No Player"); return; }')
+            lines.append('                    int eid = Integer.parseInt(args[0]);')
+            lines.append('                    Player player = session.getPlayerById(eid);')
+            lines.append('                    if (player == null) { session.send("Fail,No Player"); return; }')
             exec_on = "player"
         elif target_type == "World":
-            lines.append('                World world = Bukkit.getWorlds().get(0);')
+            lines.append('                    World world = Bukkit.getWorlds().get(0);')
             exec_on = "world"
         else:
             exec_on = "Bukkit"
@@ -588,19 +615,24 @@ class ApiGenerator:
         ret_type = cmd.get('returns', 'void')
 
         if is_block:
-            lines.append(f'                {full_expr}')
+            lines.append(f'                    {full_expr}')
         else:
             if ret_type == 'void':
-                lines.append(f'                {full_expr};')
+                lines.append(f'                    {full_expr};')
             else:
-                lines.append(f'                Object res = {full_expr};')
-                lines.append('                if (res == null) { session.send("null"); }')
+                lines.append(f'                    Object res = {full_expr};')
+                lines.append('                    if (res == null) { session.send("null"); }')
                 if ret_type == 'TileLocation':
-                    lines.append('                else if (res instanceof Location) { Location l = (Location)res; session.send(l.getBlockX()+","+l.getBlockY()+","+l.getBlockZ()); }')
+                    lines.append('                    else if (res instanceof Location) { Location l = (Location)res; session.send(l.getBlockX()+","+l.getBlockY()+","+l.getBlockZ()); }')
                 else:
-                    lines.append('                else if (res instanceof Location) { Location l = (Location)res; session.send(l.getX()+","+l.getY()+","+l.getZ()); }')
-                    lines.append('                else if (res instanceof Vector) { Vector v = (Vector)res; session.send(v.getX()+","+v.getY()+","+v.getZ()); }')
-                    lines.append('                else { session.send(String.valueOf(res)); }')
+                    lines.append('                    else if (res instanceof Location) { Location l = (Location)res; session.send(l.getX()+","+l.getY()+","+l.getZ()); }')
+                    lines.append('                    else if (res instanceof Vector) { Vector v = (Vector)res; session.send(v.getX()+","+v.getY()+","+v.getZ()); }')
+                    lines.append('                    else { session.send(String.valueOf(res)); }')
+
+        # INJECT CATCH BLOCK HERE
+        lines.append('                } catch (Exception e) {')
+        lines.append('                    session.send("Fail," + e.getMessage());')
+        lines.append('                }')
 
         lines.append('            });')
         lines.append('        });')
