@@ -1,10 +1,13 @@
 from mctools import RCONClient, AsyncRCONClient
 from mctools.errors import RCONAuthenticationError
 
-import os
-import re
+import sys
 import yaml
+import pathlib
+from pathlib import Path # this needs better consistency
+import re
 import json
+import os
 import copy
 import math
 import time
@@ -13,9 +16,7 @@ import random
 import asyncio
 import requests
 import shutil
-import pathlib
 import importlib
-from pathlib import Path # this needs better consistency
 import subprocess
 import yarl
 import inspect

@@ -27,6 +27,48 @@ except ImportError:
     PLAYWRIGHT_AVAILABLE = False
     print("Warning: Playwright is not installed. Browser fetching will fail.")
 
+def fetch_minecraft_data(version: str, file_type: str = "blocks"):
+    """
+    Fetches version-specific JSON from the PrismarineJS minecraft-data repo.
+    file_type options: 'blocks', 'items', 'entities'
+    """
+
+    import json
+    # # 1. Load the raw JSON files downloaded from PrismarineJS (minecraft-data)
+    mc_data_path = MC_DATA_DIR / 'materials' / f'{file_type}.json'
+    print(mc_data_path)
+    if mc_data_path.exists():
+        print(f'Loading {file_type} json from cache')
+        with mc_data_path.open('r') as f:
+            return json.load(f)
+
+    url = f"https://raw.githubusercontent.com/PrismarineJS/minecraft-data/master/data/pc/{version}/{file_type}.json"
+    
+    response = requests.get(url)
+    
+    if response.status_code == 200:
+        mc_data_path.touch()
+        with mc_data_path.open('w') as f:
+            json.dump(response.json(),f)
+        return response.json()
+    elif response.status_code == 404:
+        raise ValueError(f"Version '{version}' or file type '{file_type}' not found in minecraft-data.")
+    else:
+        raise Exception(f"Failed to fetch data: HTTP status {response.status_code}")
+
+def test_fetch_mcdata():
+    # --- Quick Test ---
+    try:
+        target_version = "1.21.1"
+
+        # lists of dicts 
+        blocks_data = fetch_minecraft_data(target_version, "blocks")
+        items_data = fetch_minecraft_data(target_version, "items")
+        
+        print(f"Successfully fetched {len(blocks_data)} blocks and {len(items_data)} items for Minecraft {target_version}!")
+        return blocks_data,items_data 
+    except Exception as e:
+        print(f"Error: {e}")
 
 def fetch_with_browser(url, robots_txt_check=False):
     """
