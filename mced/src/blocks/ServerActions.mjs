@@ -108,7 +108,7 @@ this.appendValueInput('value').appendField('Value').setCheck('Number');
     Blockly.Blocks['serveractions_server_give_block_item_projectile'] = {
         init: function() {
             this.appendDummyInput().appendField("Give [count] [block|item|entity] to [target]");
-            this.appendValueInput('material').appendField('Block or Item or Entity').setCheck(['Item', 'Entity', 'Block']);
+            this.appendValueInput('material').appendField('Block or Item or Entity').setCheck(['Block', 'Entity', 'Item']);
 this.appendValueInput('count').appendField('Count').setCheck('Number');
 this.appendValueInput('target').appendField('Target Player').setCheck('String');
             this.setPreviousStatement(true); this.setNextStatement(true);
