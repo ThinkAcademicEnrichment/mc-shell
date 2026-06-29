@@ -19,7 +19,7 @@ rp = urllib.robotparser.RobotFileParser()
 rp.set_url("https://minecraft.fandom.com/robots.txt")
 rp.read()
 
-# Try to import Playwright
+# Try to import Playwright to scrape Minecraft Wiki if required
 try:
     from playwright.sync_api import sync_playwright
     PLAYWRIGHT_AVAILABLE = True
@@ -165,6 +165,8 @@ def make_materials():
     Blocks, Items, and Entities using semantic markers and method descriptions.
     """
 
+    raise DeprecationWarning("!!!!Deprecated! Use the TaxonomyEngine")
+
     # if it exists, it was probably already classified
     if MC_MATERIALS_PATH.exists():
         print(f"loading exising classified materials from {MC_MATERIALS_PATH.name}")
@@ -244,6 +246,9 @@ def make_materials():
     return materials_data
 
 def anaylze_materials():
+
+    raise DeprecationWarning("!!!!Deprecated! Use the TaxonomyEngine")
+
     with MC_MATERIALS_PATH.open('rb') as f:
         materials_data = pickle.load(f)
 
@@ -263,6 +268,9 @@ def anaylze_materials():
 
 def classify_materials_with_bukkit(mcplayer_name):
     ...
+
+    raise DeprecationWarning("!!!!Deprecated! Use the TaxonomyEngine")
+
     try:
         from mcshell.mcplayer import MCPlayer
         mc_player = MCPlayer(mcplayer_name) 
@@ -307,6 +315,9 @@ def make_entity_id_map():
     Scrapes the non-documented Bukkit EntityType.java file to create a mapping
     from the Bukkit enum name string to its legacy numerical ID.
     """
+
+    raise DeprecationWarning("!!!!Deprecated! Use the TaxonomyEngine")
+
     url = "https://raw.githubusercontent.com/Bukkit/Bukkit/master/src/main/java/org/bukkit/entity/EntityType.java"
     java_code_html = fetch_with_browser(url)
 
@@ -358,6 +369,9 @@ def make_item_id_map(force_refresh=False):
     Returns:
         dict: The mapping of Spigot Name -> minecraft:namespaced_id
     """
+
+    raise DeprecationWarning("!!!!Deprecated! Use the TaxonomyEngine")
+
     if not MC_ITEM_ID_MAP_PATH.parent.exists():
         MC_ITEM_ID_MAP_PATH.parent.mkdir(parents=True)
 
