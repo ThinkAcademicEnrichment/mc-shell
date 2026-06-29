@@ -1,3 +1,4 @@
+from site import ENABLE_USER_SITE
 import sys
 from pathlib import Path
 import xml.etree.ElementTree as ET
@@ -9,6 +10,8 @@ from registry_builder import RegistryBuilder,ApiGenerator,TaxonomyEngine
 
 from mcshell.mcscraper import make_materials, classify_materials_with_bukkit, make_entity_id_map, make_item_id_map, fetch_minecraft_data
 from mcshell.constants import MC_MATERIALS_PATH,MC_ENTITY_ID_MAP_PATH,MC_APP_SRC_DIR, MC_DATA_DIR, MC_JUICE_SRC_DIR,MC_SHELL_DIR,subprocess,shutil
+
+from registry_config import TAXONOMY_RULES,ENTITY_RULES
 
 def rebuild():
     """
@@ -50,7 +53,7 @@ def rebuild():
 
 
     # 2. Run the Engine
-    engine = TaxonomyEngine(prismarine_blocks, prismarine_items, prismarine_entities,verbose=True)
+    engine = TaxonomyEngine(TAXONOMY_RULES, ENTITY_RULES, prismarine_blocks, prismarine_items, prismarine_entities,verbose=True)
     materials_data, entity_data, entity_groups, picker_groups, variant_config = engine.run()
 
 
