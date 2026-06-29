@@ -177,7 +177,7 @@ namespaces:
           call_args: [int(position.x), int(position.y), int(position.z)]
 
       - name: setBlock
-        bukkit: getBlockAt({x}, {y}, {z}).setType(org.bukkit.Material.valueOf({block}.toUpperCase()))
+        bukkit: getBlockAt({x}, {y}, {z}).setType(org.bukkit.Material.matchMaterial({block}))
         args: [{ name: x, type: int }, { name: y, type: int }, { name: z, type: int }, { name: block, type: String }]
         returns: void
         blockly:
@@ -222,7 +222,7 @@ namespaces:
             int xMin = Math.min({x1}, {x2}), xMax = Math.max({x1}, {x2});
             int yMin = Math.min({y1}, {y2}), yMax = Math.max({y1}, {y2});
             int zMin = Math.min({z1}, {z2}), zMax = Math.max({z1}, {z2});
-            Material mat = Material.valueOf({block}.toUpperCase());
+            Material mat = Material.matchMaterial({block});
             for (int x = xMin; x <= xMax; x++) {
               for (int y = yMin; y <= yMax; y++) {
                 for (int z = zMin; z <= zMax; z++) {
@@ -261,7 +261,7 @@ namespaces:
         returns: int
 
       - name: spawnEntity
-        bukkit: spawnEntity(new Location(world, {x}, {y}, {z}), org.bukkit.entity.EntityType.valueOf({type}.toUpperCase())).getEntityId()
+        bukkit: spawnEntity(new Location(world, {x}, {y}, {z}), GeneratedCommandRegistry.matchEntityRobustly({type})).getEntityId()
         args:
           - { name: x, type: double }
           - { name: y, type: double }
@@ -361,7 +361,7 @@ namespaces:
 
       # --- Loot & Items ---
       - name: dropItem
-        bukkit: dropItemNaturally(new org.bukkit.Location(world, {x}, {y}, {z}), new org.bukkit.inventory.ItemStack(org.bukkit.Material.valueOf({item}.toUpperCase()), {amount}))
+        bukkit: dropItemNaturally(new org.bukkit.Location(world, {x}, {y}, {z}), new org.bukkit.inventory.ItemStack(org.bukkit.Material.matchMaterial({item}), {amount}))
         args:
           - { name: x, type: double }
           - { name: y, type: double }
@@ -408,7 +408,7 @@ namespaces:
             org.bukkit.block.Block b = world.getBlockAt({x}, {y}, {z});
             if (b.getState() instanceof org.bukkit.inventory.InventoryHolder) {
                 org.bukkit.inventory.Inventory inv = ((org.bukkit.inventory.InventoryHolder)b.getState()).getInventory();
-                inv.setItem({slot}, new org.bukkit.inventory.ItemStack(org.bukkit.Material.valueOf({item}.toUpperCase()), {amount}));
+                inv.setItem({slot}, new org.bukkit.inventory.ItemStack(org.bukkit.Material.matchMaterial({item}), {amount}));
             }
           }
         args:

@@ -1,12 +1,4 @@
-import sys
-import yaml
-import pickle
-import pathlib
-import re
-import json
-from pathlib import Path
-
-from mcshell.constants import ic
+from mcshell.constants import *
 
 # --- EXTRACTED CONFIGURATION IMPORT ---
 import registry_config as rc
@@ -19,8 +11,8 @@ MC_APP_SRC_DIR = MC_DATA_DIR / "app_src"
 MC_JUICE_DIR = BASE_DIR / "mcjuice"
 MC_JUICE_SRC_DIR = MC_JUICE_DIR / "src"
 
-MC_MATERIALS_PATH = MC_DATA_DIR / "materials.pkl"
-MC_ENTITY_ID_MAP_PATH = MC_DATA_DIR / "entity_id_map.pkl"
+# MC_MATERIALS_PATH = MC_DATA_DIR / "materials.pkl"
+# MC_ENTITY_ID_MAP_PATH = MC_DATA_DIR / "entity_id_map.pkl"
 
 if str(BASE_DIR) not in sys.path:
     sys.path.append(str(BASE_DIR))
@@ -67,34 +59,21 @@ class RegistryBuilder:
     TITLEACTIONS = rc.TITLEACTIONS
     ACTION_PICKERS = rc.ACTION_PICKERS
     GENERATED_ACTION_PICKERS = rc.GENERATED_ACTION_PICKERS
-    WOOD_TYPES = rc.WOOD_TYPES
-    COLORS_LIST = rc.COLORS_LIST
 
-    VARIANT_CONFIG = rc.VARIANT_CONFIG
-
-    MATERIAL_PICKER_GROUPS = rc.MATERIAL_PICKER_GROUPS
-    ENTITY_GROUPS = rc.ENTITY_GROUPS
+    # now injected in build.by
+    VARIANT_CONFIG = None
+    MATERIAL_PICKER_GROUPS = None
+    ENTITY_GROUPS = None
 
     # sometimes we make Actions classes for local utilities
     GENERATED_ACTIONS_BLACKLIST = ['AdminActions']
 
-    def __init__(self, toolbox_path: pathlib.Path, blocks_dir: pathlib.Path, gens_dir: pathlib.Path, materials_path: pathlib.Path, entity_id_map_path: pathlib.Path):
+    # def __init__(self, toolbox_path: pathlib.Path, blocks_dir: pathlib.Path, gens_dir: pathlib.Path, materials_path: pathlib.Path, entity_id_map_path: pathlib.Path):
+    def __init__(self, toolbox_path: pathlib.Path, blocks_dir: pathlib.Path, gens_dir: pathlib.Path):
         self.toolbox_path = toolbox_path
         self.blocks_dir = blocks_dir
         self.gens_dir = gens_dir
         self.generated_block_pickers = [] # <--- NEW: Tracks exactly what pickers get generated
-
-        try:
-            with materials_path.open('rb') as f:
-                self.materials_data = pickle.load(f)
-        except (FileNotFoundError, EOFError):
-            self.materials_data = {}
-
-        try:
-            with entity_id_map_path.open('rb') as f:
-                self.entity_data = pickle.load(f)
-        except (FileNotFoundError, EOFError):
-            self.entity_data = {}
 
         self.GENERATED_ACTION_CLASSES = []
         self.ACTION_CLASSES = []
@@ -443,8 +422,8 @@ class RegistryBuilder:
         items = [k for k, v in self.materials_data.items() if v.get('is_item')]
         build_category(self.MATERIAL_PICKER_GROUPS, items, "Item")
 
-        entities = [k for k in self.entity_data.keys()]
-        build_category(self.ENTITY_GROUPS, entities, "Entity")
+        # entities = [k for k in self.entity_data.keys()]
+        build_category(self.ENTITY_GROUPS, self.entity_data, "Entity")
 
         out_path = MC_DATA_DIR / "taxonomy.json"
         with open(out_path, "w") as f:
@@ -491,12 +470,14 @@ class ApiGenerator:
             "import org.bukkit.Bukkit;",
             "import org.bukkit.World;",
             "import org.bukkit.entity.Player;",
+            "import org.bukkit.entity.EntityType;", # Add this import
             "import org.bukkit.Location;",
             "import org.bukkit.util.Vector;",
             "import org.bukkit.Material;",
             "import java.util.HashMap;",
             "import java.util.Map;",
             "",
+            "@SuppressWarnings(\"deprecation\")", # Good to add for those earlier warnings
             "public class GeneratedCommandRegistry {",
             "    private final Map<String, CommandExecutor> registry = new HashMap<>();",
             "",
@@ -513,10 +494,32 @@ class ApiGenerator:
             for cmd in data.get('commands', []):
                 code.append(self._build_java_lambda(f"{ns}.{cmd['name']}", cmd, target))
 
+        # Append the new method at the end of the class
         code.extend([
             "    }",
             "",
             "    public CommandExecutor getExecutor(String name) { return registry.get(name); }",
+            "",
+            "    public static EntityType matchEntityRobustly(String type) {",
+            "        try {",
+            "            Class<?> registryClass = Class.forName(\"org.bukkit.Registry\");",
+            "            Object entityTypeRegistry = registryClass.getField(\"ENTITY_TYPE\").get(null);",
+            "            ",
+            "            Class<?> namespacedKeyClass = Class.forName(\"org.bukkit.NamespacedKey\");",
+            "            Object key = namespacedKeyClass.getMethod(\"fromString\", String.class).invoke(null, type.toLowerCase(java.util.Locale.ROOT));",
+            "            ",
+            "            if (key != null) {",
+            "                return (EntityType) registryClass.getMethod(\"get\", namespacedKeyClass).invoke(entityTypeRegistry, key);",
+            "            }",
+            "        } catch (Exception e) {",
+            "            try {",
+            "                return EntityType.valueOf(type.toUpperCase(java.util.Locale.ROOT));",
+            "            } catch (IllegalArgumentException ex) {",
+            "                return null;",
+            "            }",
+            "        }",
+            "        return null;",
+            "    }",
             "}"
         ])
 
@@ -569,14 +572,17 @@ class ApiGenerator:
             bukkit_call = bukkit_call.replace(f"{{{n}}}", arg_var)
 
         lines.append('            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {')
+        
+        # INJECT TRY BLOCK HERE
+        lines.append('                try {')
 
         if target_type == "Player":
-            lines.append('                int eid = Integer.parseInt(args[0]);')
-            lines.append('                Player player = session.getPlayerById(eid);')
-            lines.append('                if (player == null) { session.send("Fail,No Player"); return; }')
+            lines.append('                    int eid = Integer.parseInt(args[0]);')
+            lines.append('                    Player player = session.getPlayerById(eid);')
+            lines.append('                    if (player == null) { session.send("Fail,No Player"); return; }')
             exec_on = "player"
         elif target_type == "World":
-            lines.append('                World world = Bukkit.getWorlds().get(0);')
+            lines.append('                    World world = Bukkit.getWorlds().get(0);')
             exec_on = "world"
         else:
             exec_on = "Bukkit"
@@ -588,19 +594,24 @@ class ApiGenerator:
         ret_type = cmd.get('returns', 'void')
 
         if is_block:
-            lines.append(f'                {full_expr}')
+            lines.append(f'                    {full_expr}')
         else:
             if ret_type == 'void':
-                lines.append(f'                {full_expr};')
+                lines.append(f'                    {full_expr};')
             else:
-                lines.append(f'                Object res = {full_expr};')
-                lines.append('                if (res == null) { session.send("null"); }')
+                lines.append(f'                    Object res = {full_expr};')
+                lines.append('                    if (res == null) { session.send("null"); }')
                 if ret_type == 'TileLocation':
-                    lines.append('                else if (res instanceof Location) { Location l = (Location)res; session.send(l.getBlockX()+","+l.getBlockY()+","+l.getBlockZ()); }')
+                    lines.append('                    else if (res instanceof Location) { Location l = (Location)res; session.send(l.getBlockX()+","+l.getBlockY()+","+l.getBlockZ()); }')
                 else:
-                    lines.append('                else if (res instanceof Location) { Location l = (Location)res; session.send(l.getX()+","+l.getY()+","+l.getZ()); }')
-                    lines.append('                else if (res instanceof Vector) { Vector v = (Vector)res; session.send(v.getX()+","+v.getY()+","+v.getZ()); }')
-                    lines.append('                else { session.send(String.valueOf(res)); }')
+                    lines.append('                    else if (res instanceof Location) { Location l = (Location)res; session.send(l.getX()+","+l.getY()+","+l.getZ()); }')
+                    lines.append('                    else if (res instanceof Vector) { Vector v = (Vector)res; session.send(v.getX()+","+v.getY()+","+v.getZ()); }')
+                    lines.append('                    else { session.send(String.valueOf(res)); }')
+
+        # INJECT CATCH BLOCK HERE
+        lines.append('                } catch (Exception e) {')
+        lines.append('                    session.send("Fail," + e.getMessage());')
+        lines.append('                }')
 
         lines.append('            });')
         lines.append('        });')
@@ -860,6 +871,181 @@ class ApiGenerator:
         self.python_actions_out.parent.mkdir(parents=True, exist_ok=True)
         self.python_actions_out.write_text("\n".join(code))
 
+
+class TaxonomyEngine:
+    def __init__(self, taxonomy_rules, entity_rules, prismarine_blocks, prismarine_items, prismarine_entities, verbose=False):
+        self.taxonomy_rules = taxonomy_rules
+        self.entity_rules = entity_rules
+        self.raw_blocks = prismarine_blocks
+        self.raw_items = prismarine_items
+        self.raw_entities = prismarine_entities
+        self.verbose = verbose
+        
+        # Outputs
+        self.materials_data = {}
+        self.entity_data = {}
+        
+        self.material_picker_groups = {}
+        self.entity_groups = {}
+        self.variant_config = {}
+
+    def run(self):
+        self._normalize_data()
+        self._apply_material_rules()
+        self._apply_entity_rules()
+
+        # Generate the flat, sorted list of all known uppercase entities
+        entities_data = sorted(list(self.entity_data.keys()))
+        
+        # Return exactly the 5-tuple your updated workflow expects
+        return self.materials_data, entities_data, self.entity_groups, self.material_picker_groups, self.variant_config
+
+    def _normalize_data(self):
+        """Stage 1: Merge blocks, items, and entities to Bukkit-style UPPERCASE."""
+        for block in self.raw_blocks:
+            self.materials_data[block["name"].upper()] = {'is_block': True, 'is_item': False}
+            
+        for item in self.raw_items:
+            name = item["name"].upper()
+            if name in self.materials_data:
+                self.materials_data[name]['is_item'] = True
+            else:
+                self.materials_data[name] = {'is_block': False, 'is_item': True}
+                
+        for entity in self.raw_entities:
+            name = entity["name"].upper()
+            # Store the full dictionary so we can access attributes like 'category' later
+            self.entity_data[name] = entity 
+
+    def _apply_material_rules(self):
+        """Stage 2a: Run materials through self.rules."""
+        self.misc_materials = []
+        self.material_rule_hits = {rule["group"]: 0 for rule in self.taxonomy_rules}
+
+        for rule in self.taxonomy_rules:
+            if "exact_list" in rule and isinstance(rule["exact_list"], list):
+                rule["exact_list"] = set(rule["exact_list"])
+
+        for mat_name in self.materials_data.keys():
+            matched = False
+            
+            for rule in self.taxonomy_rules:
+                if "exclude" in rule and rule["exclude"].match(mat_name):
+                    continue
+
+                is_match = False
+                prefix = None
+
+                if "exact_list" in rule and mat_name in rule["exact_list"]:
+                    is_match = True
+                elif "regex" in rule:
+                    match = rule["regex"].match(mat_name)
+                    if match:
+                        is_match = True
+                        if rule.get("is_variant"):
+                            prefix = match.group(1)
+
+                if is_match:
+                    group_name = rule["group"]
+                    if group_name not in self.material_picker_groups:
+                        self.material_picker_groups[group_name] = []
+                        
+                    self.material_picker_groups[group_name].append(mat_name)
+                    self.material_rule_hits[group_name] += 1
+                    
+                    if rule.get("is_variant") and prefix:
+                        var_type = rule["variant_type"]
+                        if var_type not in self.variant_config:
+                            self.variant_config[var_type] = {
+                                "id": f"picker_{var_type.lower()}_types",
+                                "label": rule["label"],
+                                "prefixes": set(), 
+                                "input_type": rule["input_type"],
+                                "shadow": f"picker_{var_type.lower()}_types"
+                            }
+                        self.variant_config[var_type]["prefixes"].add(prefix)
+
+                    matched = True
+                    break 
+            
+            if not matched:
+                if "miscellaneous" not in self.material_picker_groups:
+                    self.material_picker_groups["miscellaneous"] = []
+                self.material_picker_groups["miscellaneous"].append(mat_name)
+                self.misc_materials.append(mat_name)
+
+        for var in self.variant_config.values():
+            var["prefixes"] = sorted(list(var["prefixes"]))
+
+    def _apply_entity_rules(self):
+        """Stage 2b: Run entities through self.entity_rules."""
+        self.misc_entities = []
+        self.entity_rule_hits = {rule["group"]: 0 for rule in self.entity_rules}
+
+        for rule in self.entity_rules:
+            if "exact_list" in rule and isinstance(rule["exact_list"], list):
+                rule["exact_list"] = set(rule["exact_list"])
+
+        for ent_name, ent_attributes in self.entity_data.items():
+            matched = False
+            
+            for rule in self.entity_rules:
+                is_match = False
+
+                if "exact_list" in rule and ent_name in rule["exact_list"]:
+                    is_match = True
+                elif "category_match" in rule and ent_attributes.get("category") == rule["category_match"]:
+                    is_match = True
+                elif "regex" in rule and rule["regex"].match(ent_name):
+                    is_match = True
+
+                if is_match:
+                    group_name = rule["group"]
+                    if group_name not in self.entity_groups:
+                        self.entity_groups[group_name] = []
+                        
+                    self.entity_groups[group_name].append(ent_name)
+                    self.entity_rule_hits[group_name] += 1
+                    matched = True
+                    break 
+            
+            if not matched:
+                if "other_entities" not in self.entity_groups:
+                    self.entity_groups["other_entities"] = []
+                self.entity_groups["other_entities"].append(ent_name)
+                self.misc_entities.append(ent_name)
+
+        if self.verbose:
+            self._print_telemetry()
+
+    def _print_telemetry(self):
+        print("\n" + "="*50)
+        print(" TAXONOMY ENGINE VERBOSE REPORT")
+        print("="*50)
+        
+        # --- Materials ---
+        print(f"\n[ MATERIALS - Total: {len(self.materials_data)} ]")
+        for group, hits in self.material_rule_hits.items():
+            print(f"  {group:<20} : {hits} items")
+        print(f"  {'miscellaneous':<20} : {len(self.misc_materials)} items")
+        
+        print("\n[ Extracted Variant Prefixes ]")
+        for var_type, config in self.variant_config.items():
+            preview = ", ".join(config['prefixes'][:3])
+            print(f"  {var_type:<10} : {len(config['prefixes']):>2} prefixes -> [{preview}...]")
+            
+        # --- Entities ---
+        print(f"\n[ ENTITIES - Total: {len(self.entity_data)} ]")
+        for group, hits in self.entity_rule_hits.items():
+            print(f"  {group:<20} : {hits} entities")
+        print(f"  {'other_entities':<20} : {len(self.misc_entities)} entities")
+
+        if self.misc_entities:
+            print(f"\n[ Uncategorized Entities (First 15 of {len(self.misc_entities)}) ]")
+            print("  " + ", ".join(self.misc_entities[:15]))
+
+        print("="*50 + "\n")
+
 if __name__ == "__main__":
     # 1. RUN API GENERATOR FIRST so generated_actions.py is fully populated and fresh on disk
     gen = ApiGenerator(
@@ -871,12 +1057,34 @@ if __name__ == "__main__":
     )
     gen.run()
 
-    # 2. RUN REGISTRY BUILDER SECOND so it dynamically discovers the generated classes
+    from mcshell.mcscraper import fetch_minecraft_data
+    print("Step 1: Fetching JSON from minecraft-data...")
+    prismarine_blocks = fetch_minecraft_data('1.21.11','blocks')
+    prismarine_items = fetch_minecraft_data('1.21.11','items')
+    prismarine_entities = fetch_minecraft_data('1.21.11','entities')
+
+
+    engine = TaxonomyEngine(prismarine_blocks, prismarine_items, prismarine_entities,verbose=True)
+    materials_data, entity_data, entity_groups, picker_groups, variant_config = engine.run()
+
+
+    print("\nStep 3: Building Blockly Registries...")
     builder = RegistryBuilder(
-        MC_APP_SRC_DIR / 'toolbox.xml',
-        MC_APP_SRC_DIR / 'blocks',
-        MC_APP_SRC_DIR / 'generators' / 'python',
-        MC_MATERIALS_PATH,
-        MC_ENTITY_ID_MAP_PATH
+        toolbox_path=MC_APP_SRC_DIR / 'toolbox.xml',
+        blocks_dir=MC_APP_SRC_DIR / 'blocks',
+        gens_dir=MC_APP_SRC_DIR / 'generators' / 'python',
     )
+
+    # 3. Inject it straight into your frozen RegistryBuilder!
+    builder.materials_data = materials_data
+    builder.entity_data = entity_data
+    builder.ENTITY_GROUPS = entity_groups
+    builder.MATERIAL_PICKER_GROUPS = picker_groups
+    builder.VARIANT_CONFIG = variant_config
+
+    # This generates:
+    # 1. blocks/materials.mjs, blocks/items.mjs, blocks/entities.mjs
+    # 2. generators/python/materials.mjs, ... etc.
+    # 3. Updates toolbox.xml via blockapily's structured XML injection
     builder.build_all()
+
