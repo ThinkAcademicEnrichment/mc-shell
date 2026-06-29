@@ -1,8 +1,8 @@
 # ========================================== #
 #     MC-Shell UI & Design Tokens            #
 # ========================================== #
-# This file dictates the visual appearance, categories, and dropdown
-# options for the Blockly frontend.
+# This file dictates the visual appearance, categories, dropdowns, and block/item/entity rules
+# for the Blockly frontend.
 
 import re
 

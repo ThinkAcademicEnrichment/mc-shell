@@ -31,14 +31,6 @@ def rebuild():
     prismarine_items = fetch_minecraft_data('1.21.11','items')
     prismarine_entities = fetch_minecraft_data('1.21.11','entities')
 
-
-    # print("Step 1: Scraping latest Minecraft data...")
-    # # These functions now produce structured dictionaries for Blocks/Items/Entities
-    # make_materials()
-    # print("[!!] Remember to use classify_materials_with_bukkit manually...")
-    # make_entity_id_map()
-    # make_item_id_map()
-
     print("\nStep 2: Building mcjuice Command Registry...")
     gen = ApiGenerator(
         MC_DATA_DIR / "mcjuice_api.yaml",
@@ -62,11 +54,9 @@ def rebuild():
         toolbox_path=MC_APP_SRC_DIR / 'toolbox.xml',
         blocks_dir=MC_APP_SRC_DIR / 'blocks',
         gens_dir=MC_APP_SRC_DIR / 'generators' / 'python',
-        # materials_path=MC_MATERIALS_PATH,
-        # entity_id_map_path=MC_ENTITY_ID_MAP_PATH
     )
 
-    # 3. Inject it straight into your frozen RegistryBuilder!
+    # 3. Inject it straight into RegistryBuilder!
     builder.materials_data = materials_data
     builder.entity_data = entity_data
     builder.ENTITY_GROUPS = entity_groups

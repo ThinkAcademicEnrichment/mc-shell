@@ -65,16 +65,6 @@ class RegistryBuilder:
     MATERIAL_PICKER_GROUPS = None
     ENTITY_GROUPS = None
 
-    # VARIANT_CONFIG = rc.VARIANT_CONFIG
-    # MATERIAL_PICKER_GROUPS = rc.MATERIAL_PICKER_GROUPS
-    # ENTITY_GROUPS = rc.ENTITY_GROUPS
-
-
-    # WOOD_TYPES = rc.WOOD_TYPES
-    # COLORS_LIST = rc.COLORS_LIST
-
-
-
     # sometimes we make Actions classes for local utilities
     GENERATED_ACTIONS_BLACKLIST = ['AdminActions']
 
@@ -84,18 +74,6 @@ class RegistryBuilder:
         self.blocks_dir = blocks_dir
         self.gens_dir = gens_dir
         self.generated_block_pickers = [] # <--- NEW: Tracks exactly what pickers get generated
-
-        # try:
-        #     with materials_path.open('rb') as f:
-        #         self.materials_data = pickle.load(f)
-        # except (FileNotFoundError, EOFError):
-        #     self.materials_data = {}
-
-        # try:
-        #     with entity_id_map_path.open('rb') as f:
-        #         self.entity_data = pickle.load(f)
-        # except (FileNotFoundError, EOFError):
-        #     self.entity_data = {}
 
         self.GENERATED_ACTION_CLASSES = []
         self.ACTION_CLASSES = []
@@ -1079,6 +1057,7 @@ if __name__ == "__main__":
     )
     gen.run()
 
+    from mcshell.mcscraper import fetch_minecraft_data
     print("Step 1: Fetching JSON from minecraft-data...")
     prismarine_blocks = fetch_minecraft_data('1.21.11','blocks')
     prismarine_items = fetch_minecraft_data('1.21.11','items')
