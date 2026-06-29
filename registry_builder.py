@@ -1,12 +1,4 @@
-import sys
-import yaml
-import pickle
-import pathlib
-import re
-import json
-from pathlib import Path
-
-from mcshell.constants import ic
+from mcshell.constants import *
 
 # --- EXTRACTED CONFIGURATION IMPORT ---
 import registry_config as rc
@@ -19,8 +11,8 @@ MC_APP_SRC_DIR = MC_DATA_DIR / "app_src"
 MC_JUICE_DIR = BASE_DIR / "mcjuice"
 MC_JUICE_SRC_DIR = MC_JUICE_DIR / "src"
 
-MC_MATERIALS_PATH = MC_DATA_DIR / "materials.pkl"
-MC_ENTITY_ID_MAP_PATH = MC_DATA_DIR / "entity_id_map.pkl"
+# MC_MATERIALS_PATH = MC_DATA_DIR / "materials.pkl"
+# MC_ENTITY_ID_MAP_PATH = MC_DATA_DIR / "entity_id_map.pkl"
 
 if str(BASE_DIR) not in sys.path:
     sys.path.append(str(BASE_DIR))
@@ -67,34 +59,43 @@ class RegistryBuilder:
     TITLEACTIONS = rc.TITLEACTIONS
     ACTION_PICKERS = rc.ACTION_PICKERS
     GENERATED_ACTION_PICKERS = rc.GENERATED_ACTION_PICKERS
-    WOOD_TYPES = rc.WOOD_TYPES
-    COLORS_LIST = rc.COLORS_LIST
 
-    VARIANT_CONFIG = rc.VARIANT_CONFIG
+    # now injected in build.by
+    VARIANT_CONFIG = None
+    MATERIAL_PICKER_GROUPS = None
+    ENTITY_GROUPS = None
 
-    MATERIAL_PICKER_GROUPS = rc.MATERIAL_PICKER_GROUPS
-    ENTITY_GROUPS = rc.ENTITY_GROUPS
+    # VARIANT_CONFIG = rc.VARIANT_CONFIG
+    # MATERIAL_PICKER_GROUPS = rc.MATERIAL_PICKER_GROUPS
+    # ENTITY_GROUPS = rc.ENTITY_GROUPS
+
+
+    # WOOD_TYPES = rc.WOOD_TYPES
+    # COLORS_LIST = rc.COLORS_LIST
+
+
 
     # sometimes we make Actions classes for local utilities
     GENERATED_ACTIONS_BLACKLIST = ['AdminActions']
 
-    def __init__(self, toolbox_path: pathlib.Path, blocks_dir: pathlib.Path, gens_dir: pathlib.Path, materials_path: pathlib.Path, entity_id_map_path: pathlib.Path):
+    # def __init__(self, toolbox_path: pathlib.Path, blocks_dir: pathlib.Path, gens_dir: pathlib.Path, materials_path: pathlib.Path, entity_id_map_path: pathlib.Path):
+    def __init__(self, toolbox_path: pathlib.Path, blocks_dir: pathlib.Path, gens_dir: pathlib.Path):
         self.toolbox_path = toolbox_path
         self.blocks_dir = blocks_dir
         self.gens_dir = gens_dir
         self.generated_block_pickers = [] # <--- NEW: Tracks exactly what pickers get generated
 
-        try:
-            with materials_path.open('rb') as f:
-                self.materials_data = pickle.load(f)
-        except (FileNotFoundError, EOFError):
-            self.materials_data = {}
+        # try:
+        #     with materials_path.open('rb') as f:
+        #         self.materials_data = pickle.load(f)
+        # except (FileNotFoundError, EOFError):
+        #     self.materials_data = {}
 
-        try:
-            with entity_id_map_path.open('rb') as f:
-                self.entity_data = pickle.load(f)
-        except (FileNotFoundError, EOFError):
-            self.entity_data = {}
+        # try:
+        #     with entity_id_map_path.open('rb') as f:
+        #         self.entity_data = pickle.load(f)
+        # except (FileNotFoundError, EOFError):
+        #     self.entity_data = {}
 
         self.GENERATED_ACTION_CLASSES = []
         self.ACTION_CLASSES = []
@@ -443,8 +444,8 @@ class RegistryBuilder:
         items = [k for k, v in self.materials_data.items() if v.get('is_item')]
         build_category(self.MATERIAL_PICKER_GROUPS, items, "Item")
 
-        entities = [k for k in self.entity_data.keys()]
-        build_category(self.ENTITY_GROUPS, entities, "Entity")
+        # entities = [k for k in self.entity_data.keys()]
+        build_category(self.ENTITY_GROUPS, self.entity_data, "Entity")
 
         out_path = MC_DATA_DIR / "taxonomy.json"
         with open(out_path, "w") as f:
@@ -912,3 +913,608 @@ if __name__ == "__main__":
         MC_ENTITY_ID_MAP_PATH
     )
     builder.build_all()
+
+COLORS_LIST = [
+    "WHITE", "ORANGE", "MAGENTA", "LIGHT_BLUE", "YELLOW", "LIME", 
+    "PINK", "GRAY", "LIGHT_GRAY", "CYAN", "PURPLE", "BLUE", 
+    "BROWN", "GREEN", "RED", "BLACK"
+]
+
+# Dynamically builds: (WHITE|ORANGE|MAGENTA|...)
+COLORS_REGEX_GROUP = "(" + "|".join(COLORS_LIST) + ")"
+
+TAXONOMY_RULES = [
+    {
+        "group": "redstone_components",
+        "exact_list": [
+            "REDSTONE",
+            "REDSTONE_WALL_TORCH",
+            "REDSTONE_WIRE",
+            "REDSTONE_BLOCK",
+            "REDSTONE_TORCH",
+            "REPEATER",
+            "COMPARATOR",
+            "PISTON",
+            "STICKY_PISTON",
+            "SLIME_BLOCK",
+            "HONEY_BLOCK",
+            "OBSERVER",
+            "DROPPER",
+            "DISPENSER",
+            "HOPPER",
+            "LECTERN",
+            "LEVER",
+            "DAYLIGHT_DETECTOR",
+            "TRIPWIRE_HOOK",
+            "TARGET",
+            "NOTE_BLOCK",
+            "RAIL",
+            "POWERED_RAIL",
+            "DETECTOR_RAIL",
+            "ACTIVATOR_RAIL",
+            "REDSTONE_LAMP",
+            "TRIPWIRE",
+        ],
+        "is_variant": False
+    },
+    {
+        "group": "lighting",
+        "exact_list": [
+            "TORCH",
+            "SOUL_TORCH",
+            "LANTERN",
+            "SOUL_LANTERN",
+            "GLOWSTONE",
+            "SEA_LANTERN",
+            "OCHRE_FROGLIGHT",
+            "PEARLESCENT_FROGLIGHT",
+            "VERDANT_FROGLIGHT",
+            "COPPER_LANTERN",
+            "SHROOMLIGHT",
+            "JACK_O_LANTERN",
+            "BEACON",
+            "END_ROD",
+        ],
+        "is_variant": False
+    },
+    {
+        "group": "nature",
+        "exact_list": [
+            "MOSS_BLOCK",
+            "VINE",
+            "CAVE_VINES",
+            "TWISTING_VINES",
+            "WEEPING_VINES",
+            "LILY_PAD",
+            "SUGAR_CANE",
+            "BAMBOO",
+            "CACTUS",
+        ],
+        "is_variant": False
+    },
+    {
+        "group": "flowers",
+        "exact_list": [
+            "DANDELION",
+            "POPPY",
+            "BLUE_ORCHID",
+            "ALLIUM",
+            "AZURE_BLUET",
+            "RED_TULIP",
+            "ORANGE_TULIP",
+            "WHITE_TULIP",
+            "PINK_TULIP",
+            "OXEYE_DAISY",
+            "CORNFLOWER",
+            "LILY_OF_THE_VALLEY",
+            "WITHER_ROSE",
+            "SUNFLOWER",
+            "LILAC",
+            "ROSE_BUSH",
+            "PEONY",
+        ],
+        "is_variant": False
+    },
+    {
+        "group": "functional_storage",
+        "exact_list": [
+            "CHEST",
+            "TRAPPED_CHEST",
+            "BARREL",
+            "ENDER_CHEST",
+            "CRAFTER",
+            "FURNACE",
+            "BLAST_FURNACE",
+            "SMOKER",
+        ],
+        "is_variant": False
+    },
+    {
+        "group": "spawning",
+        "exact_list": ["SPAWNER", "TRIAL_SPAWNER", "FROGSPAWN", "RESPAWN_ANCHOR"],
+        "is_variant": False
+    },
+    {
+        "group": "spawn_eggs",
+        "exact_list": [
+            "ALLAY_SPAWN_EGG",
+            "ARMADILLO_SPAWN_EGG",
+            "AXOLOTL_SPAWN_EGG",
+            "BAT_SPAWN_EGG",
+            "BEE_SPAWN_EGG",
+            "BLAZE_SPAWN_EGG",
+            "BOGGED_SPAWN_EGG",
+            "BREEZE_SPAWN_EGG",
+            "CAMEL_HUSK_SPAWN_EGG",
+            "CAMEL_SPAWN_EGG",
+            "CAT_SPAWN_EGG",
+            "CAVE_SPIDER_SPAWN_EGG",
+            "CHICKEN_SPAWN_EGG",
+            "COD_SPAWN_EGG",
+            "COPPER_GOLEM_SPAWN_EGG",
+            "COW_SPAWN_EGG",
+            "CREAKING_SPAWN_EGG",
+            "CREEPER_SPAWN_EGG",
+            "DOLPHIN_SPAWN_EGG",
+            "DONKEY_SPAWN_EGG",
+            "DROWNED_SPAWN_EGG",
+            "ELDER_GUARDIAN_SPAWN_EGG",
+            "ENDER_DRAGON_SPAWN_EGG",
+            "ENDERMAN_SPAWN_EGG",
+            "ENDERMITE_SPAWN_EGG",
+            "EVOKER_SPAWN_EGG",
+            "FOX_SPAWN_EGG",
+            "FROG_SPAWN_EGG",
+            "FROGSPAWN",
+            "GHAST_SPAWN_EGG",
+            "GLOW_SQUID_SPAWN_EGG",
+            "GOAT_SPAWN_EGG",
+            "GUARDIAN_SPAWN_EGG",
+            "HAPPY_GHAST_SPAWN_EGG",
+            "HOGLIN_SPAWN_EGG",
+            "HORSE_SPAWN_EGG",
+            "HUSK_SPAWN_EGG",
+            "IRON_GOLEM_SPAWN_EGG",
+            "LLAMA_SPAWN_EGG",
+            "MAGMA_CUBE_SPAWN_EGG",
+            "MOOSHROOM_SPAWN_EGG",
+            "MULE_SPAWN_EGG",
+            "NAUTILUS_SPAWN_EGG",
+            "OCELOT_SPAWN_EGG",
+            "PANDA_SPAWN_EGG",
+            "PARCHED_SPAWN_EGG",
+            "PARROT_SPAWN_EGG",
+            "PHANTOM_SPAWN_EGG",
+            "PIG_SPAWN_EGG",
+            "PIGLIN_BRUTE_SPAWN_EGG",
+            "PIGLIN_SPAWN_EGG",
+            "PILLAGER_SPAWN_EGG",
+            "POLAR_BEAR_SPAWN_EGG",
+            "PUFFERFISH_SPAWN_EGG",
+            "RABBIT_SPAWN_EGG",
+            "RAVAGER_SPAWN_EGG",
+            "RESPAWN_ANCHOR",
+            "SALMON_SPAWN_EGG",
+            "SHEEP_SPAWN_EGG",
+            "SHULKER_SPAWN_EGG",
+            "SILVERFISH_SPAWN_EGG",
+            "SKELETON_HORSE_SPAWN_EGG",
+            "SKELETON_SPAWN_EGG",
+            "SLIME_SPAWN_EGG",
+            "SNIFFER_SPAWN_EGG",
+            "SNOW_GOLEM_SPAWN_EGG",
+            "SPAWNER",
+            "SPIDER_SPAWN_EGG",
+            "SQUID_SPAWN_EGG",
+            "STRAY_SPAWN_EGG",
+            "STRIDER_SPAWN_EGG",
+            "TADPOLE_SPAWN_EGG",
+            "TRADER_LLAMA_SPAWN_EGG",
+            "TRIAL_SPAWNER",
+            "TROPICAL_FISH_SPAWN_EGG",
+            "TURTLE_SPAWN_EGG",
+            "VEX_SPAWN_EGG",
+            "VILLAGER_SPAWN_EGG",
+            "VINDICATOR_SPAWN_EGG",
+            "WANDERING_TRADER_SPAWN_EGG",
+            "WARDEN_SPAWN_EGG",
+            "WITCH_SPAWN_EGG",
+            "WITHER_SKELETON_SPAWN_EGG",
+            "WITHER_SPAWN_EGG",
+            "WOLF_SPAWN_EGG",
+            "ZOGLIN_SPAWN_EGG",
+            "ZOMBIE_HORSE_SPAWN_EGG",
+            "ZOMBIE_NAUTILUS_SPAWN_EGG",
+            "ZOMBIE_SPAWN_EGG",
+            "ZOMBIE_VILLAGER_SPAWN_EGG",
+            "ZOMBIFIED_PIGLIN_SPAWN_EGG",
+        ],
+        "is_variant": False
+    },
+
+    {
+        "group": "world",
+        "exact_list": [
+            "AIR", "STONE", "GRANITE", "DIORITE", "ANDESITE", "DEEPSLATE",
+            "CALCITE", "TUFF", "DIRT", "COARSE_DIRT", "ROOTED_DIRT",
+            "GRASS_BLOCK", "PODZOL", "MYCELIUM", "DIRT_PATH", "SAND",
+            "QUARTZ", "RED_SAND", "GRAVEL", "CLAY", "ICE", "PACKED_ICE",
+            "BLUE_ICE", "SNOW", "SNOW_BLOCK", "WATER", "LAVA", "BEDROCK",
+            "OBSIDIAN", "CRYING_OBSIDIAN", "MAGMA_BLOCK"
+        ],
+        "is_variant": False
+    },
+
+    {
+        "group": "ores",
+        "regex": re.compile(r".*_ORE$"),
+        "is_variant": False
+    },
+    {
+        "group": "trims",
+        "regex": re.compile(r".*_ARMOR_TRIM_SMITHING_TEMPLATE$"),
+        "is_variant": False
+    },
+    {
+        "group": "seeds",
+        "regex": re.compile(r".*_SEEDS$"),
+        "is_variant": False
+    },
+    {
+        "group": "charges",
+        "regex": re.compile(r".*_CHARGE$"),
+        "is_variant": False
+    },
+    {
+        "group": "fish",
+        "regex": re.compile(r".*_FISH$"),
+        "is_variant": False
+    },
+    {
+        "group": "music",
+        "regex": re.compile(r"^(JUKEBOX|MUSIC_DISC_.*)$"),
+        "is_variant": False
+    },
+    {
+        "group": "buckets",
+        "regex": re.compile(r".*_BUCKET$"),
+        "is_variant": False
+    },
+    {
+        "group": "books",
+        "regex": re.compile(r".*_BOOK$"),
+        "is_variant": False
+    },
+    {
+        "group": "commands",
+        "regex": re.compile(r".*_?COMMAND_BLOCK$"),
+        "is_variant": False
+    },
+    {
+        "group": "food",
+        "exact_list": [
+            "APPLE",
+            "BAKED_POTATO",
+            "BEEF",
+            "BEETROOT",
+            "BEETROOT_SOUP",
+            "BREAD",
+            "CARROT",
+            "CHICKEN",
+            "CHORUS_FRUIT",
+            "COD",
+            "COOKED_BEEF",
+            "COOKED_CHICKEN",
+            "COOKED_COD",
+            "COOKED_MUTTON",
+            "COOKED_PORKCHOP",
+            "COOKED_RABBIT",
+            "COOKED_SALMON",
+            "COOKIE",
+            "DRIED_KELP",
+            "ENCHANTED_GOLDEN_APPLE",
+            "GLOW_BERRIES",
+            "GOLDEN_APPLE",
+            "GOLDEN_CARROT",
+            "HONEY_BOTTLE",
+            "MELON_SLICE",
+            "MUSHROOM_STEW",
+            "MUTTON",
+            "POISONOUS_POTATO",
+            "PORKCHOP",
+            "POTATO",
+            "PUFFERFISH",
+            "PUMPKIN_PIE",
+            "RABBIT",
+            "RABBIT_STEW",
+            "ROTTEN_FLESH",
+            "SALMON",
+            "SPIDER_EYE",
+            "SUSPICIOUS_STEW",
+            "SWEET_BERRIES",
+            "TROPICAL_FISH",
+        ],
+        "is_variant": False
+    },
+    {
+        "group": "glass",
+        "regex": re.compile(r".*GLASS.*"),
+        "is_variant": False
+    },
+    {
+        "group": "bars",
+        "regex": re.compile(r".*_BARS$"),
+        "is_variant": False
+    },
+    {
+        "group": "chains",
+        "regex": re.compile(r".*_CHAIN$"),
+        "is_variant": False
+    },
+    {
+        "group": "walls",
+        "regex": re.compile(r".*_WALL$"),
+        "is_variant": False
+    },
+    {
+        "group": "plants",
+        "regex": re.compile(r".*_PLANT$"),
+        "is_variant": False
+    },
+    {
+        "group": "woods_and_logs",
+        "regex": re.compile(r"^(.*)_(LOG|WOOD|PLANKS|SAPLING|LEAVES|STRIPPED_LOG|STRIPPED_WOOD)$"),
+        "is_variant": True,
+        "variant_type": "WOOD",
+        "input_type": "MinecraftWood",
+        "label": "Wood Type"
+    },
+    {
+        "group": "armor",
+        "regex": re.compile(r"^(.*)_(HELMET|LEGGINGS|CHESTPLATE|BOOTS|HORSE_ARMOR)$"),
+        "is_variant": True,
+        "variant_type": "ARMOR_TYPES",
+        "input_type": "MinecraftArmor",
+        "label": "Armor Type"
+    },
+    {
+        "group": "tools",
+        "regex": re.compile(r"^(.*)_(AXE|HOE|PICKAXE|SHOVEL)$"),
+        "is_variant": True,
+        "variant_type": "TOOL_TYPES",
+        "input_type": "MinecraftTool",
+        "label": "Tool Type"
+    },
+    {
+        "group": "copper_variants",
+        "regex": re.compile(r"^(.*)_(COPPER|COPPER_BULB|COPPER_GRATE)$"),
+        "exclude": re.compile(r".*ORE.*"), # Don't accidentally grab Copper Ore
+        "is_variant": True,
+        "variant_type": "COPPER",
+        "input_type": "MinecraftCopper",
+        "label": "Copper Type"
+    },
+    {
+        "group": "colored_blocks",
+        # Results in: ^(WHITE|ORANGE|...|BLACK)_(WOOL|CARPET|TERRACOTTA|CONCRETE|CONCRETE_POWDER|BED|BANNER|SHULKER_BOX|CANDLE)$
+        "regex": re.compile(f"^{COLORS_REGEX_GROUP}_(WOOL|CARPET|TERRACOTTA|GLAZED_TERRACOTTA|CONCRETE|CONCRETE_POWDER|BED|BANNER|WALL_BANNER|SHULKER_BOX|CANDLE)$"),
+        "is_variant": True,
+        "variant_type": "COLOR",
+        "input_type": "MinecraftColour",
+        "label": "Color"
+    },
+
+]
+
+import re
+
+ENTITY_RULES = [
+    {
+        "group": "minecarts",
+        "regex": re.compile(r".*MINECART$")
+    },
+    {
+        "group": "boats",
+        "regex": re.compile(r"^.*(?<!_CHEST)_BOAT$")
+    },
+    {
+        "group": "chest_boats",
+        "regex": re.compile(r"^.*_CHEST_BOAT$")
+    },
+    {
+        "group": "utility",
+        "exact_list": [
+            "ARMOR_STAND", "END_CRYSTAL", "EXPERIENCE_ORB", "FALLING_BLOCK", 
+            "ITEM_FRAME", "GLOW_ITEM_FRAME", "PAINTING", "PLAYER", 
+            "MARKER", "INTERACTION", "TEXT_DISPLAY", "BLOCK_DISPLAY", "ITEM_DISPLAY"
+        ]
+    },
+    {
+        "group": "projectiles",
+        "exact_list": [
+            "ARROW", "EGG", "ENDER_PEARL", "EXPERIENCE_BOTTLE", "FIREBALL", 
+            "FIREWORK_ROCKET", "SNOWBALL", "TRIDENT", "LLAMA_SPIT", "SHULKER_BULLET"
+        ],
+        "category_match": "Projectiles" # Grabs anything Prismarine natively tags as a projectile
+    },
+    {
+        "group": "passive_mobs",
+        "category_match": "Passive mobs"
+    },
+    {
+        "group": "hostile_mobs",
+        "category_match": "Hostile mobs"
+    }
+]
+
+class TaxonomyEngine:
+    def __init__(self, prismarine_blocks, prismarine_items, prismarine_entities, verbose=False):
+        self.raw_blocks = prismarine_blocks
+        self.raw_items = prismarine_items
+        self.raw_entities = prismarine_entities
+        self.verbose = verbose
+        
+        # Outputs
+        self.materials_data = {}
+        self.entity_data = {}
+        
+        self.material_picker_groups = {}
+        self.entity_groups = {}
+        self.variant_config = {}
+
+    def run(self):
+        self._normalize_data()
+        self._apply_material_rules()
+        self._apply_entity_rules()
+
+        # Generate the flat, sorted list of all known uppercase entities
+        entities_data = sorted(list(self.entity_data.keys()))
+        
+        # Return exactly the 5-tuple your updated workflow expects
+        return self.materials_data, entities_data, self.entity_groups, self.material_picker_groups, self.variant_config
+
+    def _normalize_data(self):
+        """Stage 1: Merge blocks, items, and entities to Bukkit-style UPPERCASE."""
+        for block in self.raw_blocks:
+            self.materials_data[block["name"].upper()] = {'is_block': True, 'is_item': False}
+            
+        for item in self.raw_items:
+            name = item["name"].upper()
+            if name in self.materials_data:
+                self.materials_data[name]['is_item'] = True
+            else:
+                self.materials_data[name] = {'is_block': False, 'is_item': True}
+                
+        for entity in self.raw_entities:
+            name = entity["name"].upper()
+            # Store the full dictionary so we can access attributes like 'category' later
+            self.entity_data[name] = entity 
+
+    def _apply_material_rules(self):
+        """Stage 2a: Run materials through TAXONOMY_RULES."""
+        self.misc_materials = []
+        self.material_rule_hits = {rule["group"]: 0 for rule in TAXONOMY_RULES}
+
+        for rule in TAXONOMY_RULES:
+            if "exact_list" in rule and isinstance(rule["exact_list"], list):
+                rule["exact_list"] = set(rule["exact_list"])
+
+        for mat_name in self.materials_data.keys():
+            matched = False
+            
+            for rule in TAXONOMY_RULES:
+                if "exclude" in rule and rule["exclude"].match(mat_name):
+                    continue
+
+                is_match = False
+                prefix = None
+
+                if "exact_list" in rule and mat_name in rule["exact_list"]:
+                    is_match = True
+                elif "regex" in rule:
+                    match = rule["regex"].match(mat_name)
+                    if match:
+                        is_match = True
+                        if rule.get("is_variant"):
+                            prefix = match.group(1)
+
+                if is_match:
+                    group_name = rule["group"]
+                    if group_name not in self.material_picker_groups:
+                        self.material_picker_groups[group_name] = []
+                        
+                    self.material_picker_groups[group_name].append(mat_name)
+                    self.material_rule_hits[group_name] += 1
+                    
+                    if rule.get("is_variant") and prefix:
+                        var_type = rule["variant_type"]
+                        if var_type not in self.variant_config:
+                            self.variant_config[var_type] = {
+                                "id": f"picker_{var_type.lower()}_types",
+                                "label": rule["label"],
+                                "prefixes": set(), 
+                                "input_type": rule["input_type"],
+                                "shadow": f"picker_{var_type.lower()}_types"
+                            }
+                        self.variant_config[var_type]["prefixes"].add(prefix)
+
+                    matched = True
+                    break 
+            
+            if not matched:
+                if "miscellaneous" not in self.material_picker_groups:
+                    self.material_picker_groups["miscellaneous"] = []
+                self.material_picker_groups["miscellaneous"].append(mat_name)
+                self.misc_materials.append(mat_name)
+
+        for var in self.variant_config.values():
+            var["prefixes"] = sorted(list(var["prefixes"]))
+
+    def _apply_entity_rules(self):
+        """Stage 2b: Run entities through ENTITY_RULES."""
+        self.misc_entities = []
+        self.entity_rule_hits = {rule["group"]: 0 for rule in ENTITY_RULES}
+
+        for rule in ENTITY_RULES:
+            if "exact_list" in rule and isinstance(rule["exact_list"], list):
+                rule["exact_list"] = set(rule["exact_list"])
+
+        for ent_name, ent_attributes in self.entity_data.items():
+            matched = False
+            
+            for rule in ENTITY_RULES:
+                is_match = False
+
+                if "exact_list" in rule and ent_name in rule["exact_list"]:
+                    is_match = True
+                elif "category_match" in rule and ent_attributes.get("category") == rule["category_match"]:
+                    is_match = True
+                elif "regex" in rule and rule["regex"].match(ent_name):
+                    is_match = True
+
+                if is_match:
+                    group_name = rule["group"]
+                    if group_name not in self.entity_groups:
+                        self.entity_groups[group_name] = []
+                        
+                    self.entity_groups[group_name].append(ent_name)
+                    self.entity_rule_hits[group_name] += 1
+                    matched = True
+                    break 
+            
+            if not matched:
+                if "other_entities" not in self.entity_groups:
+                    self.entity_groups["other_entities"] = []
+                self.entity_groups["other_entities"].append(ent_name)
+                self.misc_entities.append(ent_name)
+
+        if self.verbose:
+            self._print_telemetry()
+
+    def _print_telemetry(self):
+        print("\n" + "="*50)
+        print(" TAXONOMY ENGINE VERBOSE REPORT")
+        print("="*50)
+        
+        # --- Materials ---
+        print(f"\n[ MATERIALS - Total: {len(self.materials_data)} ]")
+        for group, hits in self.material_rule_hits.items():
+            print(f"  {group:<20} : {hits} items")
+        print(f"  {'miscellaneous':<20} : {len(self.misc_materials)} items")
+        
+        print("\n[ Extracted Variant Prefixes ]")
+        for var_type, config in self.variant_config.items():
+            preview = ", ".join(config['prefixes'][:3])
+            print(f"  {var_type:<10} : {len(config['prefixes']):>2} prefixes -> [{preview}...]")
+            
+        # --- Entities ---
+        print(f"\n[ ENTITIES - Total: {len(self.entity_data)} ]")
+        for group, hits in self.entity_rule_hits.items():
+            print(f"  {group:<20} : {hits} entities")
+        print(f"  {'other_entities':<20} : {len(self.misc_entities)} entities")
+
+        if self.misc_entities:
+            print(f"\n[ Uncategorized Entities (First 15 of {len(self.misc_entities)}) ]")
+            print("  " + ", ".join(self.misc_entities[:15]))
+
+        print("="*50 + "\n")

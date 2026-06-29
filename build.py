@@ -5,9 +5,9 @@ import xml.etree.ElementTree as ET
 # Ensure we can import from mcshell
 sys.path.append(str(Path(__file__).parent))
 
-from registry_builder import RegistryBuilder,ApiGenerator
+from registry_builder import RegistryBuilder,ApiGenerator,TaxonomyEngine
 
-from mcshell.mcscraper import make_materials, classify_materials_with_bukkit, make_entity_id_map, make_item_id_map
+from mcshell.mcscraper import make_materials, classify_materials_with_bukkit, make_entity_id_map, make_item_id_map, fetch_minecraft_data
 from mcshell.constants import MC_MATERIALS_PATH,MC_ENTITY_ID_MAP_PATH,MC_APP_SRC_DIR, MC_DATA_DIR, MC_JUICE_SRC_DIR,MC_SHELL_DIR,subprocess,shutil
 
 def rebuild():
@@ -23,12 +23,18 @@ def rebuild():
     with output_toolbox_path.open('w') as f:
         f.write(toolbox_template_path.read_text())
 
-    print("Step 1: Scraping latest Minecraft data...")
-    # These functions now produce structured dictionaries for Blocks/Items/Entities
-    make_materials()
-    print("[!!] Remember to use classify_materials_with_bukkit manually...")
-    make_entity_id_map()
-    make_item_id_map()
+    print("Step 1: Fetching JSON from minecraft-data...")
+    prismarine_blocks = fetch_minecraft_data('1.21.11','blocks')
+    prismarine_items = fetch_minecraft_data('1.21.11','items')
+    prismarine_entities = fetch_minecraft_data('1.21.11','entities')
+
+
+    # print("Step 1: Scraping latest Minecraft data...")
+    # # These functions now produce structured dictionaries for Blocks/Items/Entities
+    # make_materials()
+    # print("[!!] Remember to use classify_materials_with_bukkit manually...")
+    # make_entity_id_map()
+    # make_item_id_map()
 
     print("\nStep 2: Building mcjuice Command Registry...")
     gen = ApiGenerator(
@@ -42,14 +48,27 @@ def rebuild():
     # generate the command registry Java class for the mcjuice plugin and a python client
     gen.run()
 
+
+    # 2. Run the Engine
+    engine = TaxonomyEngine(prismarine_blocks, prismarine_items, prismarine_entities,verbose=True)
+    materials_data, entity_data, entity_groups, picker_groups, variant_config = engine.run()
+
+
     print("\nStep 3: Building Blockly Registries...")
     builder = RegistryBuilder(
         toolbox_path=MC_APP_SRC_DIR / 'toolbox.xml',
         blocks_dir=MC_APP_SRC_DIR / 'blocks',
         gens_dir=MC_APP_SRC_DIR / 'generators' / 'python',
-        materials_path=MC_MATERIALS_PATH,
-        entity_id_map_path=MC_ENTITY_ID_MAP_PATH
+        # materials_path=MC_MATERIALS_PATH,
+        # entity_id_map_path=MC_ENTITY_ID_MAP_PATH
     )
+
+    # 3. Inject it straight into your frozen RegistryBuilder!
+    builder.materials_data = materials_data
+    builder.entity_data = entity_data
+    builder.ENTITY_GROUPS = entity_groups
+    builder.MATERIAL_PICKER_GROUPS = picker_groups
+    builder.VARIANT_CONFIG = variant_config
 
     # This generates:
     # 1. blocks/materials.mjs, blocks/items.mjs, blocks/entities.mjs
