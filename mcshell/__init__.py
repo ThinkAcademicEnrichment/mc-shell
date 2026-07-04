@@ -1756,65 +1756,6 @@ class MCShell(Magics):
         return
 
     @line_magic
-    def mc_server_info(self, line):
-        """Check server status, list connected players, configuration, and connection hub."""
-        print("="*60)
-        print("🖥️  MC-SHELL SERVER DASHBOARD")
-        print("="*60)
-
-        # 1. App Server (mc-ed) Status
-        if self.app_server_thread and self.app_server_thread.is_alive():
-            if self.mc_name:
-                print(f"🟢 MCED App Server  : RUNNING (Active Player: {self.mc_name})")
-                print(f"   Editor URL         : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}?auth={GUI_AUTH_TOKEN}")
-                print(f"   Control URL        : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}/control?auth={GUI_AUTH_TOKEN}")
-            else:
-                print(f"🟡 MCED App Server  : STANDBY")
-                print(f"   Lobby URL          : http://localhost:{MC_APP_PORT}/lobby?auth={GUI_AUTH_TOKEN}")
-        else:
-            print("🔴 Editor App Server  : STOPPED")
-
-        # 2. Paper Server Status (Host only)
-        is_host = self.active_paper_server and self.active_paper_server.is_alive()
-        if is_host:
-            world = self.active_paper_server.world_name
-            print(f"🟢 Local Paper Server : RUNNING (World: '{world}')")
-        else:
-            print("🔴 Local Paper Server : STOPPED")
-
-        # 3. Connection & Player Info
-        if (self.app_server_thread and self.app_server_thread.is_alive()) or is_host:
-            print(f"\n⚙️  Active Configuration:")
-            if not is_host:
-                print(f"   Remote Host        : {self.server_data.get('host', 'Unknown')}")
-            print(f"   Minecraft Port     : {self.server_data.get('port', 25565)}")
-            print(f"   RCON Port          : {self.server_data.get('rcon_port', 25575)}")
-            print(f"   McJuice Port       : {self.server_data.get('mj_port', 4721)}")
-
-            password = self.server_data.get('password')
-            if password:
-                print(f"   Server Password    : {password}")
-
-            # Fetch players via RCON
-            try:
-                # Disable printing of the raw auth rejection to keep the dashboard clean
-                response = self._get_client().run('list')
-                if response:
-                    print(f"\n👥 {response}")
-                else:
-                    print("\n👥 Minecraft Players: No response from server.")
-            except Exception:
-                print("\n👥 Minecraft Players: Could not retrieve player list via RCON.")
-
-            # Only print Connection Hub if you are the host
-            if is_host:
-                self._print_connection_hub()
-        else:
-            print("\nTo start a local world, run: %pp_start_world <world_name>")
-            print("To join a remote world, run: %pp_join_world <Token>")
-            print("="*60)
-
-    @line_magic
     def mc_stdlib(self, line):
         """
         Management magic for the Minecraft Shell Standard Library.
