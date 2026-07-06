@@ -35,26 +35,34 @@ def fetch_minecraft_data(version: str, file_type: str = "blocks"):
 
     import json
     # # 1. Load the raw JSON files downloaded from PrismarineJS (minecraft-data)
-    mc_data_path = MC_DATA_DIR / 'materials' / f'{file_type}.json'
-    print(mc_data_path)
+    mc_data_path = MC_DATA_DIR / 'materials' / version / f'{file_type}.json'
     if mc_data_path.exists():
-        print(f'Loading {file_type} json from cache')
         with mc_data_path.open('r') as f:
             return json.load(f)
 
     url = f"https://raw.githubusercontent.com/PrismarineJS/minecraft-data/master/data/pc/{version}/{file_type}.json"
     
     response = requests.get(url)
-    
-    if response.status_code == 200:
-        mc_data_path.touch()
-        with mc_data_path.open('w') as f:
-            json.dump(response.json(),f)
-        return response.json()
-    elif response.status_code == 404:
-        raise ValueError(f"Version '{version}' or file type '{file_type}' not found in minecraft-data.")
-    else:
-        raise Exception(f"Failed to fetch data: HTTP status {response.status_code}")
+
+    try: 
+        if response.status_code == 200:
+            mc_data_path.parent.mkdir(exist_ok=True)
+            mc_data_path.touch()
+            with mc_data_path.open('w') as f:
+                json.dump(response.json(),f)
+            return response.json()
+        elif response.status_code == 404:
+            raise ValueError(f"Version '{version}' or file type '{file_type}' not found in minecraft-data.")
+        else:
+            raise Exception(f"Failed to fetch data: HTTP status {response.status_code}")
+    except Exception as e:
+        print(e)
+        print("Returning default minecraft data")
+        mc_data_path = MC_DATA_DIR / 'materials' / 'default' / f'{file_type}.json'
+        with mc_data_path.open('r') as f:
+            return json.load(f)
+
+
 
 def test_fetch_mcdata():
     # --- Quick Test ---
