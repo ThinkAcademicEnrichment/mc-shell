@@ -1,21 +1,7 @@
 from mcshell.constants import *
 
 # --- EXTRACTED CONFIGURATION IMPORT ---
-import registry_config as rc
-
-# --- STANDALONE PATH CONFIGURATION ---
-BASE_DIR = Path(__file__).parent.resolve()
-MC_SHELL_DIR = BASE_DIR / "mcshell"
-MC_DATA_DIR = MC_SHELL_DIR / "data"
-MC_APP_SRC_DIR = MC_DATA_DIR / "app_src"
-MC_JUICE_DIR = BASE_DIR / "mcjuice"
-MC_JUICE_SRC_DIR = MC_JUICE_DIR / "src"
-
-# MC_MATERIALS_PATH = MC_DATA_DIR / "materials.pkl"
-# MC_ENTITY_ID_MAP_PATH = MC_DATA_DIR / "entity_id_map.pkl"
-
-if str(BASE_DIR) not in sys.path:
-    sys.path.append(str(BASE_DIR))
+import mcshell.mcconfig as mcc
 
 try:
     from blockapily import BlocklyGenerator, mced_block
@@ -30,35 +16,37 @@ def get_action_class(module_name, class_name):
         module = importlib.import_module(f"mcshell.{module_name}")
         importlib.reload(module) # Ensure fresh load after ApiGenerator runs
         return getattr(module, class_name)
-    except (ImportError, AttributeError):
+    except (ImportError, AttributeError) as e:
+        print(f"Error: could not import {class_name} from {module_name}")
+        print(str(e))
         return None
 
 class RegistryBuilder:
-    # --- UI & Design Tokens (Sourced from registry_config.py) ---
-    COLORS = rc.CAT_COLORS
-    TYPE_MAP = rc.TYPE_MAP
-    SHADOW_MAP = rc.SHADOW_MAP
-    DATA_PATHS = rc.DATA_PATHS
-    TIMETYPES = rc.TIMETYPES
-    WEATHERS = rc.WEATHERS
-    DIFFICULTYS = rc.DIFFICULTYS
-    GAMEMODES = rc.GAMEMODES
-    LOCATETYPES = rc.LOCATETYPES
-    METRICS = rc.METRICS
-    AXES = rc.AXES
-    COMPASS = rc.COMPASS
-    QHEADINGS = rc.QHEADINGS
-    QCOMPASS = rc.QCOMPASS
-    TIMES = rc.TIMES
-    STRUCTURES = rc.STRUCTURES
-    BIOMES = rc.BIOMES
-    POIS = rc.POIS
-    GAMERULES = rc.GAMERULES
-    INTEGERGAMERULES = rc.INTEGERGAMERULES
-    EFFECTS = rc.EFFECTS
-    TITLEACTIONS = rc.TITLEACTIONS
-    ACTION_PICKERS = rc.ACTION_PICKERS
-    GENERATED_ACTION_PICKERS = rc.GENERATED_ACTION_PICKERS
+    # --- UI & Design Tokens ---
+    COLORS = mcc.CAT_COLORS
+    TYPE_MAP = mcc.TYPE_MAP
+    SHADOW_MAP = mcc.SHADOW_MAP
+    DATA_PATHS = mcc.DATA_PATHS
+    TIMETYPES = mcc.TIMETYPES
+    WEATHERS = mcc.WEATHERS
+    DIFFICULTYS = mcc.DIFFICULTYS
+    GAMEMODES = mcc.GAMEMODES
+    LOCATETYPES = mcc.LOCATETYPES
+    METRICS = mcc.METRICS
+    AXES = mcc.AXES
+    COMPASS = mcc.COMPASS
+    QHEADINGS = mcc.QHEADINGS
+    QCOMPASS = mcc.QCOMPASS
+    TIMES = mcc.TIMES
+    STRUCTURES = mcc.STRUCTURES
+    BIOMES = mcc.BIOMES
+    POIS = mcc.POIS
+    GAMERULES = mcc.GAMERULES
+    INTEGERGAMERULES = mcc.INTEGERGAMERULES
+    EFFECTS = mcc.EFFECTS
+    TITLEACTIONS = mcc.TITLEACTIONS
+    ACTION_PICKERS = mcc.ACTION_PICKERS
+    GENERATED_ACTION_PICKERS = mcc.GENERATED_ACTION_PICKERS
 
     # now injected in build.by
     VARIANT_CONFIG = None
@@ -100,8 +88,8 @@ class RegistryBuilder:
                 except Exception as e:
                     print(f"Warning: Failed to auto-discover generated classes: {e}")
 
-            if self.GENERATED_ACTIONS_BLACKLIST:
-                print(f"Skipping {','.join(self.GENERATED_ACTIONS_BLACKLIST)} block generation")
+            # if self.GENERATED_ACTIONS_BLACKLIST:
+            #     print(f"Skipping {','.join(self.GENERATED_ACTIONS_BLACKLIST)} block generation")
 
             self.GENERATED_ACTION_CLASSES.extend([(c, n, col) for c, n, col in classes if c is not None and not c.__name__ in self.GENERATED_ACTIONS_BLACKLIST])
 
@@ -122,20 +110,25 @@ class RegistryBuilder:
 
     def build_all(self):
         if BlocklyGenerator is None: return
+
         self.ensure_toolbox(clean_toolbox=True)
+
         self.build_blocks()
         self.build_items()
         self.build_entities()
+
         self.build_actions()
+
         self.build_pickers_category()
         self.build_action_classes_export()
         self.export_taxonomy()
-
+        
     def build_action_classes_export(self):
         class_names = [cls.__name__ for cls, _, _ in self.ACTION_CLASSES + self.GENERATED_ACTION_CLASSES]
         js_content = f"export const ACTION_CLASSES = {class_names!r};\n"
         out_path = self.gens_dir / "action_classes.mjs"
         out_path.write_text(js_content, encoding='utf-8')
+        return js_content
 
     def _generate_base_pickers(self) -> dict:
         js, py = [], []
@@ -200,7 +193,7 @@ class RegistryBuilder:
 
         return parameterized, consumed, suffix_map
 
-    def build_blocks(self):
+    def build_blocks(self,write_static_files=True):
         self.generated_block_pickers = [] # Reset block picker tracking
         js, py, xml = [], [], []
         base = self._generate_base_pickers()
@@ -248,10 +241,13 @@ class RegistryBuilder:
             res = BlocklyGenerator.generate_picker(b_type, "Other Blocks", [(self._normalize_name(m), m) for m in rem], "Block", self.COLORS["Picker"])
             js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
 
-        self._write_output("blocks", "Blocks", js, py)
-        BlocklyGenerator.update_toolbox(f'<category name="Blocks" colour="{self.COLORS["Block"]}">{"".join(xml)}</category>', self.toolbox_path)
+        if write_static_files:
+            self._write_output("blocks", "Blocks", js, py)
 
-    def build_items(self):
+        BlocklyGenerator.update_toolbox(f'<category name="Blocks" colour="{self.COLORS["Block"]}">{"".join(xml)}</category>', self.toolbox_path)
+        return js, py
+
+    def build_items(self,write_static_files=True):
         js, py, xml = [], [], []
         items = [k for k, v in self.materials_data.items() if v.get('is_item') and not v.get('is_block')]
         templates, consumed, suffix_map = self._classify_variants(items)
@@ -288,18 +284,24 @@ class RegistryBuilder:
             res = BlocklyGenerator.generate_picker("mc_item_picker_general", "Other Items", [(self._normalize_name(m), m) for m in rem], "Item", self.COLORS["Picker"])
             js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
 
-        self._write_output("items", "Items", js, py)
+        if write_static_files:
+            self._write_output("items", "Items", js, py)
         BlocklyGenerator.update_toolbox(f'<category name="Items" colour="{self.COLORS["Item"]}">{"".join(xml)}</category>', self.toolbox_path)
+        return js, py
 
-    def build_entities(self):
+    def build_entities(self,write_static_files=True):
         js, py, xml = [], [], []
         for group, members in self.ENTITY_GROUPS.items():
             opts = [(self._normalize_name(e), e) for e in sorted(members) if e in self.entity_data]
             if not opts: continue
             res = BlocklyGenerator.generate_picker(f"mc_entity_picker_{group}", self._normalize_name(group), opts, "Entity", self.COLORS["Entity"])
             js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
-        self._write_output("entities", "Entities", js, py)
-        BlocklyGenerator.update_toolbox(f'<category name="Entities" colour="{self.COLORS["Entity"]}">{"".join(xml)}</category>', self.toolbox_path, append_separator=True)
+
+        if write_static_files:
+            self._write_output("entities", "Entities", js, py)
+
+        BlocklyGenerator.update_toolbox(f'<category name="Entities" colour="{self.COLORS["Entity"]}">{"".join(xml)}</category>', self.toolbox_path, append_separator=False)
+        return js, py
 
     def build_actions(self):
         pick_js, pick_py = [], []
@@ -344,6 +346,7 @@ class RegistryBuilder:
 
 
             BlocklyGenerator.update_toolbox(c_xml, self.toolbox_path,append_separator=append_separator)
+            # return js_out, py_out
 
     def build_pickers_category(self):
         """
@@ -429,6 +432,7 @@ class RegistryBuilder:
         with open(out_path, "w") as f:
             json.dump(taxonomy, f, indent=2)
         print(f"Exported UI Taxonomy successfully to {out_path}")
+        return taxonomy
 
     def _write_output(self, file_name, export_name, js, py):
         header = 'import { MCED } from "../lib/constants.mjs";\n\n'
@@ -1045,46 +1049,3 @@ class TaxonomyEngine:
             print("  " + ", ".join(self.misc_entities[:15]))
 
         print("="*50 + "\n")
-
-if __name__ == "__main__":
-    # 1. RUN API GENERATOR FIRST so generated_actions.py is fully populated and fresh on disk
-    gen = ApiGenerator(
-        MC_DATA_DIR / "mcjuice_api.yaml",
-        MC_JUICE_SRC_DIR / "main/java/org/mcshell/mcjuice/GeneratedCommandRegistry.java",
-        MC_JUICE_SRC_DIR / "main/java/org/mcshell/mcjuice/GeneratedEventListener.java",
-        MC_SHELL_DIR / "mcjuice.py",
-        MC_SHELL_DIR / "generated_actions.py"
-    )
-    gen.run()
-
-    from mcshell.mcscraper import fetch_minecraft_data
-    print("Step 1: Fetching JSON from minecraft-data...")
-    prismarine_blocks = fetch_minecraft_data('1.21.11','blocks')
-    prismarine_items = fetch_minecraft_data('1.21.11','items')
-    prismarine_entities = fetch_minecraft_data('1.21.11','entities')
-
-
-    engine = TaxonomyEngine(prismarine_blocks, prismarine_items, prismarine_entities,verbose=True)
-    materials_data, entity_data, entity_groups, picker_groups, variant_config = engine.run()
-
-
-    print("\nStep 3: Building Blockly Registries...")
-    builder = RegistryBuilder(
-        toolbox_path=MC_APP_SRC_DIR / 'toolbox.xml',
-        blocks_dir=MC_APP_SRC_DIR / 'blocks',
-        gens_dir=MC_APP_SRC_DIR / 'generators' / 'python',
-    )
-
-    # 3. Inject it straight into your frozen RegistryBuilder!
-    builder.materials_data = materials_data
-    builder.entity_data = entity_data
-    builder.ENTITY_GROUPS = entity_groups
-    builder.MATERIAL_PICKER_GROUPS = picker_groups
-    builder.VARIANT_CONFIG = variant_config
-
-    # This generates:
-    # 1. blocks/materials.mjs, blocks/items.mjs, blocks/entities.mjs
-    # 2. generators/python/materials.mjs, ... etc.
-    # 3. Updates toolbox.xml via blockapily's structured XML injection
-    builder.build_all()
-
