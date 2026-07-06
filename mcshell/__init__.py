@@ -1,6 +1,7 @@
 import socket
 from pprint import pprint
 
+import atexit
 import IPython
 import getpass
 from IPython.core.magic import Magics, magics_class, line_magic,needs_local_scope
@@ -11,7 +12,6 @@ from mcshell.constants import *
 from mcshell.mcrepo import SQLiteRepository
 from mcshell.mcclient import MCClient
 from mcshell.mcserver import throw_app_server_error, start_app_server, reset_app_server_context, GUI_AUTH_TOKEN
-from mcshell.mcactions import *
 from mcshell.mcserver import execute_power_in_thread, RUNNING_POWERS # Import helpers
 from mcshell.ppmanager import *
 from mcshell.ppdownloader import *
@@ -77,7 +77,7 @@ def _resolve_modrinth_plugin(project_id, mc_version):
         pass # Failsafe to fallback URLs
     return None
 
-def _run_tunnel_host_thread(mc_port, rcon_port, mj_port, out_token, use_ssh=False):
+def _run_tunnel_host_thread(mc_port, rcon_port, mj_port, mc_version, out_token, use_ssh=False):
     async def host_task():
         # 1. Force integer types to ensure our logic works safely
         mc_port_i = int(mc_port)
@@ -119,10 +119,10 @@ def _run_tunnel_host_thread(mc_port, rcon_port, mj_port, out_token, use_ssh=Fals
         # 2. Formulate the robust Join Code
         # If the ports match defaults exactly, keep the token short and clean.
         if mc_port_i == 25565 and rcon_port_i == 25575 and mj_port_i == 4721:
-            join_code = f"{host_ip}:{bound_port}#{pin}"
+            join_code = f"{host_ip}:{bound_port}#{pin}-{mc_version}"
         else:
             # If ports deviated, append them so the client knows what to ask for
-            join_code = f"{host_ip}:{bound_port}#{pin}-{mc_port_i}-{rcon_port_i}-{mj_port_i}"
+            join_code = f"{host_ip}:{bound_port}#{pin}-{mc_port_i}-{rcon_port_i}-{mj_port_i}-{mc_version}"
 
         out_token.append(join_code)
 
@@ -137,10 +137,10 @@ def _run_tunnel_host_thread(mc_port, rcon_port, mj_port, out_token, use_ssh=Fals
     except Exception as e:
         print(f"\n[Tunnel Host Error] {e}")
 
-def _start_secure_tunnel_host(mc_port, rcon_port, mj_port, use_ssh=False):
+def _start_secure_tunnel_host(mc_port, rcon_port, mj_port, mc_version, use_ssh=False):
     out_token = []
     # Use daemon=True so the thread automatically dies when IPython exits
-    thread = Thread(target=_run_tunnel_host_thread, args=(mc_port, rcon_port, mj_port, out_token, use_ssh), daemon=True)
+    thread = Thread(target=_run_tunnel_host_thread, args=(mc_port, rcon_port, mj_port, mc_version, out_token, use_ssh), daemon=True)
     thread.start()
 
     # Wait up to 5 seconds for the cryptographic keys and token to generate
@@ -218,10 +218,12 @@ class MCShell(Magics):
         self.server_data = MC_SERVER_DATA
 
         self.ip.set_hook('complete_command', self._complete_mc_run, re_key='%mc_run')
+        self.ip.set_hook('complete_command', self._complete_slash_run, re_key='^/')
+
         self.ip.set_hook('complete_command', self._complete_mc_help, re_key='%mc_help')
-        self.ip.set_hook('complete_command',self._complete_mc_cancel_power, re_key='%mc_cancel_power')
-        self.ip.set_hook('complete_command',self._complete_world_command, re_key='%pp_start_world')
-        self.ip.set_hook('complete_command',self._complete_world_command, re_key='%pp_delete_world')
+        self.ip.set_hook('complete_command', self._complete_mc_cancel_power, re_key='%mc_cancel_power')
+        self.ip.set_hook('complete_command', self._complete_world_command, re_key='%pp_start_world')
+        self.ip.set_hook('complete_command', self._complete_world_command, re_key='%pp_delete_world')
 
         self.app_server_thread = None
 
@@ -314,12 +316,13 @@ class MCShell(Magics):
     def _get_connection_hub_data(self):
         """Returns the raw connection hub data in a structured, JSON-friendly dictionary."""
         def _make_direct_token(ip):
-            mc_p = self.server_data.get('port', 25565)
-            rcon_p = self.server_data.get('rcon_port', 25575)
-            mj_p = self.server_data.get('mj_port', 4721)
+            mc_p = self.server_data.get('port', MC_SERVER_PORT)
+            rcon_p = self.server_data.get('rcon_port', MC_RCON_PORT)
+            mj_p = self.server_data.get('mj_port', MJ_PLUGIN_PORT)
+            mc_v = self.server_data.get('mc_version',MC_VERSION)
             if mc_p == 25565 and rcon_p == 25575 and mj_p == 4721:
                 return ip
-            return f"{ip}@{mc_p}-{rcon_p}-{mj_p}"
+            return f"{ip}@{mc_p}-{rcon_p}-{mj_p}-{mc_v}"
 
         vpn_ip = get_vpn_ip()
         local_ip = _get_local_ip()
@@ -458,6 +461,15 @@ class MCShell(Magics):
             elif arg.startswith("--datapacks="):
                 # Expects a comma-separated list of names
                 datapacks_to_install = arg.split('=', 1)[1].split(',')
+
+        # Quick version check (assuming semantic versioning format)
+        v_parts = [int(x) for x in mc_version.split('.')]
+        if v_parts[0] == 1 and (v_parts[1] < 20 or (v_parts[1] == 20 and v_parts[2] < 5)):
+            print(f"Error: mcshell requires Minecraft 1.20.5 or newer (Java 21). Version '{mc_version}' is not supported.")
+            return
+
+        # NEW: handle versions
+        self.server_data['mc_version'] = mc_version 
 
         # Define paths
         world_dir = MC_WORLDS_BASE_DIR.joinpath(world_name)
@@ -759,7 +771,7 @@ class MCShell(Magics):
 
         # Start the background SSH Tunnel gateway automatically
         print("Starting secure SSH tunnel gateway in the background...")
-        self.current_ssh_token = _start_secure_tunnel_host(self.server_data['port'], self.server_data['rcon_port'], self.server_data['mj_port'], use_ssh=use_ssh)
+        self.current_ssh_token = _start_secure_tunnel_host(self.server_data['port'], self.server_data['rcon_port'], self.server_data['mj_port'], self.server_data['mc_version'],use_ssh=use_ssh)
 
         # Cross-platform automated host login (ONLY if we aren't relying on an external Subnet Router)
         if authkey and not use_subnet:
@@ -1105,6 +1117,7 @@ class MCShell(Magics):
             print(f"   Minecraft Port     : {self.server_data.get('port', 25565)}")
             print(f"   RCON Port          : {self.server_data.get('rcon_port', 25575)}")
             print(f"   McJuice Port       : {self.server_data.get('mj_port', 4721)}")
+            print(f"   Minecraft Version  : {self.server_data.get('mc_version', MC_VERSION)}")
 
             password = self.server_data.get('password')
             if password:
@@ -1252,27 +1265,31 @@ class MCShell(Magics):
             print(response)
         print('-' * 100)
 
-    def _complete_mc_run(self, ipyshell, event):
+    def _get_rconn_completions(self, ipyshell, raw_event, line, text_to_complete):
+        """
+        The core autocomplete logic. 
+        Expects 'line' to always be formatted with a prefix (like '%mc_run').
+        """
+        # Capture debug data exactly as you had it, but use the normalized line/symbol
         ipyshell.user_ns.update(
             dict(
-                rcon_event=event,
-                rcon_symbol=event.symbol,
-                rcon_line=event.line,
-                rcon_cursor_pos=event.text_until_cursor)
-        ) # Capture ALL event data IMMEDIATELY
-
-        text_to_complete = event.symbol
-        line = event.line
+                rcon_event=copy.deepcopy(raw_event), 
+                rcon_symbol=text_to_complete,
+                rcon_line=line,
+                rcon_cursor_pos=raw_event.text_until_cursor
+            )
+        ) 
 
         parts = line.split()
 
-        ipyshell.user_ns.update(dict(rcon_text_to_complete=text_to_complete)) # Capture text_to_complete
-        ipyshell.user_ns.update(dict(rcon_parts=parts)) # Capture parts
+        ipyshell.user_ns.update(dict(rcon_text_to_complete=text_to_complete)) 
+        ipyshell.user_ns.update(dict(rcon_parts=parts)) 
 
         if len(parts) >= 2:
             command = parts[1]
             if 'minecraft:' in command:
                 command = command.split(':')[1]
+                
         arg_matches = []
         if len(parts) == 1: # showing commands
             arg_matches = [c for c in self.commands.keys()]
@@ -1291,7 +1308,7 @@ class MCShell(Magics):
         elif len(parts) > 3: # completing arguments
             sub_command = parts[2]
             sub_command_args = self.commands[command][sub_command]
-            current_arg_index = len(parts) - 3# Index of current argument
+            current_arg_index = len(parts) - 3 # Index of current argument
             if text_to_complete == '': # showing next arguments
                 arg_matches = [arg for arg in sub_command_args[current_arg_index+1]]
             else:
@@ -1301,7 +1318,29 @@ class MCShell(Magics):
                     return []
 
         ipyshell.user_ns.update({'rcon_matches': arg_matches})
-        return arg_matches # Fallback
+        return arg_matches 
+
+
+    def _complete_mc_run(self, ipyshell, event):
+        """Hook for standard %mc_run autocompletion."""
+        # Pass the raw event strings directly
+        return self._get_rconn_completions(ipyshell, event, event.line, event.symbol)
+
+    def _complete_slash_run(self, ipyshell, event):
+        """Hook for / shortcut autocompletion."""
+        # 1. Strip leading slash for our internal logic
+        clean_symbol = event.symbol[1:] if event.symbol.startswith('/') else event.symbol
+        pseudo_line = f"%mc_run {event.line[1:]}"
+        
+        # 2. Get the matches from the core logic
+        matches = self._get_rconn_completions(ipyshell, event, pseudo_line, clean_symbol)
+        
+        # 3. CRITICAL FIX: If the symbol started with a '/', put it back!
+        # This ensures '/wea' is replaced by '/weather', not 'weather'
+        if event.symbol.startswith('/'):
+            return [f"/{match}" for match in matches]
+            
+        return matches
 
     @needs_local_scope
     @line_magic
@@ -1408,6 +1447,8 @@ class MCShell(Magics):
             cancel_event = threading.Event()
             player.cancel_event = cancel_event
 
+            # you must import AFTER the server regenerates this file
+            from mcshell.mcactions import MCActions
             actions = MCActions(player)
 
             # 5. Dynamically Import the Module
@@ -1594,7 +1635,7 @@ class MCShell(Magics):
     def mc_start_app(self, line):
         """
         Starts the client application components to connect to a world.
-        Usage: %mc_start_app [token|IP] [--local-mc <port>] [--local-rcon <port>] [--local-mj <port>] [--authkey <key>] [--guest] [--mc_name <minecraft user name>]
+        Usage: %mc_start_app [token|IP] [--local-mc <port>] [--local-rcon <port>] [--local-mj <port>] [--authkey <key>] [--mc_version <minecraft version>] [--guest] [--mc_name <minecraft user name>]
         """
         parts = line.split()
 
@@ -1650,14 +1691,16 @@ class MCShell(Magics):
                 'rcon_port': int(Prompt.ask('Rcon Port:', default=str(self.server_data['rcon_port']))),
                 'mj_port': int(Prompt.ask('Plugin Port:', default=str(self.server_data['mj_port']))),
                 'app_port': int(Prompt.ask('Application Port:', default=str(self.server_data['app_port']))),
+                'mc_version': str(Prompt.ask('Minecraft Version:', default=str(self.server_data['mc_version']))),
                 'password': None,
             })
 
         if token:
             # 1. DEFINE VARS FIRST: Determine intended local ports from defaults
-            local_mc = self.server_data.get('port', 25565)
-            local_rcon = self.server_data.get('rcon_port', 25575)
-            local_mj = self.server_data.get('mj_port', 4721)
+            local_mc = self.server_data.get('port', MC_SERVER_PORT)
+            local_rcon = self.server_data.get('rcon_port', MC_RCON_PORT)
+            local_mj = self.server_data.get('mj_port', MJ_PLUGIN_PORT)
+            mc_version = self.server_data.get('mc_version',MC_VERSION)
 
             # 2. OVERRIDES: Process any user-provided terminal overrides
             if '--local-mc' in parts:
@@ -1666,6 +1709,8 @@ class MCShell(Magics):
                 local_rcon = int(parts[parts.index('--local-rcon') + 1])
             if '--local-mj' in parts:
                 local_mj = int(parts[parts.index('--local-mj') + 1])
+            if '--mc_version' in parts:
+                mc_version = parts[parts.index('--mc_version') + 1]
 
             # 3. SAFETY CHECK
             if hasattr(self, 'active_paper_server') and getattr(self, 'active_paper_server') and self.active_paper_server.is_alive():
@@ -1681,20 +1726,22 @@ class MCShell(Magics):
                 self.server_data['port'] = local_mc
                 self.server_data['rcon_port'] = local_rcon
                 self.server_data['mj_port'] = local_mj
+                self.server_data['mc_version'] = mc_version
 
                 # Give the background thread a moment to establish port forwards
                 time.sleep(1.0)
                 print("Tunnel connection established.")
             else:
-                # Handle Direct IPs and Custom Port strings (e.g. 192.168.1.5@25566-25576-4721)
+                # Handle Direct IPs and Custom Port strings (e.g. 192.168.1.5@25566-25576-4721-1.21.11)
                 if '@' in token:
                     ip_part, ports_part = token.split('@', 1)
                     try:
-                        p_mc, p_rcon, p_mj = map(int, ports_part.split('-'))
+                        p_mc, p_rcon, p_mj, p_ver = ports_part.split('-')
                         self.server_data['host'] = ip_part
-                        self.server_data['port'] = p_mc
-                        self.server_data['rcon_port'] = p_rcon
-                        self.server_data['mj_port'] = p_mj
+                        self.server_data['port'] = int(p_mc)
+                        self.server_data['rcon_port'] = int(p_rcon)
+                        self.server_data['mj_port'] = int(p_mj)
+                        self.server_data['mc_version'] = p_ver
                         print(f"\n[DIRECT CONNECT] Connecting to {ip_part} with custom ports...")
                     except ValueError:
                         print("\n[ERROR] Invalid Direct Token format. Falling back to default ports.")
@@ -1705,6 +1752,7 @@ class MCShell(Magics):
                     self.server_data['port'] = local_mc
                     self.server_data['rcon_port'] = local_rcon
                     self.server_data['mj_port'] = local_mj
+                    self.server_data['mc_version'] = mc_version
 
         if is_guest:
             # Bypass the interactive prompt and default to standard player mode safely
@@ -1754,65 +1802,6 @@ class MCShell(Magics):
             print(f"   Bedrock / iPad : {self.server_data['host']} (Default port 19132)")
         print(f"="*55 + "\n")
         return
-
-    @line_magic
-    def mc_server_info(self, line):
-        """Check server status, list connected players, configuration, and connection hub."""
-        print("="*60)
-        print("🖥️  MC-SHELL SERVER DASHBOARD")
-        print("="*60)
-
-        # 1. App Server (mc-ed) Status
-        if self.app_server_thread and self.app_server_thread.is_alive():
-            if self.mc_name:
-                print(f"🟢 MCED App Server  : RUNNING (Active Player: {self.mc_name})")
-                print(f"   Editor URL         : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}?auth={GUI_AUTH_TOKEN}")
-                print(f"   Control URL        : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}/control?auth={GUI_AUTH_TOKEN}")
-            else:
-                print(f"🟡 MCED App Server  : STANDBY")
-                print(f"   Lobby URL          : http://localhost:{MC_APP_PORT}/lobby?auth={GUI_AUTH_TOKEN}")
-        else:
-            print("🔴 Editor App Server  : STOPPED")
-
-        # 2. Paper Server Status (Host only)
-        is_host = self.active_paper_server and self.active_paper_server.is_alive()
-        if is_host:
-            world = self.active_paper_server.world_name
-            print(f"🟢 Local Paper Server : RUNNING (World: '{world}')")
-        else:
-            print("🔴 Local Paper Server : STOPPED")
-
-        # 3. Connection & Player Info
-        if (self.app_server_thread and self.app_server_thread.is_alive()) or is_host:
-            print(f"\n⚙️  Active Configuration:")
-            if not is_host:
-                print(f"   Remote Host        : {self.server_data.get('host', 'Unknown')}")
-            print(f"   Minecraft Port     : {self.server_data.get('port', 25565)}")
-            print(f"   RCON Port          : {self.server_data.get('rcon_port', 25575)}")
-            print(f"   McJuice Port       : {self.server_data.get('mj_port', 4721)}")
-
-            password = self.server_data.get('password')
-            if password:
-                print(f"   Server Password    : {password}")
-
-            # Fetch players via RCON
-            try:
-                # Disable printing of the raw auth rejection to keep the dashboard clean
-                response = self._get_client().run('list')
-                if response:
-                    print(f"\n👥 {response}")
-                else:
-                    print("\n👥 Minecraft Players: No response from server.")
-            except Exception:
-                print("\n👥 Minecraft Players: Could not retrieve player list via RCON.")
-
-            # Only print Connection Hub if you are the host
-            if is_host:
-                self._print_connection_hub()
-        else:
-            print("\nTo start a local world, run: %pp_start_world <world_name>")
-            print("To join a remote world, run: %pp_join_world <Token>")
-            print("="*60)
 
     @line_magic
     def mc_stdlib(self, line):
@@ -2173,6 +2162,10 @@ class MCShell(Magics):
             print(f"Unknown command: {command}")
             print("Usage: %mc_library [list|rename-category|remove|export|import]")
 
+# ---------------------------------------------------------------------------
+# Startup and Initialization
+# ---------------------------------------------------------------------------
+
 def sync_datapack_library():
     """
     Synchronizes the internal datapack library to the user's worlds directory.
@@ -2188,6 +2181,18 @@ def sync_datapack_library():
                 else:
                     shutil.copy2(item, target)
 
+
+def rconn_shortcut_transformer(lines):
+    new_lines = []
+    for line in lines:
+        stripped = line.lstrip()
+        if stripped.startswith('/'):
+            leading_spaces = line[:len(line) - len(stripped)]
+            # Rewrites '/list' to '%mc_run list'
+            line = f"{leading_spaces}%mc_run {stripped[1:]}"
+        new_lines.append(line)
+    return new_lines
+
 def load_ipython_extension(ip):
     """
     Called by IPython when the extension is loaded.
@@ -2197,6 +2202,9 @@ def load_ipython_extension(ip):
 
     mcshell_instance = MCShell(ip)
     ip.register_magics(mcshell_instance)
+
+    # --- REGISTER THE '/' SHORTCUT TRANSFORMER ---
+    ip.input_transformers_cleanup.append(rconn_shortcut_transformer)
 
     from mcshell.mcserver import GUI_AUTH_TOKEN
 
@@ -2225,6 +2233,10 @@ def load_ipython_extension(ip):
 
         # Ensure the background Flask thread is fully killed on exit
         from mcshell.mcserver import stop_app_server
+        # --- CLEAN UP TRANSFORMER ON SHUTDOWN (Optional but clean) ---
+        if rconn_shortcut_transformer in ip.input_transformers_cleanup:
+            ip.input_transformers_cleanup.remove(rconn_shortcut_transformer)
+            
         stop_app_server()
 
         print("Cleanup complete.")

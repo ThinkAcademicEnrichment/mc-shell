@@ -6,12 +6,12 @@ import xml.etree.ElementTree as ET
 # Ensure we can import from mcshell
 sys.path.append(str(Path(__file__).parent))
 
-from registry_builder import RegistryBuilder,ApiGenerator,TaxonomyEngine
+from mcshell.mcbuilder import RegistryBuilder,ApiGenerator,TaxonomyEngine
 
 from mcshell.mcscraper import make_materials, classify_materials_with_bukkit, make_entity_id_map, make_item_id_map, fetch_minecraft_data
 from mcshell.constants import MC_MATERIALS_PATH,MC_ENTITY_ID_MAP_PATH,MC_APP_SRC_DIR, MC_DATA_DIR, MC_JUICE_SRC_DIR,MC_SHELL_DIR,subprocess,shutil
 
-from registry_config import TAXONOMY_RULES,ENTITY_RULES
+from mcshell.mcconfig import TAXONOMY_RULES,ENTITY_RULES
 
 def rebuild():
     """
@@ -19,19 +19,7 @@ def rebuild():
     This serves as a full-pipeline test for the data-driven migration.
     """
 
-    print("Step 0: Remove the existing toolbox.xml file...")
-    output_toolbox_path = MC_APP_SRC_DIR / 'toolbox.xml'
-    output_toolbox_path.unlink(missing_ok=True)
-    toolbox_template_path = MC_DATA_DIR / 'toolbox_template.xml'
-    with output_toolbox_path.open('w') as f:
-        f.write(toolbox_template_path.read_text())
-
-    print("Step 1: Fetching JSON from minecraft-data...")
-    prismarine_blocks = fetch_minecraft_data('1.21.11','blocks')
-    prismarine_items = fetch_minecraft_data('1.21.11','items')
-    prismarine_entities = fetch_minecraft_data('1.21.11','entities')
-
-    print("\nStep 2: Building mcjuice Command Registry...")
+    print("\nStep 1: Building mcjuice Command Registry...")
     gen = ApiGenerator(
         MC_DATA_DIR / "mcjuice_api.yaml",
         MC_JUICE_SRC_DIR / "main/java/org/mcshell/mcjuice/GeneratedCommandRegistry.java",
@@ -45,11 +33,26 @@ def rebuild():
 
 
     # 2. Run the Engine
-    engine = TaxonomyEngine(TAXONOMY_RULES, ENTITY_RULES, prismarine_blocks, prismarine_items, prismarine_entities,verbose=True)
+
+    print("Step 2: Remove the existing toolbox.xml file...")
+    output_toolbox_path = MC_APP_SRC_DIR / 'toolbox.xml'
+    output_toolbox_path.unlink(missing_ok=True)
+    toolbox_template_path = MC_DATA_DIR / 'toolbox_template.xml'
+    with output_toolbox_path.open('w') as f:
+        f.write(toolbox_template_path.read_text())
+
+
+    print("Step 3: Fetching JSON from minecraft-data...")
+    prismarine_blocks = fetch_minecraft_data('1.21.11','blocks')
+    prismarine_items = fetch_minecraft_data('1.21.11','items')
+    prismarine_entities = fetch_minecraft_data('1.21.11','entities')
+
+
+    engine = TaxonomyEngine(TAXONOMY_RULES, ENTITY_RULES, prismarine_blocks, prismarine_items, prismarine_entities,verbose=False)
     materials_data, entity_data, entity_groups, picker_groups, variant_config = engine.run()
 
 
-    print("\nStep 3: Building Blockly Registries...")
+    print("\nStep 4: Building Blockly Registries...")
     builder = RegistryBuilder(
         toolbox_path=MC_APP_SRC_DIR / 'toolbox.xml',
         blocks_dir=MC_APP_SRC_DIR / 'blocks',
@@ -69,6 +72,7 @@ def rebuild():
     # 3. Updates toolbox.xml via blockapily's structured XML injection
     builder.build_all()
 
+    print("Step 5: Build the McJuice plugin...")
     pom_path = MC_JUICE_SRC_DIR.parent / 'pom.xml'
 
     # Parse the pom.xml to dynamically detect all profile IDs
@@ -85,10 +89,10 @@ def rebuild():
     for profile in profile_ids:
         if profile:
             print(f"\nBuilding McJuice JAR for profile: {profile}...")
-            build_cmd = ["mvn", "clean", "package", "-P", profile]
+            build_cmd = ["mvn","--quiet", "clean", "package", "-P", profile]
         else:
             print("\nBuilding McJuice JAR...")
-            build_cmd = ["mvn", "clean", "package"]
+            build_cmd = ["mvn","--quiet", "clean", "package"]
             
         # Execute the Maven build
         subprocess.run(build_cmd, cwd=str(MC_JUICE_SRC_DIR.parent), check=True)
