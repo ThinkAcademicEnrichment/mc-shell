@@ -1447,6 +1447,8 @@ class MCShell(Magics):
             cancel_event = threading.Event()
             player.cancel_event = cancel_event
 
+            # you must import AFTER the server regenerates this file
+            from mcshell.mcactions import MCActions
             actions = MCActions(player)
 
             # 5. Dynamically Import the Module
