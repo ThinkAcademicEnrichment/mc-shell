@@ -1,4 +1,3 @@
-from mcshell import MC_MATERIALS_PATH
 import urllib.request
 import urllib.robotparser
 import pickle
