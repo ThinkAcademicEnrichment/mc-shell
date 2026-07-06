@@ -73,6 +73,7 @@ MC_SERVER_DATA = {
     'mj_port': MJ_PLUGIN_PORT,
     'app_port': MC_APP_PORT,
     'password': None,
+    'mc_version': MC_VERSION,
 }
 
 MC_SHELL_DIR = pathlib.Path(__file__).parent
