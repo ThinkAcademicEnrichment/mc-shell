@@ -1,4 +1,3 @@
-from site import ENABLE_USER_SITE
 import sys
 from pathlib import Path
 import xml.etree.ElementTree as ET
@@ -8,8 +7,8 @@ sys.path.append(str(Path(__file__).parent))
 
 from mcshell.mcbuilder import RegistryBuilder,ApiGenerator,TaxonomyEngine
 
-from mcshell.mcscraper import make_materials, classify_materials_with_bukkit, make_entity_id_map, make_item_id_map, fetch_minecraft_data
-from mcshell.constants import MC_MATERIALS_PATH,MC_ENTITY_ID_MAP_PATH,MC_APP_SRC_DIR, MC_DATA_DIR, MC_JUICE_SRC_DIR,MC_SHELL_DIR,subprocess,shutil
+from mcshell.mcscraper import fetch_minecraft_data
+from mcshell.constants import MC_APP_SRC_DIR, MC_DATA_DIR, MC_JUICE_SRC_DIR,MC_SHELL_DIR,subprocess,shutil
 
 from mcshell.mcconfig import TAXONOMY_RULES,ENTITY_RULES
 
