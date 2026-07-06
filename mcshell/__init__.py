@@ -218,10 +218,12 @@ class MCShell(Magics):
         self.server_data = MC_SERVER_DATA
 
         self.ip.set_hook('complete_command', self._complete_mc_run, re_key='%mc_run')
+        self.ip.set_hook('complete_command', self._complete_slash_run, re_key='^/')
+
         self.ip.set_hook('complete_command', self._complete_mc_help, re_key='%mc_help')
-        self.ip.set_hook('complete_command',self._complete_mc_cancel_power, re_key='%mc_cancel_power')
-        self.ip.set_hook('complete_command',self._complete_world_command, re_key='%pp_start_world')
-        self.ip.set_hook('complete_command',self._complete_world_command, re_key='%pp_delete_world')
+        self.ip.set_hook('complete_command', self._complete_mc_cancel_power, re_key='%mc_cancel_power')
+        self.ip.set_hook('complete_command', self._complete_world_command, re_key='%pp_start_world')
+        self.ip.set_hook('complete_command', self._complete_world_command, re_key='%pp_delete_world')
 
         self.app_server_thread = None
 
@@ -1263,27 +1265,31 @@ class MCShell(Magics):
             print(response)
         print('-' * 100)
 
-    def _complete_mc_run(self, ipyshell, event):
+    def _get_rconn_completions(self, ipyshell, raw_event, line, text_to_complete):
+        """
+        The core autocomplete logic. 
+        Expects 'line' to always be formatted with a prefix (like '%mc_run').
+        """
+        # Capture debug data exactly as you had it, but use the normalized line/symbol
         ipyshell.user_ns.update(
             dict(
-                rcon_event=event,
-                rcon_symbol=event.symbol,
-                rcon_line=event.line,
-                rcon_cursor_pos=event.text_until_cursor)
-        ) # Capture ALL event data IMMEDIATELY
-
-        text_to_complete = event.symbol
-        line = event.line
+                rcon_event=copy.deepcopy(raw_event), 
+                rcon_symbol=text_to_complete,
+                rcon_line=line,
+                rcon_cursor_pos=raw_event.text_until_cursor
+            )
+        ) 
 
         parts = line.split()
 
-        ipyshell.user_ns.update(dict(rcon_text_to_complete=text_to_complete)) # Capture text_to_complete
-        ipyshell.user_ns.update(dict(rcon_parts=parts)) # Capture parts
+        ipyshell.user_ns.update(dict(rcon_text_to_complete=text_to_complete)) 
+        ipyshell.user_ns.update(dict(rcon_parts=parts)) 
 
         if len(parts) >= 2:
             command = parts[1]
             if 'minecraft:' in command:
                 command = command.split(':')[1]
+                
         arg_matches = []
         if len(parts) == 1: # showing commands
             arg_matches = [c for c in self.commands.keys()]
@@ -1302,7 +1308,7 @@ class MCShell(Magics):
         elif len(parts) > 3: # completing arguments
             sub_command = parts[2]
             sub_command_args = self.commands[command][sub_command]
-            current_arg_index = len(parts) - 3# Index of current argument
+            current_arg_index = len(parts) - 3 # Index of current argument
             if text_to_complete == '': # showing next arguments
                 arg_matches = [arg for arg in sub_command_args[current_arg_index+1]]
             else:
@@ -1312,7 +1318,29 @@ class MCShell(Magics):
                     return []
 
         ipyshell.user_ns.update({'rcon_matches': arg_matches})
-        return arg_matches # Fallback
+        return arg_matches 
+
+
+    def _complete_mc_run(self, ipyshell, event):
+        """Hook for standard %mc_run autocompletion."""
+        # Pass the raw event strings directly
+        return self._get_rconn_completions(ipyshell, event, event.line, event.symbol)
+
+    def _complete_slash_run(self, ipyshell, event):
+        """Hook for / shortcut autocompletion."""
+        # 1. Strip leading slash for our internal logic
+        clean_symbol = event.symbol[1:] if event.symbol.startswith('/') else event.symbol
+        pseudo_line = f"%mc_run {event.line[1:]}"
+        
+        # 2. Get the matches from the core logic
+        matches = self._get_rconn_completions(ipyshell, event, pseudo_line, clean_symbol)
+        
+        # 3. CRITICAL FIX: If the symbol started with a '/', put it back!
+        # This ensures '/wea' is replaced by '/weather', not 'weather'
+        if event.symbol.startswith('/'):
+            return [f"/{match}" for match in matches]
+            
+        return matches
 
     @needs_local_scope
     @line_magic
@@ -2147,6 +2175,18 @@ def sync_datapack_library():
                 else:
                     shutil.copy2(item, target)
 
+
+def rconn_shortcut_transformer(lines):
+    new_lines = []
+    for line in lines:
+        stripped = line.lstrip()
+        if stripped.startswith('/'):
+            leading_spaces = line[:len(line) - len(stripped)]
+            # Rewrites '/list' to '%mc_run list'
+            line = f"{leading_spaces}%mc_run {stripped[1:]}"
+        new_lines.append(line)
+    return new_lines
+
 def load_ipython_extension(ip):
     """
     Called by IPython when the extension is loaded.
@@ -2156,6 +2196,9 @@ def load_ipython_extension(ip):
 
     mcshell_instance = MCShell(ip)
     ip.register_magics(mcshell_instance)
+
+    # --- REGISTER THE '/' SHORTCUT TRANSFORMER ---
+    ip.input_transformers_cleanup.append(rconn_shortcut_transformer)
 
     from mcshell.mcserver import GUI_AUTH_TOKEN
 
@@ -2184,6 +2227,10 @@ def load_ipython_extension(ip):
 
         # Ensure the background Flask thread is fully killed on exit
         from mcshell.mcserver import stop_app_server
+        # --- CLEAN UP TRANSFORMER ON SHUTDOWN (Optional but clean) ---
+        if rconn_shortcut_transformer in ip.input_transformers_cleanup:
+            ip.input_transformers_cleanup.remove(rconn_shortcut_transformer)
+            
         stop_app_server()
 
         print("Cleanup complete.")
