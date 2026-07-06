@@ -2162,6 +2162,10 @@ class MCShell(Magics):
             print(f"Unknown command: {command}")
             print("Usage: %mc_library [list|rename-category|remove|export|import]")
 
+# ---------------------------------------------------------------------------
+# Startup and Initialization
+# ---------------------------------------------------------------------------
+
 def sync_datapack_library():
     """
     Synchronizes the internal datapack library to the user's worlds directory.
