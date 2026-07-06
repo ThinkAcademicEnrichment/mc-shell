@@ -460,6 +460,15 @@ class MCShell(Magics):
                 # Expects a comma-separated list of names
                 datapacks_to_install = arg.split('=', 1)[1].split(',')
 
+        # Quick version check (assuming semantic versioning format)
+        v_parts = [int(x) for x in mc_version.split('.')]
+        if v_parts[0] == 1 and (v_parts[1] < 20 or (v_parts[1] == 20 and v_parts[2] < 5)):
+            print(f"Error: mcshell requires Minecraft 1.20.5 or newer (Java 21). Version '{mc_version}' is not supported.")
+            return
+
+        # NEW: handle versions
+        self.server_data['mc_version'] = mc_version 
+
         # Define paths
         world_dir = MC_WORLDS_BASE_DIR.joinpath(world_name)
         server_jars_dir = MC_WORLDS_BASE_DIR.joinpath('server-jars')
