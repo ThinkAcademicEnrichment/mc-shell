@@ -1,6 +1,7 @@
 import socket
 from pprint import pprint
 
+import atexit
 import IPython
 import getpass
 from IPython.core.magic import Magics, magics_class, line_magic,needs_local_scope
@@ -11,7 +12,6 @@ from mcshell.constants import *
 from mcshell.mcrepo import SQLiteRepository
 from mcshell.mcclient import MCClient
 from mcshell.mcserver import throw_app_server_error, start_app_server, reset_app_server_context, GUI_AUTH_TOKEN
-from mcshell.mcactions import *
 from mcshell.mcserver import execute_power_in_thread, RUNNING_POWERS # Import helpers
 from mcshell.ppmanager import *
 from mcshell.ppdownloader import *
