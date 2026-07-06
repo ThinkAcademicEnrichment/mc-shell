@@ -77,7 +77,7 @@ def _resolve_modrinth_plugin(project_id, mc_version):
         pass # Failsafe to fallback URLs
     return None
 
-def _run_tunnel_host_thread(mc_port, rcon_port, mj_port, out_token, use_ssh=False):
+def _run_tunnel_host_thread(mc_port, rcon_port, mj_port, mc_version, out_token, use_ssh=False):
     async def host_task():
         # 1. Force integer types to ensure our logic works safely
         mc_port_i = int(mc_port)
@@ -119,10 +119,10 @@ def _run_tunnel_host_thread(mc_port, rcon_port, mj_port, out_token, use_ssh=Fals
         # 2. Formulate the robust Join Code
         # If the ports match defaults exactly, keep the token short and clean.
         if mc_port_i == 25565 and rcon_port_i == 25575 and mj_port_i == 4721:
-            join_code = f"{host_ip}:{bound_port}#{pin}"
+            join_code = f"{host_ip}:{bound_port}#{pin}-{mc_version}"
         else:
             # If ports deviated, append them so the client knows what to ask for
-            join_code = f"{host_ip}:{bound_port}#{pin}-{mc_port_i}-{rcon_port_i}-{mj_port_i}"
+            join_code = f"{host_ip}:{bound_port}#{pin}-{mc_port_i}-{rcon_port_i}-{mj_port_i}-{mc_version}"
 
         out_token.append(join_code)
 
@@ -137,10 +137,10 @@ def _run_tunnel_host_thread(mc_port, rcon_port, mj_port, out_token, use_ssh=Fals
     except Exception as e:
         print(f"\n[Tunnel Host Error] {e}")
 
-def _start_secure_tunnel_host(mc_port, rcon_port, mj_port, use_ssh=False):
+def _start_secure_tunnel_host(mc_port, rcon_port, mj_port, mc_version, use_ssh=False):
     out_token = []
     # Use daemon=True so the thread automatically dies when IPython exits
-    thread = Thread(target=_run_tunnel_host_thread, args=(mc_port, rcon_port, mj_port, out_token, use_ssh), daemon=True)
+    thread = Thread(target=_run_tunnel_host_thread, args=(mc_port, rcon_port, mj_port, mc_version, out_token, use_ssh), daemon=True)
     thread.start()
 
     # Wait up to 5 seconds for the cryptographic keys and token to generate
@@ -314,12 +314,13 @@ class MCShell(Magics):
     def _get_connection_hub_data(self):
         """Returns the raw connection hub data in a structured, JSON-friendly dictionary."""
         def _make_direct_token(ip):
-            mc_p = self.server_data.get('port', 25565)
-            rcon_p = self.server_data.get('rcon_port', 25575)
-            mj_p = self.server_data.get('mj_port', 4721)
+            mc_p = self.server_data.get('port', MC_SERVER_PORT)
+            rcon_p = self.server_data.get('rcon_port', MC_RCON_PORT)
+            mj_p = self.server_data.get('mj_port', MJ_PLUGIN_PORT)
+            mc_v = self.server_data.get('mc_version',MC_VERSION)
             if mc_p == 25565 and rcon_p == 25575 and mj_p == 4721:
                 return ip
-            return f"{ip}@{mc_p}-{rcon_p}-{mj_p}"
+            return f"{ip}@{mc_p}-{rcon_p}-{mj_p}-{mc_v}"
 
         vpn_ip = get_vpn_ip()
         local_ip = _get_local_ip()
@@ -759,7 +760,7 @@ class MCShell(Magics):
 
         # Start the background SSH Tunnel gateway automatically
         print("Starting secure SSH tunnel gateway in the background...")
-        self.current_ssh_token = _start_secure_tunnel_host(self.server_data['port'], self.server_data['rcon_port'], self.server_data['mj_port'], use_ssh=use_ssh)
+        self.current_ssh_token = _start_secure_tunnel_host(self.server_data['port'], self.server_data['rcon_port'], self.server_data['mj_port'], self.server_data['mc_version'],use_ssh=use_ssh)
 
         # Cross-platform automated host login (ONLY if we aren't relying on an external Subnet Router)
         if authkey and not use_subnet:
@@ -1105,6 +1106,7 @@ class MCShell(Magics):
             print(f"   Minecraft Port     : {self.server_data.get('port', 25565)}")
             print(f"   RCON Port          : {self.server_data.get('rcon_port', 25575)}")
             print(f"   McJuice Port       : {self.server_data.get('mj_port', 4721)}")
+            print(f"   Minecraft Version  : {self.server_data.get('mc_version', MC_VERSION)}")
 
             password = self.server_data.get('password')
             if password:
@@ -1594,7 +1596,7 @@ class MCShell(Magics):
     def mc_start_app(self, line):
         """
         Starts the client application components to connect to a world.
-        Usage: %mc_start_app [token|IP] [--local-mc <port>] [--local-rcon <port>] [--local-mj <port>] [--authkey <key>] [--guest] [--mc_name <minecraft user name>]
+        Usage: %mc_start_app [token|IP] [--local-mc <port>] [--local-rcon <port>] [--local-mj <port>] [--authkey <key>] [--mc_version <minecraft version>] [--guest] [--mc_name <minecraft user name>]
         """
         parts = line.split()
 
@@ -1650,14 +1652,16 @@ class MCShell(Magics):
                 'rcon_port': int(Prompt.ask('Rcon Port:', default=str(self.server_data['rcon_port']))),
                 'mj_port': int(Prompt.ask('Plugin Port:', default=str(self.server_data['mj_port']))),
                 'app_port': int(Prompt.ask('Application Port:', default=str(self.server_data['app_port']))),
+                'mc_version': str(Prompt.ask('Minecraft Version:', default=str(self.server_data['mc_version']))),
                 'password': None,
             })
 
         if token:
             # 1. DEFINE VARS FIRST: Determine intended local ports from defaults
-            local_mc = self.server_data.get('port', 25565)
-            local_rcon = self.server_data.get('rcon_port', 25575)
-            local_mj = self.server_data.get('mj_port', 4721)
+            local_mc = self.server_data.get('port', MC_SERVER_PORT)
+            local_rcon = self.server_data.get('rcon_port', MC_RCON_PORT)
+            local_mj = self.server_data.get('mj_port', MJ_PLUGIN_PORT)
+            mc_version = self.server_data.get('mc_version',MC_VERSION)
 
             # 2. OVERRIDES: Process any user-provided terminal overrides
             if '--local-mc' in parts:
@@ -1666,6 +1670,8 @@ class MCShell(Magics):
                 local_rcon = int(parts[parts.index('--local-rcon') + 1])
             if '--local-mj' in parts:
                 local_mj = int(parts[parts.index('--local-mj') + 1])
+            if '--mc_version' in parts:
+                mc_version = parts[parts.index('--mc_version') + 1]
 
             # 3. SAFETY CHECK
             if hasattr(self, 'active_paper_server') and getattr(self, 'active_paper_server') and self.active_paper_server.is_alive():
@@ -1681,20 +1687,22 @@ class MCShell(Magics):
                 self.server_data['port'] = local_mc
                 self.server_data['rcon_port'] = local_rcon
                 self.server_data['mj_port'] = local_mj
+                self.server_data['mc_version'] = mc_version
 
                 # Give the background thread a moment to establish port forwards
                 time.sleep(1.0)
                 print("Tunnel connection established.")
             else:
-                # Handle Direct IPs and Custom Port strings (e.g. 192.168.1.5@25566-25576-4721)
+                # Handle Direct IPs and Custom Port strings (e.g. 192.168.1.5@25566-25576-4721-1.21.11)
                 if '@' in token:
                     ip_part, ports_part = token.split('@', 1)
                     try:
-                        p_mc, p_rcon, p_mj = map(int, ports_part.split('-'))
+                        p_mc, p_rcon, p_mj, p_ver = ports_part.split('-')
                         self.server_data['host'] = ip_part
-                        self.server_data['port'] = p_mc
-                        self.server_data['rcon_port'] = p_rcon
-                        self.server_data['mj_port'] = p_mj
+                        self.server_data['port'] = int(p_mc)
+                        self.server_data['rcon_port'] = int(p_rcon)
+                        self.server_data['mj_port'] = int(p_mj)
+                        self.server_data['mc_version'] = p_ver
                         print(f"\n[DIRECT CONNECT] Connecting to {ip_part} with custom ports...")
                     except ValueError:
                         print("\n[ERROR] Invalid Direct Token format. Falling back to default ports.")
@@ -1705,6 +1713,7 @@ class MCShell(Magics):
                     self.server_data['port'] = local_mc
                     self.server_data['rcon_port'] = local_rcon
                     self.server_data['mj_port'] = local_mj
+                    self.server_data['mc_version'] = mc_version
 
         if is_guest:
             # Bypass the interactive prompt and default to standard player mode safely
