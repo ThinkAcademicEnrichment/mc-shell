@@ -1,10 +1,13 @@
 from mctools import RCONClient, AsyncRCONClient
 from mctools.errors import RCONAuthenticationError
 
-import os
-import re
+import sys
 import yaml
+import pathlib
+from pathlib import Path # this needs better consistency
+import re
 import json
+import os
 import copy
 import math
 import time
@@ -13,9 +16,7 @@ import random
 import asyncio
 import requests
 import shutil
-import pathlib
 import importlib
-from pathlib import Path # this needs better consistency
 import subprocess
 import yarl
 import inspect
@@ -72,6 +73,7 @@ MC_SERVER_DATA = {
     'mj_port': MJ_PLUGIN_PORT,
     'app_port': MC_APP_PORT,
     'password': None,
+    'mc_version': MC_VERSION,
 }
 
 MC_SHELL_DIR = pathlib.Path(__file__).parent
@@ -117,7 +119,6 @@ MC_DATAPACK_LIB_DIR = MC_WORLDS_BASE_DIR / 'datapacks-library'
 
 #new: mcjuice server
 MC_JUICE_SRC_DIR = pathlib.Path(__file__).parent.parent / 'mcjuice' / 'src'
-MC_JUICE_JAR_PATH = MC_DATA_DIR / "mcjuice-0.1.0.jar"
 
 MC_JRE_DIR = MC_WORLDS_BASE_DIR / 'jre'
 # Determine the binary name based on the OS

@@ -17,6 +17,7 @@ from mcshell.mcrepo import JsonFileRepository
 from mcshell.blueprints.powers_api import powers_bp
 from mcshell.blueprints.ipython_api import ipython_bp
 from mcshell.blueprints.control_api import control_bp
+from mcshell.blueprints.config_api import config_bp 
 
 class ServerShutdownException(Exception):
     """Custom exception to signal a clean server shutdown."""
@@ -34,6 +35,7 @@ GUI_AUTH_TOKEN = uuid.uuid4().hex
 # --- Register Endpoints
 app.register_blueprint(powers_bp)
 app.register_blueprint(control_bp)
+app.register_blueprint(config_bp)
 app.register_blueprint(ipython_bp)
 
 # --- SUBSTAGE 2B: Secure API Blueprints (Hard Mode) ---

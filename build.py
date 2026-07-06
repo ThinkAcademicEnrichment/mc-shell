@@ -1,13 +1,17 @@
+from site import ENABLE_USER_SITE
 import sys
 from pathlib import Path
+import xml.etree.ElementTree as ET
 
 # Ensure we can import from mcshell
 sys.path.append(str(Path(__file__).parent))
 
-from registry_builder import RegistryBuilder,ApiGenerator
+from mcshell.mcbuilder import RegistryBuilder,ApiGenerator,TaxonomyEngine
 
-from mcshell.mcscraper import make_materials, classify_materials_with_bukkit, make_entity_id_map, make_item_id_map
+from mcshell.mcscraper import make_materials, classify_materials_with_bukkit, make_entity_id_map, make_item_id_map, fetch_minecraft_data
 from mcshell.constants import MC_MATERIALS_PATH,MC_ENTITY_ID_MAP_PATH,MC_APP_SRC_DIR, MC_DATA_DIR, MC_JUICE_SRC_DIR,MC_SHELL_DIR,subprocess,shutil
+
+from mcshell.mcconfig import TAXONOMY_RULES,ENTITY_RULES
 
 def rebuild():
     """
@@ -15,21 +19,7 @@ def rebuild():
     This serves as a full-pipeline test for the data-driven migration.
     """
 
-    print("Step 0: Remove the existing toolbox.xml file...")
-    output_toolbox_path = MC_APP_SRC_DIR / 'toolbox.xml'
-    output_toolbox_path.unlink(missing_ok=True)
-    toolbox_template_path = MC_DATA_DIR / 'toolbox_template.xml'
-    with output_toolbox_path.open('w') as f:
-        f.write(toolbox_template_path.read_text())
-
-    print("Step 1: Scraping latest Minecraft data...")
-    # These functions now produce structured dictionaries for Blocks/Items/Entities
-    make_materials()
-    print("[!!] Remember to use classify_materials_with_bukkit manually...")
-    make_entity_id_map()
-    make_item_id_map()
-
-    print("\nStep 2: Building mcjuice Command Registry...")
+    print("\nStep 1: Building mcjuice Command Registry...")
     gen = ApiGenerator(
         MC_DATA_DIR / "mcjuice_api.yaml",
         MC_JUICE_SRC_DIR / "main/java/org/mcshell/mcjuice/GeneratedCommandRegistry.java",
@@ -41,14 +31,40 @@ def rebuild():
     # generate the command registry Java class for the mcjuice plugin and a python client
     gen.run()
 
-    print("\nStep 3: Building Blockly Registries...")
+
+    # 2. Run the Engine
+
+    print("Step 2: Remove the existing toolbox.xml file...")
+    output_toolbox_path = MC_APP_SRC_DIR / 'toolbox.xml'
+    output_toolbox_path.unlink(missing_ok=True)
+    toolbox_template_path = MC_DATA_DIR / 'toolbox_template.xml'
+    with output_toolbox_path.open('w') as f:
+        f.write(toolbox_template_path.read_text())
+
+
+    print("Step 3: Fetching JSON from minecraft-data...")
+    prismarine_blocks = fetch_minecraft_data('1.21.11','blocks')
+    prismarine_items = fetch_minecraft_data('1.21.11','items')
+    prismarine_entities = fetch_minecraft_data('1.21.11','entities')
+
+
+    engine = TaxonomyEngine(TAXONOMY_RULES, ENTITY_RULES, prismarine_blocks, prismarine_items, prismarine_entities,verbose=False)
+    materials_data, entity_data, entity_groups, picker_groups, variant_config = engine.run()
+
+
+    print("\nStep 4: Building Blockly Registries...")
     builder = RegistryBuilder(
         toolbox_path=MC_APP_SRC_DIR / 'toolbox.xml',
         blocks_dir=MC_APP_SRC_DIR / 'blocks',
         gens_dir=MC_APP_SRC_DIR / 'generators' / 'python',
-        materials_path=MC_MATERIALS_PATH,
-        entity_id_map_path=MC_ENTITY_ID_MAP_PATH
     )
+
+    # 3. Inject it straight into RegistryBuilder!
+    builder.materials_data = materials_data
+    builder.entity_data = entity_data
+    builder.ENTITY_GROUPS = entity_groups
+    builder.MATERIAL_PICKER_GROUPS = picker_groups
+    builder.VARIANT_CONFIG = variant_config
 
     # This generates:
     # 1. blocks/materials.mjs, blocks/items.mjs, blocks/entities.mjs
@@ -56,15 +72,43 @@ def rebuild():
     # 3. Updates toolbox.xml via blockapily's structured XML injection
     builder.build_all()
 
+    print("Step 5: Build the McJuice plugin...")
+    pom_path = MC_JUICE_SRC_DIR.parent / 'pom.xml'
 
-    # 2. Compile via Maven
-    print("Building McJuice JAR...")
-    subprocess.run(["mvn", "clean", "package"], cwd=str(MC_JUICE_SRC_DIR.parent), check=True)
+    # Parse the pom.xml to dynamically detect all profile IDs
+    print(f"Probing {pom_path} for Maven profiles...")
+    tree = ET.parse(pom_path)
+    ns = {'m': 'http://maven.apache.org/POM/4.0.0'}
+    profile_ids = [p.text for p in tree.findall('.//m:profile/m:id', ns)]
 
-    # 3. Move the artifact to the mc-shell data directory for PyPI packaging
-    built_jar = list(MC_JUICE_SRC_DIR.parent.joinpath('target').glob('mcjuice-*.jar')).pop()
-    dest_jar = MC_DATA_DIR
-    shutil.copy2(built_jar, dest_jar)
+    if not profile_ids:
+        print("Warning: No profiles detected in pom.xml. Defaulting to standard build.")
+        profile_ids = [None] # Allows the loop to run once with a standard build command
+
+    # Build each profile and copy the artifact immediately
+    for profile in profile_ids:
+        if profile:
+            print(f"\nBuilding McJuice JAR for profile: {profile}...")
+            build_cmd = ["mvn","--quiet", "clean", "package", "-P", profile]
+        else:
+            print("\nBuilding McJuice JAR...")
+            build_cmd = ["mvn","--quiet", "clean", "package"]
+            
+        # Execute the Maven build
+        subprocess.run(build_cmd, cwd=str(MC_JUICE_SRC_DIR.parent), check=True)
+
+        # 3. Move the artifact to the data directory before the next iteration's 'clean' wipes it
+        built_jars = list(MC_JUICE_SRC_DIR.parent.joinpath('target').glob('mcjuice-*.jar'))
+        
+        if not built_jars:
+            print(f"Error: No generated JARs found in target/ after building profile {profile}")
+            continue
+            
+        for built_jar in built_jars:
+            print(f"Copying {built_jar.name} to {MC_DATA_DIR}")
+            shutil.copy2(built_jar, MC_DATA_DIR)
+
+    print("\nAll builds completed and copied successfully.")
 
     print(f"McJuice JAR integrated into mcshell/data/")
     print("\nRebuild Complete!")

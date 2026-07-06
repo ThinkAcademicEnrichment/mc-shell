@@ -10,9 +10,18 @@ import 'simple-keyboard/build/css/index.css';
 import * as Blockly from 'blockly';
 import { pythonGenerator } from 'blockly/python';
 
+// --- THE CRITICAL FIX ---
+// Expose the bundled modules to the global window object
+// so the dynamically injected all.js script can see them.
+window.Blockly = Blockly;
+window.pythonGenerator = pythonGenerator;
+
+// Safety net: ensure the Blocks registry is initialized
+window.Blockly.Blocks = window.Blockly.Blocks || {};
 import { initializeHtmxListeners } from './lib/htmx_listeners.js';
 import { defineMineCraftConstants } from "./lib/constants.mjs";
 import { defineMineCraftBlocklyUtils } from "./lib/utils.mjs";
+
 import { registerAllBlocks } from "./blocks/registry.mjs";
 import { registerAllGenerators } from "./generators/python/registry.mjs";
 
@@ -160,11 +169,42 @@ function setupKeyboard() {
     });
 }
 
+// Helper to dynamically load a script and return a Promise
+function loadScript(url) {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = url;
+        script.type = 'text/javascript';
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+}
+
 /**
  * --- Main Initialization ---
  */
 async function init() {
-    // 1. Blockly Setup
+    // 0. Retreive App Config
+    // 1. Ask the server what environment we are in
+    const response = await fetch('/config/version');
+    const config = await response.json();
+    console.log("Environment Config:", config);
+    const version = config.version;
+
+    // ---------------------------------------------------------
+    // 1. Fetch and execute the dynamic Blockly block definitions
+    // ---------------------------------------------------------
+    console.log(`Loading block definitions for version ${version}...`);
+    try {
+        // We request 'all.js' to get blocks, items, entities, and actions in one hit
+        await loadScript(`/config/${version}/all.js`);
+        console.log("Block definitions loaded successfully.");
+    } catch (error) {
+        console.error("Critical error loading blocks. Blockly may not render correctly.", error);
+    }
+
+    // 2. Setup the Blockly Prompt
     Blockly.dialog.setPrompt((message, defaultValue, callback) => {
         window.isBlocklyPromptOpen = true;
         if (document.activeElement) document.activeElement.blur();
@@ -177,8 +217,12 @@ async function init() {
         }));
     });
 
-    const toolboxUrl = new URL('./toolbox.xml', import.meta.url);
-    const toolboxXml = await fetch(toolboxUrl).then(r => r.text()).catch(() => '<xml></xml>');
+    // 3. Inject Workspace using the bundled XML
+    // Grab the injected XML, fallback to empty string if it failed
+    const toolboxXml = window.MC_TOOLBOX_XML || '<xml></xml>';
+
+    // const toolboxUrl = new URL('./toolbox.xml', import.meta.url);
+    // const toolboxXml = await fetch(toolboxUrl).then(r => r.text()).catch(() => '<xml></xml>');
 
     workspace = Blockly.inject('blocklyDiv', {
         toolbox: toolboxXml,
