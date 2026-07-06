@@ -33,7 +33,7 @@ def rebuild():
 
     # 2. Run the Engine
 
-    print("Step 2: Remove the existing toolbox.xml file...")
+    print("\nStep 2: Remove the existing toolbox.xml file...")
     output_toolbox_path = MC_APP_SRC_DIR / 'toolbox.xml'
     output_toolbox_path.unlink(missing_ok=True)
     toolbox_template_path = MC_DATA_DIR / 'toolbox_template.xml'
@@ -41,7 +41,7 @@ def rebuild():
         f.write(toolbox_template_path.read_text())
 
 
-    print("Step 3: Fetching JSON from minecraft-data...")
+    print("\nStep 3: Fetching JSON from minecraft-data...")
     prismarine_blocks = fetch_minecraft_data('1.21.11','blocks')
     prismarine_items = fetch_minecraft_data('1.21.11','items')
     prismarine_entities = fetch_minecraft_data('1.21.11','entities')
@@ -71,7 +71,7 @@ def rebuild():
     # 3. Updates toolbox.xml via blockapily's structured XML injection
     builder.build_all()
 
-    print("Step 5: Build the McJuice plugin...")
+    print("\nStep 5: Build the McJuice plugin...")
     pom_path = MC_JUICE_SRC_DIR.parent / 'pom.xml'
 
     # Parse the pom.xml to dynamically detect all profile IDs
@@ -109,11 +109,11 @@ def rebuild():
 
     print("\nAll builds completed and copied successfully.")
 
-    print(f"McJuice JAR integrated into mcshell/data/")
-    print("\nRebuild Complete!")
-    print(f"Blocks generated in: {MC_APP_SRC_DIR / 'blocks'}")
-    print(f"Toolbox updated: {MC_APP_SRC_DIR / 'toolbox.xml'}")
-    print("\nYou can now refresh the mced editor or restart the web application.")
+    print(f"\nMcJuice JAR integrated into mcshell/data/")
+    print(f"\nRebuild Complete!")
+    print(f"\nBlocks generated in: {MC_APP_SRC_DIR / 'blocks'}")
+    print(f"\nToolbox updated: {MC_APP_SRC_DIR / 'toolbox.xml'}")
+    print(f"\nYou can now refresh the mced editor or restart the web application.")
 
 if __name__ == "__main__":
     rebuild()
