@@ -58,11 +58,6 @@ jobs:
         working-directory: ./mced
         run: npm run build
 
-      - name: Ensure JAR is in data directory
-        run: |
-          mkdir -p mcshell/data
-          cp mcjuice/target/mcjuice-0.1.0.jar mcshell/data/ || echo "JAR not found in target!"
-
       - name: Build Source Distribution (sdist)
         run: poetry build --format sdist
 
