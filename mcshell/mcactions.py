@@ -1,8 +1,5 @@
-from blockapily import mced_block
 
 from mcshell.constants import *
-
-from mcshell.mcactions_base import MCActionsBase
 
 from mcshell.actions.serveractions import ServerActions
 from mcshell.actions.qturtleactions import QTurtleActions
@@ -14,7 +11,7 @@ from mcshell.shapes.qturtleshapes import QTurtleShapes
 
 # FIX: Robustly import generated actions to prevent build-time crashes
 try:
-    from mcshell.generated_actions import (
+    from mcshell.actions.generated_actions import (
         PlayerActions,WorldActions,ChatActions,EventActions
     )
 except ImportError:
