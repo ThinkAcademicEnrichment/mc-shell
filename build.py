@@ -24,7 +24,7 @@ def rebuild():
         MC_JUICE_SRC_DIR / "main/java/org/mcshell/mcjuice/GeneratedCommandRegistry.java",
         MC_JUICE_SRC_DIR / "main/java/org/mcshell/mcjuice/GeneratedEventListener.java",
         MC_SHELL_DIR / "mcjuice.py",
-        MC_SHELL_DIR / "generated_actions.py"
+        MC_SHELL_DIR / "actions" / "generated_actions.py"
         )
 
     # generate the command registry Java class for the mcjuice plugin and a python client
