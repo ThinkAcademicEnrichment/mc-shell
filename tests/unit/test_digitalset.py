@@ -1,6 +1,6 @@
 import unittest
 import copy
-from mcshell.digitalsetactions import DigitalSetActions
+from mcshell.actions.digitalsetactions import DigitalSetActions
 from mcshell.mcturtle import DigitalSet
 
 class TestDigitalSetActionsImmutability(unittest.TestCase):
