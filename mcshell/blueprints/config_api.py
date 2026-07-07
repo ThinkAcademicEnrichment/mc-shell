@@ -7,10 +7,23 @@ from flask import Response, abort
 #    url_prefix='/api' automatically prepends '/api' to all routes in this file.
 config_bp = Blueprint('config_api', __name__, url_prefix='/config')
 
-from mcshell.constants import MC_APP_SRC_DIR, MC_VERSION,json
+from mcshell.constants import MC_DATA_DIR, MC_APP_SRC_DIR, MC_VERSION,json
 from mcshell.mcconfig import TAXONOMY_RULES, ENTITY_RULES
 from mcshell.mcscraper import fetch_minecraft_data
 from mcshell.mcbuilder import RegistryBuilder, TaxonomyEngine
+
+@config_bp.route('/taxonomy')
+def get_taxonomy():
+    try:
+        import json
+        taxonomy_path = MC_DATA_DIR / "taxonomy.json"
+        with open(taxonomy_path, 'r') as f:
+            taxonomy_data = json.load(f)
+        return jsonify(taxonomy_data)
+    except FileNotFoundError:
+        return jsonify({"error": "Taxonomy data file not found."}), 404
+    except Exception as e:
+        return jsonify({"error": f"Could not load taxonomy data: {e}"}), 500
 
 @config_bp.route('/version')
 def get_config():

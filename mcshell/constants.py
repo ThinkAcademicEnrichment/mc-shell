@@ -80,44 +80,24 @@ MC_SHELL_DIR = pathlib.Path(__file__).parent
 
 MC_DATA_DIR = pathlib.Path(__file__).parent.joinpath('data')
 MC_PAPER_GLOBAL_TEMPLATE = MC_DATA_DIR / 'paper-global-template.yaml'
-FJ_JAR_PATH = MC_DATA_DIR.joinpath('FruitJuice-0.4.1.jar')
-
 
 MC_WEBPAGE_CACHE = MC_DATA_DIR.joinpath('webpage-cache')
 MC_DOC_URL = yarl.URL("https://minecraft.fandom.com/wiki/Commands")
 MC_DOC_DIR = MC_DATA_DIR.joinpath('doc')
 MC_DOC_PATH = MC_DOC_DIR.joinpath('command_docs.pkl')
 
-MC_MATERIAL_URL = yarl.URL('https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Material.html')
-MC_MATERIALS_PATH = MC_DATA_DIR.joinpath('materials/materials.pkl')
-MC_COLOURABLE_MATERIALS_DATA_PATH = MC_DATA_DIR.joinpath('materials/colourables.json')
-MC_PICKER_MATERIALS_DATA_PATH = MC_DATA_DIR.joinpath('materials/pickers.json')
-MC_SINGLE_MATERIALS_DATA_PATH = MC_DATA_DIR.joinpath('materials/singles.json')
-
-MC_ITEM_ID_MAP_PATH = MC_DATA_DIR.joinpath('materials/item_id_map.pkl')
-
-MC_ENTITY_TYPE_URL = yarl.URL("https://raw.githubusercontent.com/PaperMC/Paper/refs/heads/main/paper-api/src/main/java/org/bukkit/entity/EntityType.java")
-MC_ENTITY_ID_MAP_PATH = MC_DATA_DIR.joinpath('entities/entity_id_map.pkl')
-MC_ENTITY_PICKERS_PATH = MC_DATA_DIR.joinpath('entities/pickers.json')
-
 MC_APP_DIR = MC_DATA_DIR.joinpath('app')
-
 MC_APP_STATIC_DIR = MC_DATA_DIR.joinpath('static')
 MC_APP_SRC_DIR = pathlib.Path(__file__).parent.parent.joinpath('mced/src')
 MC_USER_DIR = pathlib.Path('~/.mc-shell').expanduser()
 MC_POWER_LIBRARY_DIR = MC_USER_DIR.joinpath('powers')
 
-# I don't think we use this
-# MC_CONTROL_LAYOUT_PATH = MC_DATA_DIR.joinpath('control_layout.json')
-
 MC_WORLDS_BASE_DIR = pathlib.Path('~').expanduser().joinpath('mc-worlds')
 MC_CENTRAL_CONFIG_FILE = pathlib.Path("/etc/mc-shell/user_map.json")
 
-# new: datapacks
 MC_INTERNAL_DATAPACKS = MC_DATA_DIR / 'datapacks'
 MC_DATAPACK_LIB_DIR = MC_WORLDS_BASE_DIR / 'datapacks-library'
 
-#new: mcjuice server
 MC_JUICE_SRC_DIR = pathlib.Path(__file__).parent.parent / 'mcjuice' / 'src'
 
 MC_JRE_DIR = MC_WORLDS_BASE_DIR / 'jre'

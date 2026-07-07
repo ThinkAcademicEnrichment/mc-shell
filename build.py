@@ -5,7 +5,7 @@ import xml.etree.ElementTree as ET
 # Ensure we can import from mcshell
 sys.path.append(str(Path(__file__).parent))
 
-from mcshell.mcbuilder import RegistryBuilder,ApiGenerator,TaxonomyEngine
+from mcshell.mcbuilder import RegistryBuilder,ApiGenerator,TaxonomyEngine,RegistryEngine
 
 from mcshell.mcscraper import fetch_minecraft_data
 from mcshell.constants import MC_APP_SRC_DIR, MC_DATA_DIR, MC_JUICE_SRC_DIR,MC_SHELL_DIR,subprocess,shutil
@@ -24,7 +24,7 @@ def rebuild():
         MC_JUICE_SRC_DIR / "main/java/org/mcshell/mcjuice/GeneratedCommandRegistry.java",
         MC_JUICE_SRC_DIR / "main/java/org/mcshell/mcjuice/GeneratedEventListener.java",
         MC_SHELL_DIR / "mcjuice.py",
-        MC_SHELL_DIR / "generated_actions.py"
+        MC_SHELL_DIR / "actions" / "generated_actions.py"
         )
 
     # generate the command registry Java class for the mcjuice plugin and a python client
@@ -33,7 +33,7 @@ def rebuild():
 
     # 2. Run the Engine
 
-    print("Step 2: Remove the existing toolbox.xml file...")
+    print("\nStep 2: Remove the existing toolbox.xml file...")
     output_toolbox_path = MC_APP_SRC_DIR / 'toolbox.xml'
     output_toolbox_path.unlink(missing_ok=True)
     toolbox_template_path = MC_DATA_DIR / 'toolbox_template.xml'
@@ -41,7 +41,7 @@ def rebuild():
         f.write(toolbox_template_path.read_text())
 
 
-    print("Step 3: Fetching JSON from minecraft-data...")
+    print("\nStep 3: Fetching JSON from minecraft-data...")
     prismarine_blocks = fetch_minecraft_data('1.21.11','blocks')
     prismarine_items = fetch_minecraft_data('1.21.11','items')
     prismarine_entities = fetch_minecraft_data('1.21.11','entities')
@@ -71,7 +71,7 @@ def rebuild():
     # 3. Updates toolbox.xml via blockapily's structured XML injection
     builder.build_all()
 
-    print("Step 5: Build the McJuice plugin...")
+    print("\nStep 5: Build the McJuice plugin...")
     pom_path = MC_JUICE_SRC_DIR.parent / 'pom.xml'
 
     # Parse the pom.xml to dynamically detect all profile IDs
@@ -109,11 +109,26 @@ def rebuild():
 
     print("\nAll builds completed and copied successfully.")
 
-    print(f"McJuice JAR integrated into mcshell/data/")
-    print("\nRebuild Complete!")
-    print(f"Blocks generated in: {MC_APP_SRC_DIR / 'blocks'}")
-    print(f"Toolbox updated: {MC_APP_SRC_DIR / 'toolbox.xml'}")
-    print("\nYou can now refresh the mced editor or restart the web application.")
+    print(f"\nMcJuice JAR integrated into mcshell/data/")
+    print(f"\nRebuild Complete!")
+    print(f"\nBlocks generated in: {MC_APP_SRC_DIR / 'blocks'}")
+    print(f"\nToolbox updated: {MC_APP_SRC_DIR / 'toolbox.xml'}")
+
+
+    print("\nStep 6: Building the JS registry of blocks and generators...")
+    reg_engine = RegistryEngine()
+    # Files that must be loaded first (if any dependencies exist)
+    reg_engine.PRIORITY_FILES = ["mc.mjs"]
+
+    BLOCKS_DIR = MC_APP_SRC_DIR / 'blocks'
+    print("Updating Block Registry...")
+    reg_engine.generate_registry(BLOCKS_DIR, "registerAllBlocks", "Blockly")
+
+    GENERATORS_DIR = MC_APP_SRC_DIR / 'generators' / 'python'
+    print("\nUpdating Generator Registry...")
+    reg_engine.generate_registry(GENERATORS_DIR, "registerAllGenerators", "pythonGenerator")
+
+    print(f"\nYou can now refresh the mced editor or restart the web application.")
 
 if __name__ == "__main__":
     rebuild()

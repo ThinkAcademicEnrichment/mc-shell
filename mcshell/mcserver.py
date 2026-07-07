@@ -9,10 +9,8 @@ from flask import Flask, current_app,request, jsonify, send_from_directory
 from flask_socketio import SocketIO
 
 
-from mcshell.mcactions import MCActions
-from mcshell.mcplayer import MCPlayer, PowerCancelledException
 from mcshell.constants import *
-from mcshell.mcrepo import JsonFileRepository
+from mcshell.mcplayer import MCPlayer
 
 from mcshell.blueprints.powers_api import powers_bp
 from mcshell.blueprints.ipython_api import ipython_bp
@@ -60,7 +58,6 @@ def check_auth_token():
 
         if token != GUI_AUTH_TOKEN:
             print(f"\n[SECURITY BLOCK] Unauthorized API access attempt to {request.path} blocked!")
-            from flask import jsonify
             return jsonify({"error": "Unauthorized access. Invalid or missing GUI token."}), 401
 
 # --- Suppress Flask's Default Console Logging ---
@@ -266,6 +263,8 @@ def execute_power_in_thread(power_id, kwargs, execution_id=None):
 
         with app.app_context():
             mc_player = MCPlayer(player_name, **server_data, cancel_event=cancel_event)
+
+            from mcshell.mcactions import MCActions
             action_implementer = MCActions(mc_player)
 
             execution_scope = {}
@@ -402,18 +401,6 @@ def execute_power_endpoint():
 
     return jsonify({"status": "dispatched", "execution_id": execution_id})
 
-@app.route('/api/taxonomy')
-def get_taxonomy():
-    try:
-        import json
-        taxonomy_path = MC_DATA_DIR / "taxonomy.json"
-        with open(taxonomy_path, 'r') as f:
-            taxonomy_data = json.load(f)
-        return jsonify(taxonomy_data)
-    except FileNotFoundError:
-        return jsonify({"error": "Taxonomy data file not found."}), 404
-    except Exception as e:
-        return jsonify({"error": f"Could not load taxonomy data: {e}"}), 500
 
 @app.route('/api/receive_invite', methods=['POST'])
 def receive_invite():

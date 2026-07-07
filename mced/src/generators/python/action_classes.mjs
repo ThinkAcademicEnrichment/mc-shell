@@ -1,1 +1,0 @@
-export const ACTION_CLASSES = ['QActions', 'QTurtleActions', 'TurtleShapes', 'LSystemShapes', 'DigitalSetActions', 'DigitalGeometryActions', 'ServerActions', 'PlayerActions', 'WorldActions', 'ChatActions', 'EventActions'];

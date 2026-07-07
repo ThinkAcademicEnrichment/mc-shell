@@ -170,7 +170,7 @@ class ServerActions(MCActionsBase):
     def server_give_block_item_projectile(self, material: Union['Block','Item','Entity'], count: int = 1, target: str = "SELF"):
         """Gives an item to a player."""
         target_name = self.mcplayer.name if target.upper() == "SELF" else target
-        self._run_command(f"give {target_name} {self._get_item_id_from_bukkit_name(material)} {count}")
+        self._run_command(f"give {target_name} {material.lower()} {count}")
 
     @mced_block(
         label="Summon [entity] at [pos]",

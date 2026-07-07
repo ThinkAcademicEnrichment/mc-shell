@@ -1,5 +1,11 @@
 from mcshell.constants import *
-from mcshell.mcjuice import MCJuiceClient
+try:
+    from mcshell.mcjuice import MCJuiceClient
+except ImportError:
+    # we need to bootstrap the build process
+    class MCJuiceClient:
+        def __init__(self):
+            raise NotImplementedError
 
 from functools import lru_cache
 class _DEBUG:

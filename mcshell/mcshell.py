@@ -2,7 +2,6 @@ import click
 class SpecialHelpOrderBase(click.Group):
     pass
 
-# see https://stackoverflow.com/questions/47972638/how-can-i-define-the-order-of-click-sub-commands-in-help
 class SpecialHelpOrder(SpecialHelpOrderBase):
     def __init__(self, *args, **kwargs):
         self.help_priorities = {}

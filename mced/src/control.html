@@ -697,7 +697,7 @@
 
                 async fetchTaxonomy() {
                     try {
-                        const res = await fetch('/api/taxonomy', { cache: 'no-store' });
+                        const res = await fetch('/config/taxonomy', { cache: 'no-store' });
                         this.taxonomy = await res.json();
                     } catch (e) { console.error("Failed to load taxonomy", e); }
                 },
