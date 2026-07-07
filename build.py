@@ -1,4 +1,3 @@
-from update_registries import GENERATORS_DIR
 import sys
 from pathlib import Path
 import xml.etree.ElementTree as ET
