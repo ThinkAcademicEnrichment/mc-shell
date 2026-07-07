@@ -16,9 +16,6 @@ class MCActionsBase:
     """
     def __init__(self, mc_player_instance:MCPlayer, delay_between_blocks:float):
         self.mcplayer = mc_player_instance
-        self.bukkit_to_entity_id_map = {}
-        self._initialize_entity_id_map()
-        self._initialize_item_id_map()
         self.delay_between_blocks = delay_between_blocks
 
     def _place_blocks_from_coords(self, coords_list, block_type_from_blockly,
@@ -56,34 +53,6 @@ class MCActionsBase:
         if not dset: return
         coords = dset.to_list()
         self._place_blocks_from_coords(coords, block_type)
-
-    def _initialize_entity_id_map(self):
-        """Loads the mapping of Bukkit entity names to Integer IDs."""
-        try:
-            with MC_ENTITY_ID_MAP_PATH.open('rb') as f:
-                self.bukkit_to_entity_id_map = pickle.load(f)
-        except Exception:
-            self.bukkit_to_entity_id_map = {}
-
-    def _get_entity_id_from_bukkit_name(self, bukkit_enum_string: str) -> Optional[int]:
-        """
-        Converts a Bukkit enum string (e.g., 'WITHER_SKELETON') to its Minecraft numeric ID.
-        """
-        return self.bukkit_to_entity_id_map.get(bukkit_enum_string)
-
-    def _initialize_item_id_map(self):
-        """Loads the mapping of Bukkit item names to minecraft namespace IDs."""
-        try:
-            with MC_ITEM_ID_MAP_PATH.open('rb') as f:
-                self.bukkit_to_item_id_map = pickle.load(f)
-        except Exception:
-            self.bukkit_to_item_id_map = {}
-
-    def _get_item_id_from_bukkit_name(self, bukkit_enum_string: str) -> Optional[int]:
-        """
-        Converts a Bukkit enum string (e.g., 'IRON_SWORD') to its Minecraft namespace ID.
-        """
-        return self.bukkit_to_item_id_map.get(bukkit_enum_string)
 
     def _get_player_by_name(self, player_name: str) -> MCPlayer:
         """
