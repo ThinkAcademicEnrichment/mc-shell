@@ -9,15 +9,15 @@ except ImportError:
     BlocklyGenerator = None
     print("Warning: blockapily not found. Block generation will be skipped.")
 
-def get_action_class(module_name, class_name):
+def get_class(class_type, module_name, class_name):
     """Imports a class and forces a reload to capture newly generated code."""
     import importlib
     try:
-        module = importlib.import_module(f"mcshell.{module_name}")
+        module = importlib.import_module(f"mcshell.{class_type}.{module_name}")
         importlib.reload(module) # Ensure fresh load after ApiGenerator runs
         return getattr(module, class_name)
     except (ImportError, AttributeError) as e:
-        print(f"Error: could not import {class_name} from {module_name}")
+        print(f"Error: could not import {class_name} from {class_type}.{module_name}")
         print(str(e))
         return None
 
@@ -78,12 +78,12 @@ class RegistryBuilder:
                             class_name = f"{ns.capitalize()}Actions"
                             label = f"{ns.capitalize()}"
                             color = self.COLORS.get(label, self.COLORS["World"])
-                            classes.append((get_action_class("generated_actions", class_name), label, color))
+                            classes.append((get_class("actions","generated_actions", class_name), label, color))
 
 
                         # 2. Discover generated Event Actions
                         if schema.get('events') and any('blockly' in e for e in schema['events']):
-                            classes.append((get_action_class("generated_actions", "EventActions"), "Event", self.COLORS.get("Events", "#D68C45")))
+                            classes.append((get_class("actions","generated_actions", "EventActions"), "Event", self.COLORS.get("Events", "#D68C45")))
 
                 except Exception as e:
                     print(f"Warning: Failed to auto-discover generated classes: {e}")
@@ -94,13 +94,13 @@ class RegistryBuilder:
             self.GENERATED_ACTION_CLASSES.extend([(c, n, col) for c, n, col in classes if c is not None and not c.__name__ in self.GENERATED_ACTIONS_BLACKLIST])
 
             classes = [
-                (get_action_class("qactions", "QActions"), "Q-Stuff", self.COLORS["Turtle"]),
-                (get_action_class("qturtleactions", "QTurtleActions"), "Q-Turtle", self.COLORS["Turtle"]),
-                (get_action_class("mcactions", "TurtleShapes"), "Turtle Sets", self.COLORS["Turtle"]),
-                (get_action_class("mcactions", "LSystemShapes"), "LSystem Sets", self.COLORS["LSystem"]),
-                (get_action_class("digitalsetactions", "DigitalSetActions"), "Digital Set Ops", self.COLORS["Digital Set"]),
-                (get_action_class("digitalgeometryactions", "DigitalGeometryActions"), "Digital Geometry", self.COLORS["Geometry"]),
-                (get_action_class("serveractions", "ServerActions"), "Server", self.COLORS["Server"]),
+                (get_class("actions","qactions", "QActions"), "Q-Stuff", self.COLORS["Turtle"]),
+                (get_class("actions","qturtleactions", "QTurtleActions"), "Q-Turtle", self.COLORS["Turtle"]),
+                (get_class("shapes","qturtleshapes", "QTurtleShapes"), "Q-Turtle Sets", self.COLORS["Turtle"]),
+                (get_class("shapes","lsystemshapes", "LSystemShapes"), "LSystem Sets", self.COLORS["LSystem"]),
+                (get_class("actions","digitalsetactions", "DigitalSetActions"), "Digital Set Ops", self.COLORS["Digital Set"]),
+                (get_class("actions","digitalgeometryactions", "DigitalGeometryActions"), "Digital Geometry", self.COLORS["Geometry"]),
+                (get_class("actions","serveractions", "ServerActions"), "Server", self.COLORS["Server"]),
             ]
 
             self.ACTION_CLASSES.extend([(c, n, col) for c, n, col in classes if c is not None])
@@ -658,7 +658,7 @@ class ApiGenerator:
         code.extend([
             "",
             "    def _event_reader_loop(self):",
-            "        from mcshell.event import EventFactory",
+            "        from mcshell.mcevent import EventFactory",
             "        while True:",
             "            try:",
             "                line = self.event_conn.receive()",
