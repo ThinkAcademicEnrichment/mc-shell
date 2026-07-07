@@ -46,7 +46,7 @@ poetry.toml
 /mcshell/data/mcjuice-*.jar
 
 /mcshell/mcjuice.py
-/mcshell/generated_actions.py
+/mcshell/actions/generated_actions.py
 
 
 
