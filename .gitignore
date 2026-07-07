@@ -3,51 +3,52 @@
 !.gitignore
 __pycache__
 
-coverage.xml
-htmlcov
-
-/dist/
-publish.log
-
 # mcshell
-env
 *.egg-info
-oldmc
-kano
-python-minecraft-data
-old-powers
-old_index.*
 poetry.lock
-
-# generated files
-mced/src/blocks/materials.mjs
-mced/src/generators/python/materials.mjs
-
-mced/src/blocks/entities.mjs
-mced/src/generators/python/entities.mjs
-
-mcshell/data/materials/blocks/materials.mjs
-mcshell/data/materials/python/entities.mjs
-mcshell/data/materials/toolbox.xml
-
-mcshell/data/entities/blocks/entities.mjs
-mcshell/data/entities/python/entities.mjs
-mcshell/data/entities/toolbox.xml
 
 # Ignore the bundled web application artifacts
 /mcshell/data/app/
 
-# Ignore the vendored pyncraft code
-/mcshell/vendored/pyncraft/
-
 # Ignore Python build artifacts
 /dist/
-
-#ignore maven output
-mcjuice/target/
-mcshell/data/mcjuice-*.jar
 
 # ignore powers and scripts
 powers/
 scripts
+
+# local venv config
 poetry.toml
+
+# generated code
+---------------
+
+/mced/src/blocks/[^a-z]*Actions.mjs
+/mced/src/generators/python/[^a-z]*Actions.mjs
+/mced/src/blocks/[^a-z]*Shapes.mjs
+/mced/src/generators/python/[^a-z]*Shapes.mjs
+
+/mced/src/blocks/registry.mjs
+/mced/src/generators/python/registry.mjs
+
+/mced/src/blocks/items.mjs
+/mced/src/blocks/blocks.mjs
+/mced/src/blocks/entities.mjs
+
+/mced/src/generators/python/items.mjs
+/mced/src/generators/python/blocks.mjs
+/mced/src/generators/python/entities.mjs
+
+/mced/src/generators/python/action_classes.mjs
+/mced/src/toolbox.xml
+
+/mcjuice/target/
+/mcshell/data/mcjuice-*.jar
+
+/mcshell/mcjuice.py
+/mcshell/generated_actions.py
+
+
+
+
+
