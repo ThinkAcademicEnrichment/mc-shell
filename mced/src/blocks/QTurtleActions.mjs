@@ -58,7 +58,7 @@ this.appendValueInput('steps').appendField('Steps (90 deg)').setCheck('Number');
     Blockly.Blocks['qturtleactions_turtle_stamp'] = {
         init: function() {
             this.appendDummyInput().appendField("QTurtle: Stamp Brush");
-            this.appendValueInput('block_type').appendField('Material').setCheck(['Block', 'Item']);
+            this.appendValueInput('block_type').appendField('Material').setCheck(['Item', 'Block']);
             this.setPreviousStatement(true); this.setNextStatement(true);
             this.setColour("#C9A65B");
             this.setTooltip("");
