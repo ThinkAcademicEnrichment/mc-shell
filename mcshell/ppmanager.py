@@ -1,3 +1,4 @@
+from mcshell import MC_WORLDS_BASE_DIR
 import subprocess
 import pexpect
 import threading
@@ -27,6 +28,18 @@ class PaperServerManager:
 
         # Path to the Paper JAR is stored relative to the worlds base directory
         self.jar_path = self.world_directory.parent / self.world_manifest.get('server_jar_path')
+
+    def update_jar_path(self):
+        downloader = PaperDownloader(MC_WORLDS_BASE_DIR / 'server-jars')
+        paper_version = self.world_manifest["paper_version"]
+        server_jar_path = self.world_manifest["server_jar_path"]
+        new_server_jar_path = str(Path(downloader.get_jar_path(paper_version)).relative_to(MC_WORLDS_BASE_DIR))
+        if new_server_jar_path != server_jar_path:
+            print(f"\nUpdating PaperMC from {server_jar_path.name} to {new_server_jar_path.name}")
+            self.world_manifest["server_jar_path"] = new_server_jar_path
+            manifest_path = self.world_directory / 'world_manifest.json'
+            with manifest_path.open('wb') as f:
+                self.world_manifest = json.dump(self.world_manifest,f)
 
     def apply_manifest_settings(self,**kwargs):
         """
@@ -58,7 +71,7 @@ class PaperServerManager:
 
                 print(f"Secured McJuice API binding to {mcjuice_host}")
 
-            # 1. Update server.properties
+            # Update server.properties
             settings_to_apply = {**self.world_manifest.get("server_properties", {}),**kwargs}
 
             properties_path = self.world_directory / "server.properties"
@@ -81,15 +94,7 @@ class PaperServerManager:
                 for key, value in properties.items():
                     f.write(f"{key}={value}\n")
 
-            # 2. Update FruitJuice config
-            # fj_data = self.world_manifest.get('FruitJuice')
-            # if fj_data:
-            #     fj_config_path = self.world_directory / "plugins" / "FruitJuice" / "config.yml"
-            #     fj_config_path.parent.mkdir(parents=True, exist_ok=True)
-            #     with fj_config_path.open('w') as file:
-            #         yaml.dump(fj_data, file, sort_keys=False)
-
-            # 3. Update Paper global settings
+            # Update Paper global settings
             paper_settings = self.world_manifest.get('paper', {})
             if paper_settings:
                 paper_config_path = self.world_directory / 'config' / 'paper-global.yml'

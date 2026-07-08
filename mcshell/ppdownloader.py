@@ -120,9 +120,9 @@ class PaperDownloader:
             # so response.json() is a Python list, not a dict.
             builds = response.json()
             
-            # Ensure it is a list and not empty before grabbing the last build
+            # Ensure it is a list and not empty before grabbing the first build
             if isinstance(builds, list) and builds:
-                return builds[-1]
+                return builds[0]
             return None
             
         except Exception as e:

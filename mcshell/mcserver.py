@@ -104,10 +104,10 @@ def start_app_server(server_data=None, minecraft_name=None, shell=None, power_re
 
     # Safely inject the new Minecraft parameters into the active Flask Application Context
     with app.app_context():
-        if server_data is not None: current_app.config['MCSHELL_SERVER_DATA'] = server_data
-        if minecraft_name is not None: current_app.config['MINECRAFT_PLAYER_NAME'] = minecraft_name
-        if shell is not None: current_app.config['IPYTHON_SHELL'] = shell
-        if power_repo is not None: current_app.config['POWER_REPO'] = power_repo
+        if server_data is not None: app.config['MCSHELL_SERVER_DATA'] = server_data
+        if minecraft_name is not None: app.config['MINECRAFT_PLAYER_NAME'] = minecraft_name
+        if shell is not None: app.config['IPYTHON_SHELL'] = shell
+        if power_repo is not None: app.config['POWER_REPO'] = power_repo
 
         # Ping the frontend via WebSocket to drop the 401 error and reload the editor
         socketio.emit('state_changed', {'status': 'active'})

@@ -43,24 +43,18 @@ def fetch_minecraft_data(version: str, file_type: str = "blocks"):
     
     response = requests.get(url)
 
-    try: 
-        if response.status_code == 200:
-            mc_data_path.parent.mkdir(exist_ok=True)
-            mc_data_path.touch()
-            with mc_data_path.open('w') as f:
-                json.dump(response.json(),f)
-            return response.json()
-        elif response.status_code == 404:
-            raise ValueError(f"Version '{version}' or file type '{file_type}' not found in minecraft-data.")
-        else:
-            raise Exception(f"Failed to fetch data: HTTP status {response.status_code}")
-    except Exception as e:
-        print(e)
-        print("Returning default minecraft data")
+    if response.status_code == 200:
+        mc_data_path.parent.mkdir(exist_ok=True)
+        mc_data_path.touch()
+        with mc_data_path.open('w') as f:
+            json.dump(response.json(),f)
+        return response.json()
+    elif response.status_code == 404:
         mc_data_path = MC_DATA_DIR / 'materials' / 'default' / f'{file_type}.json'
         with mc_data_path.open('r') as f:
             return json.load(f)
-
+    else:
+        raise Exception(f"Failed to fetch data: HTTP status {response.status_code}")
 
 
 def test_fetch_mcdata():
