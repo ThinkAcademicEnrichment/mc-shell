@@ -22,6 +22,7 @@ from mcshell.mcplayer import MCPlayer
 import atexit
 from threading import Thread,Event
 
+import time
 import string
 import random
 import requests
@@ -659,7 +660,7 @@ class MCShell(Magics):
         """
         Starts a Paper server for a given world name.
         If another server is running, it will be stopped first.
-        Usage: %pp_start_world <world_name> [--ssh] [--authkey <key> | --clear-authkey] [--subnet | --node]
+        Usage: %pp_start_world <world_name> [--ssh] [--authkey <key> | --clear-authkey] [--subnet | --node] --do-not-join
         """
 
         # Check if the user is requesting router port mapping for the SSH tunnel
@@ -700,6 +701,14 @@ class MCShell(Magics):
             use_subnet_override = False
             parts = line.split()
             if '--node' in parts: parts.remove('--node')
+            line = ' '.join(parts)
+
+        # check if the user does not want to auto-join the world
+        do_not_join_world = False 
+        if '--do-not-join' in line:
+            do_not_join_world = True
+            parts = line.split()
+            if '--do-not-join' in parts: parts.remove('--do-not-join')
             line = ' '.join(parts)
 
         world_name = line.strip()
@@ -777,7 +786,20 @@ class MCShell(Magics):
         if authkey and not use_subnet:
             self._connect_tailscale(authkey, accept_routes=False)
 
-        self._print_connection_hub()
+        if not do_not_join_world:
+            magic_cmd_line = f"\
+                    127.0.0.1 \
+                    --local-mc    {self.server_data['port']} \
+                    --local-rcon  {self.server_data['rcon_port']} \
+                    --local-mj    {self.server_data['mj_port']} \
+                    --local-app   {self.server_data['app_port']} \
+                    --mc_version  {self.server_data['mc_version']} \
+                    --mc_name     {self._get_mc_name()} \
+                    --password    {self.server_data['password']} \
+                    "
+
+            self.ip.run_line_magic('mc_start_app',magic_cmd_line)
+
 
     @line_magic
     def pp_stop_world(self, line):
@@ -1441,6 +1463,7 @@ class MCShell(Magics):
             f"""\n
 if __name__ == '__main__':
 
+    from mcshell.mcplayer import MCPlayer
     mc_player = MCPlayer("{player_name}", host="{self.server_data['host']}", port={self.server_data['port']},
         rcon_port={self.server_data['rcon_port']}, mj_port={self.server_data['mj_port']}, app_port={self.server_data['app_port']},
         password="{self.server_data['password']}", cancel_event=None)
@@ -1455,9 +1478,6 @@ if __name__ == '__main__':
             # 3. Save the generated code
             with open(filepath, 'w') as f:
                 f.write(code_to_execute + power_script_exe_block)
-
-            # print(f"Successfully saved power to: {filepath}")
-            # print(f"To use it, you can now run:\nfrom powers.blockcode.{filename.replace('.py','')} import *")
 
             # Setup cancellation support and bind to the player for blocking operations
             cancel_event = threading.Event()
@@ -1655,14 +1675,14 @@ if __name__ == '__main__':
     def mc_start_app(self, line):
         """
         Starts the client application components to connect to a world.
-        Usage: %mc_start_app [token|IP] [--local-mc <port>] [--local-rcon <port>] [--local-mj <port>] [--authkey <key>] [--mc_version <minecraft version>] [--guest] [--mc_name <minecraft user name>]
+        Usage: %mc_start_app [token|IP] [--local-mc <port>] [--local-rcon <port>] [--local-mj <port>] [--local-app] [--authkey <key>] [--mc_version <minecraft version>] [--login] [--mc_name <minecraft user name>] [--password <server password>]
         """
         parts = line.split()
 
-        # Check for guest mode
-        is_guest = '--guest' in parts
-        if is_guest:
-            parts.remove('--guest')
+        # Check for login mode
+        is_login = '--login' in parts
+        if is_login:
+            parts.remove('--login')
 
         # Safely extract mc_name
         if '--mc_name' in parts:
@@ -1679,6 +1699,29 @@ if __name__ == '__main__':
                 return # Abort further execution so the server doesn't start in a broken state     
         else:
             minecraft_name = self._get_mc_name()
+
+        # Safely extract password and set it 
+        if '--password' in parts:
+            idx = parts.index('--password')
+            
+            # Check if there's a value after the flag AND that it isn't another flag
+            if idx + 1 < len(parts) and not parts[idx + 1].startswith('--'):
+                server_password = parts[idx + 1]
+                # Remove both the flag and the extracted username from parts
+                del parts[idx:idx+2]
+                self.server_data.update({
+                    'password': server_password
+                })
+            else:
+                parts.pop(idx) # Remove the dangling flag
+                throw_app_server_error("Initialization failed: '--password' was provided without a valid password.")
+                return # Abort further execution so the server doesn't start in a broken state     
+        else:
+            server_password = None
+            self.server_data.update({
+                'password': server_password 
+            })
+
 
         # cache it
         self.mc_name = minecraft_name
@@ -1707,37 +1750,58 @@ if __name__ == '__main__':
         if not token:
             self.server_data.update({
                 'host': Prompt.ask('Server Address:', default=self.server_data['host']),
-                'port': int(Prompt.ask('Server Port:', default=str(self.server_data['port']))),
-                'rcon_port': int(Prompt.ask('Rcon Port:', default=str(self.server_data['rcon_port']))),
-                'mj_port': int(Prompt.ask('Plugin Port:', default=str(self.server_data['mj_port']))),
-                'app_port': int(Prompt.ask('Application Port:', default=str(self.server_data['app_port']))),
-                'mc_version': str(Prompt.ask('Minecraft Version:', default=str(self.server_data['mc_version']))),
-                'password': None,
             })
 
+        # OVERRIDES: Process any user-provided terminal overrides
+        if '--local-mc' in parts:
+            local_mc = int(parts[parts.index('--local-mc') + 1])
+        else:
+            local_mc = int(Prompt.ask('Server Port:', default=str(self.server_data['port'])))
+
+        if '--local-rcon' in parts:
+            local_rcon = int(parts[parts.index('--local-rcon') + 1])
+        else:
+            local_rcon = int(Prompt.ask('Rcon Port:', default=str(self.server_data['rcon_port'])))
+
+        if '--local-mj' in parts:
+            local_mj = int(parts[parts.index('--local-mj') + 1])
+        else:
+            local_mj =  int(Prompt.ask('Plugin Port:', default=str(self.server_data['mj_port'])))
+
+        if '--mc_version' in parts:
+            mc_version = parts[parts.index('--mc_version') + 1]
+        else:
+            mc_version = str(Prompt.ask('Minecraft Version:', default=str(self.server_data['mc_version'])))
+
+        if '--local-app' in parts:
+            local_app = int(parts[parts.index('--local-app') + 1])
+        else:
+            local_app= int(Prompt.ask('Application Port:', default=str(self.server_data['app_port'])))
+
+        # set overridden data
+        self.server_data['rcon_port'] = local_rcon
+        self.server_data['port'] = local_mc
+        self.server_data['mj_port'] = local_mj
+        self.server_data['mc_version'] = mc_version
+        self.server_data['app_port'] = local_app
+
         if token:
-            # 1. DEFINE VARS FIRST: Determine intended local ports from defaults
+            # DEFINE VARS FIRST: Determine intended local ports from defaults
             local_mc = self.server_data.get('port', MC_SERVER_PORT)
             local_rcon = self.server_data.get('rcon_port', MC_RCON_PORT)
             local_mj = self.server_data.get('mj_port', MJ_PLUGIN_PORT)
             mc_version = self.server_data.get('mc_version',MC_VERSION)
+            local_app = self.server_data.get('app_port',MC_APP_PORT)
 
-            # 2. OVERRIDES: Process any user-provided terminal overrides
-            if '--local-mc' in parts:
-                local_mc = int(parts[parts.index('--local-mc') + 1])
-            if '--local-rcon' in parts:
-                local_rcon = int(parts[parts.index('--local-rcon') + 1])
-            if '--local-mj' in parts:
-                local_mj = int(parts[parts.index('--local-mj') + 1])
-            if '--mc_version' in parts:
-                mc_version = parts[parts.index('--mc_version') + 1]
-
-            # 3. SAFETY CHECK
+            # SAFETY CHECK
             if hasattr(self, 'active_paper_server') and getattr(self, 'active_paper_server') and self.active_paper_server.is_alive():
                 print("A local Minecraft server is already running. Proceeding with proxy connections anyway.")
 
-            # 4. SMART TOKEN ROUTING
-            if '#' in token:
+            # SMART TOKEN ROUTING
+            if '#' not in token and '@' not in token and '^' not in token:
+                # we have a simple host ip address or domain 
+                self.server_data['host'] = token
+            elif '#' in token:
                 print("Connecting to secure tunnel...")
                 _start_secure_tunnel_client(token, local_mc, local_rcon, local_mj)
 
@@ -1747,6 +1811,7 @@ if __name__ == '__main__':
                 self.server_data['rcon_port'] = local_rcon
                 self.server_data['mj_port'] = local_mj
                 self.server_data['mc_version'] = mc_version
+                self.server_data['app_port'] = local_app
 
                 # Give the background thread a moment to establish port forwards
                 time.sleep(1.0)
@@ -1774,27 +1839,19 @@ if __name__ == '__main__':
                     self.server_data['mj_port'] = local_mj
                     self.server_data['mc_version'] = mc_version
 
-        if is_guest:
-            # Bypass the interactive prompt and default to standard player mode safely
-            self.server_data['password'] = None
-        else:
-            login_to_server = Prompt.ask('Do you want to be a server op?',choices=['yes','no'],default='no')
-            if login_to_server.lower() == 'yes':
-                self.server_data.update({
-                    'password': Prompt.ask('Server Password:', password=True)
-                })
-            else:
-                self.server_data['password'] = None
+        # get the server password if required
+        if is_login and self.server_data['password'] is None:
+            self.server_data.update({
+                'password': Prompt.ask('Server Password:', password=True)
+            })
 
         power_repo = SQLiteRepository(minecraft_name)
 
         print(f"Assigning application server context to Minecraft player: {minecraft_name}")
         self.app_server_thread = start_app_server(self.server_data, minecraft_name, self.shell, power_repo)
 
-        print(f"Open a browser here to use the editor:")
-        print(f"\thttp://{socket.gethostname()}.local:{self.server_data['app_port']}?auth={GUI_AUTH_TOKEN}")
-        print(f"Open a browser here to use the control:")
-        print(f"\thttp://{socket.gethostname()}.local:{self.server_data['app_port']}/control?auth={GUI_AUTH_TOKEN}")
+        print("Waiting a bit for server to finish starting...")
+        time.sleep(4)
 
         print(f"\n" + "="*55)
         print(f"🎮 READY TO PLAY! Enter this into Minecraft:")
@@ -1821,6 +1878,9 @@ if __name__ == '__main__':
             print(f"   Java Edition IP: {self.server_data['host']}{mc_port_str}")
             print(f"   Bedrock / iPad : {self.server_data['host']} (Default port 19132)")
         print(f"="*55 + "\n")
+
+        self._print_connection_hub()
+
         return
 
     @line_magic
