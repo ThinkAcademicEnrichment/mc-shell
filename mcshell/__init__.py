@@ -769,6 +769,8 @@ class MCShell(Magics):
         # now start it after files are generated and it is terminated once
         if not self.active_paper_server.is_alive():
             self.active_paper_server = PaperServerManager(world_name, world_directory)
+            # get a new PaperMC jar if available
+            self.active_paper_server.update_jar_path()
             self.active_paper_server.start(**extra_server_properties)
 
         if not self.active_paper_server.is_alive():
