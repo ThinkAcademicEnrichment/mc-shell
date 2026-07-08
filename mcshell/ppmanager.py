@@ -1,3 +1,4 @@
+from mcshell import MC_WORLDS_BASE_DIR
 import subprocess
 import pexpect
 import threading
@@ -27,6 +28,18 @@ class PaperServerManager:
 
         # Path to the Paper JAR is stored relative to the worlds base directory
         self.jar_path = self.world_directory.parent / self.world_manifest.get('server_jar_path')
+
+    def update_jar_path(self):
+        downloader = PaperDownloader(MC_WORLDS_BASE_DIR / 'server-jars')
+        paper_version = self.world_manifest["paper_version"]
+        server_jar_path = self.world_manifest["server_jar_path"]
+        new_server_jar_path = str(Path(downloader.get_jar_path(paper_version)).relative_to(MC_WORLDS_BASE_DIR))
+        if new_server_jar_path != server_jar_path:
+            print(f"\nUpdating PaperMC from {server_jar_path.name} to {new_server_jar_path.name}")
+            self.world_manifest["server_jar_path"] = new_server_jar_path
+            manifest_path = self.world_directory / 'world_manifest.json'
+            with manifest_path.open('wb') as f:
+                self.world_manifest = json.dump(self.world_manifest,f)
 
     def apply_manifest_settings(self,**kwargs):
         """
