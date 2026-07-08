@@ -58,7 +58,7 @@ class PaperServerManager:
 
                 print(f"Secured McJuice API binding to {mcjuice_host}")
 
-            # 1. Update server.properties
+            # Update server.properties
             settings_to_apply = {**self.world_manifest.get("server_properties", {}),**kwargs}
 
             properties_path = self.world_directory / "server.properties"
@@ -81,15 +81,7 @@ class PaperServerManager:
                 for key, value in properties.items():
                     f.write(f"{key}={value}\n")
 
-            # 2. Update FruitJuice config
-            # fj_data = self.world_manifest.get('FruitJuice')
-            # if fj_data:
-            #     fj_config_path = self.world_directory / "plugins" / "FruitJuice" / "config.yml"
-            #     fj_config_path.parent.mkdir(parents=True, exist_ok=True)
-            #     with fj_config_path.open('w') as file:
-            #         yaml.dump(fj_data, file, sort_keys=False)
-
-            # 3. Update Paper global settings
+            # Update Paper global settings
             paper_settings = self.world_manifest.get('paper', {})
             if paper_settings:
                 paper_config_path = self.world_directory / 'config' / 'paper-global.yml'
