@@ -1432,16 +1432,32 @@ class MCShell(Magics):
             filename = f"power_{file_hash}.py"
             filepath = power_dir / filename
 
-            # 3. Save the generated code
-            with open(filepath, 'w') as f:
-                f.write(code_to_execute)
-
-            print(f"Successfully saved power to: {filepath}")
-            print(f"To use it, you can now run:\nfrom powers.blockcode.{filename.replace('.py','')} import *")
-
-            # 4. Initialize Player & Context
+            # Initialize Player & Context
             player_name = self._get_mc_name()
             player = self._get_player(player_name)
+
+            # create an executable script to run the power
+            power_script_exe_block = \
+            f"""\n
+if __name__ == '__main__':
+
+    mc_player = MCPlayer("{player_name}", host="{self.server_data['host']}", port={self.server_data['port']},
+        rcon_port={self.server_data['rcon_port']}, mj_port={self.server_data['mj_port']}, app_port={self.server_data['app_port']},
+        password="{self.server_data['password']}", cancel_event=None)
+
+    from mcshell.mcactions import MCActions
+    actions = MCActions(mc_player)
+    runner = BlocklyProgramRunner(actions,cancel_event=None)
+    runner.run_program()
+
+            """
+
+            # 3. Save the generated code
+            with open(filepath, 'w') as f:
+                f.write(code_to_execute + power_script_exe_block)
+
+            # print(f"Successfully saved power to: {filepath}")
+            # print(f"To use it, you can now run:\nfrom powers.blockcode.{filename.replace('.py','')} import *")
 
             # Setup cancellation support and bind to the player for blocking operations
             cancel_event = threading.Event()
@@ -1522,12 +1538,16 @@ class MCShell(Magics):
                 # Suppress the success messages
                 return
 
-            print(f"Successfully saved power to: {filepath}")
-            print(f"To use it, you can now run:\nfrom powers.blockcode.{filename.replace('.py','')} import *")
+            print("")
+            print(f"--- Successfully saved power to: {filepath}")
+            print(f"--- To modify or inspect it, use:\n edit -x {filepath}")
+            print(f"--- To run it, use:\n %run {filepath}")
+            print("")
             print(f"--- Power '{metadata.get('function_name', 'None')}' metadata defined/updated. ---")
             print(f"--- Started debug execution with ID: {execution_id} ---")
-            # The editor explicitly looks for this string format to hook its STOP button
+            # The editor explicitly looks for this string format to hook its STOP button; do not modify!
             print(f"MCED_EXECUTION_ID:{execution_id}")
+            print("")
             print(f"--- To stop it, run: %mc_cancel_power {execution_id} ---")
 
         except Exception as e:
