@@ -1014,7 +1014,7 @@ class MCShell(Magics):
         return self._send('data',*args)
 
     @property
-    def commands(self):
+    def _commands(self):
         """
         Builds a unique, deduplicated command and subcommand registry.
         Deduplicates sub-items like gamerules (e.g., 'spawn_mobs' vs 'minecraft:spawn_mobs').
@@ -1232,11 +1232,11 @@ class MCShell(Magics):
 
         # Case 1: Completing the base command
         if len(parts) == 1 or (len(parts) == 2 and text_to_complete != ''):
-            arg_matches = [c for c in self.commands.keys() if c.startswith(text_to_complete)]
+            arg_matches = [c for c in self._commands.keys() if c.startswith(text_to_complete)]
 
         # Case 2: Showing/Completing sub-items (like gamerules)
-        elif len(parts) >= 2 and command in self.commands:
-            sub_map = self.commands[command]
+        elif len(parts) >= 2 and command in self._commands:
+            sub_map = self._commands[command]
             sub_keys = [k for k in sub_map.keys() if k != ' ']
 
             if len(parts) == 2 and text_to_complete == '':
@@ -1311,22 +1311,22 @@ class MCShell(Magics):
                 
         arg_matches = []
         if len(parts) == 1: # showing commands
-            arg_matches = [c for c in self.commands.keys()]
+            arg_matches = [c for c in self._commands.keys()]
         elif len(parts) == 2 and text_to_complete != '':  # completing commands
-            arg_matches = [c for c in self.commands.keys() if c.startswith(text_to_complete)]
+            arg_matches = [c for c in self._commands.keys() if c.startswith(text_to_complete)]
         elif len(parts) == 2 and text_to_complete == '':  # showing subcommands
-            sub_commands = list(self.commands[command].keys())
+            sub_commands = list(self._commands[command].keys())
             arg_matches = [sub_command for sub_command in sub_commands]
         elif len(parts) == 3 and text_to_complete != '':  # completing subcommands
-            sub_commands = list(self.commands[command].keys())
+            sub_commands = list(self._commands[command].keys())
             arg_matches = [sub_command for sub_command in sub_commands if sub_command.startswith(text_to_complete)]
         elif len(parts) == 3 and text_to_complete == '':  # showing arguments
             sub_command = parts[2]
-            sub_command_args = self.commands[command][sub_command]
+            sub_command_args = self._commands[command][sub_command]
             arg_matches = [sub_command_arg for sub_command_arg in sub_command_args]
         elif len(parts) > 3: # completing arguments
             sub_command = parts[2]
-            sub_command_args = self.commands[command][sub_command]
+            sub_command_args = self._commands[command][sub_command]
             current_arg_index = len(parts) - 3 # Index of current argument
             if text_to_complete == '': # showing next arguments
                 arg_matches = [arg for arg in sub_command_args[current_arg_index+1]]
