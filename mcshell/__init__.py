@@ -1255,7 +1255,11 @@ class MCShell(Magics):
 
         _arg_list = line.split(' ')
         _arg_list[0] = _arg_list[0].replace('_','-')
-        # print(f"Send: {' '.join(_arg_list)}")
+
+        if _arg_list[0] == 'help':
+            print("Use %mc_help instead.")
+            return
+
         try:
             response = self._run(*_arg_list)
             if response == '':
@@ -1267,17 +1271,7 @@ class MCShell(Magics):
 
         print('Response:')
         print('-' * 100)
-        if _arg_list[0] == 'help':
-            _responses = response.split('/')
-            for _resp in _responses:
-                if _resp.strip():
-                    # Keep namespaces, just fix hyphens
-                    _parts = _resp.split()
-                    _parts[0] = _parts[0].replace('-', '_')
-                    print('\t' + ' '.join(_parts))
-            # for _response in _responses:
-            #     print('\t' + _response)
-        elif response.split()[0] == 'Unknown':
+        if response.split()[0] == 'Unknown':
             print("[red]Error in usage:[/]")
             self.mc_help(line)
         else:
