@@ -48,6 +48,8 @@ poetry.toml
 /mcshell/mcjuice.py
 /mcshell/actions/generated_actions.py
 
+/site
+
 
 
 
