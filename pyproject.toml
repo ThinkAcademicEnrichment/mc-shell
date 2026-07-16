@@ -8,7 +8,7 @@ packages = [{include = "mcshell"}]
 
 # Must be in tool.poetry; include all gitignored generated files
 include = [
-    "mchsell/actions/generated_actions.py",
+    "mcshell/actions/generated_actions.py",
     "mcshell/mcjuice.py",
     "mcshell/data/app/**/*",
     "mcshell/data/*.jar"
