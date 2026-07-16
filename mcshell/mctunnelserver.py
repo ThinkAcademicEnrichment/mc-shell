@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 def get_vpn_ip() -> str | None:
     """
     Scans the host's network interfaces for a VPN IP address.
-    Specifically targets Carrier-Grade NAT IPs (100.x.x.x) used by Tailscale.
+    Specifically targets Tailscale while avoiding ChromeOS Crostini subnet collisions.
     """
     if not psutil:
         logger.warning("psutil module missing. VPN detection disabled.")
@@ -26,10 +26,17 @@ def get_vpn_ip() -> str | None:
                 # We only care about IPv4 addresses
                 if addr.family == socket.AF_INET:
                     ip = addr.address
-                    # Tailscale specifically allocates from the 100.64.0.0/10 block
-                    if ip.startswith('100.'):
+                    
+                    # Target the Tailscale interface directly
+                    if interface.startswith('tailscale'):
+                        logger.info(f"Detected Tailscale interface '{interface}' with IP: {ip}")
+                        return ip
+                        
+                    # Fallback for standard CGNAT, explicitly rejecting Crostini's eth0 subnet
+                    elif ip.startswith('100.') and not ip.startswith('100.115.92.'):
                         logger.info(f"Detected VPN interface '{interface}' with IP: {ip}")
                         return ip
+                        
     except Exception as e:
         logger.warning(f"Failed to scan network interfaces for VPN: {e}")
 
