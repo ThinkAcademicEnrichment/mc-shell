@@ -446,22 +446,63 @@ class MCShell(Magics):
 
     @line_magic
     def pp_create_world(self, line):
-        args = line.split()
-        if not args:
-            print("Usage: %pp_create_world <world_name> [--version=<v>] [--datapacks=p1,p2]")
+        """Creates a new PaperMC server world environment. 
+        
+        Type %pp_create_world --help for available formatting choices.
+        """
+
+        parser = argparse.ArgumentParser(
+            prog="%pp_create_world",
+            description="Creates a new PaperMC world with optional version and datapacks configuration."
+        )
+        
+        # Positional required argument
+        parser.add_argument(
+            "world_name", 
+            help="The name of the world directory to create."
+        )
+        
+        # Optional arguments with string value assignments
+        parser.add_argument(
+            "--version", 
+            default=MC_VERSION, 
+            help=f"Minecraft version string override. Defaults to current system default: {MC_VERSION}"
+        )
+        parser.add_argument(
+            "--datapacks", 
+            default=None, 
+            help="Comma-separated list of datapack names to pull and inject automatically."
+        )
+
+        split_args = shlex.split(line)
+        
+        try:
+            parsed_args = parser.parse_args(split_args)
+        except SystemExit:
+            # Captures standard argparse help strings and structural syntax errors
+            # seamlessly without crashing the ongoing IPython kernel loop session.
             return
 
-        world_name = args[0]
-        mc_version = MC_VERSION
-        datapacks_to_install = []
+        # Extract values from normalized argument configuration
+        world_name = parsed_args.world_name
+        mc_version = parsed_args.version
+        
+        # Safely split into list structure if arguments were given
+        if parsed_args.datapacks is not None:
+            datapacks_to_install = parsed_args.datapacks.split(",")
+            for datapack_to_install in datapacks_to_install:
+                datapack_mcmeta_file = MC_DATAPACK_LIB_DIR / datapack_to_install / 'pack.mcmeta'
+                if not datapack_mcmeta_file.exists():
+                    print(f"Cannot install datapack {datapack_to_install}: {datapack_mcmeta_file} does not exist.")
+                    print(f"{parsed_args.world_name} world was not created.")
+                    return
+        else:
+            datapacks_to_install = []
 
-        # Enhanced argument parsing
-        for arg in args[1:]:
-            if arg.startswith("--version="):
-                mc_version = arg.split('=', 1)[1]
-            elif arg.startswith("--datapacks="):
-                # Expects a comma-separated list of names
-                datapacks_to_install = arg.split('=', 1)[1].split(',')
+        # Proceed with execution using the sanitized variables
+        print(f"Creating world '{world_name}' (Version: {mc_version})")
+        if datapacks_to_install:
+            print(f"Injecting datapacks: {datapacks_to_install}")
 
         # Quick version check (assuming semantic versioning format)
         v_parts = [int(x) for x in mc_version.split('.')]
@@ -654,69 +695,52 @@ class MCShell(Magics):
         print(f"\nWorld '{world_name}' created successfully.")
         print(f"To start it, run: %pp_start_world {world_name}")
 
-
     @line_magic
     def pp_start_world(self, line):
         """
         Starts a Paper server for a given world name.
-        If another server is running, it will be stopped first.
-        Usage: %pp_start_world <world_name> [--ssh] [--authkey <key> | --clear-authkey] [--subnet | --node] --do-not-join
+        
+        This command handles world initialization, Tailscale network configuration,
+        and server process lifecycle. 
+        
+        Use `%pp_start_world --help` for the full list of configurable options.
+
         """
+        parser = argparse.ArgumentParser(
+            prog="%pp_start_world", 
+            description="Starts a Paper server for a given world name."
+        )
+        parser.add_argument("world_name", help="The name of the world to start")
+        parser.add_argument("--ssh", action="store_true", help="Enable SSH tunnel")
+        
+        group = parser.add_mutually_exclusive_group()
+        group.add_argument("--authkey", help="Tailscale Auth Key")
+        group.add_argument("--clear-authkey", action="store_true", help="Wipe cached auth key")
+        
+        routing = parser.add_mutually_exclusive_group()
+        # Both flags target the same 'routing_mode' variable in your args object
+        routing.add_argument("--subnet", dest="routing_mode", action="store_const", const=True, help="Handle Tailscale routing for local world clients")
+        routing.add_argument("--node", dest="routing_mode", action="store_const", const=False, help="Only route localhost Tailscale traffic")
 
-        # Check if the user is requesting router port mapping for the SSH tunnel
-        use_ssh = '--ssh' in line
-        if use_ssh:
-            parts = line.split()
-            if '--ssh' in parts:
-                parts.remove('--ssh')
-            line = ' '.join(parts)
+        parser.add_argument("--do-not-join", action="store_true", help="Prevent auto-joining the world") 
 
-        # Check if the user wants to wipe the cached auth key
-        clear_authkey = '--clear-authkey' in line
-        if clear_authkey:
-            parts = line.split()
-            if '--clear-authkey' in parts:
-                parts.remove('--clear-authkey')
-            line = ' '.join(parts)
-
-        # Check for Tailscale Auth Key automation from the command line
-        cli_authkey = None
-        if '--authkey' in line:
-            parts = line.split()
-            if '--authkey' in parts:
-                idx = parts.index('--authkey')
-                if idx + 1 < len(parts):
-                    cli_authkey = parts.pop(idx + 1)
-                parts.remove('--authkey')
-            line = ' '.join(parts)
-
-        # Check for Tailscale routing mode overrides
-        use_subnet_override = None
-        if '--subnet' in line:
-            use_subnet_override = True
-            parts = line.split()
-            if '--subnet' in parts: parts.remove('--subnet')
-            line = ' '.join(parts)
-        elif '--node' in line:
-            use_subnet_override = False
-            parts = line.split()
-            if '--node' in parts: parts.remove('--node')
-            line = ' '.join(parts)
-
-        # check if the user does not want to auto-join the world
-        do_not_join_world = False 
-        if '--do-not-join' in line:
-            do_not_join_world = True
-            parts = line.split()
-            if '--do-not-join' in parts: parts.remove('--do-not-join')
-            line = ' '.join(parts)
-
-        world_name = line.strip()
-        if not world_name:
-            print("Error: Please provide a world name. Usage: %pp_start_world <world_name>")
+        args = shlex.split(line)
+        
+        try:
+            parsed_args = parser.parse_args(args)
+        except SystemExit:
+            # This catches '--help' or invalid arguments and stops the function
+            # without killing the IPython kernel
             return
 
-        world_directory = MC_WORLDS_BASE_DIR / world_name
+        cli_authkey = None
+        if parsed_args.authkey is not None:
+            cli_authkey = parsed_args.authkey
+
+        use_subnet_override = parsed_args.routing_mode
+
+        world_name = parsed_args.world_name
+        world_directory = MC_WORLDS_BASE_DIR / parsed_args.world_name
 
         if not world_directory.exists():
             print(f"Error: World directory does not exist at '{world_directory}'.")
@@ -729,7 +753,7 @@ class MCShell(Magics):
             self.server_data = json.load(f)
 
         # 2. Evaluate final authkey and routing mode from cache vs CLI
-        if clear_authkey:
+        if parsed_args.clear_authkey:
             authkey = None
             if 'tailscale_authkey' in self.server_data:
                 del self.server_data['tailscale_authkey']
@@ -739,7 +763,7 @@ class MCShell(Magics):
         use_subnet = use_subnet_override if use_subnet_override is not None else self.server_data.get('tailscale_subnet_mode', False)
 
         # 3. Update and securely save the cache if anything changed
-        if cli_authkey or use_subnet_override is not None or clear_authkey:
+        if cli_authkey or use_subnet_override is not None or parsed_args.clear_authkey:
             if authkey:
                 self.server_data['tailscale_authkey'] = authkey
             self.server_data['tailscale_subnet_mode'] = use_subnet
@@ -782,13 +806,13 @@ class MCShell(Magics):
 
         # Start the background SSH Tunnel gateway automatically
         print("Starting secure SSH tunnel gateway in the background...")
-        self.current_ssh_token = _start_secure_tunnel_host(self.server_data['port'], self.server_data['rcon_port'], self.server_data['mj_port'], self.server_data['mc_version'],use_ssh=use_ssh)
+        self.current_ssh_token = _start_secure_tunnel_host(self.server_data['port'], self.server_data['rcon_port'], self.server_data['mj_port'], self.server_data['mc_version'],use_ssh=parsed_args.ssh)
 
         # Cross-platform automated host login (ONLY if we aren't relying on an external Subnet Router)
         if authkey and not use_subnet:
             self._connect_tailscale(authkey, accept_routes=False)
 
-        if not do_not_join_world:
+        if not parsed_args.do_not_join:
             magic_cmd_line = f"\
                     127.0.0.1 \
                     --local-mc    {self.server_data['port']} \
@@ -800,9 +824,214 @@ class MCShell(Magics):
                     --password    {self.server_data['password']} \
                     "
 
-            self.ip.run_line_magic('mc_start_app',magic_cmd_line)
+            self.ip.run_line_magic('pp_join_world',magic_cmd_line)
 
+    @line_magic
+    def pp_join_world(self, line):
+        """Connects to a PaperMC server instance.
+        
+        Type %pp_join_world --help for available configuration flags.
+        """
 
+        parser = argparse.ArgumentParser(
+            prog="%pp_join_world",
+            description="Starts the client connection architecture to link with a specific world server."
+        )
+        
+        # Optional positional target (Token or IP)
+        parser.add_argument(
+            "connection_target",
+            nargs="?",
+            default=None,
+            help="The direct target connection string (Token or IP address)."
+        )
+
+        # Authentication properties
+        parser.add_argument("--password", default=None, help="Access security password required by remote server.")
+        parser.add_argument("--authkey", default=None, help="Tailscale absolute authorization key string.")
+
+        # MC overrides
+        parser.add_argument("--mc_version", default=None, help="Minecraft version configuration override.")
+        parser.add_argument("--mc_name", default=None, help="Minecraft player profile name override.")
+
+        # Connection port overrides
+        parser.add_argument("--local-mc", type=int, default=None, help="Minecraft local game port override.")
+        parser.add_argument("--local-rcon", type=int, default=None, help="Local RCON admin port override.")
+        parser.add_argument("--local-mj", type=int, default=None, help="Local McJuice API plugin port override.")
+        parser.add_argument("--local-app", type=int, default=None, help="Local control panel web application port override.")
+        
+        # Toggles
+        parser.add_argument("--login", action="store_true", help="Enable authenticating profile login state directly.")
+
+        split_args = shlex.split(line)
+        
+        try:
+            parsed_args = parser.parse_args(split_args)
+        except SystemExit:
+            # Prevent argparse exceptions or help prints from aborting IPython
+            return
+
+        # 1. Profile Username Resolution
+        if parsed_args.mc_name is not None:
+            minecraft_name = parsed_args.mc_name
+        else:
+            minecraft_name = self._get_mc_name()
+        self.mc_name = minecraft_name
+
+        # 2. Server Password Resolution
+        server_password = parsed_args.password
+        self.server_data.update({'password': server_password})
+
+        # 3. Connection Token & Tailscale Logic Parsing
+        token = parsed_args.connection_target
+        authkey = parsed_args.authkey
+
+        # Split complex connection string format token (e.g. IP@ports^tskey-...)
+        if token and '^' in token:
+            token, extracted_key = token.split('^', 1)
+            if extracted_key:
+                authkey = extracted_key
+
+        if authkey:
+            self._connect_tailscale(authkey, accept_routes=True)
+
+        if not token:
+            self.server_data.update({
+                'host': Prompt.ask('Server Address:', default=self.server_data['host']),
+            })
+
+        # 4. Interactive Configuration Fallbacks (Prompt if option missing)
+        if parsed_args.local_mc is not None:
+            local_mc = parsed_args.local_mc
+        else:
+            local_mc = int(Prompt.ask('Server Port:', default=str(self.server_data['port'])))
+
+        if parsed_args.local_rcon is not None:
+            local_rcon = parsed_args.local_rcon
+        else:
+            local_rcon = int(Prompt.ask('Rcon Port:', default=str(self.server_data['rcon_port'])))
+
+        if parsed_args.local_mj is not None:
+            local_mj = parsed_args.local_mj
+        else:
+            local_mj = int(Prompt.ask('Plugin Port:', default=str(self.server_data['mj_port'])))
+
+        if parsed_args.mc_version is not None:
+            mc_version = parsed_args.mc_version
+        else:
+            mc_version = str(Prompt.ask('Minecraft Version:', default=str(self.server_data['mc_version'])))
+
+        if parsed_args.local_app is not None:
+            local_app = parsed_args.local_app
+        else:
+            local_app = int(Prompt.ask('Application Port:', default=str(self.server_data['app_port'])))
+
+        is_login = parsed_args.login 
+
+        # set overridden data
+        self.server_data['rcon_port'] = local_rcon
+        self.server_data['port'] = local_mc
+        self.server_data['mj_port'] = local_mj
+        self.server_data['mc_version'] = mc_version
+        self.server_data['app_port'] = local_app
+
+        if token:
+            # DEFINE VARS FIRST: Determine intended local ports from defaults
+            local_mc = self.server_data.get('port', MC_SERVER_PORT)
+            local_rcon = self.server_data.get('rcon_port', MC_RCON_PORT)
+            local_mj = self.server_data.get('mj_port', MJ_PLUGIN_PORT)
+            mc_version = self.server_data.get('mc_version',MC_VERSION)
+            local_app = self.server_data.get('app_port',MC_APP_PORT)
+
+            # SAFETY CHECK
+            if hasattr(self, 'active_paper_server') and getattr(self, 'active_paper_server') and self.active_paper_server.is_alive():
+                print("A local Minecraft server is already running. Proceeding with proxy connections anyway.")
+
+            # SMART TOKEN ROUTING
+            if '#' not in token and '@' not in token and '^' not in token:
+                # we have a simple host ip address or domain 
+                self.server_data['host'] = token
+            elif '#' in token:
+                print("Connecting to secure tunnel...")
+                _start_secure_tunnel_client(token, local_mc, local_rcon, local_mj)
+
+                # THE MAGIC TRICK: Overwrite in-memory server_data to point to the secure tunnel entrances
+                self.server_data['host'] = '127.0.0.1'
+                self.server_data['port'] = local_mc
+                self.server_data['rcon_port'] = local_rcon
+                self.server_data['mj_port'] = local_mj
+                self.server_data['mc_version'] = mc_version
+                self.server_data['app_port'] = local_app
+
+                # Give the background thread a moment to establish port forwards
+                time.sleep(1.0)
+                print("Tunnel connection established.")
+            else:
+                # Handle Direct IPs and Custom Port strings (e.g. 192.168.1.5@25566-25576-4721-1.21.11)
+                if '@' in token:
+                    ip_part, ports_part = token.split('@', 1)
+                    try:
+                        p_mc, p_rcon, p_mj, p_ver = ports_part.split('-')
+                        self.server_data['host'] = ip_part
+                        self.server_data['port'] = int(p_mc)
+                        self.server_data['rcon_port'] = int(p_rcon)
+                        self.server_data['mj_port'] = int(p_mj)
+                        self.server_data['mc_version'] = p_ver
+                        print(f"\n[DIRECT CONNECT] Connecting to {ip_part} with custom ports...")
+                    except ValueError:
+                        print("\n[ERROR] Invalid Direct Token format. Falling back to default ports.")
+                        self.server_data['host'] = ip_part
+                else:
+                    print(f"\n[DIRECT CONNECT] Connecting directly to {token}...")
+                    self.server_data['host'] = token
+                    self.server_data['port'] = local_mc
+                    self.server_data['rcon_port'] = local_rcon
+                    self.server_data['mj_port'] = local_mj
+                    self.server_data['mc_version'] = mc_version
+
+        # get the server password if required
+        if is_login and self.server_data['password'] is None:
+            self.server_data.update({
+                'password': Prompt.ask('Server Password:', password=True)
+            })
+
+        power_repo = SQLiteRepository(minecraft_name)
+
+        print(f"Assigning application server context to Minecraft player: {minecraft_name}")
+        self.app_server_thread = start_app_server(self.server_data, minecraft_name, self.shell, power_repo)
+
+        print("Waiting a bit for server to finish starting...")
+        time.sleep(4)
+
+        print(f"\n" + "="*55)
+        print(f"🎮 READY TO PLAY! Enter this into Minecraft:")
+        if self.server_data['host'] in ('127.0.0.1', 'localhost'):
+            mc_port_str = f":{self.server_data['port']}" if self.server_data['port'] != 25565 else ""
+
+            # Context Check: Are we the host, or a remote client using an SSH tunnel?
+            if self.active_paper_server and self.active_paper_server.is_alive():
+                # We are the host. Display our actual network IPs.
+                vpn_ip = get_vpn_ip()
+                local_ip = _get_local_ip()
+                if vpn_ip:
+                    print(f"   Java Edition IP: {local_ip}{mc_port_str} (LAN) or {vpn_ip}{mc_port_str} (VPN)")
+                    print(f"   Bedrock / iPad : {local_ip} (LAN) or {vpn_ip} (VPN)")
+                else:
+                    print(f"   Java Edition IP: {local_ip}{mc_port_str}")
+                    print(f"   Bedrock / iPad : {local_ip} (Default port 19132)")
+            else:
+                # We are a remote client using an SSH Tunnel.
+                print(f"   Java Edition IP: localhost{mc_port_str}")
+                print(f"   Bedrock / iPad : (Requires Tailscale or Local LAN on Host)")
+        else:
+            mc_port_str = f":{self.server_data['port']}" if self.server_data['port'] != 25565 else ""
+            print(f"   Java Edition IP: {self.server_data['host']}{mc_port_str}")
+            print(f"   Bedrock / iPad : {self.server_data['host']} (Default port 19132)")
+        print(f"="*55 + "\n")
+
+        self._print_connection_hub()
+
+        return
     @line_magic
     def pp_stop_world(self, line):
         """
@@ -891,15 +1120,34 @@ class MCShell(Magics):
 
     @line_magic
     def pp_delete_world(self, line):
+        """Permanently deletes a world directory.
+        
+        Type %pp_delete_world --help for usage information.
         """
-        Permanently deletes a world directory and all its contents.
-        Includes multiple safety checks to prevent accidental deletion.
-        Usage: %pp_delete_world <world_name>
-        """
-        world_name = line.strip()
-        if not world_name:
-            print("Usage: %pp_delete_world <world_name>")
+
+        parser = argparse.ArgumentParser(
+            prog="%pp_delete_world",
+            description="Permanently deletes a world directory and all its contents with built-in safety checks."
+        )
+        
+        # Positional required argument
+        parser.add_argument(
+            "world_name", 
+            help="The exact name of the world directory to permanently delete."
+        )
+
+        split_args = shlex.split(line)
+        
+        try:
+            parsed_args = parser.parse_args(split_args)
+        except SystemExit:
+            # Safely catch --help and syntax mismatches without 
+            # terminating the ongoing IPython application loop shell.
             return
+
+        # Extract the cleanly validated argument
+        world_name = parsed_args.world_name 
+
 
         # Define the path to the world directory
         world_dir = MC_WORLDS_BASE_DIR / world_name
@@ -917,7 +1165,7 @@ class MCShell(Magics):
 
         # Final Confirmation: Get explicit confirmation from the user.
         print("-----------------------------------------------------------------")
-        print(f"WARNING: You are about to permanently delete the world '{world_name}'")
+        print(f"⚠️ WARNING: Preparing to permanently delete world: '{world_name}'")
         print("and all of its contents. This action cannot be undone.")
         print(f"Directory to be deleted: {world_dir}")
         print("-----------------------------------------------------------------")
@@ -941,16 +1189,10 @@ class MCShell(Magics):
             print(f"An error occurred while deleting the world directory: {e}")
 
     @line_magic
-    def pp_join_world(self,line):
-        """Join an existing world using and start an app server"""
-        self.ip.run_line_magic('mc_start_app',line)
-
-    @line_magic
     def pp_leave_world(self, line):
         """
         Leaves the current world and returns the app to the Lobby. 
         Hosts must safely shut down their local server first using %pp_stop_world.
-        Usage: %pp_leave_world
         """
         print("\n--- Leaving World ---")
 
@@ -1019,7 +1261,7 @@ class MCShell(Magics):
         return self._send('data',*args)
 
     @property
-    def commands(self):
+    def _commands(self):
         """
         Builds a unique, deduplicated command and subcommand registry.
         Deduplicates sub-items like gamerules (e.g., 'spawn_mobs' vs 'minecraft:spawn_mobs').
@@ -1237,11 +1479,11 @@ class MCShell(Magics):
 
         # Case 1: Completing the base command
         if len(parts) == 1 or (len(parts) == 2 and text_to_complete != ''):
-            arg_matches = [c for c in self.commands.keys() if c.startswith(text_to_complete)]
+            arg_matches = [c for c in self._commands.keys() if c.startswith(text_to_complete)]
 
         # Case 2: Showing/Completing sub-items (like gamerules)
-        elif len(parts) >= 2 and command in self.commands:
-            sub_map = self.commands[command]
+        elif len(parts) >= 2 and command in self._commands:
+            sub_map = self._commands[command]
             sub_keys = [k for k in sub_map.keys() if k != ' ']
 
             if len(parts) == 2 and text_to_complete == '':
@@ -1260,7 +1502,11 @@ class MCShell(Magics):
 
         _arg_list = line.split(' ')
         _arg_list[0] = _arg_list[0].replace('_','-')
-        # print(f"Send: {' '.join(_arg_list)}")
+
+        if _arg_list[0] == 'help':
+            print("Use %mc_help instead.")
+            return
+
         try:
             response = self._run(*_arg_list)
             if response == '':
@@ -1272,17 +1518,7 @@ class MCShell(Magics):
 
         print('Response:')
         print('-' * 100)
-        if _arg_list[0] == 'help':
-            _responses = response.split('/')
-            for _resp in _responses:
-                if _resp.strip():
-                    # Keep namespaces, just fix hyphens
-                    _parts = _resp.split()
-                    _parts[0] = _parts[0].replace('-', '_')
-                    print('\t' + ' '.join(_parts))
-            # for _response in _responses:
-            #     print('\t' + _response)
-        elif response.split()[0] == 'Unknown':
+        if response.split()[0] == 'Unknown':
             print("[red]Error in usage:[/]")
             self.mc_help(line)
         else:
@@ -1316,22 +1552,22 @@ class MCShell(Magics):
                 
         arg_matches = []
         if len(parts) == 1: # showing commands
-            arg_matches = [c for c in self.commands.keys()]
+            arg_matches = [c for c in self._commands.keys()]
         elif len(parts) == 2 and text_to_complete != '':  # completing commands
-            arg_matches = [c for c in self.commands.keys() if c.startswith(text_to_complete)]
+            arg_matches = [c for c in self._commands.keys() if c.startswith(text_to_complete)]
         elif len(parts) == 2 and text_to_complete == '':  # showing subcommands
-            sub_commands = list(self.commands[command].keys())
+            sub_commands = list(self._commands[command].keys())
             arg_matches = [sub_command for sub_command in sub_commands]
         elif len(parts) == 3 and text_to_complete != '':  # completing subcommands
-            sub_commands = list(self.commands[command].keys())
+            sub_commands = list(self._commands[command].keys())
             arg_matches = [sub_command for sub_command in sub_commands if sub_command.startswith(text_to_complete)]
         elif len(parts) == 3 and text_to_complete == '':  # showing arguments
             sub_command = parts[2]
-            sub_command_args = self.commands[command][sub_command]
+            sub_command_args = self._commands[command][sub_command]
             arg_matches = [sub_command_arg for sub_command_arg in sub_command_args]
         elif len(parts) > 3: # completing arguments
             sub_command = parts[2]
-            sub_command_args = self.commands[command][sub_command]
+            sub_command_args = self._commands[command][sub_command]
             current_arg_index = len(parts) - 3 # Index of current argument
             if text_to_complete == '': # showing next arguments
                 arg_matches = [arg for arg in sub_command_args[current_arg_index+1]]
@@ -1405,35 +1641,35 @@ class MCShell(Magics):
         print(f"requested player will be available as the variable {_player_name} locally")
         local_ns[_player_name] = self._get_player(_player_name)
 
-    @line_magic
-    def mc_create_script(self, line):
-        """
-        Receives a block of Python code from the mc-ed editor,
-        saves it to a uniquely named file in powers/blockcode.
-        """
-        code_to_save = line
-        if not code_to_save:
-            print("Received empty code block. No script created.")
-            return
+    # @line_magic
+    # def mc_create_script(self, line):
+    #     """
+    #     Receives a block of Python code from the mc-ed editor,
+    #     saves it to a uniquely named file in powers/blockcode.
+    #     """
+    #     code_to_save = line
+    #     if not code_to_save:
+    #         print("Received empty code block. No script created.")
+    #         return
 
-        try:
-            # Create a unique filename for the power
-            power_dir = pathlib.Path("./powers/blockcode")
-            power_dir.mkdir(parents=True, exist_ok=True)
+    #     try:
+    #         # Create a unique filename for the power
+    #         power_dir = pathlib.Path("./powers/blockcode")
+    #         power_dir.mkdir(parents=True, exist_ok=True)
 
-            # Generate a unique suffix for the filename
-            file_hash = uuid.uuid4().hex[:6]
-            filename = f"power_{file_hash}.py"
-            filepath = power_dir / filename
+    #         # Generate a unique suffix for the filename
+    #         file_hash = uuid.uuid4().hex[:6]
+    #         filename = f"power_{file_hash}.py"
+    #         filepath = power_dir / filename
 
-            with open(filepath, 'w') as f:
-                f.write(code_to_save)
+    #         with open(filepath, 'w') as f:
+    #             f.write(code_to_save)
 
-            print(f"Successfully saved power to: {filepath}")
-            print(f"To use it, you can now run:\nfrom powers.blockcode.{filename.replace('.py','')} import *")
+    #         print(f"Successfully saved power to: {filepath}")
+    #         print(f"To use it, you can now run:\nfrom powers.blockcode.{filename.replace('.py','')} import *")
 
-        except Exception as e:
-            print(f"Error saving script: {e}")
+    #     except Exception as e:
+    #         print(f"Error saving script: {e}")
 
     @line_magic
     def mc_debug_and_define(self, line):
@@ -1592,23 +1828,68 @@ if __name__ == '__main__':
 
         return arg_matches
 
+    # @line_magic
+    # def mc_cancel_power(self, line):
+    #     """Cancels a running power by its execution ID."""
+    #     execution_id = line.strip()
+    #     if not execution_id:
+    #         print("Usage: %mc_cancel_power <execution_id>")
+    #         if RUNNING_POWERS:
+    #             print("Currently running powers:", list(RUNNING_POWERS.keys()))
+    #         return
+
+    #     power_metadata = RUNNING_POWERS.get(execution_id)
+    #     if power_metadata:
+    #         print(f"Sending cancellation signal to power: {execution_id}")
+    #         # Corrected attribute access (removed paste garbage)
+    #         power_metadata['cancel_event'].set()
+    #     else:
+    #         print(f"Error: No running power found with ID: {execution_id}")
+
     @line_magic
     def mc_cancel_power(self, line):
-        """Cancels a running power by its execution ID."""
-        execution_id = line.strip()
-        if not execution_id:
-            print("Usage: %mc_cancel_power <execution_id>")
+        """Cancels a running background power or script loop.
+        All execution ids are stored in the RUNNING_POWERS dictionary.
+        <TAB> will list all current execution ids.
+        
+        Type %mc_cancel_power --help for usage details.
+        """
+
+        parser = argparse.ArgumentParser(
+            prog="%mc_cancel_power",
+            description="Cancels an active, background-running Blockly macro or script by its active execution ID."
+        )
+        
+        # Positional required argument
+        parser.add_argument(
+            "execution_id", 
+            help="The active string hash ID or key identifier of the background process."
+        )
+
+        split_args = shlex.split(line)
+        
+        try:
+            parsed_args = parser.parse_args(split_args)
+        except SystemExit:
+            # Whenever the argument checks fail or --help is requested,
+            # helpfully print the live options directly underneath the usage schema.
             if RUNNING_POWERS:
-                print("Currently running powers:", list(RUNNING_POWERS.keys()))
+                print("\nCurrently active execution IDs:", list(RUNNING_POWERS.keys()))
+            else:
+                print("\nThere are currently no active background processes running.")
             return
+
+        # Extract the cleanly validated argument
+        execution_id = parsed_args.execution_id
 
         power_metadata = RUNNING_POWERS.get(execution_id)
         if power_metadata:
             print(f"Sending cancellation signal to power: {execution_id}")
-            # Corrected attribute access (removed paste garbage)
             power_metadata['cancel_event'].set()
         else:
             print(f"Error: No running power found with ID: {execution_id}")
+            if RUNNING_POWERS:
+                print("Valid active IDs are:", list(RUNNING_POWERS.keys()))
 
     def _get_mc_name(self) -> Optional[str]:
         """
@@ -1673,217 +1954,7 @@ if __name__ == '__main__':
         self.mc_name = minecraft_name
         return self.mc_name
 
-    @line_magic
-    def mc_start_app(self, line):
-        """
-        Starts the client application components to connect to a world.
-        Usage: %mc_start_app [token|IP] [--local-mc <port>] [--local-rcon <port>] [--local-mj <port>] [--local-app] [--authkey <key>] [--mc_version <minecraft version>] [--login] [--mc_name <minecraft user name>] [--password <server password>]
-        """
-        parts = line.split()
 
-        # Check for login mode
-        is_login = '--login' in parts
-        if is_login:
-            parts.remove('--login')
-
-        # Safely extract mc_name
-        if '--mc_name' in parts:
-            idx = parts.index('--mc_name')
-            
-            # Check if there's a value after the flag AND that it isn't another flag
-            if idx + 1 < len(parts) and not parts[idx + 1].startswith('--'):
-                minecraft_name = parts[idx + 1]
-                # Remove both the flag and the extracted username from parts
-                del parts[idx:idx+2]
-            else:
-                parts.pop(idx) # Remove the dangling flag
-                throw_app_server_error("Initialization failed: '--mc_name' was provided without a valid username.")
-                return # Abort further execution so the server doesn't start in a broken state     
-        else:
-            minecraft_name = self._get_mc_name()
-
-        # Safely extract password and set it 
-        if '--password' in parts:
-            idx = parts.index('--password')
-            
-            # Check if there's a value after the flag AND that it isn't another flag
-            if idx + 1 < len(parts) and not parts[idx + 1].startswith('--'):
-                server_password = parts[idx + 1]
-                # Remove both the flag and the extracted username from parts
-                del parts[idx:idx+2]
-                self.server_data.update({
-                    'password': server_password
-                })
-            else:
-                parts.pop(idx) # Remove the dangling flag
-                throw_app_server_error("Initialization failed: '--password' was provided without a valid password.")
-                return # Abort further execution so the server doesn't start in a broken state     
-        else:
-            server_password = None
-            self.server_data.update({
-                'password': server_password 
-            })
-
-
-        # cache it
-        self.mc_name = minecraft_name
-
-        # If the first argument doesn't start with '--', it's our token
-        token = parts[0] if parts and not parts[0].startswith('--') else None
-
-        # Check for Tailscale Auth Key automation
-        authkey = None
-
-        # Support legacy explicit flag
-        if '--authkey' in parts:
-            idx = parts.index('--authkey')
-            if idx + 1 < len(parts):
-                authkey = parts[idx + 1]
-
-        # Extract embedded authkey from the new token paradigm (e.g. IP@ports^tskey-...)
-        if token and '^' in token:
-            token, extracted_key = token.split('^', 1)
-            authkey = extracted_key if extracted_key else authkey
-
-        if authkey:
-            # Cross-platform automated client login (must accept routes to see host LANs)
-            self._connect_tailscale(authkey, accept_routes=True)
-
-        if not token:
-            self.server_data.update({
-                'host': Prompt.ask('Server Address:', default=self.server_data['host']),
-            })
-
-        # OVERRIDES: Process any user-provided terminal overrides
-        if '--local-mc' in parts:
-            local_mc = int(parts[parts.index('--local-mc') + 1])
-        else:
-            local_mc = int(Prompt.ask('Server Port:', default=str(self.server_data['port'])))
-
-        if '--local-rcon' in parts:
-            local_rcon = int(parts[parts.index('--local-rcon') + 1])
-        else:
-            local_rcon = int(Prompt.ask('Rcon Port:', default=str(self.server_data['rcon_port'])))
-
-        if '--local-mj' in parts:
-            local_mj = int(parts[parts.index('--local-mj') + 1])
-        else:
-            local_mj =  int(Prompt.ask('Plugin Port:', default=str(self.server_data['mj_port'])))
-
-        if '--mc_version' in parts:
-            mc_version = parts[parts.index('--mc_version') + 1]
-        else:
-            mc_version = str(Prompt.ask('Minecraft Version:', default=str(self.server_data['mc_version'])))
-
-        if '--local-app' in parts:
-            local_app = int(parts[parts.index('--local-app') + 1])
-        else:
-            local_app= int(Prompt.ask('Application Port:', default=str(self.server_data['app_port'])))
-
-        # set overridden data
-        self.server_data['rcon_port'] = local_rcon
-        self.server_data['port'] = local_mc
-        self.server_data['mj_port'] = local_mj
-        self.server_data['mc_version'] = mc_version
-        self.server_data['app_port'] = local_app
-
-        if token:
-            # DEFINE VARS FIRST: Determine intended local ports from defaults
-            local_mc = self.server_data.get('port', MC_SERVER_PORT)
-            local_rcon = self.server_data.get('rcon_port', MC_RCON_PORT)
-            local_mj = self.server_data.get('mj_port', MJ_PLUGIN_PORT)
-            mc_version = self.server_data.get('mc_version',MC_VERSION)
-            local_app = self.server_data.get('app_port',MC_APP_PORT)
-
-            # SAFETY CHECK
-            if hasattr(self, 'active_paper_server') and getattr(self, 'active_paper_server') and self.active_paper_server.is_alive():
-                print("A local Minecraft server is already running. Proceeding with proxy connections anyway.")
-
-            # SMART TOKEN ROUTING
-            if '#' not in token and '@' not in token and '^' not in token:
-                # we have a simple host ip address or domain 
-                self.server_data['host'] = token
-            elif '#' in token:
-                print("Connecting to secure tunnel...")
-                _start_secure_tunnel_client(token, local_mc, local_rcon, local_mj)
-
-                # THE MAGIC TRICK: Overwrite in-memory server_data to point to the secure tunnel entrances
-                self.server_data['host'] = '127.0.0.1'
-                self.server_data['port'] = local_mc
-                self.server_data['rcon_port'] = local_rcon
-                self.server_data['mj_port'] = local_mj
-                self.server_data['mc_version'] = mc_version
-                self.server_data['app_port'] = local_app
-
-                # Give the background thread a moment to establish port forwards
-                time.sleep(1.0)
-                print("Tunnel connection established.")
-            else:
-                # Handle Direct IPs and Custom Port strings (e.g. 192.168.1.5@25566-25576-4721-1.21.11)
-                if '@' in token:
-                    ip_part, ports_part = token.split('@', 1)
-                    try:
-                        p_mc, p_rcon, p_mj, p_ver = ports_part.split('-')
-                        self.server_data['host'] = ip_part
-                        self.server_data['port'] = int(p_mc)
-                        self.server_data['rcon_port'] = int(p_rcon)
-                        self.server_data['mj_port'] = int(p_mj)
-                        self.server_data['mc_version'] = p_ver
-                        print(f"\n[DIRECT CONNECT] Connecting to {ip_part} with custom ports...")
-                    except ValueError:
-                        print("\n[ERROR] Invalid Direct Token format. Falling back to default ports.")
-                        self.server_data['host'] = ip_part
-                else:
-                    print(f"\n[DIRECT CONNECT] Connecting directly to {token}...")
-                    self.server_data['host'] = token
-                    self.server_data['port'] = local_mc
-                    self.server_data['rcon_port'] = local_rcon
-                    self.server_data['mj_port'] = local_mj
-                    self.server_data['mc_version'] = mc_version
-
-        # get the server password if required
-        if is_login and self.server_data['password'] is None:
-            self.server_data.update({
-                'password': Prompt.ask('Server Password:', password=True)
-            })
-
-        power_repo = SQLiteRepository(minecraft_name)
-
-        print(f"Assigning application server context to Minecraft player: {minecraft_name}")
-        self.app_server_thread = start_app_server(self.server_data, minecraft_name, self.shell, power_repo)
-
-        print("Waiting a bit for server to finish starting...")
-        time.sleep(4)
-
-        print(f"\n" + "="*55)
-        print(f"🎮 READY TO PLAY! Enter this into Minecraft:")
-        if self.server_data['host'] in ('127.0.0.1', 'localhost'):
-            mc_port_str = f":{self.server_data['port']}" if self.server_data['port'] != 25565 else ""
-
-            # Context Check: Are we the host, or a remote client using an SSH tunnel?
-            if self.active_paper_server and self.active_paper_server.is_alive():
-                # We are the host. Display our actual network IPs.
-                vpn_ip = get_vpn_ip()
-                local_ip = _get_local_ip()
-                if vpn_ip:
-                    print(f"   Java Edition IP: {local_ip}{mc_port_str} (LAN) or {vpn_ip}{mc_port_str} (VPN)")
-                    print(f"   Bedrock / iPad : {local_ip} (LAN) or {vpn_ip} (VPN)")
-                else:
-                    print(f"   Java Edition IP: {local_ip}{mc_port_str}")
-                    print(f"   Bedrock / iPad : {local_ip} (Default port 19132)")
-            else:
-                # We are a remote client using an SSH Tunnel.
-                print(f"   Java Edition IP: localhost{mc_port_str}")
-                print(f"   Bedrock / iPad : (Requires Tailscale or Local LAN on Host)")
-        else:
-            mc_port_str = f":{self.server_data['port']}" if self.server_data['port'] != 25565 else ""
-            print(f"   Java Edition IP: {self.server_data['host']}{mc_port_str}")
-            print(f"   Bedrock / iPad : {self.server_data['host']} (Default port 19132)")
-        print(f"="*55 + "\n")
-
-        self._print_connection_hub()
-
-        return
 
     @line_magic
     def mc_stdlib(self, line):
@@ -2324,3 +2395,4 @@ def load_ipython_extension(ip):
         print("Cleanup complete.")
 
     atexit.register(shutdown_hook)
+
