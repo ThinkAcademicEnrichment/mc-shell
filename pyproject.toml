@@ -1,13 +1,15 @@
 [tool.poetry]
 name = "mc-shell"
-version = "0.9.6"
+version = "0.9.7"
 description = "An interactive shell, Blockly editor and control for managing, programming and sharing Minecraft servers."
 authors = ["Jeff <jeff@thinkae.org>"]
 readme = "README.md"
 packages = [{include = "mcshell"}]
 
-# Must be in tool.poetry
+# Must be in tool.poetry; include all gitignored generated files
 include = [
+    "mchsell/actions/generated_actions.py",
+    "mcshell/mcjuice.py",
     "mcshell/data/app/**/*",
     "mcshell/data/*.jar"
 ]
