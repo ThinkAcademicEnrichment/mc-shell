@@ -6,8 +6,11 @@ import json
 import time
 import sys
 import yaml
+import shutil  # Added for cross-platform file sync
 from pathlib import Path
 from typing import Optional
+
+import platform
 
 from mcshell.constants import *
 from mcshell.ppdownloader import PaperDownloader
@@ -20,15 +23,17 @@ class PaperServerManager:
         self.world_directory = world_directory
         self.process: Optional[pexpect.spawn] = None
         self.thread: Optional[threading.Thread] = None
+        
+        # New synchronization attributes
+        self.sync_thread: Optional[threading.Thread] = None
+        self.sync_stop_event: Optional[threading.Event] = None
 
         # Load the world manifest to determine the JAR path
         manifest_path = self.world_directory / 'world_manifest.json'
         with manifest_path.open('rb') as f:
             self.world_manifest = json.load(f)
 
-        # Path to the Paper JAR is stored relative to the worlds base directory
         self.jar_path = self.world_directory.parent / self.world_manifest.get('server_jar_path')
-
     def update_jar_path(self):
         downloader = PaperDownloader(MC_WORLDS_BASE_DIR / 'server-jars')
         paper_version = self.world_manifest["paper_version"]
@@ -180,22 +185,79 @@ class PaperServerManager:
                 self.process.close(force=True)
             self.process = None
 
+    def _sync_player_data(self):
+        """Cross-platform synchronization of player data from RAM to persistent disk."""
+        # NOTE: You must define where the RAM disk is mounted versus the persistent backup
+        volatile_dir = self.world_directory / "world" / "playerdata"
+        persistent_dir = self.world_directory / "world" / "playerdata_persistent"
+        
+        if volatile_dir.exists():
+            try:
+                shutil.copytree(volatile_dir, persistent_dir, dirs_exist_ok=True)
+                # Optional: print(f"[{self.world_name}] RAM disk synced to persistent storage.")
+            except Exception as e:
+                print(f"[{self.world_name}] Error syncing player data: {e}")
+
+    def _sync_worker(self, interval_seconds: int = 300):
+        """Background loop to periodically sync RAM disk data to persistent storage."""
+        print(f"[{self.world_name}] Player data sync worker initialized (Interval: {interval_seconds}s).")
+        while not self.sync_stop_event.is_set():
+            # Wait blocks until the event is set or the timeout is reached.
+            # It returns True if the flag was set (meaning we should stop).
+            if self.sync_stop_event.wait(interval_seconds):
+                break
+            self._sync_player_data()
+
+    def _provision_ramdisk(self, size_mb: int = 60):
+        """Provisions a cross-platform RAM disk and seeds it with persistent data."""
+        volatile_dir = self.world_directory / "world" / "playerdata"
+        persistent_dir = self.world_directory / "world" / "playerdata_persistent"
+        
+        # Ensure base directories exist before attempting to mount
+        volatile_dir.mkdir(parents=True, exist_ok=True)
+        persistent_dir.mkdir(parents=True, exist_ok=True)
+        
+        os_system = platform.system()
+        try:
+            if os_system == "Linux":
+                subprocess.run(
+                    ["sudo", "mount", "-t", "tmpfs", f"-osize={size_mb}m", "tmpfs", str(volatile_dir)],
+                    check=True
+                )
+            elif os_system == "Darwin":
+                sectors = size_mb * 2048
+                ramdisk_dev = subprocess.check_output(
+                    ["hdiutil", "attach", "-nomount", f"ram://{sectors}"]
+                ).decode().strip()
+                subprocess.run(["newfs_hfs", "-v", "McRAM", ramdisk_dev], check=True, capture_output=True)
+                subprocess.run(["mount", "-t", "hfs", ramdisk_dev, str(volatile_dir)], check=True)
+            else:
+                print(f"[{self.world_name}] RAM disk not natively supported for {os_system}. Defaulting to standard disk I/O.")
+                return 
+                
+            print(f"[{self.world_name}] RAM disk provisioned successfully.")
+            
+            # Seed the RAM disk with persistent data
+            if any(persistent_dir.iterdir()):
+                shutil.copytree(persistent_dir, volatile_dir, dirs_exist_ok=True)
+                print(f"[{self.world_name}] Seeded RAM disk with persistent player data.")
+                
+        except subprocess.CalledProcessError as e:
+            print(f"[{self.world_name}] Warning: Failed to provision RAM disk: {e}. Falling back to standard I/O.")
+
     def start(self,**kwargs):
         """
         Ensures the environment is ready and starts the server in a background thread.
         Handles JRE acquisition and first-time configuration automatically.
         """
-        # 1. Ensure the managed JRE is present
         downloader = PaperDownloader(MC_WORLDS_BASE_DIR / 'server-jars')
         if not downloader.ensure_jre():
             print("Abort: Managed JRE 21 could not be initialized.")
             return
 
-        # 2. Check if the world needs initialization (config generation)
         if not (self.world_directory / "server.properties").exists():
             print("First-time setup: Initializing server to generate configuration files...")
             try:
-                # Run with --initSettings to generate files, then exit
                 subprocess.run(
                     [str(MC_JRE_PATH), "-jar", str(self.jar_path), "--initSettings"],
                     cwd=self.world_directory,
@@ -206,34 +268,49 @@ class PaperServerManager:
                 print(f"Error during initialization: {e.stderr.decode()}")
                 return
 
-        # 3. Always apply manifest settings before starting to ensure ports/passwords are synced
         self.apply_manifest_settings(**kwargs)
+        
+        # --- NEW: Provision the RAM disk and seed data before starting the server ---
+        # Note: If the world folder hasn't been generated yet (first run), this will safely 
+        # create the empty directories, mount the tmpfs, and let the server populate it.
+        self._provision_ramdisk(size_mb=60)
 
-        # Create the event flag before starting the thread
         self.ready_event = threading.Event()
 
-        # 4. Start the server management thread
         self.thread = threading.Thread(target=self._execute_server, daemon=True)
         self.thread.start()
 
         print("Waiting for server to initialize...")
         
-        # Wait until the ready_event is set by _execute_server. 
-        # The timeout prevents it from hanging forever if the server crashes silently.
         started_successfully = self.ready_event.wait(timeout=45.0)
 
         if not started_successfully or not self.is_alive():
             print(f"Error: Server for '{self.world_name}' failed to start or timed out. Check logs.")
         else:
             print(f"Server for '{self.world_name}' is fully online and ready for prompts!")
+            
+            # --- Start the background sync worker once the server is fully ready ---
+            self.sync_stop_event = threading.Event()
+            self.sync_thread = threading.Thread(
+                target=self._sync_worker, 
+                args=(300,), 
+                daemon=True
+            )
+            self.sync_thread.start()
+
 
     def stop(self):
-        """Stops the running Paper server gracefully."""
+        """Stops the running Paper server gracefully and ensures a final data sync."""
         if not self.is_alive():
             print(f"Server for '{self.world_name}' is not running.")
             return
 
         print(f"Sending 'stop' command to Paper server for '{self.world_name}'...")
+        
+        # --- NEW: Signal the sync thread to break its loop ---
+        if self.sync_stop_event:
+            self.sync_stop_event.set()
+
         try:
             self.process.sendline('stop')
             self.thread.join(timeout=30)
@@ -241,7 +318,32 @@ class PaperServerManager:
             print(f"Graceful shutdown failed: {e}. Forcing termination.")
             if self.process:
                 self.process.terminate(force=True)
+                
+        # --- NEW: Perform one final, guaranteed sync before terminating ---
+        if self.sync_thread and self.sync_thread.is_alive():
+            print(f"[{self.world_name}] Performing final player data sync to persistent storage...")
+            self._sync_player_data()
+            self.sync_thread.join(timeout=10)
 
     def is_alive(self) -> bool:
         """Checks if the server process is currently running."""
         return self.process is not None and self.process.isalive()
+
+    # def stop(self):
+    #     """Stops the running Paper server gracefully."""
+    #     if not self.is_alive():
+    #         print(f"Server for '{self.world_name}' is not running.")
+    #         return
+
+    #     print(f"Sending 'stop' command to Paper server for '{self.world_name}'...")
+    #     try:
+    #         self.process.sendline('stop')
+    #         self.thread.join(timeout=30)
+    #     except Exception as e:
+    #         print(f"Graceful shutdown failed: {e}. Forcing termination.")
+    #         if self.process:
+    #             self.process.terminate(force=True)
+
+    # def is_alive(self) -> bool:
+    #     """Checks if the server process is currently running."""
+    #     return self.process is not None and self.process.isalive()
