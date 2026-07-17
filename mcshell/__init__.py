@@ -692,6 +692,8 @@ class MCShell(Magics):
                 else:
                     print(f"Warning: Datapack '{pack_name}' not found in library.")
 
+
+
         print(f"\nWorld '{world_name}' created successfully.")
         print(f"To start it, run: %pp_start_world {world_name}")
 
@@ -812,6 +814,39 @@ class MCShell(Magics):
         if authkey and not use_subnet:
             self._connect_tailscale(authkey, accept_routes=False)
         
+        spigot_file = world_directory / "spigot.yml"
+        bukkit_file = world_directory / "bukkit.yml"
+
+        # Initialize YAML parser to preserve existing comments and structure
+        yaml = YAML()
+        yaml.preserve_quotes = True
+
+        # Update timeout-time in spigot.yml (nested under 'settings')
+        if spigot_file.is_file():
+            spigot_data = yaml.load(spigot_file)
+            
+            # Ensure the settings block exists before assigning
+            if 'settings' not in spigot_data:
+                spigot_data['settings'] = {}
+                
+            spigot_data['settings']['timeout-time'] = 240
+            
+            # ruamel.yaml can write directly to a pathlib.Path object
+            yaml.dump(spigot_data, spigot_file)
+            print(f"Updated timeout-time in {spigot_file.name}")
+
+        # Update autosave in bukkit.yml (nested under 'ticks-per')
+        if bukkit_file.is_file():
+            bukkit_data = yaml.load(bukkit_file)
+            
+            # Ensure the ticks-per block exists before assigning
+            if 'ticks-per' not in bukkit_data:
+                bukkit_data['ticks-per'] = {}
+                
+            bukkit_data['ticks-per']['autosave'] = 10000
+            
+            yaml.dump(bukkit_data, bukkit_file)
+            print(f"Updated autosave in {bukkit_file.name}")
 
         if not parsed_args.do_not_join:
             # suspend the logs for the user name prompt
@@ -829,6 +864,7 @@ class MCShell(Magics):
 
             self.ip.run_line_magic('pp_join_world',magic_cmd_line)
             self.active_paper_server.suspend_logs = False 
+
 
     @line_magic
     def pp_join_world(self, line):
