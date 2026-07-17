@@ -159,8 +159,9 @@ class PaperServerManager:
                         line = self.process.before
                         
                         # Filter noisy logs
-                        if "Thread RCON Client" in line or "FruitJuice" in line:
-                            continue
+                        # TODO: formalize this
+                        #if "Thread RCON Client" in line or "Geyser-Spigot" in line or "McJuice" in line or "floodgate" in line:
+                        #    continue
 
                         # 1. Detect the exact moment startup finishes
                         if not self.ready_event.is_set() and 'Done (' in line:
