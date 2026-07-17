@@ -1267,6 +1267,17 @@ class MCShell(Magics):
         print(f"Lobby Access: http://localhost:{app_port}/lobby?auth={GUI_AUTH_TOKEN}")
         print("="*60 + "\n")
 
+    @line_magic
+    def pp_toggle_logs(self, line):
+        """
+        Turn server logs ON or OFF. 
+        """
+        if not self.active_paper_server or not self.active_paper_server.is_alive():
+            print("No active Paper server session is currently running.")
+            return
+
+        self.active_paper_server.suspend_logs = not self.active_paper_server.suspend_logs
+
     def _send(self,kind,*args):
         assert kind in ('help','run','data')
 
