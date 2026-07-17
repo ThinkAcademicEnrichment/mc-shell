@@ -179,7 +179,7 @@ class ServerActions(MCActionsBase):
     )
     def server_summon(self, entity: 'Entity', pos: Vec3):
         """Summons an entity at a specific location."""
-        self._run_command(f"summon {entity} {pos.x} {pos.y} {pos.z}")
+        self._run_command(f"summon {entity.lower()} {pos.x} {pos.y} {pos.z}")
 
     @mced_block(
         label="Teleport [target] to [pos]",
