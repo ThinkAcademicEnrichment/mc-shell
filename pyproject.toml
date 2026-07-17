@@ -6,12 +6,12 @@ authors = ["Jeff <jeff@thinkae.org>"]
 readme = "README.md"
 packages = [{include = "mcshell"}]
 
-# Must be in tool.poetry; include all gitignored generated files
+# Must be in tool.poetry; include all gitignored generated files and mced src files for code generation
 include = [
     "mcshell/actions/generated_actions.py",
     "mcshell/mcjuice.py",
     "mcshell/data/app/**/*",
-    "mcshell/data/*.jar"
+    "mcshell/data/*.jar",
 ]
 
 [virtualenvs]
