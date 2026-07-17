@@ -65,11 +65,13 @@ def serve_dynamic_js(script_version, script_name):
         engine = TaxonomyEngine(TAXONOMY_RULES, ENTITY_RULES, prismarine_blocks, prismarine_items, prismarine_entities,verbose=False)
         materials_data, entity_data, entity_groups, picker_groups, variant_config = engine.run()
 
+        server_toolbox_path = MC_DATA_DIR / 'toolbox.xml' 
 
         builder = RegistryBuilder(
-            toolbox_path=MC_APP_SRC_DIR / 'toolbox.xml',
-            blocks_dir=MC_APP_SRC_DIR / 'blocks',
-            gens_dir=MC_APP_SRC_DIR / 'generators' / 'python',
+            toolbox_path=server_toolbox_path,
+            # we do not write static files here
+            blocks_dir=None ,
+            gens_dir=None,
         )
 
         # 3. Inject it straight into RegistryBuilder!
@@ -78,6 +80,8 @@ def serve_dynamic_js(script_version, script_name):
         builder.ENTITY_GROUPS = entity_groups
         builder.MATERIAL_PICKER_GROUPS = picker_groups
         builder.VARIANT_CONFIG = variant_config
+
+        builder.ensure_toolbox(clean_toolbox=False)
 
         blocks_js, blocks_py = builder.build_blocks(write_static_files=False)
         items_js, items_py = builder.build_items(write_static_files=False)
@@ -103,9 +107,8 @@ def serve_dynamic_js(script_version, script_name):
         abort(404, description=f"Could not generate {script_name}.js for version {script_version}")
 
     try:
-        
-        toolbox_path = MC_APP_SRC_DIR / 'toolbox.xml'
-        xml_content = toolbox_path.read_text(encoding='utf-8')
+
+        xml_content = server_toolbox_path.read_text(encoding='utf-8')
 
         if script_name == 'all':
             # Combine your JS blocks

@@ -34,7 +34,7 @@ def rebuild():
     # 2. Run the Engine
 
     print("\nStep 2: Remove the existing toolbox.xml file...")
-    output_toolbox_path = MC_APP_SRC_DIR / 'toolbox.xml'
+    output_toolbox_path = MC_DATA_DIR/ 'toolbox.xml'
     output_toolbox_path.unlink(missing_ok=True)
     toolbox_template_path = MC_DATA_DIR / 'toolbox_template.xml'
     with output_toolbox_path.open('w') as f:
@@ -53,7 +53,7 @@ def rebuild():
 
     print("\nStep 4: Building Blockly Registries...")
     builder = RegistryBuilder(
-        toolbox_path=MC_APP_SRC_DIR / 'toolbox.xml',
+        toolbox_path=MC_DATA_DIR / 'toolbox.xml',
         blocks_dir=MC_APP_SRC_DIR / 'blocks',
         gens_dir=MC_APP_SRC_DIR / 'generators' / 'python',
     )
@@ -112,7 +112,7 @@ def rebuild():
     print(f"\nMcJuice JAR integrated into mcshell/data/")
     print(f"\nRebuild Complete!")
     print(f"\nBlocks generated in: {MC_APP_SRC_DIR / 'blocks'}")
-    print(f"\nToolbox updated: {MC_APP_SRC_DIR / 'toolbox.xml'}")
+    print(f"\nToolbox updated: {MC_DATA_DIR / 'toolbox.xml'}")
 
 
     print("\nStep 6: Building the JS registry of blocks and generators...")
