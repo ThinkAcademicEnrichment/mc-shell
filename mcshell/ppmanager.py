@@ -135,6 +135,10 @@ class PaperServerManager:
             'nogui'
         ]
 
+        # Add state tracking for your prompt logic
+        self.server_ready = False
+        self.suspend_logs = False 
+
         print(f"Starting Paper server for world '{self.world_name}'...")
         try:
             self.process = pexpect.spawn(
@@ -148,12 +152,21 @@ class PaperServerManager:
                     index = self.process.expect(['\r\n', pexpect.TIMEOUT, pexpect.EOF], timeout=0.1)
                     if index == 0:
                         line = self.process.before
+                        
                         # Filter noisy logs
                         if "Thread RCON Client" in line or "FruitJuice" in line:
                             continue
-                        if line:
+
+                        # 1. Detect the exact moment startup finishes
+                        if not self.ready_event.is_set() and 'Done (' in line:
+                            self.ready_event.set() 
+                            # The event is now set! The start() method will instantly resume.
+
+                        # 2. Only write to stdout if we haven't suspended logs for a prompt
+                        if line and not self.suspend_logs:
                             sys.stdout.write(f"[{self.world_name}] {line}\n")
-                            sys.stdout.flush()
+                            sys.stdout.flush()                           
+
                 except pexpect.exceptions.TIMEOUT:
                     continue
                 except pexpect.exceptions.EOF:
@@ -196,19 +209,23 @@ class PaperServerManager:
         # 3. Always apply manifest settings before starting to ensure ports/passwords are synced
         self.apply_manifest_settings(**kwargs)
 
-        if self.is_alive():
-            print(f"Server for world '{self.world_name}' is already running.")
-            return
+        # Create the event flag before starting the thread
+        self.ready_event = threading.Event()
 
         # 4. Start the server management thread
         self.thread = threading.Thread(target=self._execute_server, daemon=True)
         self.thread.start()
 
-        print("Waiting for server to initialize (this may take up to 20 seconds)...")
-        time.sleep(15)
+        print("Waiting for server to initialize...")
+        
+        # Wait until the ready_event is set by _execute_server. 
+        # The timeout prevents it from hanging forever if the server crashes silently.
+        started_successfully = self.ready_event.wait(timeout=45.0)
 
-        if not self.is_alive():
-            print(f"Error: Server for '{self.world_name}' failed to stay alive. Check logs above.")
+        if not started_successfully or not self.is_alive():
+            print(f"Error: Server for '{self.world_name}' failed to start or timed out. Check logs.")
+        else:
+            print(f"Server for '{self.world_name}' is fully online and ready for prompts!")
 
     def stop(self):
         """Stops the running Paper server gracefully."""
