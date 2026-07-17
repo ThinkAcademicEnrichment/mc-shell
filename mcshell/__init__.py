@@ -811,8 +811,11 @@ class MCShell(Magics):
         # Cross-platform automated host login (ONLY if we aren't relying on an external Subnet Router)
         if authkey and not use_subnet:
             self._connect_tailscale(authkey, accept_routes=False)
+        
 
         if not parsed_args.do_not_join:
+            # suspend the logs for the user name prompt
+            self.active_paper_server.suspend_logs = True
             magic_cmd_line = f"\
                     127.0.0.1 \
                     --local-mc    {self.server_data['port']} \
@@ -825,6 +828,7 @@ class MCShell(Magics):
                     "
 
             self.ip.run_line_magic('pp_join_world',magic_cmd_line)
+            self.active_paper_server.suspend_logs = False 
 
     @line_magic
     def pp_join_world(self, line):
@@ -900,40 +904,34 @@ class MCShell(Magics):
                 'host': Prompt.ask('Server Address:', default=self.server_data['host']),
             })
 
-        # 4. Interactive Configuration Fallbacks (Prompt if option missing)
-        if parsed_args.local_mc is not None:
-            local_mc = parsed_args.local_mc
-        else:
-            local_mc = int(Prompt.ask('Server Port:', default=str(self.server_data['port'])))
+            # 4. Interactive Configuration Fallbacks (Prompt if option missing)
+            if parsed_args.local_mc is not None:
+                local_mc = parsed_args.local_mc
+            else:
+                local_mc = int(Prompt.ask('Server Port:', default=str(self.server_data['port'])))
 
-        if parsed_args.local_rcon is not None:
-            local_rcon = parsed_args.local_rcon
-        else:
-            local_rcon = int(Prompt.ask('Rcon Port:', default=str(self.server_data['rcon_port'])))
+            if parsed_args.local_rcon is not None:
+                local_rcon = parsed_args.local_rcon
+            else:
+                local_rcon = int(Prompt.ask('Rcon Port:', default=str(self.server_data['rcon_port'])))
 
-        if parsed_args.local_mj is not None:
-            local_mj = parsed_args.local_mj
-        else:
-            local_mj = int(Prompt.ask('Plugin Port:', default=str(self.server_data['mj_port'])))
+            if parsed_args.local_mj is not None:
+                local_mj = parsed_args.local_mj
+            else:
+                local_mj = int(Prompt.ask('Plugin Port:', default=str(self.server_data['mj_port'])))
 
-        if parsed_args.mc_version is not None:
-            mc_version = parsed_args.mc_version
-        else:
-            mc_version = str(Prompt.ask('Minecraft Version:', default=str(self.server_data['mc_version'])))
+            if parsed_args.mc_version is not None:
+                mc_version = parsed_args.mc_version
+            else:
+                mc_version = str(Prompt.ask('Minecraft Version:', default=str(self.server_data['mc_version'])))
 
         if parsed_args.local_app is not None:
             local_app = parsed_args.local_app
         else:
-            local_app = int(Prompt.ask('Application Port:', default=str(self.server_data['app_port'])))
+            # local_app = int(Prompt.ask('Application Port:', default=str(self.server_data['app_port'])))
+            local_app = int(self.server_data['app_port'])
 
         is_login = parsed_args.login 
-
-        # set overridden data
-        self.server_data['rcon_port'] = local_rcon
-        self.server_data['port'] = local_mc
-        self.server_data['mj_port'] = local_mj
-        self.server_data['mc_version'] = mc_version
-        self.server_data['app_port'] = local_app
 
         if token:
             # DEFINE VARS FIRST: Determine intended local ports from defaults
@@ -989,6 +987,14 @@ class MCShell(Magics):
                     self.server_data['mj_port'] = local_mj
                     self.server_data['mc_version'] = mc_version
 
+        # set overridden data
+        self.server_data['rcon_port'] = local_rcon
+        self.server_data['port'] = local_mc
+        self.server_data['mj_port'] = local_mj
+        self.server_data['mc_version'] = mc_version
+        self.server_data['app_port'] = local_app
+
+
         # get the server password if required
         if is_login and self.server_data['password'] is None:
             self.server_data.update({
@@ -999,9 +1005,6 @@ class MCShell(Magics):
 
         print(f"Assigning application server context to Minecraft player: {minecraft_name}")
         self.app_server_thread = start_app_server(self.server_data, minecraft_name, self.shell, power_repo)
-
-        print("Waiting a bit for server to finish starting...")
-        time.sleep(4)
 
         print(f"\n" + "="*55)
         print(f"🎮 READY TO PLAY! Enter this into Minecraft:")
