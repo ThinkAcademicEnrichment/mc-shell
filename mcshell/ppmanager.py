@@ -213,21 +213,35 @@ class PaperServerManager:
 
     def _provision_ramdisk(self, buffer_mb: int = 512):
         """Provisions a cross-platform RAM disk for the entire world and seeds it."""
+        import os
+        
         volatile_dir = self.world_directory / "world"
         persistent_dir = self.world_directory / "world_persistent"
         
         volatile_dir.mkdir(parents=True, exist_ok=True)
         persistent_dir.mkdir(parents=True, exist_ok=True)
+
+        # 1. ROBUSTNESS: Ensure we aren't writing into a zombie mount from a previous crash
+        if os.path.ismount(str(volatile_dir)):
+            print(f"[{self.world_name}] Stale RAM disk detected. Unmounting before provisioning...")
+            self._destroy_ramdisk()
         
-        # Calculate existing world size and add a growth buffer
         current_size_mb = self._get_dir_size_mb(persistent_dir)
-        size_mb = max(current_size_mb + buffer_mb, 256) # Ensure at least 256MB base
+        size_mb = max(current_size_mb + buffer_mb, 256)
         
         os_system = platform.system()
         try:
             if os_system == "Linux":
+                # Get the current user's UID and GID so 'root' doesn't own the mount
+                uid = os.getuid()
+                gid = os.getgid()
+                
                 subprocess.run(
-                    ["sudo", "mount", "-t", "tmpfs", f"-osize={size_mb}m", "tmpfs", str(volatile_dir)],
+                    [
+                        "sudo", "mount", "-t", "tmpfs", 
+                        f"-osize={size_mb}m,uid={uid},gid={gid}", 
+                        "tmpfs", str(volatile_dir)
+                    ],
                     check=True
                 )
             elif os_system == "Darwin":
@@ -236,6 +250,7 @@ class PaperServerManager:
                     ["hdiutil", "attach", "-nomount", f"ram://{sectors}"]
                 ).decode().strip()
                 subprocess.run(["newfs_hfs", "-v", "McRAM", ramdisk_dev], check=True, capture_output=True)
+                # macOS automatically maps ownership to the mounting user
                 subprocess.run(["mount", "-t", "hfs", ramdisk_dev, str(volatile_dir)], check=True)
             else:
                 print(f"[{self.world_name}] RAM disk not natively supported for {os_system}. Defaulting to standard disk I/O.")
@@ -243,13 +258,46 @@ class PaperServerManager:
                 
             print(f"[{self.world_name}] RAM disk provisioned successfully at {size_mb}MB.")
             
-            # Seed the RAM disk with the full persistent world
             if any(persistent_dir.iterdir()):
                 shutil.copytree(persistent_dir, volatile_dir, dirs_exist_ok=True)
                 print(f"[{self.world_name}] Seeded RAM disk with persistent world data.")
                 
         except subprocess.CalledProcessError as e:
             print(f"[{self.world_name}] Warning: Failed to provision RAM disk: {e}. Falling back to standard I/O.")
+        except PermissionError as e:
+            print(f"[{self.world_name}] Warning: Permission denied seeding RAM disk: {e}. Falling back to standard I/O.")
+
+
+    def _destroy_ramdisk(self):
+        """Unmounts and frees the cross-platform RAM disk safely."""
+        import os
+        
+        volatile_dir = self.world_directory / "world"
+        
+        # Only attempt to unmount if the OS actually sees it as a mount point
+        if not os.path.ismount(str(volatile_dir)):
+            return
+
+        os_system = platform.system()
+        try:
+            if os_system == "Linux":
+                # Using 'umount -l' (lazy unmount) safely detaches it even if a stray process is reading a file
+                subprocess.run(
+                    ["sudo", "umount", "-l", str(volatile_dir)], 
+                    check=True, 
+                    capture_output=True
+                )
+                print(f"[{self.world_name}] RAM disk unmounted successfully.")
+            elif os_system == "Darwin":
+                subprocess.run(
+                    ["hdiutil", "detach", str(volatile_dir), "-force"], 
+                    check=True, 
+                    capture_output=True
+                )
+                print(f"[{self.world_name}] RAM disk unmounted and destroyed successfully.")
+        except subprocess.CalledProcessError as e:
+            error_msg = e.stderr.decode().strip() if e.stderr else e.output.decode().strip()
+            print(f"[{self.world_name}] Warning: Failed to cleanly destroy RAM disk: {error_msg}")
 
     def _get_dir_size_mb(self, path: Path) -> int:
         """Calculates the total size of a directory in Megabytes."""
@@ -258,30 +306,6 @@ class PaperServerManager:
         total_bytes = sum(f.stat().st_size for f in path.rglob('*') if f.is_file())
         return total_bytes // (1024 * 1024)
 
-    def _destroy_ramdisk(self):
-        """Unmounts and frees the cross-platform RAM disk."""
-        volatile_dir = self.world_directory / "world"
-        os_system = platform.system()
-
-        try:
-            if os_system == "Linux":
-                subprocess.run(
-                    ["sudo", "umount", str(volatile_dir)], 
-                    check=True, 
-                    capture_output=True
-                )
-                print(f"[{self.world_name}] RAM disk unmounted successfully.")
-            elif os_system == "Darwin":
-                # 'hdiutil detach' on the mount point unmounts and destroys the RAM disk device
-                subprocess.run(
-                    ["hdiutil", "detach", str(volatile_dir)], 
-                    check=True, 
-                    capture_output=True
-                )
-                print(f"[{self.world_name}] RAM disk unmounted and destroyed successfully.")
-        except subprocess.CalledProcessError as e:
-            error_msg = e.stderr.decode().strip() if e.stderr else e.output.decode().strip()
-            print(f"[{self.world_name}] Warning: Failed to destroy RAM disk: {error_msg}")
 
     def start(self,**kwargs):
         """
