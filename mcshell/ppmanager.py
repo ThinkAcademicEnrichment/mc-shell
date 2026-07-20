@@ -162,6 +162,9 @@ class PaperServerManager:
                         # TODO: formalize this
                         #if "Thread RCON Client" in line or "Geyser-Spigot" in line or "McJuice" in line or "floodgate" in line:
                         #    continue
+                        if "Thread RCON Client" in line:
+                           continue
+
 
                         # 1. Detect the exact moment startup finishes
                         if not self.ready_event.is_set() and 'Done (' in line:
@@ -300,6 +303,7 @@ class PaperServerManager:
                     capture_output=True
                 )
             except subprocess.CalledProcessError as e:
+                # if this is a JRE version error, we just need to wipe it and force a reinstall/update
                 print(f"Error during initialization: {e.stderr.decode()}")
                 return
 
