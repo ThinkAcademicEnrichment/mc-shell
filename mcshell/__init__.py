@@ -670,8 +670,8 @@ class MCShell(Magics):
 
         # --- Datapack Installation Logic ---
         if datapacks_to_install:
-            # Datapacks must be in 'world/datapacks' for first-run generation
-            world_datapacks_dir = world_dir / "world" / "datapacks"
+            # Datapacks must be in 'world_persistent/datapacks' for first-run generation
+            world_datapacks_dir = world_dir / "world_persistent" / "datapacks"
             world_datapacks_dir.mkdir(parents=True, exist_ok=True)
 
             for pack_name in datapacks_to_install:
