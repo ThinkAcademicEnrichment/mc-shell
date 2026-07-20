@@ -234,7 +234,7 @@ class MCShell(Magics):
         self.managed_tailscale = False
         self.current_ssh_token = None
 
-    def _connect_tailscale(self, authkey: str, accept_routes: bool = False):
+    def _connect_tailscale(self, authkey: str, accept_routes: bool = False, advertise_routes: str = None):
         """Automatically authenticates and connects to Tailscale cross-platform."""
         print("\n[TAILSCALE] Authenticating device to VPN...")
         import subprocess
@@ -263,6 +263,11 @@ class MCShell(Magics):
         # Only clients need to explicitly accept subnet routes
         if accept_routes:
             cmd.append("--accept-routes")
+
+        # Expose a physical network to the Tailscale mesh
+        if advertise_routes:
+            print(f"[TAILSCALE] Advertising subnet route: {advertise_routes}")
+            cmd.append(f"--advertise-routes={advertise_routes}")
 
         try:
             subprocess.run(cmd, check=True)
@@ -706,7 +711,6 @@ class MCShell(Magics):
         and server process lifecycle. 
         
         Use `%pp_start_world --help` for the full list of configurable options.
-
         """
         parser = argparse.ArgumentParser(
             prog="%pp_start_world", 
@@ -719,10 +723,10 @@ class MCShell(Magics):
         group.add_argument("--authkey", help="Tailscale Auth Key")
         group.add_argument("--clear-authkey", action="store_true", help="Wipe cached auth key")
         
-        routing = parser.add_mutually_exclusive_group()
-        # Both flags target the same 'routing_mode' variable in your args object
-        routing.add_argument("--subnet", dest="routing_mode", action="store_const", const=True, help="Handle Tailscale routing for local world clients")
-        routing.add_argument("--node", dest="routing_mode", action="store_const", const=False, help="Only route localhost Tailscale traffic")
+        # Explicit routing controls replace the old boolean toggle
+        parser.add_argument("--advertise-routes", type=str, help="Expose local physical network to Tailscale (e.g., 192.168.1.0/24)")
+        parser.add_argument("--accept-routes", action="store_true", help="Import remote subnet routes from the Tailscale mesh")
+        parser.add_argument("--clear-routes", action="store_true", help="Wipe cached routing preferences")
 
         parser.add_argument("--do-not-join", action="store_true", help="Prevent auto-joining the world") 
 
@@ -731,15 +735,9 @@ class MCShell(Magics):
         try:
             parsed_args = parser.parse_args(args)
         except SystemExit:
-            # This catches '--help' or invalid arguments and stops the function
+            # Catch '--help' or invalid arguments and stop the function
             # without killing the IPython kernel
             return
-
-        cli_authkey = None
-        if parsed_args.authkey is not None:
-            cli_authkey = parsed_args.authkey
-
-        use_subnet_override = parsed_args.routing_mode
 
         world_name = parsed_args.world_name
         world_directory = MC_WORLDS_BASE_DIR / parsed_args.world_name
@@ -749,26 +747,42 @@ class MCShell(Magics):
             print(f"Please create it first with: %pp_create_world {world_name}")
             return
 
-        # 1. Load the existing credentials early to grab the cached Auth Key and settings
+        # 1. Load the existing credentials early to grab the cached settings
         creds_path = world_directory / '.mc_creds.json'
         with creds_path.open('r') as f:
             self.server_data = json.load(f)
 
-        # 2. Evaluate final authkey and routing mode from cache vs CLI
+        # 2. Evaluate final authkey from cache vs CLI
         if parsed_args.clear_authkey:
             authkey = None
-            if 'tailscale_authkey' in self.server_data:
-                del self.server_data['tailscale_authkey']
+            self.server_data.pop('tailscale_authkey', None)
         else:
-            authkey = cli_authkey if cli_authkey else self.server_data.get('tailscale_authkey')
+            authkey = parsed_args.authkey if parsed_args.authkey else self.server_data.get('tailscale_authkey')
 
-        use_subnet = use_subnet_override if use_subnet_override is not None else self.server_data.get('tailscale_subnet_mode', False)
+        # 3. Evaluate routing preferences
+        if parsed_args.clear_routes:
+            self.server_data.pop('tailscale_advertise_routes', None)
+            self.server_data.pop('tailscale_accept_routes', None)
 
-        # 3. Update and securely save the cache if anything changed
-        if cli_authkey or use_subnet_override is not None or parsed_args.clear_authkey:
+        adv_routes = parsed_args.advertise_routes if parsed_args.advertise_routes else self.server_data.get('tailscale_advertise_routes')
+        acc_routes = parsed_args.accept_routes if parsed_args.accept_routes else self.server_data.get('tailscale_accept_routes', False)
+
+        # 4. Update and securely save the cache if anything changed
+        settings_changed = any([
+            parsed_args.authkey, 
+            parsed_args.clear_authkey,
+            parsed_args.advertise_routes, 
+            parsed_args.accept_routes,
+            parsed_args.clear_routes
+        ])
+
+        if settings_changed:
             if authkey:
                 self.server_data['tailscale_authkey'] = authkey
-            self.server_data['tailscale_subnet_mode'] = use_subnet
+            if adv_routes:
+                self.server_data['tailscale_advertise_routes'] = adv_routes
+            self.server_data['tailscale_accept_routes'] = acc_routes
+            
             with creds_path.open('w') as f:
                 json.dump(self.server_data, f)
             creds_path.chmod(0o600)  # Ensure it remains secure
@@ -778,7 +792,6 @@ class MCShell(Magics):
         if self.active_paper_server and self.active_paper_server.is_alive():
             print(f"Stopping the currently active server for world '{self.active_paper_server.world_name}'...")
             self.active_paper_server.stop()
-
 
         print(f"--- Starting new session for world: {world_name} ---")
 
@@ -792,10 +805,10 @@ class MCShell(Magics):
         # Start the Paper server
         self.active_paper_server = PaperServerManager(world_name, world_directory)
         self.active_paper_server.start(**extra_server_properties)
-        # now start it after files are generated and it is terminated once
+        
+        # Restart handling for file generation
         if not self.active_paper_server.is_alive():
             self.active_paper_server = PaperServerManager(world_name, world_directory)
-            # get a new PaperMC jar if available
             self.active_paper_server.update_jar_path()
             self.active_paper_server.start(**extra_server_properties)
 
@@ -803,16 +816,22 @@ class MCShell(Magics):
             print("Could not start Paper server. Aborting.")
             return
 
-        if not 'app_port' in list(self.server_data.keys()):
+        if 'app_port' not in self.server_data:
             self.server_data['app_port'] = 5001
 
         # Start the background SSH Tunnel gateway automatically
         print("Starting secure SSH tunnel gateway in the background...")
-        self.current_ssh_token = _start_secure_tunnel_host(self.server_data['port'], self.server_data['rcon_port'], self.server_data['mj_port'], self.server_data['mc_version'],use_ssh=parsed_args.ssh)
+        self.current_ssh_token = _start_secure_tunnel_host(
+            self.server_data['port'], 
+            self.server_data['rcon_port'], 
+            self.server_data['mj_port'], 
+            self.server_data['mc_version'],
+            use_ssh=parsed_args.ssh
+        )
 
-        # Cross-platform automated host login (ONLY if we aren't relying on an external Subnet Router)
-        if authkey and not use_subnet:
-            self._connect_tailscale(authkey, accept_routes=False)
+        # Cross-platform automated host login
+        if authkey:
+            self._connect_tailscale(authkey, accept_routes=acc_routes, advertise_routes=adv_routes)
         
         spigot_file = world_directory / "spigot.yml"
         bukkit_file = world_directory / "bukkit.yml"
