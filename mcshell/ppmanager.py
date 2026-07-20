@@ -345,7 +345,7 @@ class PaperServerManager:
 
         print("Waiting for server to initialize...")
         
-        started_successfully = self.ready_event.wait(timeout=45.0)
+        started_successfully = self.ready_event.wait(timeout=90.0)
 
         if not started_successfully or not self.is_alive():
             print(f"Error: Server for '{self.world_name}' failed to start or timed out. Check logs.")
