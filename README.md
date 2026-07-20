@@ -1,5 +1,8 @@
 # MC-Shell: A Minecraft Power Development Environment 
 
+![App Demo](docs/assets/screenshots/mc-shell-parrot-2.png)
+
+
 Welcome to `mc-shell`! This project provides an interactive environment for creating, debugging, and using "powers" in Minecraft. It combines a powerful command-line shell with a visual block-based editor and a touch-friendly control panel.
 
 This guide will walk you through installing the software, managing your own Minecraft worlds, and using the tools to bring your creations to life.
