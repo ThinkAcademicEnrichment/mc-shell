@@ -369,10 +369,11 @@ class PaperServerManager:
 
         print(f"Sending 'stop' command to Paper server for '{self.world_name}'...")
         
-        # --- Signal the sync thread to break its loop ---
+        # 1. Signal the background sync loop to stop so it doesn't run concurrently 
         if self.sync_stop_event:
             self.sync_stop_event.set()
 
+        # 2. Wait for the server to gracefully save to the RAM disk and exit
         try:
             self.process.sendline('stop')
             self.thread.join(timeout=30)
@@ -381,13 +382,15 @@ class PaperServerManager:
             if self.process:
                 self.process.terminate(force=True)
                 
-        # --- Perform one final, guaranteed sync before terminating ---
-        if self.sync_thread and self.sync_thread.is_alive():
-            print(f"[{self.world_name}] Performing final world data sync to persistent storage...")
-            self._sync_world_data()
+        # 3. Wait for the background sync thread to finish up if it was mid-sync
+        if self.sync_thread:
             self.sync_thread.join(timeout=10)
 
-        # --- NEW: Destroy the RAM disk now that the sync is complete ---
+        # 4. Perform the guaranteed final sync directly on the main thread
+        print(f"[{self.world_name}] Performing final world data sync to persistent storage...")
+        self._sync_world_data()
+
+        # 5. Safely destroy the RAM disk
         self._destroy_ramdisk()
 
     def is_alive(self) -> bool:
