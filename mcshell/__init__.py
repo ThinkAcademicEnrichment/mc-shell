@@ -933,7 +933,7 @@ class MCShell(Magics):
                 authkey = extracted_key
 
         if authkey:
-            self._connect_tailscale(authkey, accept_routes=True)
+            self._connect_tailscale(authkey, accept_routes=False)
 
         if not token:
             self.server_data.update({
