@@ -728,8 +728,8 @@ class MCShell(Magics):
         
         routing = parser.add_mutually_exclusive_group()
         # Both flags target the same 'routing_mode' variable in your args object
-        routing.add_argument("--subnet", dest="routing_mode", action="store_const", const=True, help="Handle Tailscale routing for local world clients")
-        routing.add_argument("--node", dest="routing_mode", action="store_const", const=False, help="Only route localhost Tailscale traffic")
+        # routing.add_argument("--subnet", dest="routing_mode", action="store_const", const=True, help="Handle Tailscale routing for local world clients")
+        # routing.add_argument("--node", dest="routing_mode", action="store_const", const=False, help="Only route localhost Tailscale traffic")
 
         parser.add_argument("--do-not-join", action="store_true", help="Prevent auto-joining the world") 
 
@@ -746,7 +746,7 @@ class MCShell(Magics):
         if parsed_args.authkey is not None:
             cli_authkey = parsed_args.authkey
 
-        use_subnet_override = parsed_args.routing_mode
+        # use_subnet_override = parsed_args.routing_mode
 
         world_name = parsed_args.world_name
         world_directory = MC_WORLDS_BASE_DIR / parsed_args.world_name
@@ -769,13 +769,14 @@ class MCShell(Magics):
         else:
             authkey = cli_authkey if cli_authkey else self.server_data.get('tailscale_authkey')
 
-        use_subnet = use_subnet_override if use_subnet_override is not None else self.server_data.get('tailscale_subnet_mode', False)
+        # use_subnet = use_subnet_override if use_subnet_override is not None else self.server_data.get('tailscale_subnet_mode', False)
 
         # 3. Update and securely save the cache if anything changed
-        if cli_authkey or use_subnet_override is not None or parsed_args.clear_authkey:
+        # if cli_authkey or use_subnet_override is not None or parsed_args.clear_authkey:
+        if cli_authkey or parsed_args.clear_authkey:
             if authkey:
                 self.server_data['tailscale_authkey'] = authkey
-            self.server_data['tailscale_subnet_mode'] = use_subnet
+            # self.server_data['tailscale_subnet_mode'] = use_subnet
             with creds_path.open('w') as f:
                 json.dump(self.server_data, f)
             creds_path.chmod(0o600)  # Ensure it remains secure
@@ -818,7 +819,8 @@ class MCShell(Magics):
         self.current_ssh_token = _start_secure_tunnel_host(self.server_data['port'], self.server_data['rcon_port'], self.server_data['mj_port'], self.server_data['mc_version'],use_ssh=parsed_args.ssh)
 
         # Cross-platform automated host login (ONLY if we aren't relying on an external Subnet Router)
-        if authkey and not use_subnet:
+        # if authkey and not use_subnet:
+        if authkey:
             self._connect_tailscale(authkey, accept_routes=False)
 
         spigot_file = world_directory / "spigot.yml"
