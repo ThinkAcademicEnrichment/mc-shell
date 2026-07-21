@@ -196,6 +196,27 @@ def _start_secure_tunnel_client(join_code, local_mc, local_rcon, local_mj):
     thread = Thread(target=_run_tunnel_client_thread, args=(host, port, pin, remote_mc, remote_rcon, remote_mj, local_mc, local_rcon, local_mj), daemon=True)
     thread.start()
 
+def _start_lan_relay(target_ip: str, mc_port: int, rcon_port: int, mj_port: int, bedrock_port: int = 19132):
+    """
+    Spawns userspace proxies to bounce local LAN traffic to a Tailscale IP.
+    Handles both TCP (Java) and UDP (Bedrock) protocols.
+    """
+    try:
+        # 1. TCP Ports (Java Edition, RCON, McJuice API)
+        for port in (mc_port, rcon_port, mj_port):
+            cmd = ["socat", f"TCP4-LISTEN:{port},fork,reuseaddr", f"TCP4:{target_ip}:{port}"]
+            proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            atexit.register(proc.kill)
+
+        # 2. UDP Port (Bedrock Edition)
+        # UDP4-RECVFROM is critical here; it forks a new process for each iPad 
+        # so it remembers where to route the return packets from the server.
+        udp_cmd = ["socat", f"UDP4-RECVFROM:{bedrock_port},fork,reuseaddr", f"UDP4:{target_ip}:{bedrock_port}"]
+        proc = subprocess.Popen(udp_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        atexit.register(proc.kill)
+
+    except FileNotFoundError:
+        print("\n[ERROR] 'socat' is missing. LAN Relay aborted. Run: sudo apt install socat")
 
 @magics_class
 class MCShell(Magics):
@@ -726,11 +747,6 @@ class MCShell(Magics):
         group.add_argument("--authkey", help="Tailscale Auth Key")
         group.add_argument("--clear-authkey", action="store_true", help="Wipe cached auth key")
         
-        routing = parser.add_mutually_exclusive_group()
-        # Both flags target the same 'routing_mode' variable in your args object
-        # routing.add_argument("--subnet", dest="routing_mode", action="store_const", const=True, help="Handle Tailscale routing for local world clients")
-        # routing.add_argument("--node", dest="routing_mode", action="store_const", const=False, help="Only route localhost Tailscale traffic")
-
         parser.add_argument("--do-not-join", action="store_true", help="Prevent auto-joining the world") 
 
         args = shlex.split(line)
@@ -745,8 +761,6 @@ class MCShell(Magics):
         cli_authkey = None
         if parsed_args.authkey is not None:
             cli_authkey = parsed_args.authkey
-
-        # use_subnet_override = parsed_args.routing_mode
 
         world_name = parsed_args.world_name
         world_directory = MC_WORLDS_BASE_DIR / parsed_args.world_name
@@ -769,14 +783,10 @@ class MCShell(Magics):
         else:
             authkey = cli_authkey if cli_authkey else self.server_data.get('tailscale_authkey')
 
-        # use_subnet = use_subnet_override if use_subnet_override is not None else self.server_data.get('tailscale_subnet_mode', False)
-
         # 3. Update and securely save the cache if anything changed
-        # if cli_authkey or use_subnet_override is not None or parsed_args.clear_authkey:
         if cli_authkey or parsed_args.clear_authkey:
             if authkey:
                 self.server_data['tailscale_authkey'] = authkey
-            # self.server_data['tailscale_subnet_mode'] = use_subnet
             with creds_path.open('w') as f:
                 json.dump(self.server_data, f)
             creds_path.chmod(0o600)  # Ensure it remains secure
@@ -819,7 +829,6 @@ class MCShell(Magics):
         self.current_ssh_token = _start_secure_tunnel_host(self.server_data['port'], self.server_data['rcon_port'], self.server_data['mj_port'], self.server_data['mc_version'],use_ssh=parsed_args.ssh)
 
         # Cross-platform automated host login (ONLY if we aren't relying on an external Subnet Router)
-        # if authkey and not use_subnet:
         if authkey:
             self._connect_tailscale(authkey, accept_routes=False)
 
@@ -873,7 +882,8 @@ class MCShell(Magics):
 
             self.ip.run_line_magic('pp_join_world',magic_cmd_line)
             self.active_paper_server.suspend_logs = False 
-
+        else:
+            self.ip_run_line('mc_server_info','')
 
     @line_magic
     def pp_join_world(self, line):
@@ -911,6 +921,7 @@ class MCShell(Magics):
         
         # Toggles
         parser.add_argument("--login", action="store_true", help="Enable authenticating profile login state directly.")
+        parser.add_argument("--relay", action="store_true", help="Act as a LAN router, relaying local iPad/Bedrock traffic to the VPN")
 
         split_args = shlex.split(line)
         
@@ -990,55 +1001,116 @@ class MCShell(Magics):
             if hasattr(self, 'active_paper_server') and getattr(self, 'active_paper_server') and self.active_paper_server.is_alive():
                 print("A local Minecraft server is already running. Proceeding with proxy connections anyway.")
 
-            # SMART TOKEN ROUTING
-            if '#' not in token and '@' not in token and '^' not in token:
-                # we have a simple host ip address or domain 
-                self.server_data['host'] = token
-            elif '#' in token:
-                print("Connecting to secure tunnel...")
-                _start_secure_tunnel_client(token, local_mc, local_rcon, local_mj)
+        #     # SMART TOKEN ROUTING
+        #     if '#' not in token and '@' not in token and '^' not in token:
+        #         # we have a simple host ip address or domain 
+        #         if parsed_args.relay:
+        #             print("Starting local LAN relay to Tailscale network...")
+        #             _start_lan_relay(token, local_mc, local_rcon, local_mj)
 
-                # THE MAGIC TRICK: Overwrite in-memory server_data to point to the secure tunnel entrances
-                self.server_data['host'] = '127.0.0.1'
-                self.server_data['port'] = local_mc
-                self.server_data['rcon_port'] = local_rcon
-                self.server_data['mj_port'] = local_mj
-                self.server_data['mc_version'] = mc_version
-                self.server_data['app_port'] = local_app
+        #             # THE MAGIC TRICK: Overwrite in-memory data to point to our new local proxies
+        #             self.server_data['host'] = '127.0.0.1'
+        #             self.server_data['port'] = local_mc
+        #             self.server_data['rcon_port'] = local_rcon
+        #             self.server_data['mj_port'] = local_mj
+        #             self.server_data['mc_version'] = mc_version
+        #             self.server_data['app_port'] = local_app
 
-                # Give the background thread a moment to establish port forwards
-                time.sleep(1.0)
-                print("Tunnel connection established.")
+        #             time.sleep(1.0)
+        #             print("LAN Relay established.")
+        #         else:
+        #             self.server_data['host'] = token
+
+        #     elif '#' in token:
+        #         print("Connecting to secure tunnel...")
+        #         _start_secure_tunnel_client(token, local_mc, local_rcon, local_mj)
+
+        #         # THE MAGIC TRICK: Overwrite in-memory server_data to point to the secure tunnel entrances
+        #         self.server_data['host'] = '127.0.0.1'
+        #         self.server_data['port'] = local_mc
+        #         self.server_data['rcon_port'] = local_rcon
+        #         self.server_data['mj_port'] = local_mj
+        #         self.server_data['mc_version'] = mc_version
+        #         self.server_data['app_port'] = local_app
+
+        #         # Give the background thread a moment to establish port forwards
+        #         time.sleep(1.0)
+        #         print("Tunnel connection established.")
+        #     else:
+        #         # Handle Direct IPs and Custom Port strings (e.g. 192.168.1.5@25566-25576-4721-1.21.11)
+        #         if '@' in token:
+        #             ip_part, ports_part = token.split('@', 1)
+        #             try:
+        #                 p_mc, p_rcon, p_mj, p_ver = ports_part.split('-')
+        #                 self.server_data['host'] = ip_part
+        #                 self.server_data['port'] = int(p_mc)
+        #                 self.server_data['rcon_port'] = int(p_rcon)
+        #                 self.server_data['mj_port'] = int(p_mj)
+        #                 self.server_data['mc_version'] = p_ver
+        #                 print(f"\n[DIRECT CONNECT] Connecting to {ip_part} with custom ports...")
+        #             except ValueError:
+        #                 print("\n[ERROR] Invalid Direct Token format. Falling back to default ports.")
+        #                 self.server_data['host'] = ip_part
+        #         else:
+        #             print(f"\n[DIRECT CONNECT] Connecting directly to {token}...")
+        #             self.server_data['host'] = token
+        #             self.server_data['port'] = local_mc
+        #             self.server_data['rcon_port'] = local_rcon
+        #             self.server_data['mj_port'] = local_mj
+        #             self.server_data['mc_version'] = mc_version
+
+        # # set overridden data
+        # self.server_data['rcon_port'] = local_rcon
+        # self.server_data['port'] = local_mc
+        # self.server_data['mj_port'] = local_mj
+        # self.server_data['mc_version'] = mc_version
+        # self.server_data['app_port'] = local_app
+
+
+        # SMART TOKEN ROUTING
+        if '#' in token:
+            print("Connecting to secure tunnel...")
+            _start_secure_tunnel_client(token, local_mc, local_rcon, local_mj)
+
+            target_host = '127.0.0.1'
+            time.sleep(1.0)
+            print("Tunnel connection established.")
+
+        else:
+            # 1. Parse target IP and optional custom ports (@ports)
+            if '@' in token:
+                ip_part, ports_part = token.split('@', 1)
+                try:
+                    p_mc, p_rcon, p_mj, p_ver = ports_part.split('-')
+                    target_host = ip_part
+                    local_mc = int(p_mc)
+                    local_rcon = int(p_rcon)
+                    local_mj = int(p_mj)
+                    mc_version = p_ver
+                    print(f"\n[DIRECT CONNECT] Parsed token for {ip_part} with custom ports...")
+                except ValueError:
+                    print("\n[ERROR] Invalid Direct Token format. Falling back to default ports.")
+                    target_host = ip_part
             else:
-                # Handle Direct IPs and Custom Port strings (e.g. 192.168.1.5@25566-25576-4721-1.21.11)
-                if '@' in token:
-                    ip_part, ports_part = token.split('@', 1)
-                    try:
-                        p_mc, p_rcon, p_mj, p_ver = ports_part.split('-')
-                        self.server_data['host'] = ip_part
-                        self.server_data['port'] = int(p_mc)
-                        self.server_data['rcon_port'] = int(p_rcon)
-                        self.server_data['mj_port'] = int(p_mj)
-                        self.server_data['mc_version'] = p_ver
-                        print(f"\n[DIRECT CONNECT] Connecting to {ip_part} with custom ports...")
-                    except ValueError:
-                        print("\n[ERROR] Invalid Direct Token format. Falling back to default ports.")
-                        self.server_data['host'] = ip_part
-                else:
-                    print(f"\n[DIRECT CONNECT] Connecting directly to {token}...")
-                    self.server_data['host'] = token
-                    self.server_data['port'] = local_mc
-                    self.server_data['rcon_port'] = local_rcon
-                    self.server_data['mj_port'] = local_mj
-                    self.server_data['mc_version'] = mc_version
+                target_host = token
 
-        # set overridden data
-        self.server_data['rcon_port'] = local_rcon
+            # 2. Trigger LAN Relay if --relay was requested
+            if parsed_args.relay:
+                print(f"\n[RELAY MODE] Starting local LAN relay to {target_host}...")
+                _start_lan_relay(target_host, local_mc, local_rcon, local_mj)
+                
+                # Point the local Java client to the socat loopback entrance
+                target_host = '127.0.0.1'
+                time.sleep(1.0)
+                print("LAN Relay established.")
+
+        # 3. Commit resolved target properties to in-memory data
+        self.server_data['host'] = target_host
         self.server_data['port'] = local_mc
+        self.server_data['rcon_port'] = local_rcon
         self.server_data['mj_port'] = local_mj
         self.server_data['mc_version'] = mc_version
         self.server_data['app_port'] = local_app
-
 
         # get the server password if required
         if is_login and self.server_data['password'] is None:
@@ -1068,9 +1140,19 @@ class MCShell(Magics):
                     print(f"   Java Edition IP: {local_ip}{mc_port_str}")
                     print(f"   Bedrock / iPad : {local_ip} (Default port 19132)")
             else:
-                # We are a remote client using an SSH Tunnel.
+                # We are a remote client using an SSH Tunnel OR a LAN Relay.
+                local_ip = _get_local_ip()
                 print(f"   Java Edition IP: localhost{mc_port_str}")
-                print(f"   Bedrock / iPad : (Requires Tailscale or Local LAN on Host)")
+                
+                if getattr(parsed_args, 'relay', False):
+                    # Give them the physical LAN IP of this Linux machine to type into their iPads
+                    print(f"   Bedrock / iPad : {local_ip} (Routed via LAN Relay)")
+                else:
+                    print(f"   Bedrock / iPad : (Requires Tailscale or LAN on Host)")
+            # else:
+            #     # We are a remote client using an SSH Tunnel.
+            #     print(f"   Java Edition IP: localhost{mc_port_str}")
+            #     print(f"   Bedrock / iPad : (Requires Tailscale or Local LAN on Host)")
         else:
             mc_port_str = f":{self.server_data['port']}" if self.server_data['port'] != 25565 else ""
             print(f"   Java Edition IP: {self.server_data['host']}{mc_port_str}")
