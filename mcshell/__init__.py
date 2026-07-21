@@ -661,6 +661,12 @@ class MCShell(Magics):
         # Always install versioned McJuice from bundled version
         mc_major_version = '.'.join(mc_version.split('.')[:2])
         mc_juice_jar_path =  MC_DATA_DIR / f"mcjuice-{mc_major_version}.jar"
+        if not mc_juice_jar_path.exists():
+            print(f"The McJuice plugin does not exist!")
+            print(f"Are you doing development? Run build.py to generate all required classes and artifacts.")
+            print(f"The world {world_name} could not be created. :-(" )
+            return
+
         plugins_dir.joinpath(mc_juice_jar_path.name).symlink_to(mc_juice_jar_path)
         
 
