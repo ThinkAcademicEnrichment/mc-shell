@@ -627,10 +627,10 @@ class MCShell(Magics):
 
         print(f"Resolving compatible Geyser/Floodgate plugins for Minecraft {mc_version}...")
         # Resolve dynamic Modrinth URLs based on the MC version, falling back to Geyser's official 'latest' endpoints
-        # geyser_url: Literal['https://download.geysermc.org/v2/projects/geyser/versions/latest/builds/latest/downloads/spigot'] | Unknown = _resolve_modrinth_plugin("geyser", mc_version) or "https://download.geysermc.org/v2/projects/geyser/versions/latest/builds/latest/downloads/spigot"
-        # floodgate_url = _resolve_modrinth_plugin("floodgate", mc_version) or "https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/spigot"
         geyser_url = _resolve_geysermc_plugin('geyser')
         floodgate_url = _resolve_geysermc_plugin('floodgate')
+        # Query Modrinth for the exact ViaVersion jar matching the server's MC version
+        viaversion_url = _resolve_modrinth_plugin('viaversion', mc_version)
 
         # Create the world_manifest.json file with required Geyser/Floodgate plugins
         manifest = {
@@ -641,7 +641,8 @@ class MCShell(Magics):
             "world_data_path": str((world_dir / "world").relative_to(world_dir)),
             "plugins": [
                 geyser_url,
-                floodgate_url
+                floodgate_url,
+                viaversion_url
             ],
             "server_properties": {
                 "gamemode": "creative",
