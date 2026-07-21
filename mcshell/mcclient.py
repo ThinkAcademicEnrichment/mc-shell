@@ -34,7 +34,7 @@ class MCClient:
         Executes a command via RCON using mctools to handle fragmentation.
         """
         if not self.password:
-            raise PermissionError("An admin password is required! Use %mc_login to authenticate.")
+            raise PermissionError("An admin password is required!\nUse %mc_login to authenticate.")
 
         if not args:
             return
