@@ -884,7 +884,7 @@ class MCShell(Magics):
             self.ip.run_line_magic('pp_join_world',magic_cmd_line)
             self.active_paper_server.suspend_logs = False 
         else:
-            self.ip_run_line('mc_server_info','')
+            self.ip_run_line_magic('mc_server_info','')
 
     @line_magic
     def pp_join_world(self, line):
