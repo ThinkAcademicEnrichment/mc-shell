@@ -283,6 +283,7 @@ class MCShell(Magics):
         self.app_server_thread = None
 
         self.active_paper_server: Optional[PaperServerManager ,None ] = None
+        self.rathole_process = None
 
         # Track if this session automatically joined Tailscale so we can clean it up
         self.managed_tailscale = False
@@ -774,6 +775,11 @@ class MCShell(Magics):
         Use `%pp_start_world --help` for the full list of configurable options.
 
         """
+        import subprocess
+        import shlex
+        import argparse
+        import json
+
         parser = argparse.ArgumentParser(
             prog="%pp_start_world", 
             description="Starts a Paper server for a given world name."
@@ -833,9 +839,15 @@ class MCShell(Magics):
             print(f"--- Updated Tailscale settings for world '{world_name}' ---")
 
         # Stop any currently active server session first
-        if self.active_paper_server and self.active_paper_server.is_alive():
+        if getattr(self, 'active_paper_server', None) and self.active_paper_server.is_alive():
             print(f"Stopping the currently active server for world '{self.active_paper_server.world_name}'...")
             self.active_paper_server.stop()
+            
+        # Stop any active socat translator process
+        if getattr(self, 'socat_host_process', None) and self.socat_host_process.poll() is None:
+            print("Stopping active socat TCP-to-UDP translator...")
+            self.socat_host_process.terminate()
+            self.socat_host_process.wait(timeout=3)
 
 
         print(f"--- Starting new session for world: {world_name} ---")
@@ -866,7 +878,13 @@ class MCShell(Magics):
 
         # Start the background SSH Tunnel gateway automatically
         print("Starting secure SSH tunnel gateway in the background...")
-        self.current_ssh_token = _start_secure_tunnel_host(self.server_data['port'], self.server_data['rcon_port'], self.server_data['mj_port'], self.server_data['mc_version'],use_ssh=parsed_args.ssh)
+        self.current_ssh_token = _start_secure_tunnel_host(
+            self.server_data['port'], 
+            self.server_data['rcon_port'], 
+            self.server_data['mj_port'], 
+            self.server_data['mc_version'],
+            use_ssh=parsed_args.ssh
+        )
 
         # Cross-platform automated host login (ONLY if we aren't relying on an external Subnet Router)
         if authkey:
@@ -874,7 +892,25 @@ class MCShell(Magics):
             if parsed_args.relay is not None:
                 relay_server_address = parsed_args.relay
                 self.server_data['rh_host'] = relay_server_address
-                self.rathole_process,self.rathole_config = _start_rathole_client(relay_server_address,authkey)
+                self.rathole_process, self.rathole_config = _start_rathole_client(relay_server_address, authkey)
+                
+        # Start the local socat translator (TCP 19133 -> UDP 19132) for Bedrock Tailscale clients
+        print("Starting socat TCP-to-UDP translator for Bedrock over Tailscale...")
+        socat_cmd = [
+            "socat",
+            "TCP4-LISTEN:19133,reuseaddr,fork",
+            "UDP4:127.0.0.1:19132"
+        ]
+        
+        try:
+            self.socat_host_process = subprocess.Popen(
+                socat_cmd,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+        except FileNotFoundError:
+            print("[WARNING] 'socat' command not found. Bedrock connections over Tailscale will fail.")
+            self.socat_host_process = None
 
             
         spigot_file = world_directory / "spigot.yml"
@@ -982,9 +1018,6 @@ class MCShell(Magics):
         # Toggles
         parser.add_argument("--login", action="store_true", help="Enable authenticating profile login state directly.")
 
-        # not required
-        # parser.add_argument("--relay", type=str, help="Hostname/IP of the rathole relay server (e.g., thunk.local)")
-
         split_args = shlex.split(line)
         
         try:
@@ -992,6 +1025,12 @@ class MCShell(Magics):
         except SystemExit:
             # Prevent argparse exceptions or help prints from aborting IPython
             return
+
+        # 0. Clean up previous Bedrock relays before binding new ones
+        if getattr(self, 'socat_client_process', None) and self.socat_client_process.poll() is None:
+            print("Stopping previous Bedrock TCP-to-UDP relay (socat)...")
+            self.socat_client_process.terminate()
+            self.socat_client_process.wait(timeout=3)
 
         # 1. Profile Username Resolution
         if parsed_args.mc_name is not None:
@@ -1046,7 +1085,6 @@ class MCShell(Magics):
         if parsed_args.local_app is not None:
             local_app = parsed_args.local_app
         else:
-            # local_app = int(Prompt.ask('Application Port:', default=str(self.server_data['app_port'])))
             local_app = int(self.server_data['app_port'])
 
         is_login = parsed_args.login 
@@ -1065,7 +1103,7 @@ class MCShell(Magics):
 
 
         # SMART TOKEN ROUTING
-        if '#' in token:
+        if token and '#' in token:
             print("Connecting to secure tunnel...")
             _start_secure_tunnel_client(token, local_mc, local_rcon, local_mj)
 
@@ -1074,7 +1112,7 @@ class MCShell(Magics):
             time.sleep(1.0)
             print("Tunnel connection established.")
 
-        else:
+        elif token:
             # 1. Separate the IP/Relay routing segment from the ports segment
             if '@' in token:
                 ip_relay_part, ports_part = token.split('@', 1)
@@ -1099,6 +1137,10 @@ class MCShell(Magics):
 
             if '@' in token:
                 print(f"\n[DIRECT CONNECT] Parsed token for {target_host} (Relay: {rh_host or 'None'}) with custom ports...")
+        else:
+             # Fallback if no token was used (interactive mode)
+             target_host = self.server_data['host']
+             rh_host = self.server_data.get('rh_host')
 
         # 3. Commit resolved target properties to in-memory data
         self.server_data['host'] = target_host
@@ -1108,6 +1150,24 @@ class MCShell(Magics):
         self.server_data['mj_port'] = local_mj
         self.server_data['mc_version'] = mc_version
         self.server_data['app_port'] = local_app
+
+        # 4. Start local Bedrock UDP->TCP translator (Only if NOT using local loopback SSH fallback)
+        if target_host and target_host != '127.0.0.1':
+            print(f"Starting socat UDP-to-TCP translator for local Bedrock clients...")
+            socat_cmd = [
+                "socat",
+                "UDP4-LISTEN:19132,reuseaddr,fork",
+                f"TCP4:{target_host}:19133"
+            ]
+            try:
+                self.socat_client_process = subprocess.Popen(
+                    socat_cmd,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+            except FileNotFoundError:
+                print("[WARNING] 'socat' command not found. iPads on your local network will not be able to join.")
+                self.socat_client_process = None
 
         # get the server password if required
         if is_login and self.server_data['password'] is None:
@@ -1177,8 +1237,15 @@ class MCShell(Magics):
         print("Stopping Paper server (this may take a moment)...")
         self.active_paper_server.stop()
         self.active_paper_server = None
-        _stop_rathole_client(self.rathole_process,self.rathole_config)
+        if self.rathole_process is not None:
+            _stop_rathole_client(self.rathole_process,self.rathole_config)
         self.rathole_process = None
+
+        # Stop any active socat translator process
+        if getattr(self, 'socat_host_process', None) and self.socat_host_process.poll() is None:
+            print("Stopping active socat TCP-to-UDP translator...")
+            self.socat_host_process.terminate()
+            self.socat_host_process.wait(timeout=3)
         print("Session stopped successfully.")
 
     @line_magic
@@ -1345,6 +1412,13 @@ class MCShell(Magics):
 
         # Drop VPN connection if it was auto-managed
         self._disconnect_tailscale()
+
+        # kill the socat UDP to TCP translation process
+        if getattr(self, 'socat_client_process', None) and self.socat_client_process.poll() is None:
+            print("Stopping previous Bedrock TCP-to-UDP relay (socat)...")
+            self.socat_client_process.terminate()
+            self.socat_client_process.wait(timeout=3)
+
 
         from mcshell.mcserver import GUI_AUTH_TOKEN
         # Ensure MC_APP_PORT is defined in your scope, usually via current_app.config or global
