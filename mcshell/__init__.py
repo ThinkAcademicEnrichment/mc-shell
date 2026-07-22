@@ -938,7 +938,7 @@ class MCShell(Magics):
             geyser_data = yaml.load(geyser_config)
 
             # force fragmenting of the nasty RakNet handshake packet
-            geyser_data['config']['advanced']['bedrock']['mtu'] = "1200"
+            geyser_data['advanced']['bedrock']['mtu'] = "1200"
             
             # ruamel.yaml can write directly to a pathlib.Path object
             yaml.dump(geyser_data, geyser_config)
