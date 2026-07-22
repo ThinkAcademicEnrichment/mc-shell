@@ -259,7 +259,6 @@ class MCShell(Magics):
         self.app_server_thread = None
 
         self.active_paper_server: Optional[PaperServerManager ,None ] = None
-        self.rathole_process = None
 
         # Track if this session automatically joined Tailscale so we can clean it up
         self.managed_tailscale = False
@@ -1221,20 +1220,23 @@ class MCShell(Magics):
         print("Stopping Paper server (this may take a moment)...")
         self.active_paper_server.stop()
         self.active_paper_server = None
-        if self.rathole_process is not None:
+        if getattr(self, 'rathole_process', None) and self.rathole_process.poll() is None:
             _stop_rathole_client(self.rathole_process,self.rathole_config)
-        self.rathole_process = None
+            del self.rathole_process
+            del self.rathole_config
 
         # Stop any active socat translator process
         if getattr(self, 'socat_udp_process', None) and self.socat_udp_process.poll() is None:
             print("Stopping previous Bedrock UDP-to-UDP relay (socat)...")
             self.socat_udp_process.terminate()
             self.socat_udp_process.wait(timeout=3)
+            del self.socat_udp_process
 
         if getattr(self, 'socat_tcp_process', None) and self.socat_tcp_process.poll() is None:
             print("Stopping previous Bedrock TCP-to-TCP relay (socat)...")
             self.socat_tcp_process.terminate()
             self.socat_tcp_process.wait(timeout=3)
+            del self.socat_tcp_process
 
 
         print("Session stopped successfully.")
@@ -1409,15 +1411,18 @@ class MCShell(Magics):
             print("Stopping previous Bedrock UDP-to-UDP relay (socat)...")
             self.socat_udp_process.terminate()
             self.socat_udp_process.wait(timeout=3)
+            del self.socat_udp_process
 
         if getattr(self, 'socat_tcp_process', None) and self.socat_tcp_process.poll() is None:
             print("Stopping previous Bedrock TCP-to-TCP relay (socat)...")
             self.socat_tcp_process.terminate()
             self.socat_tcp_process.wait(timeout=3)
+            del self.socat_tcp_process
 
-        if self.rathole_process is not None:
+        if getattr(self, 'rathole_process', None) and self.rathole_process.poll() is None:
             _stop_rathole_client(self.rathole_process,self.rathole_config)
-        self.rathole_process = None
+            del self.rathole_process
+            del self.rathole_config
 
         from mcshell.mcserver import GUI_AUTH_TOKEN
         # Ensure MC_APP_PORT is defined in your scope, usually via current_app.config or global
