@@ -2,6 +2,8 @@ import socket
 from pprint import pprint
 
 import atexit
+import stat
+import tempfile
 import IPython
 import getpass
 from IPython.core.magic import Magics, magics_class, line_magic,needs_local_scope
@@ -196,12 +198,57 @@ def _start_secure_tunnel_client(join_code, local_mc, local_rcon, local_mj):
     thread = Thread(target=_run_tunnel_client_thread, args=(host, port, pin, remote_mc, remote_rcon, remote_mj, local_mc, local_rcon, local_mj), daemon=True)
     thread.start()
 
-def _start_lan_relay(target_ip: str, mc_port: int, rcon_port: int, mj_port: int, bedrock_port: int = 19132):
-    '''
-    rebuilding UDP forwarding...
 
-    '''
-    ...
+def _start_rathole_client(relay_address, token):
+    """
+    Generates a temporary config and spawns the rathole client subprocess.
+    Returns the subprocess.Popen object and the path to the temp config file.
+    """
+
+    # Define the UDP-only TOML configuration
+    toml_content = f"""[client]
+remote_addr = "{relay_address}:2333"
+default_token = "{token}"
+
+[client.services.geyser-bedrock]
+type = "udp"
+local_addr = "127.0.0.1:19132"
+"""
+    
+    # Create a temporary file that won't automatically delete upon closing
+    config_file = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.toml')
+    config_file.write(toml_content)
+    config_file.close()
+
+    print(f"[*] Relaying Bedrock UDP traffic via rathole to {relay_address}:2333...")
+    
+    # Spawn the background process
+    # Note: You can redirect stdout/stderr to a log file instead of DEVNULL if needed for debugging
+    RH_CLIENT_BIN = MC_DATA_DIR / "rathole"
+
+    current_permissions = RH_CLIENT_BIN.stat().st_mode
+    RH_CLIENT_BIN.chmod(current_permissions | stat.S_IEXEC)
+
+    rathole_process = subprocess.Popen(
+        [str(RH_CLIENT_BIN), "--client", config_file.name],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL
+    )
+    
+    return rathole_process, config_file.name
+
+def _stop_rathole_client(process, config_path):
+    """Terminates the rathole process and cleans up the temporary config."""
+    if process:
+        print("[*] Terminating rathole relay client...")
+        process.terminate()
+        try:
+            process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            
+    if config_path and os.path.exists(config_path):
+        os.remove(config_path)
     
 @magics_class
 class MCShell(Magics):
@@ -321,48 +368,47 @@ class MCShell(Magics):
             except Exception as e:
                 print(f"[TAILSCALE WARNING] Could not disconnect automatically: {e}")
 
+
     def _get_connection_hub_data(self):
         """Returns the raw connection hub data in a structured, JSON-friendly dictionary."""
-        def _make_direct_token(ip):
+        def _make_direct_token(ip, rh_host):
+            # Only append the comma and relay host if one actually exists
+            base_target = f"{ip},{rh_host}" if rh_host else str(ip)
+            
             mc_p = self.server_data.get('port', MC_SERVER_PORT)
             rcon_p = self.server_data.get('rcon_port', MC_RCON_PORT)
             mj_p = self.server_data.get('mj_port', MJ_PLUGIN_PORT)
-            mc_v = self.server_data.get('mc_version',MC_VERSION)
+            mc_v = self.server_data.get('mc_version', MC_VERSION)
+            
+            # Return short token if ports are default, otherwise append ports and version
             if mc_p == 25565 and rcon_p == 25575 and mj_p == 4721:
-                return ip
-            return f"{ip}@{mc_p}-{rcon_p}-{mj_p}-{mc_v}"
+                return base_target
+            return f"{base_target}@{mc_p}-{rcon_p}-{mj_p}-{mc_v}"
 
         vpn_ip = get_vpn_ip()
         local_ip = _get_local_ip()
         authkey = self.server_data.get('tailscale_authkey')
-        use_subnet = self.server_data.get('tailscale_subnet_mode', False)
+        rh_host = self.server_data.get('rh_host')
 
         data = {
             "local_ip": local_ip,
             "vpn_ip": vpn_ip,
             "authkey": authkey,
-            "use_subnet": use_subnet,
+            "rh_host": rh_host,
             "ssh_token": self.current_ssh_token,
-            "vpn_mode": "none",
             "tokens": {
-                "lan": _make_direct_token(local_ip)
+                "lan": _make_direct_token(local_ip, rh_host)
             }
         }
 
-        if authkey:
-            if use_subnet:
-                data['vpn_mode'] = 'subnet'
-                data['tokens']['classroom_vpn'] = f"{_make_direct_token(local_ip)}^{authkey}"
-            else:
-                if vpn_ip:
-                    data['vpn_mode'] = 'node'
-                    data['tokens']['classroom_vpn'] = f"{_make_direct_token(vpn_ip)}^{authkey}"
-                else:
-                    data['vpn_mode'] = 'error'
+        # Populate the remaining tokens based on available Tailscale data
+        if authkey and vpn_ip:
+            data['tokens']['classroom_vpn'] = f"{_make_direct_token(vpn_ip, rh_host)}^{authkey}"
         elif vpn_ip:
-            data['tokens']['tailscale'] = _make_direct_token(vpn_ip)
+            data['tokens']['tailscale'] = _make_direct_token(vpn_ip, rh_host)
 
         return data
+
 
     def _print_connection_hub(self):
         """Helper method to print the share tokens cleanly."""
@@ -372,42 +418,38 @@ class MCShell(Magics):
         if self.app_server_thread and self.app_server_thread.is_alive():
             if self.mc_name:
                 print(f"🟢 MCED App Server  : RUNNING (Active Player: {self.mc_name})")
-                print(f"   Editor URL         : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}?auth={GUI_AUTH_TOKEN}")
-                print(f"   Control URL        : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}/control?auth={GUI_AUTH_TOKEN}")
+                print(f"   Editor URL       : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}?auth={GUI_AUTH_TOKEN}")
+                print(f"   Control URL      : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}/control?auth={GUI_AUTH_TOKEN}")
             else:
                 print(f"🟡 MCED App Server  : STANDBY")
-                print(f"   Lobby URL          : http://localhost:{MC_APP_PORT}/lobby?auth={GUI_AUTH_TOKEN}")
+                print(f"   Lobby URL        : http://localhost:{MC_APP_PORT}/lobby?auth={GUI_AUTH_TOKEN}")
         else:
             print("🔴 Editor App Server  : STOPPED")
 
-
         print(f"\n" + "="*60)
-        print("🌍 CONNECTION HUB: Share these tokens with friends!")
+        print("🌍 CONNECTION HUB: Share these tokens with students!")
         print("="*60)
 
-        if data['authkey']:
-            if data['vpn_mode'] == 'subnet':
-                print("\n[ VPN CONNECTION (Subnet Router Mode) ]")
+        # 2. VPN (Tailscale) Tokens
+        if data.get('authkey'):
+            if 'classroom_vpn' in data['tokens']:
+                print("\n[ VPN CONNECTION (Automated Tailscale Mesh) ]")
                 print(f"Token : {data['tokens']['classroom_vpn']}")
-            elif data['vpn_mode'] == 'node':
-                print("\n[ VPN CONNECTION (Node-to-Node Mode) ]")
-                print(f"Token : {data['tokens']['classroom_vpn']}")
-            elif data['vpn_mode'] == 'error':
-                print("\n[ VPN CONNECTION (Node-to-Node Mode) ]")
+            else:
+                print("\n[ VPN CONNECTION ]")
                 print("⚠️  ERROR: Tailscale failed to acquire a VPN IP.")
                 print("⚠️  Cannot generate an automated remote token. Check your Tailscale installation.")
+        elif 'tailscale' in data['tokens']:
+            print("\n[ TAILSCALE CONNECTION (Manual Mesh) ]")
+            print(f"Token : {data['tokens']['tailscale']}")
 
-        # Standard direct tokens
-        print("\n[ DIRECT CONNECTION (No SSH Required) ]")
+        # 3. Standard Direct Tokens
+        print("\n[ DIRECT CONNECTION (Local LAN) ]")
         print(f"Local LAN Token : {data['tokens']['lan']}")
 
-        # Only show the raw Tailscale token if we aren't already giving them the automated authkey command
-        if data['vpn_mode'] == 'none' and data['vpn_ip']:
-            print(f"Tailscale Token : {data['tokens']['tailscale']}")
-
-        # SSH Tunnel
+        # 4. SSH Tunnel (Fallback)
         print("\n[ SECURE SSH TUNNEL (Internet Fallback) ]")
-        if data['ssh_token']:
+        if data.get('ssh_token'):
             print(f"Token : {data['ssh_token']}")
             token_ip = data['ssh_token'].split(':')[0]
             if token_ip == data['local_ip']:
@@ -417,8 +459,17 @@ class MCShell(Magics):
         else:
             print("Failed to generate SSH Token, or tunnel not active.")
 
-        print("="*60 + "\n")
-        print("Students can join by running: %pp_join_world <Token>\n")
+        # 5. Bedrock / iPad Instructions (Rathole Relay)
+        if data.get('rh_host'):
+            print("\n" + "="*60)
+            print("🎮 BEDROCK PLAYERS (iPads):")
+            print(f"Please open Minecraft and connect to: {data['rh_host']} (Port 19132)")
+            print("="*60 + "\n")
+        else:
+            print("="*60 + "\n")
+
+        print("Students on Java Edition/Python can join by running:")
+        print("  %pp_join_world <Token>\n")
 
     def _complete_world_command(self, ipyshell, event):
         ipyshell.user_ns.update(dict(rcon_event=event))
@@ -682,6 +733,7 @@ class MCShell(Magics):
         if plugin_urls:
             downloader.install_plugins(plugin_urls, plugins_dir)
 
+
         # --- Datapack Installation Logic ---
         if datapacks_to_install:
             # Datapacks must be in 'world_persistent/datapacks' for first-run generation
@@ -734,6 +786,8 @@ class MCShell(Magics):
         group.add_argument("--clear-authkey", action="store_true", help="Wipe cached auth key")
         
         parser.add_argument("--do-not-join", action="store_true", help="Prevent auto-joining the world") 
+
+        parser.add_argument("--relay", type=str, help="Hostname/IP of the rathole relay server (e.g., thunk.local)")
 
         args = shlex.split(line)
         
@@ -817,9 +871,15 @@ class MCShell(Magics):
         # Cross-platform automated host login (ONLY if we aren't relying on an external Subnet Router)
         if authkey:
             self._connect_tailscale(authkey, accept_routes=False)
+            if parsed_args.relay is not None:
+                relay_server_address = parsed_args.relay
+                self.server_data['rh_host'] = relay_server_address
+                self.rathole_process,self.rathole_config = _start_rathole_client(relay_server_address,authkey)
 
+            
         spigot_file = world_directory / "spigot.yml"
         bukkit_file = world_directory / "bukkit.yml"
+        floodgate_config = world_directory/ "plugins" / "floodgate" / "config.yml"
 
         # Initialize YAML parser to preserve existing comments and structure
         yaml = YAML()
@@ -851,6 +911,20 @@ class MCShell(Magics):
             
             yaml.dump(bukkit_data, bukkit_file)
             print(f"Updated autosave in {bukkit_file.name}")
+
+
+        # Update timeout-time in spigot.yml (nested under 'settings')
+        if floodgate_config.is_file():
+            floodgate_data = yaml.load(floodgate_config)
+
+            # make arbitrary Bedrock names look the same as Java names; could lead to collisions
+            floodgate_data['username-prefix'] = ""
+            
+            # ruamel.yaml can write directly to a pathlib.Path object
+            yaml.dump(floodgate_data, floodgate_config)
+            print(f"Updated username-prefix in {floodgate_config.name}")
+
+
 
         if not parsed_args.do_not_join:
             # suspend the logs for the user name prompt
@@ -907,7 +981,9 @@ class MCShell(Magics):
         
         # Toggles
         parser.add_argument("--login", action="store_true", help="Enable authenticating profile login state directly.")
-        parser.add_argument("--relay", action="store_true", help="Act as a LAN router, relaying local iPad/Bedrock traffic to the VPN")
+
+        # not required
+        # parser.add_argument("--relay", type=str, help="Hostname/IP of the rathole relay server (e.g., thunk.local)")
 
         split_args = shlex.split(line)
         
@@ -987,71 +1063,6 @@ class MCShell(Magics):
             if hasattr(self, 'active_paper_server') and getattr(self, 'active_paper_server') and self.active_paper_server.is_alive():
                 print("A local Minecraft server is already running. Proceeding with proxy connections anyway.")
 
-        #     # SMART TOKEN ROUTING
-        #     if '#' not in token and '@' not in token and '^' not in token:
-        #         # we have a simple host ip address or domain 
-        #         if parsed_args.relay:
-        #             print("Starting local LAN relay to Tailscale network...")
-        #             _start_lan_relay(token, local_mc, local_rcon, local_mj)
-
-        #             # THE MAGIC TRICK: Overwrite in-memory data to point to our new local proxies
-        #             self.server_data['host'] = '127.0.0.1'
-        #             self.server_data['port'] = local_mc
-        #             self.server_data['rcon_port'] = local_rcon
-        #             self.server_data['mj_port'] = local_mj
-        #             self.server_data['mc_version'] = mc_version
-        #             self.server_data['app_port'] = local_app
-
-        #             time.sleep(1.0)
-        #             print("LAN Relay established.")
-        #         else:
-        #             self.server_data['host'] = token
-
-        #     elif '#' in token:
-        #         print("Connecting to secure tunnel...")
-        #         _start_secure_tunnel_client(token, local_mc, local_rcon, local_mj)
-
-        #         # THE MAGIC TRICK: Overwrite in-memory server_data to point to the secure tunnel entrances
-        #         self.server_data['host'] = '127.0.0.1'
-        #         self.server_data['port'] = local_mc
-        #         self.server_data['rcon_port'] = local_rcon
-        #         self.server_data['mj_port'] = local_mj
-        #         self.server_data['mc_version'] = mc_version
-        #         self.server_data['app_port'] = local_app
-
-        #         # Give the background thread a moment to establish port forwards
-        #         time.sleep(1.0)
-        #         print("Tunnel connection established.")
-        #     else:
-        #         # Handle Direct IPs and Custom Port strings (e.g. 192.168.1.5@25566-25576-4721-1.21.11)
-        #         if '@' in token:
-        #             ip_part, ports_part = token.split('@', 1)
-        #             try:
-        #                 p_mc, p_rcon, p_mj, p_ver = ports_part.split('-')
-        #                 self.server_data['host'] = ip_part
-        #                 self.server_data['port'] = int(p_mc)
-        #                 self.server_data['rcon_port'] = int(p_rcon)
-        #                 self.server_data['mj_port'] = int(p_mj)
-        #                 self.server_data['mc_version'] = p_ver
-        #                 print(f"\n[DIRECT CONNECT] Connecting to {ip_part} with custom ports...")
-        #             except ValueError:
-        #                 print("\n[ERROR] Invalid Direct Token format. Falling back to default ports.")
-        #                 self.server_data['host'] = ip_part
-        #         else:
-        #             print(f"\n[DIRECT CONNECT] Connecting directly to {token}...")
-        #             self.server_data['host'] = token
-        #             self.server_data['port'] = local_mc
-        #             self.server_data['rcon_port'] = local_rcon
-        #             self.server_data['mj_port'] = local_mj
-        #             self.server_data['mc_version'] = mc_version
-
-        # # set overridden data
-        # self.server_data['rcon_port'] = local_rcon
-        # self.server_data['port'] = local_mc
-        # self.server_data['mj_port'] = local_mj
-        # self.server_data['mc_version'] = mc_version
-        # self.server_data['app_port'] = local_app
-
 
         # SMART TOKEN ROUTING
         if '#' in token:
@@ -1059,39 +1070,39 @@ class MCShell(Magics):
             _start_secure_tunnel_client(token, local_mc, local_rcon, local_mj)
 
             target_host = '127.0.0.1'
+            rh_host = None  # Secure tunnels don't use the UDP relay
             time.sleep(1.0)
             print("Tunnel connection established.")
 
         else:
-            # 1. Parse target IP and optional custom ports (@ports)
+            # 1. Separate the IP/Relay routing segment from the ports segment
             if '@' in token:
-                ip_part, ports_part = token.split('@', 1)
+                ip_relay_part, ports_part = token.split('@', 1)
                 try:
                     p_mc, p_rcon, p_mj, p_ver = ports_part.split('-')
-                    target_host = ip_part
                     local_mc = int(p_mc)
                     local_rcon = int(p_rcon)
                     local_mj = int(p_mj)
                     mc_version = p_ver
-                    print(f"\n[DIRECT CONNECT] Parsed token for {ip_part} with custom ports...")
                 except ValueError:
                     print("\n[ERROR] Invalid Direct Token format. Falling back to default ports.")
-                    target_host = ip_part
             else:
-                target_host = token
+                ip_relay_part = token
 
-            # 2. Trigger LAN Relay if --relay was requested
-            if parsed_args.relay:
-                print(f"\n[RELAY MODE] Starting local LAN relay to {target_host}...")
-                _start_lan_relay(target_host, local_mc, local_rcon, local_mj)
-                
-                # Point the local Java client to the socat loopback entrance
-                target_host = '127.0.0.1'
-                time.sleep(1.0)
-                print("LAN Relay established.")
+            # 2. Extract target IP and the Relay Host from the routing segment
+            if ',' in ip_relay_part:
+                target_host, raw_rh = ip_relay_part.split(',', 1)
+                rh_host = None if raw_rh == 'none' else raw_rh
+            else:
+                target_host = ip_relay_part
+                rh_host = None
+
+            if '@' in token:
+                print(f"\n[DIRECT CONNECT] Parsed token for {target_host} (Relay: {rh_host or 'None'}) with custom ports...")
 
         # 3. Commit resolved target properties to in-memory data
         self.server_data['host'] = target_host
+        self.server_data['rh_host'] = rh_host
         self.server_data['port'] = local_mc
         self.server_data['rcon_port'] = local_rcon
         self.server_data['mj_port'] = local_mj
@@ -1165,8 +1176,9 @@ class MCShell(Magics):
 
         print("Stopping Paper server (this may take a moment)...")
         self.active_paper_server.stop()
-
         self.active_paper_server = None
+        _stop_rathole_client(self.rathole_process,self.rathole_config)
+        self.rathole_process = None
         print("Session stopped successfully.")
 
     @line_magic
