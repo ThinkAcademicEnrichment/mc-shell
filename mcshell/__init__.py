@@ -1,14 +1,6 @@
-import socket
-from pprint import pprint
 
-import atexit
-import stat
-import tempfile
 import IPython
-import getpass
 from IPython.core.magic import Magics, magics_class, line_magic,needs_local_scope
-
-from rich.prompt import Prompt
 
 from mcshell.constants import *
 from mcshell.mcrepo import SQLiteRepository
@@ -21,26 +13,10 @@ from mcshell.ppdownloader import *
 from mcshell.mcserver import stop_app_server
 from mcshell.mcplayer import MCPlayer
 
-import atexit
-from threading import Thread,Event
-
-import time
-import string
-import random
-import requests
-import json
-import uuid
-import os
-import shutil
-import pickle
-import shlex
-import asyncio
-import time
-import re # Added for VPN IP Regex matching
 from mcshell.mctunnelserver import start_host_gateway, connect_client_tunnel, get_vpn_ip, _get_local_ip
 
 # =====================================================================
-# Secure Tunnel & Plugin Helper Functions
+# Networking & Plugin Helper Functions
 # =====================================================================
 
 def _resolve_geysermc_plugin(project_id: str, platform: str = "spigot") -> str:
