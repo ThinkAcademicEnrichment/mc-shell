@@ -197,27 +197,12 @@ def _start_secure_tunnel_client(join_code, local_mc, local_rcon, local_mj):
     thread.start()
 
 def _start_lan_relay(target_ip: str, mc_port: int, rcon_port: int, mj_port: int, bedrock_port: int = 19132):
-    """
-    Spawns userspace proxies to bounce local LAN traffic to a Tailscale IP.
-    Handles both TCP (Java) and UDP (Bedrock) protocols.
-    """
-    try:
-        # 1. TCP Ports (Java Edition, RCON, McJuice API)
-        for port in (mc_port, rcon_port, mj_port):
-            cmd = ["socat", f"TCP4-LISTEN:{port},fork,reuseaddr", f"TCP4:{target_ip}:{port}"]
-            proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            atexit.register(proc.kill)
+    '''
+    rebuilding UDP forwarding...
 
-        # 2. UDP Port (Bedrock Edition)
-        # UDP4-RECVFROM is critical here; it forks a new process for each iPad 
-        # so it remembers where to route the return packets from the server.
-        udp_cmd = ["socat", f"UDP4-RECVFROM:{bedrock_port},fork,reuseaddr", f"UDP4:{target_ip}:{bedrock_port}"]
-        proc = subprocess.Popen(udp_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        atexit.register(proc.kill)
-
-    except FileNotFoundError:
-        print("\n[ERROR] 'socat' is missing. LAN Relay aborted. Run: sudo apt install socat")
-
+    '''
+    ...
+    
 @magics_class
 class MCShell(Magics):
 
