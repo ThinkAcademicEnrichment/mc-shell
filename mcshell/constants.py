@@ -77,6 +77,7 @@ MC_SERVER_DATA = {
     'app_port': MC_APP_PORT,
     'password': None,
     'mc_version': MC_VERSION,
+    'rh_host': None,
 }
 
 MC_SHELL_DIR = pathlib.Path(__file__).parent
