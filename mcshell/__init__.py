@@ -843,13 +843,6 @@ class MCShell(Magics):
             print(f"Stopping the currently active server for world '{self.active_paper_server.world_name}'...")
             self.active_paper_server.stop()
             
-        # Stop any active socat translator process
-        if getattr(self, 'socat_host_process', None) and self.socat_host_process.poll() is None:
-            print("Stopping active socat TCP-to-UDP translator...")
-            self.socat_host_process.terminate()
-            self.socat_host_process.wait(timeout=3)
-
-
         print(f"--- Starting new session for world: {world_name} ---")
 
         # Omni-Routing: Always bind to 0.0.0.0 so LAN, Tailscale, and SSH can hit it simultaneously
@@ -894,28 +887,10 @@ class MCShell(Magics):
                 self.server_data['rh_host'] = relay_server_address
                 self.rathole_process, self.rathole_config = _start_rathole_client(relay_server_address, authkey)
                 
-        # Start the local socat translator (TCP 19133 -> UDP 19132) for Bedrock Tailscale clients
-        print("Starting socat TCP-to-UDP translator for Bedrock over Tailscale...")
-        socat_cmd = [
-            "socat",
-            "TCP4-LISTEN:19133,reuseaddr,fork",
-            "UDP4:127.0.0.1:19132"
-        ]
-        
-        try:
-            self.socat_host_process = subprocess.Popen(
-                socat_cmd,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
-        except FileNotFoundError:
-            print("[WARNING] 'socat' command not found. Bedrock connections over Tailscale will fail.")
-            self.socat_host_process = None
-
-            
         spigot_file = world_directory / "spigot.yml"
         bukkit_file = world_directory / "bukkit.yml"
         floodgate_config = world_directory/ "plugins" / "floodgate" / "config.yml"
+        geyser_config = world_directory / "plugins" / "Geyser-Spigot" / "config.yml"
 
         # Initialize YAML parser to preserve existing comments and structure
         yaml = YAML()
@@ -949,7 +924,6 @@ class MCShell(Magics):
             print(f"Updated autosave in {bukkit_file.name}")
 
 
-        # Update timeout-time in spigot.yml (nested under 'settings')
         if floodgate_config.is_file():
             floodgate_data = yaml.load(floodgate_config)
 
@@ -959,6 +933,16 @@ class MCShell(Magics):
             # ruamel.yaml can write directly to a pathlib.Path object
             yaml.dump(floodgate_data, floodgate_config)
             print(f"Updated username-prefix in {floodgate_config.name}")
+
+        if geyser_config.is_file():
+            geyser_data = yaml.load(geyser_config)
+
+            # force fragmenting of the nasty RakNet handshake packet
+            geyser_data['config']['advanced']['bedrock']['mtu'] = "1200"
+            
+            # ruamel.yaml can write directly to a pathlib.Path object
+            yaml.dump(geyser_data, geyser_config)
+            print(f"Updated bedrock mtu in {geyser_config.name}")
 
 
 
@@ -1027,10 +1011,16 @@ class MCShell(Magics):
             return
 
         # 0. Clean up previous Bedrock relays before binding new ones
-        if getattr(self, 'socat_client_process', None) and self.socat_client_process.poll() is None:
-            print("Stopping previous Bedrock TCP-to-UDP relay (socat)...")
-            self.socat_client_process.terminate()
-            self.socat_client_process.wait(timeout=3)
+        if getattr(self, 'socat_udp_process', None) and self.socat_udp_process.poll() is None:
+            print("Stopping previous Bedrock UDP-to-UDP relay (socat)...")
+            self.socat_udp_process.terminate()
+            self.socat_udp_process.wait(timeout=3)
+
+        if getattr(self, 'socat_tcp_process', None) and self.socat_tcp_process.poll() is None:
+            print("Stopping previous Bedrock TCP-to-TCP relay (socat)...")
+            self.socat_tcp_process.terminate()
+            self.socat_tcp_process.wait(timeout=3)
+
 
         # 1. Profile Username Resolution
         if parsed_args.mc_name is not None:
@@ -1153,21 +1143,39 @@ class MCShell(Magics):
 
         # 4. Start local Bedrock UDP->TCP translator (Only if NOT using local loopback SSH fallback)
         if target_host and target_host != '127.0.0.1':
-            print(f"Starting socat UDP-to-TCP translator for local Bedrock clients...")
-            socat_cmd = [
+            print(f"Starting socat UDP forwarder for local Bedrock clients...")
+            socat_udp_cmd = [
                 "socat",
                 "UDP4-LISTEN:19132,reuseaddr,fork",
-                f"TCP4:{target_host}:19133"
+                f"UDP4:{target_host}:19132"
             ]
             try:
-                self.socat_client_process = subprocess.Popen(
-                    socat_cmd,
+                self.socat_udp_process = subprocess.Popen(
+                    socat_udp_cmd,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL
                 )
             except FileNotFoundError:
                 print("[WARNING] 'socat' command not found. iPads on your local network will not be able to join.")
-                self.socat_client_process = None
+                self.socat_udp_process = None
+
+        # 5. Start local Java TCP forwarder (Vanilla Laptops on LAN)
+        if target_host and target_host != '127.0.0.1':
+            print("Starting socat TCP forwarder for local Java clients...")
+            socat_tcp_cmd = [
+                "socat",
+                f"TCP4-LISTEN:{local_mc},reuseaddr,fork",
+                f"TCP4:{target_host}:{local_mc}"
+            ]
+            try:
+                self.socat_tcp_process = subprocess.Popen(
+                    socat_tcp_cmd,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+            except FileNotFoundError:
+                print("[WARNING] 'socat' not found. Local Java forwarding disabled.")
+                self.socat_tcp_process = None
 
         # get the server password if required
         if is_login and self.server_data['password'] is None:
@@ -1242,10 +1250,17 @@ class MCShell(Magics):
         self.rathole_process = None
 
         # Stop any active socat translator process
-        if getattr(self, 'socat_host_process', None) and self.socat_host_process.poll() is None:
-            print("Stopping active socat TCP-to-UDP translator...")
-            self.socat_host_process.terminate()
-            self.socat_host_process.wait(timeout=3)
+        if getattr(self, 'socat_udp_process', None) and self.socat_udp_process.poll() is None:
+            print("Stopping previous Bedrock UDP-to-UDP relay (socat)...")
+            self.socat_udp_process.terminate()
+            self.socat_udp_process.wait(timeout=3)
+
+        if getattr(self, 'socat_tcp_process', None) and self.socat_tcp_process.poll() is None:
+            print("Stopping previous Bedrock TCP-to-TCP relay (socat)...")
+            self.socat_tcp_process.terminate()
+            self.socat_tcp_process.wait(timeout=3)
+
+
         print("Session stopped successfully.")
 
     @line_magic
@@ -1413,12 +1428,20 @@ class MCShell(Magics):
         # Drop VPN connection if it was auto-managed
         self._disconnect_tailscale()
 
-        # kill the socat UDP to TCP translation process
-        if getattr(self, 'socat_client_process', None) and self.socat_client_process.poll() is None:
-            print("Stopping previous Bedrock TCP-to-UDP relay (socat)...")
-            self.socat_client_process.terminate()
-            self.socat_client_process.wait(timeout=3)
+        # Stop any active socat translator process
+        if getattr(self, 'socat_udp_process', None) and self.socat_udp_process.poll() is None:
+            print("Stopping previous Bedrock UDP-to-UDP relay (socat)...")
+            self.socat_udp_process.terminate()
+            self.socat_udp_process.wait(timeout=3)
 
+        if getattr(self, 'socat_tcp_process', None) and self.socat_tcp_process.poll() is None:
+            print("Stopping previous Bedrock TCP-to-TCP relay (socat)...")
+            self.socat_tcp_process.terminate()
+            self.socat_tcp_process.wait(timeout=3)
+
+        if self.rathole_process is not None:
+            _stop_rathole_client(self.rathole_process,self.rathole_config)
+        self.rathole_process = None
 
         from mcshell.mcserver import GUI_AUTH_TOKEN
         # Ensure MC_APP_PORT is defined in your scope, usually via current_app.config or global
