@@ -610,7 +610,7 @@ class MCShell(Magics):
             print(f"Error: Could not write eula.txt file. {e}")
             return
 
-        print(f"Resolving compatible Geyser/Floodgate plugins for Minecraft {mc_version}...")
+        print(f"Resolving compatible Geyser/Floodgate/ViaVersion plugins for Minecraft {mc_version}...")
         # Resolve dynamic Modrinth URLs based on the MC version, falling back to Geyser's official 'latest' endpoints
         geyser_url = _resolve_geysermc_plugin('geyser')
         floodgate_url = _resolve_geysermc_plugin('floodgate')
