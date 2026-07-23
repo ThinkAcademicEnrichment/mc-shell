@@ -760,7 +760,9 @@ class MCShell(Magics):
             description="Starts a Paper server for a given world name."
         )
         parser.add_argument("world_name", help="The name of the world to start")
-        parser.add_argument("--ssh", action="store_true", help="Enable SSH tunnel")
+
+        # we may need to remove this
+        # parser.add_argument("--ssh", action="store_true", help="Enable SSH tunnel")
         
         group = parser.add_mutually_exclusive_group()
         group.add_argument("--authkey", help="Tailscale Auth Key")
@@ -844,15 +846,16 @@ class MCShell(Magics):
         if not 'app_port' in list(self.server_data.keys()):
             self.server_data['app_port'] = 5001
 
-        # Start the background SSH Tunnel gateway automatically
-        print("Starting secure SSH tunnel gateway in the background...")
-        self.current_ssh_token = _start_secure_tunnel_host(
-            self.server_data['port'], 
-            self.server_data['rcon_port'], 
-            self.server_data['mj_port'], 
-            self.server_data['mc_version'],
-            use_ssh=parsed_args.ssh
-        )
+        # if parsed_args.ssh: 
+        #     # Start the background SSH Tunnel gateway if --ssh if requrested
+        #     print("Starting secure SSH tunnel gateway in the background...")
+        #     self.current_ssh_token = _start_secure_tunnel_host(
+        #         self.server_data['port'], 
+        #         self.server_data['rcon_port'], 
+        #         self.server_data['mj_port'], 
+        #         self.server_data['mc_version'],
+        #         use_ssh=parsed_args.ssh
+        #     )
 
         # Cross-platform automated host login (ONLY if we aren't relying on an external Subnet Router)
         if authkey:
