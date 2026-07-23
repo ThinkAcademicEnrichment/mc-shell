@@ -414,7 +414,6 @@ class MCShell(Magics):
             "tokens": {
                 "lan": _make_direct_token(local_ip, rh_host)
             }
-            # "ssh_token": self.current_ssh_token,
         }
 
         # Populate the remaining tokens based on available Tailscale data
@@ -2492,8 +2491,6 @@ def load_ipython_extension(ip):
         mcshell_instance._disconnect_tailscale()
 
         # Ensure the background Flask thread is fully killed on exit
-        # from mcshell.mcserver import stop_app_server
-        # stop_app_server()
         ip.run_line_magic('pp_stop_world','')
 
         # --- CLEAN UP TRANSFORMER ON SHUTDOWN (Optional but clean) ---
