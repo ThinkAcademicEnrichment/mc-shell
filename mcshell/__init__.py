@@ -429,63 +429,59 @@ class MCShell(Magics):
     def _print_connection_hub(self):
         """Helper method to print the share tokens cleanly."""
         data = self._get_connection_hub_data()
+        app_port = self.server_data.get('app_port')
 
-        # 1. App Server (mc-ed) Status
-        if self.app_server_thread and self.app_server_thread.is_alive():
-            if self.mc_name:
+        print(f"\n" + "="*55)
+        # 1. App Server (mc-ed) Status (Locked to localhost for ChromeOS constraints)
+        if getattr(self, 'app_server_thread', None) and self.app_server_thread.is_alive():
+            if getattr(self, 'mc_name', None):
                 print(f"🟢 MCED App Server  : RUNNING (Active Player: {self.mc_name})")
-                print(f"   Editor URL       : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}?auth={GUI_AUTH_TOKEN}")
-                print(f"   Control URL      : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}/control?auth={GUI_AUTH_TOKEN}")
+                print(f"   Editor URL       : http://localhost:{app_port}/?auth={GUI_AUTH_TOKEN}")
+                print(f"   Control URL      : http://localhost:{app_port}/control?auth={GUI_AUTH_TOKEN}")
             else:
                 print(f"🟡 MCED App Server  : STANDBY")
-                print(f"   Lobby URL        : http://localhost:{MC_APP_PORT}/lobby?auth={GUI_AUTH_TOKEN}")
+                print(f"   Lobby URL        : http://localhost:{app_port}/lobby?auth={GUI_AUTH_TOKEN}")
         else:
             print("🔴 Editor App Server  : STOPPED")
 
-        print(f"\n" + "="*60)
-        print("🌍 CONNECTION HUB: Share these tokens with students!")
-        print("="*60)
+        if getattr(self, 'mc_name', None):
+            print(f"\n" + "="*60)
+            print("🌍 CONNECTION HUB: Share these tokens with your friends!")
+            print("="*60)
 
-        # 2. VPN (Tailscale) Tokens
-        if data.get('authkey'):
-            if 'classroom_vpn' in data['tokens']:
-                print("\n[ VPN CONNECTION (Automated Tailscale Mesh) ]")
-                print(f"Token : {data['tokens']['classroom_vpn']}")
-            else:
-                print("\n[ VPN CONNECTION ]")
-                print("⚠️  ERROR: Tailscale failed to acquire a VPN IP.")
-                print("⚠️  Cannot generate an automated remote token. Check your Tailscale installation.")
-        elif 'tailscale' in data['tokens']:
-            print("\n[ TAILSCALE CONNECTION (Manual Mesh) ]")
-            print(f"Token : {data['tokens']['tailscale']}")
+            # 2. VPN (Tailscale) Tokens
+            if data.get('authkey'):
+                if 'classroom_vpn' in data['tokens']:
+                    print("\n[ VPN CONNECTION (Automated Tailscale Mesh) ]")
+                    print(f"Token :\n{' '*4}{data['tokens']['classroom_vpn']}")
+                else:
+                    print("\n[ VPN CONNECTION ]")
+                    print("⚠️  ERROR: Tailscale failed to acquire a VPN IP.")
+                    print("⚠️  Cannot generate an automated remote token. Check your Tailscale installation.")
+            elif 'tailscale' in data['tokens']:
+                print("\n[ TAILSCALE CONNECTION (Manual Mesh) ]")
+                print(f"Token :\n{' '*4}{data['tokens']['tailscale']}")
 
-        # 3. Standard Direct Tokens
-        print("\n[ DIRECT CONNECTION (Local LAN) ]")
-        print(f"Local LAN Token : {data['tokens']['lan']}")
+            # 3. Standard Direct Tokens
+            print("\n[ DIRECT CONNECTION (Local LAN) ]")
+            print(f"Local LAN Token :\n{' '*4}{data['tokens']['lan']}")
 
-        # 4. SSH Tunnel (Fallback)
-        print("\n[ SECURE SSH TUNNEL (Internet Fallback) ]")
-        if data.get('ssh_token'):
-            print(f"Token : {data['ssh_token']}")
-            token_ip = data['ssh_token'].split(':')[0]
-            if token_ip == data['local_ip']:
-                print("(Warning: Token uses Local IP. For internet play, restart with: --ssh)")
-            else:
-                print("(UPnP successfully negotiated with router)")
-        else:
-            print("Failed to generate SSH Token, or tunnel not active.")
-
-        # 5. Bedrock / iPad Instructions (Rathole Relay)
-        if data.get('rh_host'):
+            # 4. Bedrock Instructions
             print("\n" + "="*60)
             print("🎮 BEDROCK PLAYERS:")
-            print(f"Please open Minecraft and connect to: {data['rh_host']} (Port 19132)")
-            print("="*60 + "\n")
-        else:
-            print("="*60 + "\n")
+            print("="*60)
+            if data.get('rh_host'):
+                # Use Case 3: Dedicated rathole relay handling Bedrock UDP
+                print(f"Please open Minecraft and connect to the public relay:\n{' '*4}{data['rh_host']}:19132")
+            else:
+                # Use Cases 1 & 2: Local LAN or Tailscale socat UDP forwarder
+                print(f"Please open Minecraft and connect to this computer's IP:\n{' '*4}{data['local_ip']}:19132")
 
-        print("Students on Java Edition/Python can join by running:")
-        print("  %pp_join_world <Token>\n")
+            # 5 Java Instructions 
+            print("\n" + "="*60)
+            print("🎮 JAVA PLAYERS:")
+            print("="*60)
+            print(f"Please open Minecraft and connect to this computer's IP:\n{' '*4}{data['local_ip']}:{self.server_data['port']}")
 
     def _complete_world_command(self, ipyshell, event):
         ipyshell.user_ns.update(dict(rcon_event=event))
@@ -1100,16 +1096,16 @@ class MCShell(Magics):
 
 
         # SMART TOKEN ROUTING
-        if token and '#' in token:
-            print("Connecting to secure tunnel...")
-            _start_secure_tunnel_client(token, local_mc, local_rcon, local_mj)
+        # if token and '#' in token:
+        #     print("Connecting to secure tunnel...")
+        #     _start_secure_tunnel_client(token, local_mc, local_rcon, local_mj)
 
-            target_host = '127.0.0.1'
-            rh_host = None  # Secure tunnels don't use the UDP relay
-            time.sleep(1.0)
-            print("Tunnel connection established.")
+        #     target_host = '127.0.0.1'
+        #     rh_host = None  # Secure tunnels don't use the UDP relay
+        #     time.sleep(1.0)
+        #     print("Tunnel connection established.")
 
-        elif token:
+        if token:
             # 1. Separate the IP/Relay routing segment from the ports segment
             if '@' in token:
                 ip_relay_part, ports_part = token.split('@', 1)
@@ -1194,42 +1190,6 @@ class MCShell(Magics):
 
         print(f"Assigning application server context to Minecraft player: {minecraft_name}")
         self.app_server_thread = start_app_server(self.server_data, minecraft_name, self.shell, power_repo)
-
-        print(f"\n" + "="*55)
-        print(f"🎮 READY TO PLAY! Enter this into Minecraft:")
-        if self.server_data['host'] in ('127.0.0.1', 'localhost'):
-            mc_port_str = f":{self.server_data['port']}" if self.server_data['port'] != 25565 else ""
-
-            # Context Check: Are we the host, or a remote client using an SSH tunnel?
-            if self.active_paper_server and self.active_paper_server.is_alive():
-                # We are the host. Display our actual network IPs.
-                vpn_ip = _get_vpn_ip()
-                local_ip = _get_local_ip()
-                if vpn_ip:
-                    print(f"   Java Edition IP: {local_ip}{mc_port_str} (LAN) or {vpn_ip}{mc_port_str} (VPN)")
-                    print(f"   Bedrock / iPad : {local_ip} (LAN) or {vpn_ip} (VPN)")
-                else:
-                    print(f"   Java Edition IP: {local_ip}{mc_port_str}")
-                    print(f"   Bedrock / iPad : {local_ip} (Default port 19132)")
-            else:
-                # We are a remote client using an SSH Tunnel OR a LAN Relay.
-                local_ip = _get_local_ip()
-                print(f"   Java Edition IP: localhost{mc_port_str}")
-                
-                if getattr(parsed_args, 'relay', False):
-                    # Give them the physical LAN IP of this Linux machine to type into their iPads
-                    print(f"   Bedrock / iPad : {local_ip} (Routed via LAN Relay)")
-                else:
-                    print(f"   Bedrock / iPad : (Requires Tailscale or LAN on Host)")
-            # else:
-            #     # We are a remote client using an SSH Tunnel.
-            #     print(f"   Java Edition IP: localhost{mc_port_str}")
-            #     print(f"   Bedrock / iPad : (Requires Tailscale or Local LAN on Host)")
-        else:
-            mc_port_str = f":{self.server_data['port']}" if self.server_data['port'] != 25565 else ""
-            print(f"   Java Edition IP: {self.server_data['host']}{mc_port_str}")
-            print(f"   Bedrock / iPad : {self.server_data['host']} (Default port 19132)")
-        print(f"="*55 + "\n")
 
         self._print_connection_hub()
 
@@ -1599,63 +1559,7 @@ class MCShell(Magics):
 
     @line_magic
     def mc_server_info(self, line):
-        """Check server status, list connected players, configuration, and connection hub."""
-        print("="*60)
-        print("🖥️  MC-SHELL SERVER DASHBOARD")
-        print("="*60)
-
-        # 1. App Server (mc-ed) Status
-        if self.app_server_thread and self.app_server_thread.is_alive():
-            if self.mc_name:
-                print(f"🟢 MCED App Server  : RUNNING (Active Player: {self.mc_name})")
-                print(f"   Editor URL         : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}?auth={GUI_AUTH_TOKEN}")
-                print(f"   Control URL        : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}/control?auth={GUI_AUTH_TOKEN}")
-            else:
-                print(f"🟡 MCED App Server  : STANDBY")
-                print(f"   Lobby URL          : http://localhost:{MC_APP_PORT}/lobby?auth={GUI_AUTH_TOKEN}")
-        else:
-            print("🔴 Editor App Server  : STOPPED")
-
-        # 2. Paper Server Status (Host only)
-        is_host = self.active_paper_server and self.active_paper_server.is_alive()
-        if is_host:
-            world = self.active_paper_server.world_name
-            print(f"🟢 Local Paper Server : RUNNING (World: '{world}')")
-        else:
-            print("🔴 Local Paper Server : STOPPED")
-
-        # 3. Connection & Player Info
-        if (self.app_server_thread and self.app_server_thread.is_alive()) or is_host:
-            print(f"\n⚙️  Active Configuration:")
-            if not is_host:
-                print(f"   Remote Host        : {self.server_data.get('host', 'Unknown')}")
-            print(f"   Minecraft Port     : {self.server_data.get('port', 25565)}")
-            print(f"   RCON Port          : {self.server_data.get('rcon_port', 25575)}")
-            print(f"   McJuice Port       : {self.server_data.get('mj_port', 4721)}")
-            print(f"   Minecraft Version  : {self.server_data.get('mc_version', MC_VERSION)}")
-
-            password = self.server_data.get('password')
-            if password:
-                print(f"   Server Password    : {password}")
-
-            # Fetch players via RCON
-            try:
-                # Disable printing of the raw auth rejection to keep the dashboard clean
-                response = self._get_client().run('list')
-                if response:
-                    print(f"\n👥 {response}")
-                else:
-                    print("\n👥 Minecraft Players: No response from server.")
-            except Exception:
-                print("\n👥 Minecraft Players: Could not retrieve player list via RCON.")
-
-            # Only print Connection Hub if you are the host
-            if is_host:
-                self._print_connection_hub()
-        else:
-            print("\nTo start a local world, run: %pp_start_world <world_name>")
-            print("To join a remote world, run: %pp_join_world <Token>")
-            print("="*60)
+        self._print_connection_hub()
 
     @line_magic
     def mc_help(self, line):
@@ -2564,15 +2468,6 @@ def load_ipython_extension(ip):
     # --- REGISTER THE '/' SHORTCUT TRANSFORMER ---
     ip.input_transformers_cleanup.append(rconn_shortcut_transformer)
 
-    from mcshell.mcserver import GUI_AUTH_TOKEN
-
-    # --- SUBSTAGE 1A & 1B: Launch Standby Server and Distribute Token ---
-    print("\n" + "="*60)
-    print("🚀 MC-SHELL STANDBY LOBBY ACTIVATED")
-    print("="*60)
-    print(f"Lobby Access: http://localhost:{MC_APP_PORT}/lobby?auth={GUI_AUTH_TOKEN}")
-    print("="*60 + "\n")
-
     mcshell_instance.app_server_thread = start_app_server(
         server_data=None,
         minecraft_name=None,
@@ -2580,6 +2475,13 @@ def load_ipython_extension(ip):
         power_repo=None,
         port=MC_APP_PORT
     )
+
+    time.sleep(1)
+    print("\n" + "="*60)
+    print("🚀 MC-SHELL STANDBY LOBBY ACTIVATED")
+    print("="*60)
+    print(f"Lobby Access: http://localhost:{MC_APP_PORT}/lobby?auth={GUI_AUTH_TOKEN}")
+    print("="*60 + "\n")
 
     def shutdown_hook():
         print("\nIPython is shutting down. Stopping active mc-shell session...")
