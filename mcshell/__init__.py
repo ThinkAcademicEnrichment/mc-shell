@@ -1,45 +1,182 @@
-import socket
-from pprint import pprint
 
-import atexit
 import IPython
-import getpass
 from IPython.core.magic import Magics, magics_class, line_magic,needs_local_scope
-
-from rich.prompt import Prompt
 
 from mcshell.constants import *
 from mcshell.mcrepo import SQLiteRepository
 from mcshell.mcclient import MCClient
 from mcshell.mcserver import throw_app_server_error, start_app_server, reset_app_server_context, GUI_AUTH_TOKEN
-from mcshell.mcserver import execute_power_in_thread, RUNNING_POWERS # Import helpers
+from mcshell.mcserver import RUNNING_POWERS
 from mcshell.ppmanager import *
 from mcshell.ppdownloader import *
-
-from mcshell.mcserver import stop_app_server
 from mcshell.mcplayer import MCPlayer
 
-import atexit
-from threading import Thread,Event
+# =====================================================================
+# SSH Tunnel Helper Functions
+# =====================================================================
+# from mcshell.mctunnelserver import start_host_gateway, connect_client_tunnel, _get_local_ip
+# def _run_tunnel_client_thread(host, port, pin, remote_mc, remote_rcon, remote_mj, local_mc, local_rcon, local_mj):
+#     loop = asyncio.new_event_loop()
+#     asyncio.set_event_loop(loop)
+#     try:
+#         loop.run_until_complete(connect_client_tunnel(
+#             host,
+#             port,
+#             pin,
+#             remote_mc=remote_mc,
+#             remote_rcon=remote_rcon,
+#             remote_mj=remote_mj,
+#             local_mc_port=local_mc,
+#             local_rcon_port=local_rcon,
+#             local_mj_port=local_mj
+#         ))
+#     except Exception as e:
+#         print(f"\n[Tunnel Client Error] {e}")
 
-import time
-import string
-import random
-import requests
-import json
-import uuid
-import os
-import shutil
-import pickle
-import shlex
-import asyncio
-import time
-import re # Added for VPN IP Regex matching
-from mcshell.mctunnelserver import start_host_gateway, connect_client_tunnel, get_vpn_ip, _get_local_ip
+# def _start_secure_tunnel_client(join_code, local_mc, local_rcon, local_mj):
+#     # Parse the join_code: HOST:PORT#PIN[-MC-RCON-MJ]
+#     try:
+#         address_part, auth_part = join_code.split('#')
+#         host, port_str = address_part.split(':')
+#         port = int(port_str)
+
+#         # Check if the host attached custom ports
+#         if '-' in auth_part:
+#             parts = auth_part.split('-')
+#             pin = parts[0]
+#             remote_mc = int(parts[1])
+#             remote_rcon = int(parts[2])
+#             remote_mj = int(parts[3])
+#         else:
+#             pin = auth_part
+#             remote_mc = 25565
+#             remote_rcon = 25575
+#             remote_mj = 4721
+
+#     except (ValueError, IndexError):
+#         print("[Tunnel Client Error] Invalid Join Code format.")
+#         return
+
+#     thread = Thread(target=_run_tunnel_client_thread, args=(host, port, pin, remote_mc, remote_rcon, remote_mj, local_mc, local_rcon, local_mj), daemon=True)
+#     thread.start()
+# def _run_tunnel_host_thread(mc_port, rcon_port, mj_port, mc_version, out_token, use_ssh=False):
+#     async def host_task():
+#         # 1. Force integer types to ensure our logic works safely
+#         mc_port_i = int(mc_port)
+#         rcon_port_i = int(rcon_port)
+#         mj_port_i = int(mj_port)
+
+#         # Generate a 6-character Kahoot-style PIN (e.g. A9K2B4)
+#         pin = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
+#         # Using bind_port=0 lets the OS pick a guaranteed free ephemeral port
+#         bound_port = await start_host_gateway(pin, bind_ip='0.0.0.0', bind_port=0, mc_port=mc_port_i, rcon_port=rcon_port_i, mj_port=mj_port_i)
+
+#         host_ip = None
+
+#         if use_ssh:
+#             try:
+#                 import miniupnpc
+#                 upnp = miniupnpc.UPnP()
+#                 upnp.discoverdelay = 200
+#                 upnp.discover()
+#                 upnp.selectigd()
+#                 external_ip = upnp.externalipaddress()
+
+#                 # Ask router to map the external port directly to our OS-assigned local port
+#                 mapped = upnp.addportmapping(bound_port, 'TCP', upnp.lanaddr, bound_port, 'MC-Shell Secure Tunnel', '')
+#                 if mapped:
+#                     host_ip = external_ip
+#                     print(f"\n[SSH TUNNEL] Success! Router opened port {bound_port}.")
+#                 else:
+#                     print("\n[SSH TUNNEL] Router denied UPnP mapping. Falling back to local network mode.")
+#             except ImportError:
+#                 print("\n[SSH TUNNEL] 'miniupnpc' library missing. Falling back to local network mode.")
+#             except Exception as e:
+#                 print(f"\n[SSH TUNNEL] Failed to configure router UPnP ({e}). Falling back to local network mode.")
+
+#         if not host_ip:
+#             host_ip = _get_local_ip()
+
+#         # 2. Formulate the robust Join Code
+#         # If the ports match defaults exactly, keep the token short and clean.
+#         if mc_port_i == 25565 and rcon_port_i == 25575 and mj_port_i == 4721:
+#             join_code = f"{host_ip}:{bound_port}#{pin}-{mc_version}"
+#         else:
+#             # If ports deviated, append them so the client knows what to ask for
+#             join_code = f"{host_ip}:{bound_port}#{pin}-{mc_port_i}-{rcon_port_i}-{mj_port_i}-{mc_version}"
+
+#         out_token.append(join_code)
+
+#         # Keep the event loop alive indefinitely so the SSH server stays up
+#         while True:
+#             await asyncio.sleep(3600)
+
+#     loop = asyncio.new_event_loop()
+#     asyncio.set_event_loop(loop)
+#     try:
+#         loop.run_until_complete(host_task())
+#     except Exception as e:
+#         print(f"\n[Tunnel Host Error] {e}")
+
+# def _start_secure_tunnel_host(mc_port, rcon_port, mj_port, mc_version, use_ssh=False):
+#     out_token = []
+#     # Use daemon=True so the thread automatically dies when IPython exits
+#     thread = Thread(target=_run_tunnel_host_thread, args=(mc_port, rcon_port, mj_port, mc_version, out_token, use_ssh), daemon=True)
+#     thread.start()
+
+#     # Wait up to 5 seconds for the cryptographic keys and token to generate
+#     for _ in range(50):
+#         if out_token:
+#             return out_token[0]
+#         time.sleep(0.1)
+#     return None
+
 
 # =====================================================================
-# Secure Tunnel & Plugin Helper Functions
+# Networking & Plugin Helper Functions
 # =====================================================================
+
+def _get_local_ip():
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(("8.8.8.8", 80))
+            return s.getsockname()[0]
+    except Exception:
+        return "127.0.0.1"
+
+
+def _get_vpn_ip() -> str | None:
+    """
+    Scans the host's network interfaces for a VPN IP address.
+    Specifically targets Tailscale while avoiding ChromeOS Crostini subnet collisions.
+    """
+    if not psutil:
+        print("psutil module missing. VPN detection disabled.")
+        return None
+
+    try:
+        # Iterate over all active network interfaces
+        for interface, addrs in psutil.net_if_addrs().items():
+            for addr in addrs:
+                # We only care about IPv4 addresses
+                if addr.family == socket.AF_INET:
+                    ip = addr.address
+                    
+                    # Target the Tailscale interface directly
+                    if interface.startswith('tailscale'):
+                        print(f"Detected Tailscale interface '{interface}' with IP: {ip}")
+                        return ip
+                        
+                    # Fallback for standard CGNAT, explicitly rejecting Crostini's eth0 subnet
+                    elif ip.startswith('100.') and not ip.startswith('100.115.92.'):
+                        print(f"Detected VPN interface '{interface}' with IP: {ip}")
+                        return ip
+                        
+    except Exception as e:
+        print(f"Failed to scan network interfaces for VPN: {e}")
+
+    return None
 
 def _resolve_geysermc_plugin(project_id: str, platform: str = "spigot") -> str:
     """
@@ -78,124 +215,57 @@ def _resolve_modrinth_plugin(project_id, mc_version):
         pass # Failsafe to fallback URLs
     return None
 
-def _run_tunnel_host_thread(mc_port, rcon_port, mj_port, mc_version, out_token, use_ssh=False):
-    async def host_task():
-        # 1. Force integer types to ensure our logic works safely
-        mc_port_i = int(mc_port)
-        rcon_port_i = int(rcon_port)
-        mj_port_i = int(mj_port)
+def _start_rathole_client(relay_address, token):
+    """
+    Generates a temporary config and spawns the rathole client subprocess.
+    Returns the subprocess.Popen object and the path to the temp config file.
+    """
 
-        # Generate a 6-character Kahoot-style PIN (e.g. A9K2B4)
-        pin = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    # Define the UDP-only TOML configuration
+    toml_content = f"""[client]
+remote_addr = "{relay_address}:2333"
+default_token = "{token}"
 
-        # Using bind_port=0 lets the OS pick a guaranteed free ephemeral port
-        bound_port = await start_host_gateway(pin, bind_ip='0.0.0.0', bind_port=0, mc_port=mc_port_i, rcon_port=rcon_port_i, mj_port=mj_port_i)
+[client.services.geyser-bedrock]
+type = "udp"
+local_addr = "127.0.0.1:19132"
+"""
+    
+    # Create a temporary file that won't automatically delete upon closing
+    config_file = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.toml')
+    config_file.write(toml_content)
+    config_file.close()
 
-        host_ip = None
+    print(f"[*] Relaying Bedrock UDP traffic via rathole to {relay_address}:2333...")
+    
+    # Spawn the background process
+    # Note: You can redirect stdout/stderr to a log file instead of DEVNULL if needed for debugging
+    RH_CLIENT_BIN = MC_DATA_DIR / "rathole"
 
-        if use_ssh:
-            try:
-                import miniupnpc
-                upnp = miniupnpc.UPnP()
-                upnp.discoverdelay = 200
-                upnp.discover()
-                upnp.selectigd()
-                external_ip = upnp.externalipaddress()
+    current_permissions = RH_CLIENT_BIN.stat().st_mode
+    RH_CLIENT_BIN.chmod(current_permissions | stat.S_IEXEC)
 
-                # Ask router to map the external port directly to our OS-assigned local port
-                mapped = upnp.addportmapping(bound_port, 'TCP', upnp.lanaddr, bound_port, 'MC-Shell Secure Tunnel', '')
-                if mapped:
-                    host_ip = external_ip
-                    print(f"\n[SSH TUNNEL] Success! Router opened port {bound_port}.")
-                else:
-                    print("\n[SSH TUNNEL] Router denied UPnP mapping. Falling back to local network mode.")
-            except ImportError:
-                print("\n[SSH TUNNEL] 'miniupnpc' library missing. Falling back to local network mode.")
-            except Exception as e:
-                print(f"\n[SSH TUNNEL] Failed to configure router UPnP ({e}). Falling back to local network mode.")
+    rathole_process = subprocess.Popen(
+        [str(RH_CLIENT_BIN), "--client", config_file.name],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL
+    )
+    
+    return rathole_process, config_file.name
 
-        if not host_ip:
-            host_ip = _get_local_ip()
-
-        # 2. Formulate the robust Join Code
-        # If the ports match defaults exactly, keep the token short and clean.
-        if mc_port_i == 25565 and rcon_port_i == 25575 and mj_port_i == 4721:
-            join_code = f"{host_ip}:{bound_port}#{pin}-{mc_version}"
-        else:
-            # If ports deviated, append them so the client knows what to ask for
-            join_code = f"{host_ip}:{bound_port}#{pin}-{mc_port_i}-{rcon_port_i}-{mj_port_i}-{mc_version}"
-
-        out_token.append(join_code)
-
-        # Keep the event loop alive indefinitely so the SSH server stays up
-        while True:
-            await asyncio.sleep(3600)
-
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        loop.run_until_complete(host_task())
-    except Exception as e:
-        print(f"\n[Tunnel Host Error] {e}")
-
-def _start_secure_tunnel_host(mc_port, rcon_port, mj_port, mc_version, use_ssh=False):
-    out_token = []
-    # Use daemon=True so the thread automatically dies when IPython exits
-    thread = Thread(target=_run_tunnel_host_thread, args=(mc_port, rcon_port, mj_port, mc_version, out_token, use_ssh), daemon=True)
-    thread.start()
-
-    # Wait up to 5 seconds for the cryptographic keys and token to generate
-    for _ in range(50):
-        if out_token:
-            return out_token[0]
-        time.sleep(0.1)
-    return None
-
-def _run_tunnel_client_thread(host, port, pin, remote_mc, remote_rcon, remote_mj, local_mc, local_rcon, local_mj):
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        loop.run_until_complete(connect_client_tunnel(
-            host,
-            port,
-            pin,
-            remote_mc=remote_mc,
-            remote_rcon=remote_rcon,
-            remote_mj=remote_mj,
-            local_mc_port=local_mc,
-            local_rcon_port=local_rcon,
-            local_mj_port=local_mj
-        ))
-    except Exception as e:
-        print(f"\n[Tunnel Client Error] {e}")
-
-def _start_secure_tunnel_client(join_code, local_mc, local_rcon, local_mj):
-    # Parse the join_code: HOST:PORT#PIN[-MC-RCON-MJ]
-    try:
-        address_part, auth_part = join_code.split('#')
-        host, port_str = address_part.split(':')
-        port = int(port_str)
-
-        # Check if the host attached custom ports
-        if '-' in auth_part:
-            parts = auth_part.split('-')
-            pin = parts[0]
-            remote_mc = int(parts[1])
-            remote_rcon = int(parts[2])
-            remote_mj = int(parts[3])
-        else:
-            pin = auth_part
-            remote_mc = 25565
-            remote_rcon = 25575
-            remote_mj = 4721
-
-    except (ValueError, IndexError):
-        print("[Tunnel Client Error] Invalid Join Code format.")
-        return
-
-    thread = Thread(target=_run_tunnel_client_thread, args=(host, port, pin, remote_mc, remote_rcon, remote_mj, local_mc, local_rcon, local_mj), daemon=True)
-    thread.start()
-
+def _stop_rathole_client(process, config_path):
+    """Terminates the rathole process and cleans up the temporary config."""
+    if process:
+        print("[*] Terminating rathole relay client...")
+        process.terminate()
+        try:
+            process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            
+    if config_path and os.path.exists(config_path):
+        os.remove(config_path)
+    
 @magics_class
 class MCShell(Magics):
 
@@ -314,104 +384,103 @@ class MCShell(Magics):
             except Exception as e:
                 print(f"[TAILSCALE WARNING] Could not disconnect automatically: {e}")
 
+
     def _get_connection_hub_data(self):
         """Returns the raw connection hub data in a structured, JSON-friendly dictionary."""
-        def _make_direct_token(ip):
+        def _make_direct_token(ip, rh_host):
+            # Only append the comma and relay host if one actually exists
+            base_target = f"{ip},{rh_host}" if rh_host else str(ip)
+            
             mc_p = self.server_data.get('port', MC_SERVER_PORT)
             rcon_p = self.server_data.get('rcon_port', MC_RCON_PORT)
             mj_p = self.server_data.get('mj_port', MJ_PLUGIN_PORT)
-            mc_v = self.server_data.get('mc_version',MC_VERSION)
+            mc_v = self.server_data.get('mc_version', MC_VERSION)
+            
+            # Return short token if ports are default, otherwise append ports and version
             if mc_p == 25565 and rcon_p == 25575 and mj_p == 4721:
-                return ip
-            return f"{ip}@{mc_p}-{rcon_p}-{mj_p}-{mc_v}"
+                return base_target
+            return f"{base_target}@{mc_p}-{rcon_p}-{mj_p}-{mc_v}"
 
-        vpn_ip = get_vpn_ip()
+        vpn_ip = _get_vpn_ip()
         local_ip = _get_local_ip()
         authkey = self.server_data.get('tailscale_authkey')
-        use_subnet = self.server_data.get('tailscale_subnet_mode', False)
+        rh_host = self.server_data.get('rh_host')
 
         data = {
             "local_ip": local_ip,
             "vpn_ip": vpn_ip,
             "authkey": authkey,
-            "use_subnet": use_subnet,
-            "ssh_token": self.current_ssh_token,
-            "vpn_mode": "none",
+            "rh_host": rh_host,
             "tokens": {
-                "lan": _make_direct_token(local_ip)
+                "lan": _make_direct_token(local_ip, rh_host)
             }
         }
 
-        if authkey:
-            if use_subnet:
-                data['vpn_mode'] = 'subnet'
-                data['tokens']['classroom_vpn'] = f"{_make_direct_token(local_ip)}^{authkey}"
-            else:
-                if vpn_ip:
-                    data['vpn_mode'] = 'node'
-                    data['tokens']['classroom_vpn'] = f"{_make_direct_token(vpn_ip)}^{authkey}"
-                else:
-                    data['vpn_mode'] = 'error'
+        # Populate the remaining tokens based on available Tailscale data
+        if authkey and vpn_ip:
+            data['tokens']['classroom_vpn'] = f"{_make_direct_token(vpn_ip, rh_host)}^{authkey}"
         elif vpn_ip:
-            data['tokens']['tailscale'] = _make_direct_token(vpn_ip)
+            data['tokens']['tailscale'] = _make_direct_token(vpn_ip, rh_host)
 
         return data
+
 
     def _print_connection_hub(self):
         """Helper method to print the share tokens cleanly."""
         data = self._get_connection_hub_data()
+        app_port = self.server_data.get('app_port')
 
-        # 1. App Server (mc-ed) Status
-        if self.app_server_thread and self.app_server_thread.is_alive():
-            if self.mc_name:
+        print(f"\n" + "="*55)
+        # 1. App Server (mc-ed) Status (Locked to localhost for ChromeOS constraints)
+        if getattr(self, 'app_server_thread', None) and self.app_server_thread.is_alive():
+            if getattr(self, 'mc_name', None):
                 print(f"🟢 MCED App Server  : RUNNING (Active Player: {self.mc_name})")
-                print(f"   Editor URL         : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}?auth={GUI_AUTH_TOKEN}")
-                print(f"   Control URL        : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}/control?auth={GUI_AUTH_TOKEN}")
+                print(f"   Editor URL       : http://localhost:{app_port}/?auth={GUI_AUTH_TOKEN}")
+                print(f"   Control URL      : http://localhost:{app_port}/control?auth={GUI_AUTH_TOKEN}")
             else:
                 print(f"🟡 MCED App Server  : STANDBY")
-                print(f"   Lobby URL          : http://localhost:{MC_APP_PORT}/lobby?auth={GUI_AUTH_TOKEN}")
+                print(f"   Lobby URL        : http://localhost:{app_port}/lobby?auth={GUI_AUTH_TOKEN}")
         else:
             print("🔴 Editor App Server  : STOPPED")
 
+        if getattr(self, 'mc_name', None):
+            print(f"\n" + "="*60)
+            print("🌍 CONNECTION HUB: Share these tokens with your friends!")
+            print("="*60)
 
-        print(f"\n" + "="*60)
-        print("🌍 CONNECTION HUB: Share these tokens with friends!")
-        print("="*60)
+            # 2. VPN (Tailscale) Tokens
+            if data.get('authkey'):
+                if 'classroom_vpn' in data['tokens']:
+                    print("\n[ VPN CONNECTION (Automated Tailscale Mesh) ]")
+                    print(f"Token :\n{' '*4}{data['tokens']['classroom_vpn']}")
+                else:
+                    print("\n[ VPN CONNECTION ]")
+                    print("⚠️  ERROR: Tailscale failed to acquire a VPN IP.")
+                    print("⚠️  Cannot generate an automated remote token. Check your Tailscale installation.")
+            elif 'tailscale' in data['tokens']:
+                print("\n[ TAILSCALE CONNECTION (Manual Mesh) ]")
+                print(f"Token :\n{' '*4}{data['tokens']['tailscale']}")
 
-        if data['authkey']:
-            if data['vpn_mode'] == 'subnet':
-                print("\n[ VPN CONNECTION (Subnet Router Mode) ]")
-                print(f"Token : {data['tokens']['classroom_vpn']}")
-            elif data['vpn_mode'] == 'node':
-                print("\n[ VPN CONNECTION (Node-to-Node Mode) ]")
-                print(f"Token : {data['tokens']['classroom_vpn']}")
-            elif data['vpn_mode'] == 'error':
-                print("\n[ VPN CONNECTION (Node-to-Node Mode) ]")
-                print("⚠️  ERROR: Tailscale failed to acquire a VPN IP.")
-                print("⚠️  Cannot generate an automated remote token. Check your Tailscale installation.")
+            # 3. Standard Direct Tokens
+            print("\n[ DIRECT CONNECTION (Local LAN) ]")
+            print(f"Local LAN Token :\n{' '*4}{data['tokens']['lan']}")
 
-        # Standard direct tokens
-        print("\n[ DIRECT CONNECTION (No SSH Required) ]")
-        print(f"Local LAN Token : {data['tokens']['lan']}")
-
-        # Only show the raw Tailscale token if we aren't already giving them the automated authkey command
-        if data['vpn_mode'] == 'none' and data['vpn_ip']:
-            print(f"Tailscale Token : {data['tokens']['tailscale']}")
-
-        # SSH Tunnel
-        print("\n[ SECURE SSH TUNNEL (Internet Fallback) ]")
-        if data['ssh_token']:
-            print(f"Token : {data['ssh_token']}")
-            token_ip = data['ssh_token'].split(':')[0]
-            if token_ip == data['local_ip']:
-                print("(Warning: Token uses Local IP. For internet play, restart with: --ssh)")
+            # 4. Bedrock Instructions
+            print("\n" + "="*60)
+            print("🎮 BEDROCK PLAYERS:")
+            print("="*60)
+            if data.get('rh_host'):
+                # Use Case 3: Dedicated rathole relay handling Bedrock UDP
+                print(f"Please open Minecraft and connect to the public relay:\n{' '*4}{data['rh_host']}:19132")
             else:
-                print("(UPnP successfully negotiated with router)")
-        else:
-            print("Failed to generate SSH Token, or tunnel not active.")
+                # Use Cases 1 & 2: Local LAN or Tailscale socat UDP forwarder
+                print(f"Please open Minecraft and connect to this computer's IP:\n{' '*4}{data['local_ip']}:19132")
 
-        print("="*60 + "\n")
-        print("Students can join by running: %pp_join_world <Token>\n")
+            # 5 Java Instructions 
+            print("\n" + "="*60)
+            print("🎮 JAVA PLAYERS:")
+            print("="*60)
+            print(f"Please open Minecraft and connect to this computer's IP:\n{' '*4}{data['local_ip']}:{self.server_data['port']}")
 
     def _complete_world_command(self, ipyshell, event):
         ipyshell.user_ns.update(dict(rcon_event=event))
@@ -603,12 +672,12 @@ class MCShell(Magics):
             print(f"Error: Could not write eula.txt file. {e}")
             return
 
-        print(f"Resolving compatible Geyser/Floodgate plugins for Minecraft {mc_version}...")
+        print(f"Resolving compatible Geyser/Floodgate/ViaVersion plugins for Minecraft {mc_version}...")
         # Resolve dynamic Modrinth URLs based on the MC version, falling back to Geyser's official 'latest' endpoints
-        # geyser_url: Literal['https://download.geysermc.org/v2/projects/geyser/versions/latest/builds/latest/downloads/spigot'] | Unknown = _resolve_modrinth_plugin("geyser", mc_version) or "https://download.geysermc.org/v2/projects/geyser/versions/latest/builds/latest/downloads/spigot"
-        # floodgate_url = _resolve_modrinth_plugin("floodgate", mc_version) or "https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/spigot"
         geyser_url = _resolve_geysermc_plugin('geyser')
         floodgate_url = _resolve_geysermc_plugin('floodgate')
+        # Query Modrinth for the exact ViaVersion jar matching the server's MC version
+        viaversion_url = _resolve_modrinth_plugin('viaversion', mc_version)
 
         # Create the world_manifest.json file with required Geyser/Floodgate plugins
         manifest = {
@@ -619,7 +688,8 @@ class MCShell(Magics):
             "world_data_path": str((world_dir / "world").relative_to(world_dir)),
             "plugins": [
                 geyser_url,
-                floodgate_url
+                floodgate_url,
+                viaversion_url
             ],
             "server_properties": {
                 "gamemode": "creative",
@@ -660,6 +730,12 @@ class MCShell(Magics):
         # Always install versioned McJuice from bundled version
         mc_major_version = '.'.join(mc_version.split('.')[:2])
         mc_juice_jar_path =  MC_DATA_DIR / f"mcjuice-{mc_major_version}.jar"
+        if not mc_juice_jar_path.exists():
+            print(f"The McJuice plugin does not exist!")
+            print(f"Are you doing development? Run build.py to generate all required classes and artifacts.")
+            print(f"The world {world_name} could not be created. :-(" )
+            return
+
         plugins_dir.joinpath(mc_juice_jar_path.name).symlink_to(mc_juice_jar_path)
         
 
@@ -668,10 +744,11 @@ class MCShell(Magics):
         if plugin_urls:
             downloader.install_plugins(plugin_urls, plugins_dir)
 
+
         # --- Datapack Installation Logic ---
         if datapacks_to_install:
-            # Datapacks must be in 'world/datapacks' for first-run generation
-            world_datapacks_dir = world_dir / "world" / "datapacks"
+            # Datapacks must be in 'world_persistent/datapacks' for first-run generation
+            world_datapacks_dir = world_dir / "world_persistent" / "datapacks"
             world_datapacks_dir.mkdir(parents=True, exist_ok=True)
 
             for pack_name in datapacks_to_install:
@@ -708,23 +785,26 @@ class MCShell(Magics):
         Use `%pp_start_world --help` for the full list of configurable options.
 
         """
+        import subprocess
+        import shlex
+        import argparse
+        import json
+
         parser = argparse.ArgumentParser(
             prog="%pp_start_world", 
             description="Starts a Paper server for a given world name."
         )
         parser.add_argument("world_name", help="The name of the world to start")
-        parser.add_argument("--ssh", action="store_true", help="Enable SSH tunnel")
-        
-        group = parser.add_mutually_exclusive_group()
-        group.add_argument("--authkey", help="Tailscale Auth Key")
-        group.add_argument("--clear-authkey", action="store_true", help="Wipe cached auth key")
-        
-        routing = parser.add_mutually_exclusive_group()
-        # Both flags target the same 'routing_mode' variable in your args object
-        routing.add_argument("--subnet", dest="routing_mode", action="store_const", const=True, help="Handle Tailscale routing for local world clients")
-        routing.add_argument("--node", dest="routing_mode", action="store_const", const=False, help="Only route localhost Tailscale traffic")
 
+        # we may need to remove this
+        # parser.add_argument("--ssh", action="store_true", help="Enable SSH tunnel")
+        
+        parser.add_argument("--authkey", help="Tailscale Auth Key")
+        parser.add_argument("--clear-authkey", action="store_true", help="Wipe cached auth key")
+        
         parser.add_argument("--do-not-join", action="store_true", help="Prevent auto-joining the world") 
+
+        parser.add_argument("--relay", type=str, help="Hostname/IP of the rathole relay server (e.g., thunk.local)")
 
         args = shlex.split(line)
         
@@ -734,12 +814,6 @@ class MCShell(Magics):
             # This catches '--help' or invalid arguments and stops the function
             # without killing the IPython kernel
             return
-
-        cli_authkey = None
-        if parsed_args.authkey is not None:
-            cli_authkey = parsed_args.authkey
-
-        use_subnet_override = parsed_args.routing_mode
 
         world_name = parsed_args.world_name
         world_directory = MC_WORLDS_BASE_DIR / parsed_args.world_name
@@ -754,32 +828,23 @@ class MCShell(Magics):
         with creds_path.open('r') as f:
             self.server_data = json.load(f)
 
+        authkey = parsed_args.authkey
         # 2. Evaluate final authkey and routing mode from cache vs CLI
         if parsed_args.clear_authkey:
-            authkey = None
             if 'tailscale_authkey' in self.server_data:
                 del self.server_data['tailscale_authkey']
-        else:
-            authkey = cli_authkey if cli_authkey else self.server_data.get('tailscale_authkey')
+        if authkey:
+            self.server_data['tailscale_authkey'] = authkey
 
-        use_subnet = use_subnet_override if use_subnet_override is not None else self.server_data.get('tailscale_subnet_mode', False)
-
-        # 3. Update and securely save the cache if anything changed
-        if cli_authkey or use_subnet_override is not None or parsed_args.clear_authkey:
-            if authkey:
-                self.server_data['tailscale_authkey'] = authkey
-            self.server_data['tailscale_subnet_mode'] = use_subnet
-            with creds_path.open('w') as f:
-                json.dump(self.server_data, f)
-            creds_path.chmod(0o600)  # Ensure it remains secure
-            print(f"--- Updated Tailscale settings for world '{world_name}' ---")
+        with creds_path.open('w') as f:
+            json.dump(self.server_data, f)
+        creds_path.chmod(0o600)  # Ensure it remains secure
 
         # Stop any currently active server session first
-        if self.active_paper_server and self.active_paper_server.is_alive():
+        if getattr(self, 'active_paper_server', None) and self.active_paper_server.is_alive():
             print(f"Stopping the currently active server for world '{self.active_paper_server.world_name}'...")
             self.active_paper_server.stop()
-
-
+            
         print(f"--- Starting new session for world: {world_name} ---")
 
         # Omni-Routing: Always bind to 0.0.0.0 so LAN, Tailscale, and SSH can hit it simultaneously
@@ -806,16 +871,29 @@ class MCShell(Magics):
         if not 'app_port' in list(self.server_data.keys()):
             self.server_data['app_port'] = 5001
 
-        # Start the background SSH Tunnel gateway automatically
-        print("Starting secure SSH tunnel gateway in the background...")
-        self.current_ssh_token = _start_secure_tunnel_host(self.server_data['port'], self.server_data['rcon_port'], self.server_data['mj_port'], self.server_data['mc_version'],use_ssh=parsed_args.ssh)
+        # if parsed_args.ssh: 
+        #     # Start the background SSH Tunnel gateway if --ssh if requrested
+        #     print("Starting secure SSH tunnel gateway in the background...")
+        #     self.current_ssh_token = _start_secure_tunnel_host(
+        #         self.server_data['port'], 
+        #         self.server_data['rcon_port'], 
+        #         self.server_data['mj_port'], 
+        #         self.server_data['mc_version'],
+        #         use_ssh=parsed_args.ssh
+        #     )
 
         # Cross-platform automated host login (ONLY if we aren't relying on an external Subnet Router)
-        if authkey and not use_subnet:
+        if authkey:
             self._connect_tailscale(authkey, accept_routes=False)
-        
+            if parsed_args.relay is not None:
+                relay_server_address = parsed_args.relay
+                self.server_data['rh_host'] = relay_server_address
+                self.rathole_process, self.rathole_config = _start_rathole_client(relay_server_address, authkey)
+                
         spigot_file = world_directory / "spigot.yml"
         bukkit_file = world_directory / "bukkit.yml"
+        floodgate_config = world_directory/ "plugins" / "floodgate" / "config.yml"
+        geyser_config = world_directory / "plugins" / "Geyser-Spigot" / "config.yml"
 
         # Initialize YAML parser to preserve existing comments and structure
         yaml = YAML()
@@ -848,6 +926,28 @@ class MCShell(Magics):
             yaml.dump(bukkit_data, bukkit_file)
             print(f"Updated autosave in {bukkit_file.name}")
 
+        if floodgate_config.is_file():
+            floodgate_data = yaml.load(floodgate_config)
+
+            # make arbitrary Bedrock names look the same as Java names; could lead to collisions
+            floodgate_data['username-prefix'] = ""
+            
+            # ruamel.yaml can write directly to a pathlib.Path object
+            yaml.dump(floodgate_data, floodgate_config)
+            print(f"Updated username-prefix in {floodgate_config.name}")
+
+        if geyser_config.is_file():
+            geyser_data = yaml.load(geyser_config)
+
+            # force fragmenting of the nasty RakNet handshake packet
+            geyser_data['advanced']['bedrock']['mtu'] = "1200"
+            
+            # ruamel.yaml can write directly to a pathlib.Path object
+            yaml.dump(geyser_data, geyser_config)
+            print(f"Updated bedrock mtu in {geyser_config.name}")
+
+
+
         if not parsed_args.do_not_join:
             # suspend the logs for the user name prompt
             self.active_paper_server.suspend_logs = True
@@ -864,7 +964,8 @@ class MCShell(Magics):
 
             self.ip.run_line_magic('pp_join_world',magic_cmd_line)
             self.active_paper_server.suspend_logs = False 
-
+        else:
+            self.ip.run_line_magic('mc_server_info','')
 
     @line_magic
     def pp_join_world(self, line):
@@ -911,6 +1012,18 @@ class MCShell(Magics):
             # Prevent argparse exceptions or help prints from aborting IPython
             return
 
+        # 0. Clean up previous Bedrock relays before binding new ones
+        if getattr(self, 'socat_udp_process', None) and self.socat_udp_process.poll() is None:
+            print("Stopping previous Bedrock UDP-to-UDP relay (socat)...")
+            self.socat_udp_process.terminate()
+            self.socat_udp_process.wait(timeout=3)
+
+        if getattr(self, 'socat_tcp_process', None) and self.socat_tcp_process.poll() is None:
+            print("Stopping previous Bedrock TCP-to-TCP relay (socat)...")
+            self.socat_tcp_process.terminate()
+            self.socat_tcp_process.wait(timeout=3)
+
+
         # 1. Profile Username Resolution
         if parsed_args.mc_name is not None:
             minecraft_name = parsed_args.mc_name
@@ -933,7 +1046,7 @@ class MCShell(Magics):
                 authkey = extracted_key
 
         if authkey:
-            self._connect_tailscale(authkey, accept_routes=True)
+            self._connect_tailscale(authkey, accept_routes=False)
 
         if not token:
             self.server_data.update({
@@ -964,7 +1077,6 @@ class MCShell(Magics):
         if parsed_args.local_app is not None:
             local_app = parsed_args.local_app
         else:
-            # local_app = int(Prompt.ask('Application Port:', default=str(self.server_data['app_port'])))
             local_app = int(self.server_data['app_port'])
 
         is_login = parsed_args.login 
@@ -981,55 +1093,91 @@ class MCShell(Magics):
             if hasattr(self, 'active_paper_server') and getattr(self, 'active_paper_server') and self.active_paper_server.is_alive():
                 print("A local Minecraft server is already running. Proceeding with proxy connections anyway.")
 
-            # SMART TOKEN ROUTING
-            if '#' not in token and '@' not in token and '^' not in token:
-                # we have a simple host ip address or domain 
-                self.server_data['host'] = token
-            elif '#' in token:
-                print("Connecting to secure tunnel...")
-                _start_secure_tunnel_client(token, local_mc, local_rcon, local_mj)
 
-                # THE MAGIC TRICK: Overwrite in-memory server_data to point to the secure tunnel entrances
-                self.server_data['host'] = '127.0.0.1'
-                self.server_data['port'] = local_mc
-                self.server_data['rcon_port'] = local_rcon
-                self.server_data['mj_port'] = local_mj
-                self.server_data['mc_version'] = mc_version
-                self.server_data['app_port'] = local_app
+        # SMART TOKEN ROUTING
+        # if token and '#' in token:
+        #     print("Connecting to secure tunnel...")
+        #     _start_secure_tunnel_client(token, local_mc, local_rcon, local_mj)
 
-                # Give the background thread a moment to establish port forwards
-                time.sleep(1.0)
-                print("Tunnel connection established.")
+        #     target_host = '127.0.0.1'
+        #     rh_host = None  # Secure tunnels don't use the UDP relay
+        #     time.sleep(1.0)
+        #     print("Tunnel connection established.")
+
+        if token:
+            # 1. Separate the IP/Relay routing segment from the ports segment
+            if '@' in token:
+                ip_relay_part, ports_part = token.split('@', 1)
+                try:
+                    p_mc, p_rcon, p_mj, p_ver = ports_part.split('-')
+                    local_mc = int(p_mc)
+                    local_rcon = int(p_rcon)
+                    local_mj = int(p_mj)
+                    mc_version = p_ver
+                except ValueError:
+                    print("\n[ERROR] Invalid Direct Token format. Falling back to default ports.")
             else:
-                # Handle Direct IPs and Custom Port strings (e.g. 192.168.1.5@25566-25576-4721-1.21.11)
-                if '@' in token:
-                    ip_part, ports_part = token.split('@', 1)
-                    try:
-                        p_mc, p_rcon, p_mj, p_ver = ports_part.split('-')
-                        self.server_data['host'] = ip_part
-                        self.server_data['port'] = int(p_mc)
-                        self.server_data['rcon_port'] = int(p_rcon)
-                        self.server_data['mj_port'] = int(p_mj)
-                        self.server_data['mc_version'] = p_ver
-                        print(f"\n[DIRECT CONNECT] Connecting to {ip_part} with custom ports...")
-                    except ValueError:
-                        print("\n[ERROR] Invalid Direct Token format. Falling back to default ports.")
-                        self.server_data['host'] = ip_part
-                else:
-                    print(f"\n[DIRECT CONNECT] Connecting directly to {token}...")
-                    self.server_data['host'] = token
-                    self.server_data['port'] = local_mc
-                    self.server_data['rcon_port'] = local_rcon
-                    self.server_data['mj_port'] = local_mj
-                    self.server_data['mc_version'] = mc_version
+                ip_relay_part = token
 
-        # set overridden data
-        self.server_data['rcon_port'] = local_rcon
+            # 2. Extract target IP and the Relay Host from the routing segment
+            if ',' in ip_relay_part:
+                target_host, raw_rh = ip_relay_part.split(',', 1)
+                rh_host = None if raw_rh == 'none' else raw_rh
+            else:
+                target_host = ip_relay_part
+                rh_host = None
+
+            if '@' in token:
+                print(f"\n[DIRECT CONNECT] Parsed token for {target_host} (Relay: {rh_host or 'None'}) with custom ports...")
+        else:
+             # Fallback if no token was used (interactive mode)
+             target_host = self.server_data['host']
+             rh_host = self.server_data.get('rh_host')
+
+        # 3. Commit resolved target properties to in-memory data
+        self.server_data['host'] = target_host
+        self.server_data['rh_host'] = rh_host
         self.server_data['port'] = local_mc
+        self.server_data['rcon_port'] = local_rcon
         self.server_data['mj_port'] = local_mj
         self.server_data['mc_version'] = mc_version
         self.server_data['app_port'] = local_app
 
+        # 4. Start local Bedrock UDP->TCP translator (Only if NOT using local loopback SSH fallback)
+        if target_host and target_host != '127.0.0.1':
+            print(f"Starting socat UDP forwarder for local Bedrock clients...")
+            socat_udp_cmd = [
+                "socat",
+                "UDP4-LISTEN:19132,reuseaddr,fork",
+                f"UDP4:{target_host}:19132"
+            ]
+            try:
+                self.socat_udp_process = subprocess.Popen(
+                    socat_udp_cmd,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+            except FileNotFoundError:
+                print("[WARNING] 'socat' command not found. iPads on your local network will not be able to join.")
+                self.socat_udp_process = None
+
+        # 5. Start local Java TCP forwarder (Vanilla Laptops on LAN)
+        if target_host and target_host != '127.0.0.1':
+            print("Starting socat TCP forwarder for local Java clients...")
+            socat_tcp_cmd = [
+                "socat",
+                f"TCP4-LISTEN:{local_mc},reuseaddr,fork",
+                f"TCP4:{target_host}:{local_mc}"
+            ]
+            try:
+                self.socat_tcp_process = subprocess.Popen(
+                    socat_tcp_cmd,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+            except FileNotFoundError:
+                print("[WARNING] 'socat' not found. Local Java forwarding disabled.")
+                self.socat_tcp_process = None
 
         # get the server password if required
         if is_login and self.server_data['password'] is None:
@@ -1041,32 +1189,6 @@ class MCShell(Magics):
 
         print(f"Assigning application server context to Minecraft player: {minecraft_name}")
         self.app_server_thread = start_app_server(self.server_data, minecraft_name, self.shell, power_repo)
-
-        print(f"\n" + "="*55)
-        print(f"🎮 READY TO PLAY! Enter this into Minecraft:")
-        if self.server_data['host'] in ('127.0.0.1', 'localhost'):
-            mc_port_str = f":{self.server_data['port']}" if self.server_data['port'] != 25565 else ""
-
-            # Context Check: Are we the host, or a remote client using an SSH tunnel?
-            if self.active_paper_server and self.active_paper_server.is_alive():
-                # We are the host. Display our actual network IPs.
-                vpn_ip = get_vpn_ip()
-                local_ip = _get_local_ip()
-                if vpn_ip:
-                    print(f"   Java Edition IP: {local_ip}{mc_port_str} (LAN) or {vpn_ip}{mc_port_str} (VPN)")
-                    print(f"   Bedrock / iPad : {local_ip} (LAN) or {vpn_ip} (VPN)")
-                else:
-                    print(f"   Java Edition IP: {local_ip}{mc_port_str}")
-                    print(f"   Bedrock / iPad : {local_ip} (Default port 19132)")
-            else:
-                # We are a remote client using an SSH Tunnel.
-                print(f"   Java Edition IP: localhost{mc_port_str}")
-                print(f"   Bedrock / iPad : (Requires Tailscale or Local LAN on Host)")
-        else:
-            mc_port_str = f":{self.server_data['port']}" if self.server_data['port'] != 25565 else ""
-            print(f"   Java Edition IP: {self.server_data['host']}{mc_port_str}")
-            print(f"   Bedrock / iPad : {self.server_data['host']} (Default port 19132)")
-        print(f"="*55 + "\n")
 
         self._print_connection_hub()
 
@@ -1088,8 +1210,26 @@ class MCShell(Magics):
 
         print("Stopping Paper server (this may take a moment)...")
         self.active_paper_server.stop()
-
         self.active_paper_server = None
+        if getattr(self, 'rathole_process', None) and self.rathole_process.poll() is None:
+            _stop_rathole_client(self.rathole_process,self.rathole_config)
+            del self.rathole_process
+            del self.rathole_config
+
+        # Stop any active socat translator process
+        if getattr(self, 'socat_udp_process', None) and self.socat_udp_process.poll() is None:
+            print("Stopping previous Bedrock UDP-to-UDP relay (socat)...")
+            self.socat_udp_process.terminate()
+            self.socat_udp_process.wait(timeout=3)
+            del self.socat_udp_process
+
+        if getattr(self, 'socat_tcp_process', None) and self.socat_tcp_process.poll() is None:
+            print("Stopping previous Bedrock TCP-to-TCP relay (socat)...")
+            self.socat_tcp_process.terminate()
+            self.socat_tcp_process.wait(timeout=3)
+            del self.socat_tcp_process
+
+
         print("Session stopped successfully.")
 
     @line_magic
@@ -1257,6 +1397,24 @@ class MCShell(Magics):
         # Drop VPN connection if it was auto-managed
         self._disconnect_tailscale()
 
+        # Stop any active socat translator process
+        if getattr(self, 'socat_udp_process', None) and self.socat_udp_process.poll() is None:
+            print("Stopping previous Bedrock UDP-to-UDP relay (socat)...")
+            self.socat_udp_process.terminate()
+            self.socat_udp_process.wait(timeout=3)
+            del self.socat_udp_process
+
+        if getattr(self, 'socat_tcp_process', None) and self.socat_tcp_process.poll() is None:
+            print("Stopping previous Bedrock TCP-to-TCP relay (socat)...")
+            self.socat_tcp_process.terminate()
+            self.socat_tcp_process.wait(timeout=3)
+            del self.socat_tcp_process
+
+        if getattr(self, 'rathole_process', None) and self.rathole_process.poll() is None:
+            _stop_rathole_client(self.rathole_process,self.rathole_config)
+            del self.rathole_process
+            del self.rathole_config
+
         from mcshell.mcserver import GUI_AUTH_TOKEN
         # Ensure MC_APP_PORT is defined in your scope, usually via current_app.config or global
         app_port = globals().get('MC_APP_PORT', 5001) 
@@ -1266,6 +1424,17 @@ class MCShell(Magics):
         print("="*60)
         print(f"Lobby Access: http://localhost:{app_port}/lobby?auth={GUI_AUTH_TOKEN}")
         print("="*60 + "\n")
+
+    @line_magic
+    def pp_toggle_logs(self, line):
+        """
+        Turn server logs ON or OFF. 
+        """
+        if not self.active_paper_server or not self.active_paper_server.is_alive():
+            print("No active Paper server session is currently running.")
+            return
+
+        self.active_paper_server.suspend_logs = not self.active_paper_server.suspend_logs
 
     def _send(self,kind,*args):
         assert kind in ('help','run','data')
@@ -1389,63 +1558,7 @@ class MCShell(Magics):
 
     @line_magic
     def mc_server_info(self, line):
-        """Check server status, list connected players, configuration, and connection hub."""
-        print("="*60)
-        print("🖥️  MC-SHELL SERVER DASHBOARD")
-        print("="*60)
-
-        # 1. App Server (mc-ed) Status
-        if self.app_server_thread and self.app_server_thread.is_alive():
-            if self.mc_name:
-                print(f"🟢 MCED App Server  : RUNNING (Active Player: {self.mc_name})")
-                print(f"   Editor URL         : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}?auth={GUI_AUTH_TOKEN}")
-                print(f"   Control URL        : http://{socket.gethostname()}.local:{self.server_data.get('app_port', 5001)}/control?auth={GUI_AUTH_TOKEN}")
-            else:
-                print(f"🟡 MCED App Server  : STANDBY")
-                print(f"   Lobby URL          : http://localhost:{MC_APP_PORT}/lobby?auth={GUI_AUTH_TOKEN}")
-        else:
-            print("🔴 Editor App Server  : STOPPED")
-
-        # 2. Paper Server Status (Host only)
-        is_host = self.active_paper_server and self.active_paper_server.is_alive()
-        if is_host:
-            world = self.active_paper_server.world_name
-            print(f"🟢 Local Paper Server : RUNNING (World: '{world}')")
-        else:
-            print("🔴 Local Paper Server : STOPPED")
-
-        # 3. Connection & Player Info
-        if (self.app_server_thread and self.app_server_thread.is_alive()) or is_host:
-            print(f"\n⚙️  Active Configuration:")
-            if not is_host:
-                print(f"   Remote Host        : {self.server_data.get('host', 'Unknown')}")
-            print(f"   Minecraft Port     : {self.server_data.get('port', 25565)}")
-            print(f"   RCON Port          : {self.server_data.get('rcon_port', 25575)}")
-            print(f"   McJuice Port       : {self.server_data.get('mj_port', 4721)}")
-            print(f"   Minecraft Version  : {self.server_data.get('mc_version', MC_VERSION)}")
-
-            password = self.server_data.get('password')
-            if password:
-                print(f"   Server Password    : {password}")
-
-            # Fetch players via RCON
-            try:
-                # Disable printing of the raw auth rejection to keep the dashboard clean
-                response = self._get_client().run('list')
-                if response:
-                    print(f"\n👥 {response}")
-                else:
-                    print("\n👥 Minecraft Players: No response from server.")
-            except Exception:
-                print("\n👥 Minecraft Players: Could not retrieve player list via RCON.")
-
-            # Only print Connection Hub if you are the host
-            if is_host:
-                self._print_connection_hub()
-        else:
-            print("\nTo start a local world, run: %pp_start_world <world_name>")
-            print("To join a remote world, run: %pp_join_world <Token>")
-            print("="*60)
+        self._print_connection_hub()
 
     @line_magic
     def mc_help(self, line):
@@ -1641,6 +1754,71 @@ class MCShell(Magics):
             
         return matches
 
+    def _get_mc_name(self) -> Optional[str]:
+        """
+        Determines and caches the Minecraft username for the current session.
+
+        On the first call, it checks for a system-wide config file and falls
+        back to prompting the user. On subsequent calls, it returns the cached name.
+
+        Returns:
+            The Minecraft username as a string, or None if an error occurs.
+        """
+        # --- Caching Check: Return the name if already determined ---
+        if self.mc_name:
+            return self.mc_name
+
+        minecraft_name = None
+
+        # --- Lab Setup: Check for the central config file first ---
+        if MC_CENTRAL_CONFIG_FILE.exists():
+            print(f"Found system-wide configuration at {MC_CENTRAL_CONFIG_FILE}.")
+            try:
+                linux_user = os.getlogin()
+            except OSError:
+                linux_user = os.environ.get('USER')
+
+            if not linux_user:
+                print("Fatal Error: Could not determine Linux username.")
+                return None
+
+            try:
+                with open(MC_CENTRAL_CONFIG_FILE, 'r') as f:
+                    user_map = json.load(f)
+
+                name_from_map = user_map.get(linux_user)
+                if not name_from_map:
+                    print(f"Error: Your Linux user '{linux_user}' is not registered. Please contact your administrator.")
+                    return None
+
+                print(f"Authenticated as Minecraft user: {name_from_map}")
+                minecraft_name = name_from_map
+
+            except (IOError, json.JSONDecodeError) as e:
+                print(f"Fatal Error: Could not read or parse the system configuration file: {e}")
+                return None
+
+        # --- Personal Use: Fallback to prompting the user ---
+        else:
+            print("No system-wide configuration found. Running in personal use mode.")
+            try:
+                name_from_input = input("Please enter your Minecraft username: ").strip()
+                if not name_from_input:
+                    print("No username entered. Aborting.")
+                    return None
+
+                print(f"Session will run as Minecraft user: {name_from_input}")
+                minecraft_name = name_from_input
+            except KeyboardInterrupt:
+                print("\nInput cancelled by user. Aborting.")
+                return None
+
+        # --- Cache the result before returning ---
+        self.mc_name = minecraft_name
+        return self.mc_name
+
+   
+
     @needs_local_scope
     @line_magic
     def mc_data(self, line,local_ns):
@@ -1680,35 +1858,6 @@ class MCShell(Magics):
         print(f"requested player will be available as the variable {_player_name} locally")
         local_ns[_player_name] = self._get_player(_player_name)
 
-    # @line_magic
-    # def mc_create_script(self, line):
-    #     """
-    #     Receives a block of Python code from the mc-ed editor,
-    #     saves it to a uniquely named file in powers/blockcode.
-    #     """
-    #     code_to_save = line
-    #     if not code_to_save:
-    #         print("Received empty code block. No script created.")
-    #         return
-
-    #     try:
-    #         # Create a unique filename for the power
-    #         power_dir = pathlib.Path("./powers/blockcode")
-    #         power_dir.mkdir(parents=True, exist_ok=True)
-
-    #         # Generate a unique suffix for the filename
-    #         file_hash = uuid.uuid4().hex[:6]
-    #         filename = f"power_{file_hash}.py"
-    #         filepath = power_dir / filename
-
-    #         with open(filepath, 'w') as f:
-    #             f.write(code_to_save)
-
-    #         print(f"Successfully saved power to: {filepath}")
-    #         print(f"To use it, you can now run:\nfrom powers.blockcode.{filename.replace('.py','')} import *")
-
-    #     except Exception as e:
-    #         print(f"Error saving script: {e}")
 
     @line_magic
     def mc_debug_and_define(self, line):
@@ -1867,23 +2016,6 @@ if __name__ == '__main__':
 
         return arg_matches
 
-    # @line_magic
-    # def mc_cancel_power(self, line):
-    #     """Cancels a running power by its execution ID."""
-    #     execution_id = line.strip()
-    #     if not execution_id:
-    #         print("Usage: %mc_cancel_power <execution_id>")
-    #         if RUNNING_POWERS:
-    #             print("Currently running powers:", list(RUNNING_POWERS.keys()))
-    #         return
-
-    #     power_metadata = RUNNING_POWERS.get(execution_id)
-    #     if power_metadata:
-    #         print(f"Sending cancellation signal to power: {execution_id}")
-    #         # Corrected attribute access (removed paste garbage)
-    #         power_metadata['cancel_event'].set()
-    #     else:
-    #         print(f"Error: No running power found with ID: {execution_id}")
 
     @line_magic
     def mc_cancel_power(self, line):
@@ -1929,69 +2061,6 @@ if __name__ == '__main__':
             print(f"Error: No running power found with ID: {execution_id}")
             if RUNNING_POWERS:
                 print("Valid active IDs are:", list(RUNNING_POWERS.keys()))
-
-    def _get_mc_name(self) -> Optional[str]:
-        """
-        Determines and caches the Minecraft username for the current session.
-
-        On the first call, it checks for a system-wide config file and falls
-        back to prompting the user. On subsequent calls, it returns the cached name.
-
-        Returns:
-            The Minecraft username as a string, or None if an error occurs.
-        """
-        # --- Caching Check: Return the name if already determined ---
-        if self.mc_name:
-            return self.mc_name
-
-        minecraft_name = None
-
-        # --- Lab Setup: Check for the central config file first ---
-        if MC_CENTRAL_CONFIG_FILE.exists():
-            print(f"Found system-wide configuration at {MC_CENTRAL_CONFIG_FILE}.")
-            try:
-                linux_user = os.getlogin()
-            except OSError:
-                linux_user = os.environ.get('USER')
-
-            if not linux_user:
-                print("Fatal Error: Could not determine Linux username.")
-                return None
-
-            try:
-                with open(MC_CENTRAL_CONFIG_FILE, 'r') as f:
-                    user_map = json.load(f)
-
-                name_from_map = user_map.get(linux_user)
-                if not name_from_map:
-                    print(f"Error: Your Linux user '{linux_user}' is not registered. Please contact your administrator.")
-                    return None
-
-                print(f"Authenticated as Minecraft user: {name_from_map}")
-                minecraft_name = name_from_map
-
-            except (IOError, json.JSONDecodeError) as e:
-                print(f"Fatal Error: Could not read or parse the system configuration file: {e}")
-                return None
-
-        # --- Personal Use: Fallback to prompting the user ---
-        else:
-            print("No system-wide configuration found. Running in personal use mode.")
-            try:
-                name_from_input = input("Please enter your Minecraft username: ").strip()
-                if not name_from_input:
-                    print("No username entered. Aborting.")
-                    return None
-
-                print(f"Session will run as Minecraft user: {name_from_input}")
-                minecraft_name = name_from_input
-            except KeyboardInterrupt:
-                print("\nInput cancelled by user. Aborting.")
-                return None
-
-        # --- Cache the result before returning ---
-        self.mc_name = minecraft_name
-        return self.mc_name
 
 
 
@@ -2398,15 +2467,6 @@ def load_ipython_extension(ip):
     # --- REGISTER THE '/' SHORTCUT TRANSFORMER ---
     ip.input_transformers_cleanup.append(rconn_shortcut_transformer)
 
-    from mcshell.mcserver import GUI_AUTH_TOKEN
-
-    # --- SUBSTAGE 1A & 1B: Launch Standby Server and Distribute Token ---
-    print("\n" + "="*60)
-    print("🚀 MC-SHELL STANDBY LOBBY ACTIVATED")
-    print("="*60)
-    print(f"Lobby Access: http://localhost:{MC_APP_PORT}/lobby?auth={GUI_AUTH_TOKEN}")
-    print("="*60 + "\n")
-
     mcshell_instance.app_server_thread = start_app_server(
         server_data=None,
         minecraft_name=None,
@@ -2414,6 +2474,13 @@ def load_ipython_extension(ip):
         power_repo=None,
         port=MC_APP_PORT
     )
+
+    time.sleep(1)
+    print("\n" + "="*60)
+    print("🚀 MC-SHELL STANDBY LOBBY ACTIVATED")
+    print("="*60)
+    print(f"Lobby Access: http://localhost:{MC_APP_PORT}/lobby?auth={GUI_AUTH_TOKEN}")
+    print("="*60 + "\n")
 
     def shutdown_hook():
         print("\nIPython is shutting down. Stopping active mc-shell session...")
@@ -2424,12 +2491,11 @@ def load_ipython_extension(ip):
         mcshell_instance._disconnect_tailscale()
 
         # Ensure the background Flask thread is fully killed on exit
-        from mcshell.mcserver import stop_app_server
+        ip.run_line_magic('pp_stop_world','')
+
         # --- CLEAN UP TRANSFORMER ON SHUTDOWN (Optional but clean) ---
         if rconn_shortcut_transformer in ip.input_transformers_cleanup:
             ip.input_transformers_cleanup.remove(rconn_shortcut_transformer)
-            
-        stop_app_server()
 
         print("Cleanup complete.")
 

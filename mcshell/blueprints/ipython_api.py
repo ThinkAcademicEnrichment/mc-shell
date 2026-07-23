@@ -118,8 +118,8 @@ def join_world():
     shell = current_app.config.get('IPYTHON_SHELL')
     if shell:
         try:
-            # Append --guest flag and the newly validated --mc_name
-            shell.run_line_magic('pp_join_world', f"{token} --guest --mc_name {minecraft_name}")
+            # Append the newly validated --mc_name
+            shell.run_line_magic('pp_join_world', f"{token} --mc_name {minecraft_name}")
 
             # Fetch the GUI token to return to the newly authenticated web client
             from mcshell.mcserver import GUI_AUTH_TOKEN

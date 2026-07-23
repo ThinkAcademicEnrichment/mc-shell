@@ -5,6 +5,7 @@ import org.bukkit.entity.Player;
 import java.io.*;
 import java.net.Socket;
 import java.util.Arrays;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class RemoteSession implements Runnable {
     private final Socket socket;
@@ -13,6 +14,10 @@ public class RemoteSession implements Runnable {
     private PrintWriter out;
     private volatile boolean running = true;
     private final GeneratedCommandRegistry registry = new GeneratedCommandRegistry();
+
+    // Add a thread-safe queue and a dedicated writer thread
+    private final LinkedBlockingQueue<String> writeQueue = new LinkedBlockingQueue<>();
+    private Thread writeThread;
 
     public RemoteSession(McJuicePlugin plugin, Socket socket) {
         this.plugin = plugin;
@@ -26,6 +31,24 @@ public class RemoteSession implements Runnable {
         try {
             this.in = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
             this.out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), "UTF-8")), true);
+
+            // 1. Spawn a dedicated thread just for flushing data to the socket
+            this.writeThread = new Thread(() -> {
+                try {
+                    while (running) {
+                        // Blocks until a message is available, using zero CPU
+                        String msg = writeQueue.take();
+                        if (out != null) {
+                            out.println(msg);
+                            out.flush(); // If this blocks, the main Bukkit thread is no longer affected!
+                        }
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            });
+            this.writeThread.setName("McJuice-WriteThread");
+            this.writeThread.start();
 
             String line;
             while (running && (line = in.readLine()) != null) {
@@ -47,11 +70,16 @@ public class RemoteSession implements Runnable {
 
         CommandExecutor executor = registry.getExecutor(commandName);
         if (executor != null) {
-            try {
-                executor.execute(args, this);
-            } catch (Exception e) {
-                send("Fail,Internal execution error: " + e.getMessage());
-            }
+            // Route the execution to the main Bukkit thread
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                try {
+                    // This now safely executes on the main server tick
+                    executor.execute(args, this);
+                } catch (Exception e) {
+                    // send() is thread-safe, so we can call it from here
+                    send("Fail,Internal execution error: " + e.getMessage());
+                }
+            });
         } else {
             send("Fail,Unknown command: " + commandName);
         }
@@ -64,18 +92,21 @@ public class RemoteSession implements Runnable {
         return null;
     }
 
-    // Crucial: Synchronized send block because Bukkit events will trigger this
-    // from the main server thread, concurrent with regular command responses.
-    public synchronized void send(Object obj) {
-        if (out != null) {
-            out.println((obj == null) ? "" : obj.toString());
-            out.flush();
+    // 2. Refactor send to be completely non-blocking and safe for the Bukkit main thread
+    public void send(Object obj) {
+        if (running && obj != null) {
+            writeQueue.offer(obj.toString());
         }
     }
 
     public void close() {
         running = false;
         plugin.removeEventSubscriber(this);
+
+        // 3. Ensure we interrupt the writer thread so it shuts down cleanly
+        if (writeThread != null) {
+            writeThread.interrupt();
+        }
         try {
             if (socket != null && !socket.isClosed()) socket.close();
         } catch (IOException ignored) {}
