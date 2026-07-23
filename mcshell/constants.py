@@ -66,6 +66,7 @@ import numpy as np
 from ruamel.yaml import YAML 
 from rich import print
 from rich.pretty import pprint
+from rich.prompt import Prompt
 
 from mcshell.Matrix3 import Matrix3
 from mcshell.Vec3 import Vec3
