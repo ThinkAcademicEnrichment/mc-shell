@@ -764,9 +764,8 @@ class MCShell(Magics):
         # we may need to remove this
         # parser.add_argument("--ssh", action="store_true", help="Enable SSH tunnel")
         
-        group = parser.add_mutually_exclusive_group()
-        group.add_argument("--authkey", help="Tailscale Auth Key")
-        group.add_argument("--clear-authkey", action="store_true", help="Wipe cached auth key")
+        parser.add_argument("--authkey", help="Tailscale Auth Key")
+        parser.add_argument("--clear-authkey", action="store_true", help="Wipe cached auth key")
         
         parser.add_argument("--do-not-join", action="store_true", help="Prevent auto-joining the world") 
 
@@ -781,10 +780,6 @@ class MCShell(Magics):
             # without killing the IPython kernel
             return
 
-        cli_authkey = None
-        if parsed_args.authkey is not None:
-            cli_authkey = parsed_args.authkey
-
         world_name = parsed_args.world_name
         world_directory = MC_WORLDS_BASE_DIR / parsed_args.world_name
 
@@ -798,22 +793,17 @@ class MCShell(Magics):
         with creds_path.open('r') as f:
             self.server_data = json.load(f)
 
+        authkey = parsed_args.authkey
         # 2. Evaluate final authkey and routing mode from cache vs CLI
         if parsed_args.clear_authkey:
-            authkey = None
             if 'tailscale_authkey' in self.server_data:
                 del self.server_data['tailscale_authkey']
-        else:
-            authkey = cli_authkey if cli_authkey else self.server_data.get('tailscale_authkey')
+        if authkey:
+            self.server_data['tailscale_authkey'] = authkey
 
-        # 3. Update and securely save the cache if anything changed
-        if cli_authkey or parsed_args.clear_authkey:
-            if authkey:
-                self.server_data['tailscale_authkey'] = authkey
-            with creds_path.open('w') as f:
-                json.dump(self.server_data, f)
-            creds_path.chmod(0o600)  # Ensure it remains secure
-            print(f"--- Updated Tailscale settings for world '{world_name}' ---")
+        with creds_path.open('w') as f:
+            json.dump(self.server_data, f)
+        creds_path.chmod(0o600)  # Ensure it remains secure
 
         # Stop any currently active server session first
         if getattr(self, 'active_paper_server', None) and self.active_paper_server.is_alive():
@@ -900,7 +890,6 @@ class MCShell(Magics):
             
             yaml.dump(bukkit_data, bukkit_file)
             print(f"Updated autosave in {bukkit_file.name}")
-
 
         if floodgate_config.is_file():
             floodgate_data = yaml.load(floodgate_config)
