@@ -6,18 +6,177 @@ from mcshell.constants import *
 from mcshell.mcrepo import SQLiteRepository
 from mcshell.mcclient import MCClient
 from mcshell.mcserver import throw_app_server_error, start_app_server, reset_app_server_context, GUI_AUTH_TOKEN
-from mcshell.mcserver import execute_power_in_thread, RUNNING_POWERS # Import helpers
+from mcshell.mcserver import RUNNING_POWERS
 from mcshell.ppmanager import *
 from mcshell.ppdownloader import *
-
-from mcshell.mcserver import stop_app_server
 from mcshell.mcplayer import MCPlayer
 
-from mcshell.mctunnelserver import start_host_gateway, connect_client_tunnel, get_vpn_ip, _get_local_ip
+# =====================================================================
+# SSH Tunnel Helper Functions
+# =====================================================================
+# from mcshell.mctunnelserver import start_host_gateway, connect_client_tunnel, _get_local_ip
+# def _run_tunnel_client_thread(host, port, pin, remote_mc, remote_rcon, remote_mj, local_mc, local_rcon, local_mj):
+#     loop = asyncio.new_event_loop()
+#     asyncio.set_event_loop(loop)
+#     try:
+#         loop.run_until_complete(connect_client_tunnel(
+#             host,
+#             port,
+#             pin,
+#             remote_mc=remote_mc,
+#             remote_rcon=remote_rcon,
+#             remote_mj=remote_mj,
+#             local_mc_port=local_mc,
+#             local_rcon_port=local_rcon,
+#             local_mj_port=local_mj
+#         ))
+#     except Exception as e:
+#         print(f"\n[Tunnel Client Error] {e}")
+
+# def _start_secure_tunnel_client(join_code, local_mc, local_rcon, local_mj):
+#     # Parse the join_code: HOST:PORT#PIN[-MC-RCON-MJ]
+#     try:
+#         address_part, auth_part = join_code.split('#')
+#         host, port_str = address_part.split(':')
+#         port = int(port_str)
+
+#         # Check if the host attached custom ports
+#         if '-' in auth_part:
+#             parts = auth_part.split('-')
+#             pin = parts[0]
+#             remote_mc = int(parts[1])
+#             remote_rcon = int(parts[2])
+#             remote_mj = int(parts[3])
+#         else:
+#             pin = auth_part
+#             remote_mc = 25565
+#             remote_rcon = 25575
+#             remote_mj = 4721
+
+#     except (ValueError, IndexError):
+#         print("[Tunnel Client Error] Invalid Join Code format.")
+#         return
+
+#     thread = Thread(target=_run_tunnel_client_thread, args=(host, port, pin, remote_mc, remote_rcon, remote_mj, local_mc, local_rcon, local_mj), daemon=True)
+#     thread.start()
+# def _run_tunnel_host_thread(mc_port, rcon_port, mj_port, mc_version, out_token, use_ssh=False):
+#     async def host_task():
+#         # 1. Force integer types to ensure our logic works safely
+#         mc_port_i = int(mc_port)
+#         rcon_port_i = int(rcon_port)
+#         mj_port_i = int(mj_port)
+
+#         # Generate a 6-character Kahoot-style PIN (e.g. A9K2B4)
+#         pin = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
+#         # Using bind_port=0 lets the OS pick a guaranteed free ephemeral port
+#         bound_port = await start_host_gateway(pin, bind_ip='0.0.0.0', bind_port=0, mc_port=mc_port_i, rcon_port=rcon_port_i, mj_port=mj_port_i)
+
+#         host_ip = None
+
+#         if use_ssh:
+#             try:
+#                 import miniupnpc
+#                 upnp = miniupnpc.UPnP()
+#                 upnp.discoverdelay = 200
+#                 upnp.discover()
+#                 upnp.selectigd()
+#                 external_ip = upnp.externalipaddress()
+
+#                 # Ask router to map the external port directly to our OS-assigned local port
+#                 mapped = upnp.addportmapping(bound_port, 'TCP', upnp.lanaddr, bound_port, 'MC-Shell Secure Tunnel', '')
+#                 if mapped:
+#                     host_ip = external_ip
+#                     print(f"\n[SSH TUNNEL] Success! Router opened port {bound_port}.")
+#                 else:
+#                     print("\n[SSH TUNNEL] Router denied UPnP mapping. Falling back to local network mode.")
+#             except ImportError:
+#                 print("\n[SSH TUNNEL] 'miniupnpc' library missing. Falling back to local network mode.")
+#             except Exception as e:
+#                 print(f"\n[SSH TUNNEL] Failed to configure router UPnP ({e}). Falling back to local network mode.")
+
+#         if not host_ip:
+#             host_ip = _get_local_ip()
+
+#         # 2. Formulate the robust Join Code
+#         # If the ports match defaults exactly, keep the token short and clean.
+#         if mc_port_i == 25565 and rcon_port_i == 25575 and mj_port_i == 4721:
+#             join_code = f"{host_ip}:{bound_port}#{pin}-{mc_version}"
+#         else:
+#             # If ports deviated, append them so the client knows what to ask for
+#             join_code = f"{host_ip}:{bound_port}#{pin}-{mc_port_i}-{rcon_port_i}-{mj_port_i}-{mc_version}"
+
+#         out_token.append(join_code)
+
+#         # Keep the event loop alive indefinitely so the SSH server stays up
+#         while True:
+#             await asyncio.sleep(3600)
+
+#     loop = asyncio.new_event_loop()
+#     asyncio.set_event_loop(loop)
+#     try:
+#         loop.run_until_complete(host_task())
+#     except Exception as e:
+#         print(f"\n[Tunnel Host Error] {e}")
+
+# def _start_secure_tunnel_host(mc_port, rcon_port, mj_port, mc_version, use_ssh=False):
+#     out_token = []
+#     # Use daemon=True so the thread automatically dies when IPython exits
+#     thread = Thread(target=_run_tunnel_host_thread, args=(mc_port, rcon_port, mj_port, mc_version, out_token, use_ssh), daemon=True)
+#     thread.start()
+
+#     # Wait up to 5 seconds for the cryptographic keys and token to generate
+#     for _ in range(50):
+#         if out_token:
+#             return out_token[0]
+#         time.sleep(0.1)
+#     return None
+
 
 # =====================================================================
 # Networking & Plugin Helper Functions
 # =====================================================================
+
+def _get_local_ip():
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(("8.8.8.8", 80))
+            return s.getsockname()[0]
+    except Exception:
+        return "127.0.0.1"
+
+
+def _get_vpn_ip() -> str | None:
+    """
+    Scans the host's network interfaces for a VPN IP address.
+    Specifically targets Tailscale while avoiding ChromeOS Crostini subnet collisions.
+    """
+    if not psutil:
+        print("psutil module missing. VPN detection disabled.")
+        return None
+
+    try:
+        # Iterate over all active network interfaces
+        for interface, addrs in psutil.net_if_addrs().items():
+            for addr in addrs:
+                # We only care about IPv4 addresses
+                if addr.family == socket.AF_INET:
+                    ip = addr.address
+                    
+                    # Target the Tailscale interface directly
+                    if interface.startswith('tailscale'):
+                        print(f"Detected Tailscale interface '{interface}' with IP: {ip}")
+                        return ip
+                        
+                    # Fallback for standard CGNAT, explicitly rejecting Crostini's eth0 subnet
+                    elif ip.startswith('100.') and not ip.startswith('100.115.92.'):
+                        print(f"Detected VPN interface '{interface}' with IP: {ip}")
+                        return ip
+                        
+    except Exception as e:
+        print(f"Failed to scan network interfaces for VPN: {e}")
+
+    return None
 
 def _resolve_geysermc_plugin(project_id: str, platform: str = "spigot") -> str:
     """
@@ -55,125 +214,6 @@ def _resolve_modrinth_plugin(project_id, mc_version):
     except Exception as e:
         pass # Failsafe to fallback URLs
     return None
-
-def _run_tunnel_host_thread(mc_port, rcon_port, mj_port, mc_version, out_token, use_ssh=False):
-    async def host_task():
-        # 1. Force integer types to ensure our logic works safely
-        mc_port_i = int(mc_port)
-        rcon_port_i = int(rcon_port)
-        mj_port_i = int(mj_port)
-
-        # Generate a 6-character Kahoot-style PIN (e.g. A9K2B4)
-        pin = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-
-        # Using bind_port=0 lets the OS pick a guaranteed free ephemeral port
-        bound_port = await start_host_gateway(pin, bind_ip='0.0.0.0', bind_port=0, mc_port=mc_port_i, rcon_port=rcon_port_i, mj_port=mj_port_i)
-
-        host_ip = None
-
-        if use_ssh:
-            try:
-                import miniupnpc
-                upnp = miniupnpc.UPnP()
-                upnp.discoverdelay = 200
-                upnp.discover()
-                upnp.selectigd()
-                external_ip = upnp.externalipaddress()
-
-                # Ask router to map the external port directly to our OS-assigned local port
-                mapped = upnp.addportmapping(bound_port, 'TCP', upnp.lanaddr, bound_port, 'MC-Shell Secure Tunnel', '')
-                if mapped:
-                    host_ip = external_ip
-                    print(f"\n[SSH TUNNEL] Success! Router opened port {bound_port}.")
-                else:
-                    print("\n[SSH TUNNEL] Router denied UPnP mapping. Falling back to local network mode.")
-            except ImportError:
-                print("\n[SSH TUNNEL] 'miniupnpc' library missing. Falling back to local network mode.")
-            except Exception as e:
-                print(f"\n[SSH TUNNEL] Failed to configure router UPnP ({e}). Falling back to local network mode.")
-
-        if not host_ip:
-            host_ip = _get_local_ip()
-
-        # 2. Formulate the robust Join Code
-        # If the ports match defaults exactly, keep the token short and clean.
-        if mc_port_i == 25565 and rcon_port_i == 25575 and mj_port_i == 4721:
-            join_code = f"{host_ip}:{bound_port}#{pin}-{mc_version}"
-        else:
-            # If ports deviated, append them so the client knows what to ask for
-            join_code = f"{host_ip}:{bound_port}#{pin}-{mc_port_i}-{rcon_port_i}-{mj_port_i}-{mc_version}"
-
-        out_token.append(join_code)
-
-        # Keep the event loop alive indefinitely so the SSH server stays up
-        while True:
-            await asyncio.sleep(3600)
-
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        loop.run_until_complete(host_task())
-    except Exception as e:
-        print(f"\n[Tunnel Host Error] {e}")
-
-def _start_secure_tunnel_host(mc_port, rcon_port, mj_port, mc_version, use_ssh=False):
-    out_token = []
-    # Use daemon=True so the thread automatically dies when IPython exits
-    thread = Thread(target=_run_tunnel_host_thread, args=(mc_port, rcon_port, mj_port, mc_version, out_token, use_ssh), daemon=True)
-    thread.start()
-
-    # Wait up to 5 seconds for the cryptographic keys and token to generate
-    for _ in range(50):
-        if out_token:
-            return out_token[0]
-        time.sleep(0.1)
-    return None
-
-def _run_tunnel_client_thread(host, port, pin, remote_mc, remote_rcon, remote_mj, local_mc, local_rcon, local_mj):
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        loop.run_until_complete(connect_client_tunnel(
-            host,
-            port,
-            pin,
-            remote_mc=remote_mc,
-            remote_rcon=remote_rcon,
-            remote_mj=remote_mj,
-            local_mc_port=local_mc,
-            local_rcon_port=local_rcon,
-            local_mj_port=local_mj
-        ))
-    except Exception as e:
-        print(f"\n[Tunnel Client Error] {e}")
-
-def _start_secure_tunnel_client(join_code, local_mc, local_rcon, local_mj):
-    # Parse the join_code: HOST:PORT#PIN[-MC-RCON-MJ]
-    try:
-        address_part, auth_part = join_code.split('#')
-        host, port_str = address_part.split(':')
-        port = int(port_str)
-
-        # Check if the host attached custom ports
-        if '-' in auth_part:
-            parts = auth_part.split('-')
-            pin = parts[0]
-            remote_mc = int(parts[1])
-            remote_rcon = int(parts[2])
-            remote_mj = int(parts[3])
-        else:
-            pin = auth_part
-            remote_mc = 25565
-            remote_rcon = 25575
-            remote_mj = 4721
-
-    except (ValueError, IndexError):
-        print("[Tunnel Client Error] Invalid Join Code format.")
-        return
-
-    thread = Thread(target=_run_tunnel_client_thread, args=(host, port, pin, remote_mc, remote_rcon, remote_mj, local_mc, local_rcon, local_mj), daemon=True)
-    thread.start()
-
 
 def _start_rathole_client(relay_address, token):
     """
@@ -361,7 +401,7 @@ class MCShell(Magics):
                 return base_target
             return f"{base_target}@{mc_p}-{rcon_p}-{mj_p}-{mc_v}"
 
-        vpn_ip = get_vpn_ip()
+        vpn_ip = _get_vpn_ip()
         local_ip = _get_local_ip()
         authkey = self.server_data.get('tailscale_authkey')
         rh_host = self.server_data.get('rh_host')
@@ -371,10 +411,10 @@ class MCShell(Magics):
             "vpn_ip": vpn_ip,
             "authkey": authkey,
             "rh_host": rh_host,
-            "ssh_token": self.current_ssh_token,
             "tokens": {
                 "lan": _make_direct_token(local_ip, rh_host)
             }
+            # "ssh_token": self.current_ssh_token,
         }
 
         # Populate the remaining tokens based on available Tailscale data
@@ -438,7 +478,7 @@ class MCShell(Magics):
         # 5. Bedrock / iPad Instructions (Rathole Relay)
         if data.get('rh_host'):
             print("\n" + "="*60)
-            print("🎮 BEDROCK PLAYERS (iPads):")
+            print("🎮 BEDROCK PLAYERS:")
             print(f"Please open Minecraft and connect to: {data['rh_host']} (Port 19132)")
             print("="*60 + "\n")
         else:
@@ -1163,7 +1203,7 @@ class MCShell(Magics):
             # Context Check: Are we the host, or a remote client using an SSH tunnel?
             if self.active_paper_server and self.active_paper_server.is_alive():
                 # We are the host. Display our actual network IPs.
-                vpn_ip = get_vpn_ip()
+                vpn_ip = _get_vpn_ip()
                 local_ip = _get_local_ip()
                 if vpn_ip:
                     print(f"   Java Edition IP: {local_ip}{mc_port_str} (LAN) or {vpn_ip}{mc_port_str} (VPN)")
