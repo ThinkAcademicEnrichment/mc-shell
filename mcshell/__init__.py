@@ -2550,12 +2550,13 @@ def load_ipython_extension(ip):
         mcshell_instance._disconnect_tailscale()
 
         # Ensure the background Flask thread is fully killed on exit
-        from mcshell.mcserver import stop_app_server
+        # from mcshell.mcserver import stop_app_server
+        # stop_app_server()
+        ip.run_line_magic('pp_stop_world','')
+
         # --- CLEAN UP TRANSFORMER ON SHUTDOWN (Optional but clean) ---
         if rconn_shortcut_transformer in ip.input_transformers_cleanup:
             ip.input_transformers_cleanup.remove(rconn_shortcut_transformer)
-            
-        stop_app_server()
 
         print("Cleanup complete.")
 
