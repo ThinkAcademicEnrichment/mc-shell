@@ -1811,6 +1811,71 @@ class MCShell(Magics):
             
         return matches
 
+    def _get_mc_name(self) -> Optional[str]:
+        """
+        Determines and caches the Minecraft username for the current session.
+
+        On the first call, it checks for a system-wide config file and falls
+        back to prompting the user. On subsequent calls, it returns the cached name.
+
+        Returns:
+            The Minecraft username as a string, or None if an error occurs.
+        """
+        # --- Caching Check: Return the name if already determined ---
+        if self.mc_name:
+            return self.mc_name
+
+        minecraft_name = None
+
+        # --- Lab Setup: Check for the central config file first ---
+        if MC_CENTRAL_CONFIG_FILE.exists():
+            print(f"Found system-wide configuration at {MC_CENTRAL_CONFIG_FILE}.")
+            try:
+                linux_user = os.getlogin()
+            except OSError:
+                linux_user = os.environ.get('USER')
+
+            if not linux_user:
+                print("Fatal Error: Could not determine Linux username.")
+                return None
+
+            try:
+                with open(MC_CENTRAL_CONFIG_FILE, 'r') as f:
+                    user_map = json.load(f)
+
+                name_from_map = user_map.get(linux_user)
+                if not name_from_map:
+                    print(f"Error: Your Linux user '{linux_user}' is not registered. Please contact your administrator.")
+                    return None
+
+                print(f"Authenticated as Minecraft user: {name_from_map}")
+                minecraft_name = name_from_map
+
+            except (IOError, json.JSONDecodeError) as e:
+                print(f"Fatal Error: Could not read or parse the system configuration file: {e}")
+                return None
+
+        # --- Personal Use: Fallback to prompting the user ---
+        else:
+            print("No system-wide configuration found. Running in personal use mode.")
+            try:
+                name_from_input = input("Please enter your Minecraft username: ").strip()
+                if not name_from_input:
+                    print("No username entered. Aborting.")
+                    return None
+
+                print(f"Session will run as Minecraft user: {name_from_input}")
+                minecraft_name = name_from_input
+            except KeyboardInterrupt:
+                print("\nInput cancelled by user. Aborting.")
+                return None
+
+        # --- Cache the result before returning ---
+        self.mc_name = minecraft_name
+        return self.mc_name
+
+   
+
     @needs_local_scope
     @line_magic
     def mc_data(self, line,local_ns):
@@ -2099,69 +2164,6 @@ if __name__ == '__main__':
             print(f"Error: No running power found with ID: {execution_id}")
             if RUNNING_POWERS:
                 print("Valid active IDs are:", list(RUNNING_POWERS.keys()))
-
-    def _get_mc_name(self) -> Optional[str]:
-        """
-        Determines and caches the Minecraft username for the current session.
-
-        On the first call, it checks for a system-wide config file and falls
-        back to prompting the user. On subsequent calls, it returns the cached name.
-
-        Returns:
-            The Minecraft username as a string, or None if an error occurs.
-        """
-        # --- Caching Check: Return the name if already determined ---
-        if self.mc_name:
-            return self.mc_name
-
-        minecraft_name = None
-
-        # --- Lab Setup: Check for the central config file first ---
-        if MC_CENTRAL_CONFIG_FILE.exists():
-            print(f"Found system-wide configuration at {MC_CENTRAL_CONFIG_FILE}.")
-            try:
-                linux_user = os.getlogin()
-            except OSError:
-                linux_user = os.environ.get('USER')
-
-            if not linux_user:
-                print("Fatal Error: Could not determine Linux username.")
-                return None
-
-            try:
-                with open(MC_CENTRAL_CONFIG_FILE, 'r') as f:
-                    user_map = json.load(f)
-
-                name_from_map = user_map.get(linux_user)
-                if not name_from_map:
-                    print(f"Error: Your Linux user '{linux_user}' is not registered. Please contact your administrator.")
-                    return None
-
-                print(f"Authenticated as Minecraft user: {name_from_map}")
-                minecraft_name = name_from_map
-
-            except (IOError, json.JSONDecodeError) as e:
-                print(f"Fatal Error: Could not read or parse the system configuration file: {e}")
-                return None
-
-        # --- Personal Use: Fallback to prompting the user ---
-        else:
-            print("No system-wide configuration found. Running in personal use mode.")
-            try:
-                name_from_input = input("Please enter your Minecraft username: ").strip()
-                if not name_from_input:
-                    print("No username entered. Aborting.")
-                    return None
-
-                print(f"Session will run as Minecraft user: {name_from_input}")
-                minecraft_name = name_from_input
-            except KeyboardInterrupt:
-                print("\nInput cancelled by user. Aborting.")
-                return None
-
-        # --- Cache the result before returning ---
-        self.mc_name = minecraft_name
-        return self.mc_name
 
 
 
