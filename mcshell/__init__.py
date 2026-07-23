@@ -1915,35 +1915,6 @@ class MCShell(Magics):
         print(f"requested player will be available as the variable {_player_name} locally")
         local_ns[_player_name] = self._get_player(_player_name)
 
-    # @line_magic
-    # def mc_create_script(self, line):
-    #     """
-    #     Receives a block of Python code from the mc-ed editor,
-    #     saves it to a uniquely named file in powers/blockcode.
-    #     """
-    #     code_to_save = line
-    #     if not code_to_save:
-    #         print("Received empty code block. No script created.")
-    #         return
-
-    #     try:
-    #         # Create a unique filename for the power
-    #         power_dir = pathlib.Path("./powers/blockcode")
-    #         power_dir.mkdir(parents=True, exist_ok=True)
-
-    #         # Generate a unique suffix for the filename
-    #         file_hash = uuid.uuid4().hex[:6]
-    #         filename = f"power_{file_hash}.py"
-    #         filepath = power_dir / filename
-
-    #         with open(filepath, 'w') as f:
-    #             f.write(code_to_save)
-
-    #         print(f"Successfully saved power to: {filepath}")
-    #         print(f"To use it, you can now run:\nfrom powers.blockcode.{filename.replace('.py','')} import *")
-
-    #     except Exception as e:
-    #         print(f"Error saving script: {e}")
 
     @line_magic
     def mc_debug_and_define(self, line):
@@ -2102,23 +2073,6 @@ if __name__ == '__main__':
 
         return arg_matches
 
-    # @line_magic
-    # def mc_cancel_power(self, line):
-    #     """Cancels a running power by its execution ID."""
-    #     execution_id = line.strip()
-    #     if not execution_id:
-    #         print("Usage: %mc_cancel_power <execution_id>")
-    #         if RUNNING_POWERS:
-    #             print("Currently running powers:", list(RUNNING_POWERS.keys()))
-    #         return
-
-    #     power_metadata = RUNNING_POWERS.get(execution_id)
-    #     if power_metadata:
-    #         print(f"Sending cancellation signal to power: {execution_id}")
-    #         # Corrected attribute access (removed paste garbage)
-    #         power_metadata['cancel_event'].set()
-    #     else:
-    #         print(f"Error: No running power found with ID: {execution_id}")
 
     @line_magic
     def mc_cancel_power(self, line):
