@@ -170,12 +170,12 @@ def _get_vpn_ip() -> str | None:
                     
                     # Target the Tailscale interface directly
                     if interface.startswith('tailscale'):
-                        print(f"Detected Tailscale interface '{interface}' with IP: {ip}")
+                        # print(f"Detected Tailscale interface '{interface}' with IP: {ip}")
                         return ip
                         
                     # Fallback for standard CGNAT, explicitly rejecting Crostini's eth0 subnet
                     elif ip.startswith('100.') and not ip.startswith('100.115.92.'):
-                        print(f"Detected VPN interface '{interface}' with IP: {ip}")
+                        # print(f"Detected VPN interface '{interface}' with IP: {ip}")
                         return ip
                         
     except Exception as e:
