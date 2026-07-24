@@ -645,24 +645,23 @@ class MCShell(Magics):
             return
 
         print(f"Resolving compatible Geyser/Floodgate/ViaVersion plugins for Minecraft {mc_version}...")
-        # Resolve dynamic Modrinth URLs based on the MC version, falling back to Geyser's official 'latest' endpoints
-        geyser_url = _resolve_geysermc_plugin('geyser')
-        floodgate_url = _resolve_geysermc_plugin('floodgate')
-        # Query Modrinth for the exact ViaVersion jar matching the server's MC version
-        viaversion_url = _resolve_modrinth_plugin('viaversion', mc_version)
 
-        # Create the world_manifest.json file with required Geyser/Floodgate plugins
+        # Map the exact filenames you want to the resolved URLs
+        plugin_urls= {
+            "Geyser.jar": _resolve_geysermc_plugin('geyser'),
+            "Floodgate.jar": _resolve_geysermc_plugin('floodgate'),
+            "ViaVersion.jar": _resolve_modrinth_plugin('viaversion', mc_version)
+        }
+
+        # Create the world_manifest.json file with required Geyser/Floodgate/ViaVersion plugins
+
         manifest = {
             "world_name": world_name,
             "paper_version": mc_version,
             "java_path": "java", # Assumes java is in the system's PATH
             "server_jar_path": str(jar_path.relative_to(world_dir.parent)), # Store a path relative to the world_dir
             "world_data_path": str((world_dir / "world").relative_to(world_dir)),
-            "plugins": [
-                geyser_url,
-                floodgate_url,
-                viaversion_url
-            ],
+            "plugins": plugin_urls,
             "server_properties": {
                 "gamemode": "creative",
                 "motd": f"MC-ED World: {world_name}",
@@ -707,15 +706,46 @@ class MCShell(Magics):
             print(f"Are you doing development? Run build.py to generate all required classes and artifacts.")
             print(f"The world {world_name} could not be created. :-(" )
             return
-
         plugins_dir.joinpath(mc_juice_jar_path.name).symlink_to(mc_juice_jar_path)
-        
 
         # Install the plugins listed in the manifest (Downloads Geyser & Floodgate automatically)
-        plugin_urls = manifest.get("plugins", [])
-        if plugin_urls:
-            downloader.install_plugins(plugin_urls, plugins_dir)
+        downloader.install_plugins(plugin_urls, plugins_dir)
 
+        print("Patching configurations dynamically...")
+       
+        # 1. Patch Floodgate
+        def patch_floodgate(data):
+            # make arbitrary Bedrock names look the same as Java names
+            data['username-prefix'] = ""
+            
+        downloader.extract_and_patch_jar_config(plugins_dir,"Floodgate.jar", "floodgate", patch_floodgate)
+
+        # this does not work; geyser generates its config.yml; must do it on server startup
+        # # 2. Patch Geyser
+        # def patch_geyser(data):
+        #     # force fragmenting of the nasty RakNet handshake packet
+        #     data['advanced']['bedrock']['mtu'] = "1200"
+            
+
+        # --- Pre-seed Server Configs ---
+        # Paper will read these partial files on first boot and append all missing defaults automatically.
+        
+        # 3. Pre-seed Spigot.yml
+        spigot_file = world_dir / "spigot.yml"
+        # We define only the structure we want to override
+        spigot_data = {'settings': {'timeout-time': 240}}
+        
+        with open(spigot_file, 'w') as f:
+            yaml.dump(spigot_data, f)
+        print(f"Pre-seeded overrides into {spigot_file.name}")
+
+        # 4. Pre-seed Bukkit.yml
+        bukkit_file = world_dir / "bukkit.yml"
+        bukkit_data = {'ticks-per': {'autosave': 10000}}
+        
+        with open(bukkit_file, 'w') as f:
+            yaml.dump(bukkit_data, f)
+        print(f"Pre-seeded overrides into {bukkit_file.name}")
 
         # --- Datapack Installation Logic ---
         if datapacks_to_install:
@@ -862,51 +892,11 @@ class MCShell(Magics):
                 self.server_data['rh_host'] = relay_server_address
                 self.rathole_process, self.rathole_config = _start_rathole_client(relay_server_address, authkey)
                 
-        spigot_file = world_directory / "spigot.yml"
-        bukkit_file = world_directory / "bukkit.yml"
-        floodgate_config = world_directory/ "plugins" / "floodgate" / "config.yml"
         geyser_config = world_directory / "plugins" / "Geyser-Spigot" / "config.yml"
 
-        # Initialize YAML parser to preserve existing comments and structure
+        # geyser generates its config.yml after first startup :-(
         yaml = YAML()
         yaml.preserve_quotes = True
-
-        # Update timeout-time in spigot.yml (nested under 'settings')
-        if spigot_file.is_file():
-            spigot_data = yaml.load(spigot_file)
-            
-            # Ensure the settings block exists before assigning
-            if 'settings' not in spigot_data:
-                spigot_data['settings'] = {}
-                
-            spigot_data['settings']['timeout-time'] = 240
-            
-            # ruamel.yaml can write directly to a pathlib.Path object
-            yaml.dump(spigot_data, spigot_file)
-            print(f"Updated timeout-time in {spigot_file.name}")
-
-        # Update autosave in bukkit.yml (nested under 'ticks-per')
-        if bukkit_file.is_file():
-            bukkit_data = yaml.load(bukkit_file)
-            
-            # Ensure the ticks-per block exists before assigning
-            if 'ticks-per' not in bukkit_data:
-                bukkit_data['ticks-per'] = {}
-                
-            bukkit_data['ticks-per']['autosave'] = 10000
-            
-            yaml.dump(bukkit_data, bukkit_file)
-            print(f"Updated autosave in {bukkit_file.name}")
-
-        if floodgate_config.is_file():
-            floodgate_data = yaml.load(floodgate_config)
-
-            # make arbitrary Bedrock names look the same as Java names; could lead to collisions
-            floodgate_data['username-prefix'] = ""
-            
-            # ruamel.yaml can write directly to a pathlib.Path object
-            yaml.dump(floodgate_data, floodgate_config)
-            print(f"Updated username-prefix in {floodgate_config.name}")
 
         if geyser_config.is_file():
             geyser_data = yaml.load(geyser_config)
