@@ -265,7 +265,12 @@ def _stop_rathole_client(process, config_path):
             
     if config_path and os.path.exists(config_path):
         os.remove(config_path)
-    
+
+# REGISTRIES
+from mcshell.mcplatforms import BinaryTarget
+
+  
+
 @magics_class
 class MCShell(Magics):
 
@@ -305,8 +310,48 @@ class MCShell(Magics):
         self.current_ssh_token = None
 
     def _connect_tailscale(self, authkey: str, accept_routes: bool = False):
+        from mcshell.mcplatforms import CrossPlatformBinary
+        from mcshell.mcregistry import TAILSCALE_REGISTRY
+
+    def _connect_tailscale(self, authkey: str, accept_routes: bool = False):
         """Automatically authenticates and connects to Tailscale cross-platform."""
         print("\n[TAILSCALE] Authenticating device to VPN...")
+
+        import subprocess
+        import time
+        from mcshell.mcplatforms import CrossPlatformBinary
+        from mcshell.mcregistry import TAILSCALE_REGISTRY
+
+        tailscale = CrossPlatformBinary(TAILSCALE_REGISTRY)
+
+        # Build the argument list dynamically
+        args = ['up', f"--authkey={authkey}", "--force-reauth"]
+        if accept_routes:
+            args.append("--accept-routes")
+
+        try:
+            # Unpack the arguments and enforce check=True for error handling
+            tailscale.execute(*args, check=True)
+            
+            self.managed_tailscale = True
+            print("[TAILSCALE] Connected to VPN successfully!\n")
+            time.sleep(3) # Give the OS network interface a moment to stabilize
+            
+        except subprocess.CalledProcessError:
+            print("[TAILSCALE WARNING] Failed to automatically connect. You may need to run Tailscale manually.\n")
+        except FileNotFoundError:
+            # We can now use the abstraction's platform attribute for cleaner error routing
+            if tailscale.platform == 'darwin':
+                print("[TAILSCALE WARNING] Tailscale App not found in /Applications. Is it installed?\n")
+            elif tailscale.platform in ['wsl', 'windows']:
+                print("[TAILSCALE WARNING] 'tailscale.exe' not found. Please install the Windows Tailscale app.\n")
+            else:
+                print("[TAILSCALE WARNING] 'tailscale' command not found. Is Tailscale installed?\n")
+
+    def _connect_tailscale_old(self, authkey: str, accept_routes: bool = False):
+        """Automatically authenticates and connects to Tailscale cross-platform."""
+        print("\n[TAILSCALE] Authenticating device to VPN...")
+
         import subprocess
         import platform
         import time
