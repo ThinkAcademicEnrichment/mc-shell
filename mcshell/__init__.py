@@ -416,7 +416,7 @@ class MCShell(Magics):
         else:
             print("🔴 Editor App Server  : STOPPED")
 
-        if getattr(self, 'mc_name', None):
+        if getattr(self, 'active_paper_server', None) and self.active_paper_server.is_alive():
             print(f"\n" + "="*60)
             print("🌍 CONNECTION HUB: Share these tokens with your friends!")
             print("="*60)
