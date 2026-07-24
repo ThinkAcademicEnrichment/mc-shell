@@ -404,12 +404,31 @@ class MCShell(Magics):
         app_port = self.server_data.get('app_port')
 
         print(f"\n" + "="*55)
-        # 1. App Server (mc-ed) Status (Locked to localhost for ChromeOS constraints)
+        # App Server (mc-ed) Status (Locked to localhost for ChromeOS constraints)
         if getattr(self, 'app_server_thread', None) and self.app_server_thread.is_alive():
             if getattr(self, 'mc_name', None):
                 print(f"🟢 MCED App Server  : RUNNING (Active Player: {self.mc_name})")
                 print(f"   Editor URL       : http://localhost:{app_port}/?auth={GUI_AUTH_TOKEN}")
                 print(f"   Control URL      : http://localhost:{app_port}/control?auth={GUI_AUTH_TOKEN}")
+
+                # Bedrock Instructions
+                print("\n" + "="*60)
+                print("🎮 BEDROCK PLAYERS:")
+                print("="*60)
+                if data.get('rh_host'):
+                    # Use Case 3: Dedicated rathole relay handling Bedrock UDP
+                    print(f"Please open Minecraft and connect to the public relay:\n{' '*4}{data['rh_host']}:19132")
+                else:
+                    # Use Cases 1 & 2: Local LAN or Tailscale socat UDP forwarder
+                    print(f"Please open Minecraft and connect to this computer's IP:\n{' '*4}{data['local_ip']}:19132")
+
+                # Java Instructions 
+                print("\n" + "="*60)
+                print("💻 JAVA PLAYERS:")
+                # print("🎮 JAVA PLAYERS:")
+                print("="*60)
+                print(f"Please open Minecraft and connect to this computer's IP:\n{' '*4}{data['local_ip']}:{self.server_data['port']}")
+
             else:
                 print(f"🟡 MCED App Server  : STANDBY")
                 print(f"   Lobby URL        : http://localhost:{app_port}/lobby?auth={GUI_AUTH_TOKEN}")
@@ -421,7 +440,7 @@ class MCShell(Magics):
             print("🌍 CONNECTION HUB: Share these tokens with your friends!")
             print("="*60)
 
-            # 2. VPN (Tailscale) Tokens
+            # VPN (Tailscale) Tokens
             if data.get('authkey'):
                 if 'classroom_vpn' in data['tokens']:
                     print("\n[ VPN CONNECTION (Automated Tailscale Mesh) ]")
@@ -434,26 +453,10 @@ class MCShell(Magics):
                 print("\n[ TAILSCALE CONNECTION (Manual Mesh) ]")
                 print(f"Token :\n{' '*4}{data['tokens']['tailscale']}")
 
-            # 3. Standard Direct Tokens
+            # Standard Direct Tokens
             print("\n[ DIRECT CONNECTION (Local LAN) ]")
             print(f"Local LAN Token :\n{' '*4}{data['tokens']['lan']}")
 
-            # 4. Bedrock Instructions
-            print("\n" + "="*60)
-            print("🎮 BEDROCK PLAYERS:")
-            print("="*60)
-            if data.get('rh_host'):
-                # Use Case 3: Dedicated rathole relay handling Bedrock UDP
-                print(f"Please open Minecraft and connect to the public relay:\n{' '*4}{data['rh_host']}:19132")
-            else:
-                # Use Cases 1 & 2: Local LAN or Tailscale socat UDP forwarder
-                print(f"Please open Minecraft and connect to this computer's IP:\n{' '*4}{data['local_ip']}:19132")
-
-            # 5 Java Instructions 
-            print("\n" + "="*60)
-            print("🎮 JAVA PLAYERS:")
-            print("="*60)
-            print(f"Please open Minecraft and connect to this computer's IP:\n{' '*4}{data['local_ip']}:{self.server_data['port']}")
 
     def _complete_world_command(self, ipyshell, event):
         ipyshell.user_ns.update(dict(rcon_event=event))
