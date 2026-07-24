@@ -1,9 +1,10 @@
 
+from IPython.utils.capture import capture_output
 import IPython
 from IPython.core.magic import Magics, magics_class, line_magic,needs_local_scope
 
 from mcshell.constants import *
-from mcshell.mcrepo import SQLiteRepository
+from mcshell.mcrepo import PowerRepository,SQLiteRepository
 from mcshell.mcclient import MCClient
 from mcshell.mcserver import throw_app_server_error, start_app_server, reset_app_server_context, GUI_AUTH_TOKEN
 from mcshell.mcserver import RUNNING_POWERS
@@ -771,8 +772,6 @@ class MCShell(Magics):
                 else:
                     print(f"Warning: Datapack '{pack_name}' not found in library.")
 
-
-
         print(f"\nWorld '{world_name}' created successfully.")
         print(f"To start it, run: %pp_start_world {world_name}")
 
@@ -787,11 +786,6 @@ class MCShell(Magics):
         Use `%pp_start_world --help` for the full list of configurable options.
 
         """
-        import subprocess
-        import shlex
-        import argparse
-        import json
-
         parser = argparse.ArgumentParser(
             prog="%pp_start_world", 
             description="Starts a Paper server for a given world name."
@@ -908,8 +902,7 @@ class MCShell(Magics):
             yaml.dump(geyser_data, geyser_config)
             print(f"Updated bedrock mtu in {geyser_config.name}")
 
-
-
+        # join the world or not
         if not parsed_args.do_not_join:
             # suspend the logs for the user name prompt
             self.active_paper_server.suspend_logs = True
@@ -925,6 +918,7 @@ class MCShell(Magics):
                     "
 
             self.ip.run_line_magic('pp_join_world',magic_cmd_line)
+            # restore server logs
             self.active_paper_server.suspend_logs = False 
         else:
             self.ip.run_line_magic('mc_server_info','')
@@ -1105,6 +1099,7 @@ class MCShell(Magics):
         self.server_data['mc_version'] = mc_version
         self.server_data['app_port'] = local_app
 
+
         # 4. Start local Bedrock UDP->TCP translator (Only if NOT using local loopback SSH fallback)
         if target_host and target_host != '127.0.0.1':
             print(f"Starting socat UDP forwarder for local Bedrock clients...")
@@ -1147,6 +1142,7 @@ class MCShell(Magics):
                 'password': Prompt.ask('Server Password:', password=True)
             })
 
+        # get the sql db of user powers
         power_repo = SQLiteRepository(minecraft_name)
 
         print(f"Assigning application server context to Minecraft player: {minecraft_name}")
@@ -1155,6 +1151,7 @@ class MCShell(Magics):
         self._print_connection_hub()
 
         return
+
     @line_magic
     def pp_stop_world(self, line):
         """
@@ -1190,7 +1187,6 @@ class MCShell(Magics):
             self.socat_tcp_process.terminate()
             self.socat_tcp_process.wait(timeout=3)
             del self.socat_tcp_process
-
 
         print("Session stopped successfully.")
 
@@ -1377,7 +1373,6 @@ class MCShell(Magics):
             del self.rathole_process
             del self.rathole_config
 
-        from mcshell.mcserver import GUI_AUTH_TOKEN
         # Ensure MC_APP_PORT is defined in your scope, usually via current_app.config or global
         app_port = globals().get('MC_APP_PORT', 5001) 
 
@@ -1409,7 +1404,6 @@ class MCShell(Magics):
                 _response = _rcon_client.data(*args)
             elif kind == 'help':
                 _response = _rcon_client.help(*args)
-            #print(f"[green]MCSHell running and connected to {SERVER_DATA['host']}[/]")
             return _response
         except ConnectionRefusedError as e:
             print("[red bold]Unable to send command. Is the server running?[/]")
@@ -1969,7 +1963,6 @@ if __name__ == '__main__':
 
         arg_matches= []
         if len(parts) == 1: # showing commands
-            # arg_matches = [c for c in self.commands.keys()]
             arg_matches = [c for c in RUNNING_POWERS]
             ipyshell.user_ns.update({'cancel_matches':arg_matches})
         elif len(parts) == 2 and text != '':  # completing commands
@@ -2235,8 +2228,6 @@ if __name__ == '__main__':
             %mc_library export <filepath.json>       - Export selected powers to a JSON file.
             %mc_library import <filepath.json>       - Import powers from a JSON file into your library.
         """
-        import shlex  # Ensure shlex is available
-        from mcshell.mcrepo import PowerRepository, SQLiteRepository
 
         try:
             args = shlex.split(line)
