@@ -11,6 +11,10 @@ from mcshell.ppmanager import *
 from mcshell.ppdownloader import *
 from mcshell.mcplayer import MCPlayer
 
+from mcshell.mcplatforms import CrossPlatformBinary
+from mcshell.mcregistry import TAILSCALE_REGISTRY
+
+
 # =====================================================================
 # SSH Tunnel Helper Functions
 # =====================================================================
@@ -266,10 +270,7 @@ def _stop_rathole_client(process, config_path):
     if config_path and os.path.exists(config_path):
         os.remove(config_path)
 
-# REGISTRIES
-from mcshell.mcplatforms import BinaryTarget
-
-  
+ 
 
 @magics_class
 class MCShell(Magics):
@@ -317,11 +318,6 @@ class MCShell(Magics):
         """Automatically authenticates and connects to Tailscale cross-platform."""
         print("\n[TAILSCALE] Authenticating device to VPN...")
 
-        import subprocess
-        import time
-        from mcshell.mcplatforms import CrossPlatformBinary
-        from mcshell.mcregistry import TAILSCALE_REGISTRY
-
         tailscale = CrossPlatformBinary(TAILSCALE_REGISTRY)
 
         # Build the argument list dynamically
@@ -348,87 +344,18 @@ class MCShell(Magics):
             else:
                 print("[TAILSCALE WARNING] 'tailscale' command not found. Is Tailscale installed?\n")
 
-    def _connect_tailscale_old(self, authkey: str, accept_routes: bool = False):
-        """Automatically authenticates and connects to Tailscale cross-platform."""
-        print("\n[TAILSCALE] Authenticating device to VPN...")
-
-        import subprocess
-        import platform
-        import time
-        import shutil
-
-        sys_os = platform.system().lower()
-        # Detect if running inside Windows Subsystem for Linux
-        is_wsl = 'linux' in sys_os and ('microsoft' in platform.release().lower() or 'wsl' in platform.release().lower())
-
-        # Resolve absolute path to bypass strict 'sudo' secure_path restrictions on Linux
-        tailscale_bin = shutil.which("tailscale") or "tailscale"
-
-        # Build the platform-specific command
-        cmd = ["sudo", tailscale_bin, "up", f"--authkey={authkey}", "--force-reauth"]
-
-        if is_wsl:
-            print("[TAILSCALE] WSL Environment Detected. Routing to Windows host...")
-            cmd = ["tailscale.exe", "up", f"--authkey={authkey}", "--force-reauth"]
-        elif sys_os == 'windows':
-            cmd = ["tailscale", "up", f"--authkey={authkey}", "--force-reauth"]
-        elif sys_os == 'darwin':
-            cmd = ["/Applications/Tailscale.app/Contents/MacOS/Tailscale", "up", f"--authkey={authkey}", "--force-reauth"]
-
-        # Only clients need to explicitly accept subnet routes
-        if accept_routes:
-            cmd.append("--accept-routes")
-
-        try:
-            subprocess.run(cmd, check=True)
-            self.managed_tailscale = True
-            print("[TAILSCALE] Connected to VPN successfully!\n")
-            time.sleep(3) # Give the OS network interface a moment to stabilize and acquire its IP
-        except subprocess.CalledProcessError:
-            print("[TAILSCALE WARNING] Failed to automatically connect. You may need to run Tailscale manually.\n")
-        except FileNotFoundError:
-            if sys_os == 'darwin':
-                print("[TAILSCALE WARNING] Tailscale App not found in /Applications. Is it installed?\n")
-            elif is_wsl or sys_os == 'windows':
-                print("[TAILSCALE WARNING] 'tailscale.exe' not found. Please install the Windows Tailscale app.\n")
-            else:
-                print("[TAILSCALE WARNING] 'tailscale' command not found. Is Tailscale installed?\n")
-
     def _disconnect_tailscale(self):
         """Automatically logs out of Tailscale if we were the ones who brought it up."""
         if getattr(self, 'managed_tailscale', False):
             print("\n[TAILSCALE] Disconnecting from VPN...")
-            import subprocess
-            import platform
-            import shutil
-
-            sys_os = platform.system().lower()
-            is_wsl = 'linux' in sys_os and ('microsoft' in platform.release().lower() or 'wsl' in platform.release().lower())
-
-            tailscale_bin = shutil.which("tailscale") or "tailscale"
-
-            cmd_down = ["sudo", tailscale_bin, "down"]
-            cmd_logout = ["sudo", tailscale_bin, "logout"]
-            if is_wsl:
-                cmd_down = ["tailscale.exe", "down"]
-                cmd_logout = ["tailscale.exe", "logout"]
-            elif sys_os == 'windows':
-                cmd_down = ["tailscale", "down"]
-                cmd_logout = ["tailscale", "logout"]
-            elif sys_os == 'darwin':
-                cmd_down = ["/Applications/Tailscale.app/Contents/MacOS/Tailscale", "down"]
-                cmd_logout = ["/Applications/Tailscale.app/Contents/MacOS/Tailscale", "logout"]
-
+            tailscale = CrossPlatformBinary(TAILSCALE_REGISTRY)
             try:
-                # 'down' brings the interface down cleanly before purging credentials
-                subprocess.run(cmd_down, check=False, capture_output=True)
-                # 'logout' completely purges the ephemeral node from the network instantly
-                subprocess.run(cmd_logout, check=False, capture_output=True)
+                tailscale.execute('down',check=False, capture_output=True)
+                tailscale.execute('logout',check=False, capture_output=True)
                 self.managed_tailscale = False
                 print("[TAILSCALE] Disconnected successfully.")
             except Exception as e:
                 print(f"[TAILSCALE WARNING] Could not disconnect automatically: {e}")
-
 
     def _get_connection_hub_data(self):
         """Returns the raw connection hub data in a structured, JSON-friendly dictionary."""
