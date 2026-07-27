@@ -87,6 +87,8 @@ SHADOW_MAP = dict(
     Effect='<shadow type="picker_effect"><field name="VALUE">speed</field></shadow>',
     TitleAction='<shadow type="picker_titleaction"><field name="VALUE">reset</field></shadow>',
     DataPath='<shadow type="picker_data_path"><field name="VALUE">Pos</field></shadow>',
+
+    Color='<shadow type="picker_color_types"><field name="VALUE">WHITE</field></shadow>',
 )
 
 DATA_PATHS = [
@@ -906,7 +908,8 @@ TAXONOMY_RULES = [
         "regex": re.compile(f"^{COLORS_REGEX_GROUP}_(WOOL|CARPET|TERRACOTTA|GLAZED_TERRACOTTA|CONCRETE|CONCRETE_POWDER|BED|BANNER|WALL_BANNER|SHULKER_BOX|CANDLE)$"),
         "is_variant": True,
         "variant_type": "COLOR",
-        "input_type": "MinecraftColour",
+        # "input_type": "MinecraftColour",
+        "input_type": "Color",
         "label": "Color"
     },
 

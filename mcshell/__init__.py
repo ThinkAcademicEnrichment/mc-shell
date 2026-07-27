@@ -360,24 +360,44 @@ class MCShell(Magics):
 
     def _get_connection_hub_data(self):
         """Returns the raw connection hub data in a structured, JSON-friendly dictionary."""
+        from rich.prompt import Prompt
+        import os
+
         def _make_direct_token(ip, rh_host):
-            # Only append the comma and relay host if one actually exists
             base_target = f"{ip},{rh_host}" if rh_host else str(ip)
-            
             mc_p = self.server_data.get('port', MC_SERVER_PORT)
             rcon_p = self.server_data.get('rcon_port', MC_RCON_PORT)
             mj_p = self.server_data.get('mj_port', MJ_PLUGIN_PORT)
             mc_v = self.server_data.get('mc_version', MC_VERSION)
             
-            # Return short token if ports are default, otherwise append ports and version
             if mc_p == 25565 and rcon_p == 25575 and mj_p == 4721:
                 return base_target
             return f"{base_target}@{mc_p}-{rcon_p}-{mj_p}-{mc_v}"
 
         vpn_ip = _get_vpn_ip()
-        local_ip = _get_local_ip()
+        local_ip = _get_local_ip()  # Native Python socket check
         authkey = self.server_data.get('tailscale_authkey')
         rh_host = self.server_data.get('rh_host')
+
+        # --- CHROMEOS CROSTINI DETECTION & FIX ---
+        if local_ip.startswith("100.115.92.") or os.path.exists("/dev/.cros_milestones"):
+            print("\n[!] ChromeOS Environment Detected")
+            print("Linux cannot see your physical Wi-Fi IP address. LAN players need this to connect.")
+            print("You can find it in your Chromebook by clicking the time (bottom right) -> Wi-Fi -> Network.")
+            
+            # Prompt the user, defaulting to the last IP they entered to save time
+            last_ip = self.server_data.get('last_wifi_ip', '')
+            local_ip = Prompt.ask("Enter your Chromebook's Wi-Fi IP address", default=last_ip).strip()
+            
+            # only works for server owner
+            # Save it for next time
+            if hasattr(self,'world_name', None) and local_ip and local_ip != last_ip:
+                self.server_data['last_wifi_ip'] = local_ip
+                creds_path = MC_WORLDS_BASE_DIR / self.world_name / '.mc_creds.json'
+                import json
+                with creds_path.open('w') as f:
+                    json.dump(self.server_data, f)
+        # -----------------------------------------
 
         data = {
             "local_ip": local_ip,
@@ -389,14 +409,12 @@ class MCShell(Magics):
             }
         }
 
-        # Populate the remaining tokens based on available Tailscale data
         if authkey and vpn_ip:
             data['tokens']['classroom_vpn'] = f"{_make_direct_token(vpn_ip, rh_host)}^{authkey}"
         elif vpn_ip:
             data['tokens']['tailscale'] = _make_direct_token(vpn_ip, rh_host)
 
         return data
-
 
     def _print_connection_hub(self):
         """Helper method to print the share tokens cleanly."""
