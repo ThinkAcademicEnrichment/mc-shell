@@ -101,6 +101,7 @@ class RegistryBuilder:
                 (get_class("actions","digitalsetactions", "DigitalSetActions"), "Digital Set Ops", self.COLORS["Digital Set"]),
                 (get_class("actions","digitalgeometryactions", "DigitalGeometryActions"), "Digital Geometry", self.COLORS["Geometry"]),
                 (get_class("actions","serveractions", "ServerActions"), "Server", self.COLORS["Server"]),
+                (get_class("actions","bedwarsactions", "BedWarsActions"), "BedWars", self.COLORS["Server"]),
             ]
 
             self.ACTION_CLASSES.extend([(c, n, col) for c, n, col in classes if c is not None])

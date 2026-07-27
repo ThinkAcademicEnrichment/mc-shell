@@ -9,6 +9,10 @@ from mcshell.actions.digitalsetactions import DigitalSetActions
 from mcshell.shapes.lsystemshapes import LSystemShapes
 from mcshell.shapes.qturtleshapes import QTurtleShapes
 
+
+from mcshell.actions.bedwarsactions import BedWarsActions
+
+
 # FIX: Robustly import generated actions to prevent build-time crashes
 try:
     from mcshell.actions.generated_actions import (
@@ -23,7 +27,7 @@ except ImportError:
 class MCActions(
     WorldActions, PlayerActions,ChatActions,
     EventActions,ServerActions,QTurtleActions,QActions,DigitalGeometryActions,DigitalSetActions,
-    QTurtleShapes,LSystemShapes):
+    QTurtleShapes,LSystemShapes,BedWarsActions):
     """
     Unified API for Blockly combining all action groups.
     """
@@ -40,4 +44,5 @@ class MCActions(
         DigitalSetActions.__init__(self,mc_player_instance, delay_between_blocks)
         QTurtleShapes.__init__(self,mc_player_instance,delay_between_blocks)
         LSystemShapes.__init__(self, mc_player_instance,delay_between_blocks)
+        BedWarsActions.__init__(self, mc_player_instance,delay_between_blocks)
 
