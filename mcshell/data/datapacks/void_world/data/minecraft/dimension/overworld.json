@@ -6,6 +6,10 @@
       "layers": [
         {
           "block": "minecraft:air",
+          "height": 63
+        },
+        {
+          "block": "minecraft:stone",
           "height": 1
         }
       ],
