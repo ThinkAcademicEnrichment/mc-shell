@@ -519,6 +519,13 @@ class MCShell(Magics):
             help="Comma-separated list of datapack names to pull and inject automatically."
         )
 
+        parser.add_argument(
+            "--plugins", 
+            default=None, 
+            help="Comma-separated list of plugin names to pull and inject automatically."
+        )
+
+
         split_args = shlex.split(line)
         
         try:
@@ -543,6 +550,11 @@ class MCShell(Magics):
                     return
         else:
             datapacks_to_install = []
+
+        if parsed_args.plugins is not None:
+            plugins_to_install = parsed_args.plugins.split(",")
+        else:
+            plugins_to_install = []
 
         # Proceed with execution using the sanitized variables
         print(f"Creating world '{world_name}' (Version: {mc_version})")
@@ -656,6 +668,9 @@ class MCShell(Magics):
             "Floodgate.jar": _resolve_geysermc_plugin('floodgate'),
             "ViaVersion.jar": _resolve_modrinth_plugin('viaversion', mc_version)
         }
+
+        for plugin_to_install in plugins_to_install:
+            plugin_urls.update({f"{plugin_to_install}.jar":_resolve_modrinth_plugin(plugin_to_install,mc_version)})
 
         # Create the world_manifest.json file with required Geyser/Floodgate/ViaVersion plugins
 
@@ -1102,6 +1117,10 @@ class MCShell(Magics):
         self.server_data['mc_version'] = mc_version
         self.server_data['app_port'] = local_app
 
+        # save the world name in case we need to write to plugin files in its directory
+        if self.active_paper_server:
+            self.server_data['world_name'] = self.active_paper_server.world_name
+
 
         # 4. Start local Bedrock UDP->TCP translator (Only if NOT using local loopback SSH fallback)
         if target_host and target_host != '127.0.0.1':
@@ -1190,6 +1209,12 @@ class MCShell(Magics):
             self.socat_tcp_process.terminate()
             self.socat_tcp_process.wait(timeout=3)
             del self.socat_tcp_process
+
+        # delete the world key if it exists
+        try:
+            del self.server_data["world_name"]
+        except KeyError:
+            pass
 
         print("Session stopped successfully.")
 
@@ -1347,7 +1372,14 @@ class MCShell(Magics):
             
             # Assuming throw_app_server_error is imported/available in this scope
             throw_app_server_error(error_msg)
-            
+
+            # delete the world key if it exists
+            try:
+                del self.server_data["world_name"]
+            except KeyError:
+                pass
+
+           
             return  # Abort the leave sequence
 
         # Reset Flask application context to put UI into standby mode
