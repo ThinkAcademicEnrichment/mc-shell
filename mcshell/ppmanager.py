@@ -314,7 +314,7 @@ class PaperServerManager:
         """
         downloader = PaperDownloader(MC_WORLDS_BASE_DIR / 'server-jars')
         if not downloader.ensure_jre():
-            print("Abort: Managed JRE 21 could not be initialized.")
+            print("Abort: Managed JRE could not be initialized.")
             return
 
         if not (self.world_directory / "server.properties").exists():

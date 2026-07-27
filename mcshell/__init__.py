@@ -1,15 +1,20 @@
 
+from IPython.utils.capture import capture_output
 import IPython
 from IPython.core.magic import Magics, magics_class, line_magic,needs_local_scope
 
 from mcshell.constants import *
-from mcshell.mcrepo import SQLiteRepository
+from mcshell.mcrepo import PowerRepository,SQLiteRepository
 from mcshell.mcclient import MCClient
 from mcshell.mcserver import throw_app_server_error, start_app_server, reset_app_server_context, GUI_AUTH_TOKEN
 from mcshell.mcserver import RUNNING_POWERS
 from mcshell.ppmanager import *
 from mcshell.ppdownloader import *
 from mcshell.mcplayer import MCPlayer
+
+from mcshell.mcplatforms import CrossPlatformBinary
+from mcshell.mcregistry import TAILSCALE_REGISTRY
+
 
 # =====================================================================
 # SSH Tunnel Helper Functions
@@ -165,12 +170,12 @@ def _get_vpn_ip() -> str | None:
                     
                     # Target the Tailscale interface directly
                     if interface.startswith('tailscale'):
-                        print(f"Detected Tailscale interface '{interface}' with IP: {ip}")
+                        # print(f"Detected Tailscale interface '{interface}' with IP: {ip}")
                         return ip
                         
                     # Fallback for standard CGNAT, explicitly rejecting Crostini's eth0 subnet
                     elif ip.startswith('100.') and not ip.startswith('100.115.92.'):
-                        print(f"Detected VPN interface '{interface}' with IP: {ip}")
+                        # print(f"Detected VPN interface '{interface}' with IP: {ip}")
                         return ip
                         
     except Exception as e:
@@ -266,10 +271,7 @@ def _stop_rathole_client(process, config_path):
     if config_path and os.path.exists(config_path):
         os.remove(config_path)
 
-# REGISTRIES
-from mcshell.mcplatforms import BinaryTarget
-
-  
+ 
 
 @magics_class
 class MCShell(Magics):
@@ -317,11 +319,6 @@ class MCShell(Magics):
         """Automatically authenticates and connects to Tailscale cross-platform."""
         print("\n[TAILSCALE] Authenticating device to VPN...")
 
-        import subprocess
-        import time
-        from mcshell.mcplatforms import CrossPlatformBinary
-        from mcshell.mcregistry import TAILSCALE_REGISTRY
-
         tailscale = CrossPlatformBinary(TAILSCALE_REGISTRY)
 
         # Build the argument list dynamically
@@ -348,87 +345,18 @@ class MCShell(Magics):
             else:
                 print("[TAILSCALE WARNING] 'tailscale' command not found. Is Tailscale installed?\n")
 
-    def _connect_tailscale_old(self, authkey: str, accept_routes: bool = False):
-        """Automatically authenticates and connects to Tailscale cross-platform."""
-        print("\n[TAILSCALE] Authenticating device to VPN...")
-
-        import subprocess
-        import platform
-        import time
-        import shutil
-
-        sys_os = platform.system().lower()
-        # Detect if running inside Windows Subsystem for Linux
-        is_wsl = 'linux' in sys_os and ('microsoft' in platform.release().lower() or 'wsl' in platform.release().lower())
-
-        # Resolve absolute path to bypass strict 'sudo' secure_path restrictions on Linux
-        tailscale_bin = shutil.which("tailscale") or "tailscale"
-
-        # Build the platform-specific command
-        cmd = ["sudo", tailscale_bin, "up", f"--authkey={authkey}", "--force-reauth"]
-
-        if is_wsl:
-            print("[TAILSCALE] WSL Environment Detected. Routing to Windows host...")
-            cmd = ["tailscale.exe", "up", f"--authkey={authkey}", "--force-reauth"]
-        elif sys_os == 'windows':
-            cmd = ["tailscale", "up", f"--authkey={authkey}", "--force-reauth"]
-        elif sys_os == 'darwin':
-            cmd = ["/Applications/Tailscale.app/Contents/MacOS/Tailscale", "up", f"--authkey={authkey}", "--force-reauth"]
-
-        # Only clients need to explicitly accept subnet routes
-        if accept_routes:
-            cmd.append("--accept-routes")
-
-        try:
-            subprocess.run(cmd, check=True)
-            self.managed_tailscale = True
-            print("[TAILSCALE] Connected to VPN successfully!\n")
-            time.sleep(3) # Give the OS network interface a moment to stabilize and acquire its IP
-        except subprocess.CalledProcessError:
-            print("[TAILSCALE WARNING] Failed to automatically connect. You may need to run Tailscale manually.\n")
-        except FileNotFoundError:
-            if sys_os == 'darwin':
-                print("[TAILSCALE WARNING] Tailscale App not found in /Applications. Is it installed?\n")
-            elif is_wsl or sys_os == 'windows':
-                print("[TAILSCALE WARNING] 'tailscale.exe' not found. Please install the Windows Tailscale app.\n")
-            else:
-                print("[TAILSCALE WARNING] 'tailscale' command not found. Is Tailscale installed?\n")
-
     def _disconnect_tailscale(self):
         """Automatically logs out of Tailscale if we were the ones who brought it up."""
         if getattr(self, 'managed_tailscale', False):
             print("\n[TAILSCALE] Disconnecting from VPN...")
-            import subprocess
-            import platform
-            import shutil
-
-            sys_os = platform.system().lower()
-            is_wsl = 'linux' in sys_os and ('microsoft' in platform.release().lower() or 'wsl' in platform.release().lower())
-
-            tailscale_bin = shutil.which("tailscale") or "tailscale"
-
-            cmd_down = ["sudo", tailscale_bin, "down"]
-            cmd_logout = ["sudo", tailscale_bin, "logout"]
-            if is_wsl:
-                cmd_down = ["tailscale.exe", "down"]
-                cmd_logout = ["tailscale.exe", "logout"]
-            elif sys_os == 'windows':
-                cmd_down = ["tailscale", "down"]
-                cmd_logout = ["tailscale", "logout"]
-            elif sys_os == 'darwin':
-                cmd_down = ["/Applications/Tailscale.app/Contents/MacOS/Tailscale", "down"]
-                cmd_logout = ["/Applications/Tailscale.app/Contents/MacOS/Tailscale", "logout"]
-
+            tailscale = CrossPlatformBinary(TAILSCALE_REGISTRY)
             try:
-                # 'down' brings the interface down cleanly before purging credentials
-                subprocess.run(cmd_down, check=False, capture_output=True)
-                # 'logout' completely purges the ephemeral node from the network instantly
-                subprocess.run(cmd_logout, check=False, capture_output=True)
+                tailscale.execute('down',check=False, capture_output=True)
+                tailscale.execute('logout',check=False, capture_output=True)
                 self.managed_tailscale = False
                 print("[TAILSCALE] Disconnected successfully.")
             except Exception as e:
                 print(f"[TAILSCALE WARNING] Could not disconnect automatically: {e}")
-
 
     def _get_connection_hub_data(self):
         """Returns the raw connection hub data in a structured, JSON-friendly dictionary."""
@@ -476,24 +404,43 @@ class MCShell(Magics):
         app_port = self.server_data.get('app_port')
 
         print(f"\n" + "="*55)
-        # 1. App Server (mc-ed) Status (Locked to localhost for ChromeOS constraints)
+        # App Server (mc-ed) Status (Locked to localhost for ChromeOS constraints)
         if getattr(self, 'app_server_thread', None) and self.app_server_thread.is_alive():
             if getattr(self, 'mc_name', None):
                 print(f"🟢 MCED App Server  : RUNNING (Active Player: {self.mc_name})")
                 print(f"   Editor URL       : http://localhost:{app_port}/?auth={GUI_AUTH_TOKEN}")
                 print(f"   Control URL      : http://localhost:{app_port}/control?auth={GUI_AUTH_TOKEN}")
+
+                # Bedrock Instructions
+                print("\n" + "="*60)
+                print("🎮 BEDROCK PLAYERS:")
+                print("="*60)
+                if data.get('rh_host'):
+                    # Use Case 3: Dedicated rathole relay handling Bedrock UDP
+                    print(f"Please open Minecraft and connect to the public relay:\n{' '*4}{data['rh_host']}:19132")
+                else:
+                    # Use Cases 1 & 2: Local LAN or Tailscale socat UDP forwarder
+                    print(f"Please open Minecraft and connect to this computer's IP:\n{' '*4}{data['local_ip']}:19132")
+
+                # Java Instructions 
+                print("\n" + "="*60)
+                print("💻 JAVA PLAYERS:")
+                # print("🎮 JAVA PLAYERS:")
+                print("="*60)
+                print(f"Please open Minecraft and connect to this computer's IP:\n{' '*4}{data['local_ip']}:{self.server_data['port']}")
+
             else:
                 print(f"🟡 MCED App Server  : STANDBY")
                 print(f"   Lobby URL        : http://localhost:{app_port}/lobby?auth={GUI_AUTH_TOKEN}")
         else:
             print("🔴 Editor App Server  : STOPPED")
 
-        if getattr(self, 'mc_name', None):
+        if getattr(self, 'active_paper_server', None) and self.active_paper_server.is_alive():
             print(f"\n" + "="*60)
             print("🌍 CONNECTION HUB: Share these tokens with your friends!")
             print("="*60)
 
-            # 2. VPN (Tailscale) Tokens
+            # VPN (Tailscale) Tokens
             if data.get('authkey'):
                 if 'classroom_vpn' in data['tokens']:
                     print("\n[ VPN CONNECTION (Automated Tailscale Mesh) ]")
@@ -506,26 +453,10 @@ class MCShell(Magics):
                 print("\n[ TAILSCALE CONNECTION (Manual Mesh) ]")
                 print(f"Token :\n{' '*4}{data['tokens']['tailscale']}")
 
-            # 3. Standard Direct Tokens
+            # Standard Direct Tokens
             print("\n[ DIRECT CONNECTION (Local LAN) ]")
             print(f"Local LAN Token :\n{' '*4}{data['tokens']['lan']}")
 
-            # 4. Bedrock Instructions
-            print("\n" + "="*60)
-            print("🎮 BEDROCK PLAYERS:")
-            print("="*60)
-            if data.get('rh_host'):
-                # Use Case 3: Dedicated rathole relay handling Bedrock UDP
-                print(f"Please open Minecraft and connect to the public relay:\n{' '*4}{data['rh_host']}:19132")
-            else:
-                # Use Cases 1 & 2: Local LAN or Tailscale socat UDP forwarder
-                print(f"Please open Minecraft and connect to this computer's IP:\n{' '*4}{data['local_ip']}:19132")
-
-            # 5 Java Instructions 
-            print("\n" + "="*60)
-            print("🎮 JAVA PLAYERS:")
-            print("="*60)
-            print(f"Please open Minecraft and connect to this computer's IP:\n{' '*4}{data['local_ip']}:{self.server_data['port']}")
 
     def _complete_world_command(self, ipyshell, event):
         ipyshell.user_ns.update(dict(rcon_event=event))
@@ -588,6 +519,13 @@ class MCShell(Magics):
             help="Comma-separated list of datapack names to pull and inject automatically."
         )
 
+        parser.add_argument(
+            "--plugins", 
+            default=None, 
+            help="Comma-separated list of plugin names to pull and inject automatically."
+        )
+
+
         split_args = shlex.split(line)
         
         try:
@@ -612,6 +550,11 @@ class MCShell(Magics):
                     return
         else:
             datapacks_to_install = []
+
+        if parsed_args.plugins is not None:
+            plugins_to_install = parsed_args.plugins.split(",")
+        else:
+            plugins_to_install = []
 
         # Proceed with execution using the sanitized variables
         print(f"Creating world '{world_name}' (Version: {mc_version})")
@@ -718,24 +661,26 @@ class MCShell(Magics):
             return
 
         print(f"Resolving compatible Geyser/Floodgate/ViaVersion plugins for Minecraft {mc_version}...")
-        # Resolve dynamic Modrinth URLs based on the MC version, falling back to Geyser's official 'latest' endpoints
-        geyser_url = _resolve_geysermc_plugin('geyser')
-        floodgate_url = _resolve_geysermc_plugin('floodgate')
-        # Query Modrinth for the exact ViaVersion jar matching the server's MC version
-        viaversion_url = _resolve_modrinth_plugin('viaversion', mc_version)
 
-        # Create the world_manifest.json file with required Geyser/Floodgate plugins
+        # Map the exact filenames you want to the resolved URLs
+        plugin_urls= {
+            "Geyser.jar": _resolve_geysermc_plugin('geyser'),
+            "Floodgate.jar": _resolve_geysermc_plugin('floodgate'),
+            "ViaVersion.jar": _resolve_modrinth_plugin('viaversion', mc_version)
+        }
+
+        for plugin_to_install in plugins_to_install:
+            plugin_urls.update({f"{plugin_to_install}.jar":_resolve_modrinth_plugin(plugin_to_install,mc_version)})
+
+        # Create the world_manifest.json file with required Geyser/Floodgate/ViaVersion plugins
+
         manifest = {
             "world_name": world_name,
             "paper_version": mc_version,
             "java_path": "java", # Assumes java is in the system's PATH
             "server_jar_path": str(jar_path.relative_to(world_dir.parent)), # Store a path relative to the world_dir
             "world_data_path": str((world_dir / "world").relative_to(world_dir)),
-            "plugins": [
-                geyser_url,
-                floodgate_url,
-                viaversion_url
-            ],
+            "plugins": plugin_urls,
             "server_properties": {
                 "gamemode": "creative",
                 "motd": f"MC-ED World: {world_name}",
@@ -780,15 +725,46 @@ class MCShell(Magics):
             print(f"Are you doing development? Run build.py to generate all required classes and artifacts.")
             print(f"The world {world_name} could not be created. :-(" )
             return
-
         plugins_dir.joinpath(mc_juice_jar_path.name).symlink_to(mc_juice_jar_path)
-        
 
         # Install the plugins listed in the manifest (Downloads Geyser & Floodgate automatically)
-        plugin_urls = manifest.get("plugins", [])
-        if plugin_urls:
-            downloader.install_plugins(plugin_urls, plugins_dir)
+        downloader.install_plugins(plugin_urls, plugins_dir)
 
+        print("Patching configurations dynamically...")
+       
+        # 1. Patch Floodgate
+        def patch_floodgate(data):
+            # make arbitrary Bedrock names look the same as Java names
+            data['username-prefix'] = ""
+            
+        downloader.extract_and_patch_jar_config(plugins_dir,"Floodgate.jar", "floodgate", patch_floodgate)
+
+        # this does not work; geyser generates its config.yml; must do it on server startup
+        # # 2. Patch Geyser
+        # def patch_geyser(data):
+        #     # force fragmenting of the nasty RakNet handshake packet
+        #     data['advanced']['bedrock']['mtu'] = "1200"
+            
+
+        # --- Pre-seed Server Configs ---
+        # Paper will read these partial files on first boot and append all missing defaults automatically.
+        
+        # 3. Pre-seed Spigot.yml
+        spigot_file = world_dir / "spigot.yml"
+        # We define only the structure we want to override
+        spigot_data = {'settings': {'timeout-time': 240}}
+        
+        with open(spigot_file, 'w') as f:
+            yaml.dump(spigot_data, f)
+        print(f"Pre-seeded overrides into {spigot_file.name}")
+
+        # 4. Pre-seed Bukkit.yml
+        bukkit_file = world_dir / "bukkit.yml"
+        bukkit_data = {'ticks-per': {'autosave': 10000}}
+        
+        with open(bukkit_file, 'w') as f:
+            yaml.dump(bukkit_data, f)
+        print(f"Pre-seeded overrides into {bukkit_file.name}")
 
         # --- Datapack Installation Logic ---
         if datapacks_to_install:
@@ -814,8 +790,6 @@ class MCShell(Magics):
                 else:
                     print(f"Warning: Datapack '{pack_name}' not found in library.")
 
-
-
         print(f"\nWorld '{world_name}' created successfully.")
         print(f"To start it, run: %pp_start_world {world_name}")
 
@@ -830,11 +804,6 @@ class MCShell(Magics):
         Use `%pp_start_world --help` for the full list of configurable options.
 
         """
-        import subprocess
-        import shlex
-        import argparse
-        import json
-
         parser = argparse.ArgumentParser(
             prog="%pp_start_world", 
             description="Starts a Paper server for a given world name."
@@ -935,51 +904,11 @@ class MCShell(Magics):
                 self.server_data['rh_host'] = relay_server_address
                 self.rathole_process, self.rathole_config = _start_rathole_client(relay_server_address, authkey)
                 
-        spigot_file = world_directory / "spigot.yml"
-        bukkit_file = world_directory / "bukkit.yml"
-        floodgate_config = world_directory/ "plugins" / "floodgate" / "config.yml"
         geyser_config = world_directory / "plugins" / "Geyser-Spigot" / "config.yml"
 
-        # Initialize YAML parser to preserve existing comments and structure
+        # geyser generates its config.yml after first startup :-(
         yaml = YAML()
         yaml.preserve_quotes = True
-
-        # Update timeout-time in spigot.yml (nested under 'settings')
-        if spigot_file.is_file():
-            spigot_data = yaml.load(spigot_file)
-            
-            # Ensure the settings block exists before assigning
-            if 'settings' not in spigot_data:
-                spigot_data['settings'] = {}
-                
-            spigot_data['settings']['timeout-time'] = 240
-            
-            # ruamel.yaml can write directly to a pathlib.Path object
-            yaml.dump(spigot_data, spigot_file)
-            print(f"Updated timeout-time in {spigot_file.name}")
-
-        # Update autosave in bukkit.yml (nested under 'ticks-per')
-        if bukkit_file.is_file():
-            bukkit_data = yaml.load(bukkit_file)
-            
-            # Ensure the ticks-per block exists before assigning
-            if 'ticks-per' not in bukkit_data:
-                bukkit_data['ticks-per'] = {}
-                
-            bukkit_data['ticks-per']['autosave'] = 10000
-            
-            yaml.dump(bukkit_data, bukkit_file)
-            print(f"Updated autosave in {bukkit_file.name}")
-
-        if floodgate_config.is_file():
-            floodgate_data = yaml.load(floodgate_config)
-
-            # make arbitrary Bedrock names look the same as Java names; could lead to collisions
-            floodgate_data['username-prefix'] = ""
-            
-            # ruamel.yaml can write directly to a pathlib.Path object
-            yaml.dump(floodgate_data, floodgate_config)
-            print(f"Updated username-prefix in {floodgate_config.name}")
 
         if geyser_config.is_file():
             geyser_data = yaml.load(geyser_config)
@@ -991,8 +920,7 @@ class MCShell(Magics):
             yaml.dump(geyser_data, geyser_config)
             print(f"Updated bedrock mtu in {geyser_config.name}")
 
-
-
+        # join the world or not
         if not parsed_args.do_not_join:
             # suspend the logs for the user name prompt
             self.active_paper_server.suspend_logs = True
@@ -1008,6 +936,7 @@ class MCShell(Magics):
                     "
 
             self.ip.run_line_magic('pp_join_world',magic_cmd_line)
+            # restore server logs
             self.active_paper_server.suspend_logs = False 
         else:
             self.ip.run_line_magic('mc_server_info','')
@@ -1188,6 +1117,11 @@ class MCShell(Magics):
         self.server_data['mc_version'] = mc_version
         self.server_data['app_port'] = local_app
 
+        # save the world name in case we need to write to plugin files in its directory
+        if self.active_paper_server:
+            self.server_data['world_name'] = self.active_paper_server.world_name
+
+
         # 4. Start local Bedrock UDP->TCP translator (Only if NOT using local loopback SSH fallback)
         if target_host and target_host != '127.0.0.1':
             print(f"Starting socat UDP forwarder for local Bedrock clients...")
@@ -1230,6 +1164,7 @@ class MCShell(Magics):
                 'password': Prompt.ask('Server Password:', password=True)
             })
 
+        # get the sql db of user powers
         power_repo = SQLiteRepository(minecraft_name)
 
         print(f"Assigning application server context to Minecraft player: {minecraft_name}")
@@ -1238,6 +1173,7 @@ class MCShell(Magics):
         self._print_connection_hub()
 
         return
+
     @line_magic
     def pp_stop_world(self, line):
         """
@@ -1274,6 +1210,11 @@ class MCShell(Magics):
             self.socat_tcp_process.wait(timeout=3)
             del self.socat_tcp_process
 
+        # delete the world key if it exists
+        try:
+            del self.server_data["world_name"]
+        except KeyError:
+            pass
 
         print("Session stopped successfully.")
 
@@ -1431,7 +1372,14 @@ class MCShell(Magics):
             
             # Assuming throw_app_server_error is imported/available in this scope
             throw_app_server_error(error_msg)
-            
+
+            # delete the world key if it exists
+            try:
+                del self.server_data["world_name"]
+            except KeyError:
+                pass
+
+           
             return  # Abort the leave sequence
 
         # Reset Flask application context to put UI into standby mode
@@ -1460,7 +1408,6 @@ class MCShell(Magics):
             del self.rathole_process
             del self.rathole_config
 
-        from mcshell.mcserver import GUI_AUTH_TOKEN
         # Ensure MC_APP_PORT is defined in your scope, usually via current_app.config or global
         app_port = globals().get('MC_APP_PORT', 5001) 
 
@@ -1492,7 +1439,6 @@ class MCShell(Magics):
                 _response = _rcon_client.data(*args)
             elif kind == 'help':
                 _response = _rcon_client.help(*args)
-            #print(f"[green]MCSHell running and connected to {SERVER_DATA['host']}[/]")
             return _response
         except ConnectionRefusedError as e:
             print("[red bold]Unable to send command. Is the server running?[/]")
@@ -2052,7 +1998,6 @@ if __name__ == '__main__':
 
         arg_matches= []
         if len(parts) == 1: # showing commands
-            # arg_matches = [c for c in self.commands.keys()]
             arg_matches = [c for c in RUNNING_POWERS]
             ipyshell.user_ns.update({'cancel_matches':arg_matches})
         elif len(parts) == 2 and text != '':  # completing commands
@@ -2318,8 +2263,6 @@ if __name__ == '__main__':
             %mc_library export <filepath.json>       - Export selected powers to a JSON file.
             %mc_library import <filepath.json>       - Import powers from a JSON file into your library.
         """
-        import shlex  # Ensure shlex is available
-        from mcshell.mcrepo import PowerRepository, SQLiteRepository
 
         try:
             args = shlex.split(line)

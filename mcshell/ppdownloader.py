@@ -129,26 +129,41 @@ class PaperDownloader:
             print(f"Error: Could not fetch build info for version {mc_version}: {e}")
             return None
 
+    def extract_and_patch_jar_config(self,plugins_dir,jar_name, plugin_folder_name, patch_logic):
+        """Extracts config.yml from a jar, applies modifications, and writes it to the plugin folder."""
+        # Initialize ruamel.yaml parser to preserve comments and structure
+        yaml = YAML()
+        yaml.preserve_quotes = True
+ 
+        jar_path = plugins_dir / jar_name
+        output_dir = plugins_dir / plugin_folder_name
+        output_dir.mkdir(exist_ok=True)
+        output_file = output_dir / "config.yml"
+        
+        try:
+            # Open JAR and read the default config into ruamel.yaml
+            with zipfile.ZipFile(jar_path, 'r') as jar:
+                with jar.open('config.yml') as default_config:
+                    data = yaml.load(default_config)
+            
+            # Apply specific overrides via the passed function
+            patch_logic(data)
+            
+            # Write the patched config with comments intact
+            with open(output_file, 'w') as f:
+                yaml.dump(data, f)
+            print(f"Successfully patched {plugin_folder_name} configuration.")
+            
+        except Exception as e:
+            print(f"Error patching {plugin_folder_name} config: {e}")
+
+
     def install_plugins(self, plugin_urls: list[str], world_plugins_dir: Path) -> list[str]:
         """Downloads and installs a list of plugins."""
         if not plugin_urls: return []
         world_plugins_dir.mkdir(exist_ok=True)
         successful_installs = []
-        for url in plugin_urls:
-            # Strip query parameters if any exist before grabbing the filename chunk
-            clean_url = url.split('?')[0]
-            filename = clean_url.split('/')[-1]
-
-            # API endpoints (like Geyser's /spigot) often don't have .jar in the URL.
-            # We need to assign a proper name and ensure it gets processed as a JAR.
-            if not filename.endswith(".jar") and not filename.endswith(".zip"):
-                if "floodgate" in url.lower():
-                    filename = "Floodgate.jar"
-                elif "geyser" in url.lower():
-                    filename = "Geyser-Spigot.jar"
-                else:
-                    filename += ".jar"
-
+        for filename,url in plugin_urls.items():
             dest = world_plugins_dir / filename
 
             if filename.endswith(".jar") and self._download_file(url, dest):
