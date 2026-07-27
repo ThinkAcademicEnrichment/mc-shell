@@ -440,7 +440,6 @@ class QTurtle:
                 brush_offset = (bx * self.right) + (by * self.up) + (bz * self.forward)
                 final_pos = current_center + brush_offset
                 world_voxels.add((int(final_pos[0]), int(final_pos[1]), int(final_pos[2])))
-        self.pos += total_displacement
         return DigitalSet(world_voxels)
 
     def drop(self):
