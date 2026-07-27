@@ -388,12 +388,13 @@ class MCShell(Magics):
             # Prompt the user, defaulting to the last IP they entered to save time
             last_ip = self.server_data.get('last_wifi_ip', '')
             local_ip = Prompt.ask("Enter your Chromebook's Wi-Fi IP address", default=last_ip).strip()
-            
+
+            # TODO: does not actually store the last_ip address ??? 
             # only works for server owner
             # Save it for next time
-            if hasattr(self,'world_name', None) and local_ip and local_ip != last_ip:
+            if 'server_data' in self.server_data.keys() and local_ip and local_ip != last_ip:
                 self.server_data['last_wifi_ip'] = local_ip
-                creds_path = MC_WORLDS_BASE_DIR / self.world_name / '.mc_creds.json'
+                creds_path = MC_WORLDS_BASE_DIR / self.server_data['world_name'] / '.mc_creds.json'
                 import json
                 with creds_path.open('w') as f:
                     json.dump(self.server_data, f)
