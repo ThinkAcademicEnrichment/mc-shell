@@ -12,7 +12,7 @@ from mcshell.constants import MC_APP_SRC_DIR, MC_DATA_DIR, MC_JUICE_SRC_DIR,MC_S
 
 from mcshell.mcconfig import TAXONOMY_RULES,ENTITY_RULES
 
-def rebuild():
+def rebuild(rebuild_mcjuice=True):
     """
     Primary orchestration script to rebuild the Minecraft Blockly registry.
     This serves as a full-pipeline test for the data-driven migration.
@@ -71,45 +71,48 @@ def rebuild():
     # 3. Updates toolbox.xml via blockapily's structured XML injection
     builder.build_all()
 
-    print("\nStep 5: Build the McJuice plugin...")
-    pom_path = MC_JUICE_SRC_DIR.parent / 'pom.xml'
+    if rebuild_mcjuice:
+        print("\nStep 5: Build the McJuice plugin...")
+        pom_path = MC_JUICE_SRC_DIR.parent / 'pom.xml'
 
-    # Parse the pom.xml to dynamically detect all profile IDs
-    print(f"Probing {pom_path} for Maven profiles...")
-    tree = ET.parse(pom_path)
-    ns = {'m': 'http://maven.apache.org/POM/4.0.0'}
-    profile_ids = [p.text for p in tree.findall('.//m:profile/m:id', ns)]
+        # Parse the pom.xml to dynamically detect all profile IDs
+        print(f"Probing {pom_path} for Maven profiles...")
+        tree = ET.parse(pom_path)
+        ns = {'m': 'http://maven.apache.org/POM/4.0.0'}
+        profile_ids = [p.text for p in tree.findall('.//m:profile/m:id', ns)]
 
-    if not profile_ids:
-        print("Warning: No profiles detected in pom.xml. Defaulting to standard build.")
-        profile_ids = [None] # Allows the loop to run once with a standard build command
+        if not profile_ids:
+            print("Warning: No profiles detected in pom.xml. Defaulting to standard build.")
+            profile_ids = [None] # Allows the loop to run once with a standard build command
 
-    # Build each profile and copy the artifact immediately
-    for profile in profile_ids:
-        if profile:
-            print(f"\nBuilding McJuice JAR for profile: {profile}...")
-            build_cmd = ["mvn","--quiet", "clean", "package", "-P", profile]
-        else:
-            print("\nBuilding McJuice JAR...")
-            build_cmd = ["mvn","--quiet", "clean", "package"]
+        # Build each profile and copy the artifact immediately
+        for profile in profile_ids:
+            if profile:
+                print(f"\nBuilding McJuice JAR for profile: {profile}...")
+                build_cmd = ["mvn","--quiet", "clean", "package", "-P", profile]
+            else:
+                print("\nBuilding McJuice JAR...")
+                build_cmd = ["mvn","--quiet", "clean", "package"]
+                
+            # Execute the Maven build
+            subprocess.run(build_cmd, cwd=str(MC_JUICE_SRC_DIR.parent), check=True)
+
+            # 3. Move the artifact to the data directory before the next iteration's 'clean' wipes it
+            built_jars = list(MC_JUICE_SRC_DIR.parent.joinpath('target').glob('mcjuice-*.jar'))
             
-        # Execute the Maven build
-        subprocess.run(build_cmd, cwd=str(MC_JUICE_SRC_DIR.parent), check=True)
+            if not built_jars:
+                print(f"Error: No generated JARs found in target/ after building profile {profile}")
+                continue
+                
+            for built_jar in built_jars:
+                print(f"Copying {built_jar.name} to {MC_DATA_DIR}")
+                shutil.copy2(built_jar, MC_DATA_DIR)
 
-        # 3. Move the artifact to the data directory before the next iteration's 'clean' wipes it
-        built_jars = list(MC_JUICE_SRC_DIR.parent.joinpath('target').glob('mcjuice-*.jar'))
-        
-        if not built_jars:
-            print(f"Error: No generated JARs found in target/ after building profile {profile}")
-            continue
-            
-        for built_jar in built_jars:
-            print(f"Copying {built_jar.name} to {MC_DATA_DIR}")
-            shutil.copy2(built_jar, MC_DATA_DIR)
+        print(f"\nMcJuice JAR integrated into mcshell/data/")
+        print("\nAll builds completed and copied successfully.")
+    else:
+        print("\nStep 5: Skipping the build of the McJuice plugin...")
 
-    print("\nAll builds completed and copied successfully.")
-
-    print(f"\nMcJuice JAR integrated into mcshell/data/")
     print(f"\nRebuild Complete!")
     print(f"\nBlocks generated in: {MC_APP_SRC_DIR / 'blocks'}")
     print(f"\nToolbox updated: {MC_DATA_DIR / 'toolbox.xml'}")
@@ -131,4 +134,22 @@ def rebuild():
     print(f"\nYou can now refresh the mced editor or restart the web application.")
 
 if __name__ == "__main__":
-    rebuild()
+    import sys
+    import shlex
+    import argparse
+    parser = argparse.ArgumentParser(
+        prog="build", 
+        description="Build the components for the mc-shell application"
+    )
+
+    
+    parser.add_argument("--no-mcjuice", action="store_true",help="Rebuild the McJuice jar")
+    
+    try:
+        parsed_args = parser.parse_args(sys.argv[1:])
+    except SystemExit:
+        # This catches '--help' or invalid arguments and stops the function
+        # without killing the IPython kernel
+        sys.exit(1) 
+
+    rebuild(rebuild_mcjuice = not parsed_args.no_mcjuice)

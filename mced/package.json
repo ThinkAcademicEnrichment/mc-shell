@@ -6,7 +6,9 @@
   "scripts": {
     "clean": "rimraf ../mcshell/data/app",
     "build:all": "poetry run python ../build.py",
+    "build:no-mcjuice": "poetry run python ../build.py --no-mcjuice",
     "build:app":"parcel build src/index.html src/control.html --dist-dir ../mcshell/data/app --no-cache",
+    "build:quick": "npm run clean && npm run build:no-mcjuice && npm run build:app",
     "build": "npm run clean && npm run build:all && npm run build:app"
   },
   "dependencies": {
