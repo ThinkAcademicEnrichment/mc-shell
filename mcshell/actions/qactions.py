@@ -36,3 +36,9 @@ class QActions(MCActionsBase):
         height = self.mcplayer.mj.world.getHeight(x, z)
         return int(height)
 
+    @mced_block(
+        label="Get Q Direction",
+        direction={'label':"Q-Compass Direction"}
+    )
+    def get_q_direction_from_q_compass_direction(self, direction: 'QCompass') -> Vec3:
+        return self.mcplayer._get_q_direction_vector(direction)
