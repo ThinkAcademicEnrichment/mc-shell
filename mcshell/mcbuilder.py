@@ -99,6 +99,7 @@ class RegistryBuilder:
                 (get_class("shapes","qturtleshapes", "QTurtleShapes"), "Q-Turtle Sets", self.COLORS["Turtle"]),
                 (get_class("shapes","lsystemshapes", "LSystemShapes"), "LSystem Sets", self.COLORS["LSystem"]),
                 (get_class("actions","digitalsetactions", "DigitalSetActions"), "Digital Set Ops", self.COLORS["Digital Set"]),
+                (get_class("actions","setactions", "SetActions"), "Set Ops", self.COLORS["Set"]),
                 (get_class("actions","digitalgeometryactions", "DigitalGeometryActions"), "Digital Geometry", self.COLORS["Geometry"]),
                 (get_class("actions","serveractions", "ServerActions"), "Server", self.COLORS["Server"]),
                 (get_class("actions","bedwarsactions", "BedWarsActions"), "BedWars", self.COLORS["Server"]),
