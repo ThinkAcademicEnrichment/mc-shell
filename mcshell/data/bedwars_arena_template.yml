@@ -1,0 +1,84 @@
+name: MyArena
+pauseCountdown: 60
+gameTime: 3600
+world: world
+pos1: -10.0;0.0;-10.0;-143.09952;33.149986
+pos2: 10.0;10.0;10.0;50.850525;32.249992
+specSpawn: -0.41707800102116854;5.0010929942933;0.41707800102116854;-15.899623;70.20003
+lobbySpawn: 0.46615660637025547;4.0;3.518184305780455;-15.899623;70.20003
+lobbySpawnWorld: world
+minPlayers: 2
+postGameWaiting: 3
+teams:
+  g33zba:
+    isNewColor: true
+    color: RED
+    maxPlayers: 1
+    bed: -7.0;0.0;-3.0;0.0;0.0
+    spawn: 3.7100476373006024;0.0;6.287859707878177;143.70047;2.7000003
+    actualName: g33zba
+  Om5mO:
+    isNewColor: true
+    color: BLUE
+    maxPlayers: 1
+    bed: 2.0;0.0;5.0;0.0;0.0
+    spawn: -6.280256047671844;0.0;-5.0;-51.2995;-1.8000005
+    actualName: Om5mO
+spawners:
+- maxSpawnedResources: -1
+  hologramEnabled: true
+  location: -8.406688754849078;0.0;0.2245779732203454;0.0;0.0
+  customName: null
+  startLevel: 1.0
+  team: null
+  type: iron
+- maxSpawnedResources: -1
+  hologramEnabled: true
+  location: 4.848456188408474;0.0;8.153534882732705;0.0;0.0
+  customName: null
+  startLevel: 1.0
+  team: null
+  type: gold
+stores:
+- isBaby: 'false'
+  loc: 7.428031149349262;0.0;-4.0143801231218;39.90037;3.9000163
+  parent: 'false'
+  shop: null
+  skin: null
+  team: null
+  type: VILLAGER
+constant:
+  compass-enabled: inherit
+  add-wool-to-inventory-on-join: inherit
+  in-lobby-colored-leather-by-team: inherit
+  allow-crafting: inherit
+  join-randomly-after-lobby-timeout: inherit
+  join-randomly-on-lobby-join: inherit
+  keep-inventory-on-death: inherit
+  prevent-killing-villagers: inherit
+  player-drops: inherit
+  friendlyfire: inherit
+  lobbybossbar: inherit
+  bossbar: inherit
+  lobbyscoreboard: inherit
+  scoreboard: inherit
+  prevent-spawning-mobs: inherit
+  spawner-holograms: inherit
+  spawner-disable-merge: inherit
+  game-start-items: inherit
+  player-respawn-items: inherit
+  spawner-holograms-countdown: inherit
+  damage-when-player-is-not-in-arena: inherit
+  remove-unused-target-blocks: inherit
+  allow-block-falling: inherit
+  holo-above-bed: inherit
+  allow-spectator-join: inherit
+  anchor-auto-fill: inherit
+  anchor-decreasing: inherit
+  cake-target-block-eating: inherit
+  target-block-explosions: inherit
+  invisible-lobby-on-game-start: inherit
+arenaTime: WORLD
+arenaWeather: default
+lobbyBossBarColor: default
+gameBossBarColor: default
