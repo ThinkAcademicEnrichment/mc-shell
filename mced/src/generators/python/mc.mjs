@@ -221,6 +221,40 @@ export function defineMineCraftGenerators(pythonGenerator) {
         return code;
     };
 
+    // --- Random Picker Adaptor
+
+    pythonGenerator.forBlock['random_picker'] = function(block, generator) {
+        // 1. Get the block physically connected to the "PICKER" input
+        var targetBlock = block.getInputTargetBlock('PICKER');
+
+        if (!targetBlock) {
+            return ['None', pythonGenerator.ORDER_ATOMIC];
+        }
+
+        // 2. Target the specific dropdown field (your pickers use "VALUE")
+        var field = targetBlock.getField('VALUE');
+
+        if (field && typeof field.getOptions === 'function') {
+            // 3. getOptions() returns an array of pairs: [["Human Readable", "MACHINE_VALUE"], ...]
+            var options = field.getOptions();
+
+            // 4. Extract only the machine values and wrap them in Python string quotes
+            var values = options.map(function(opt) {
+                return '"' + opt[1] + '"'; 
+            });
+
+            // 5. Construct the Python random.choice string
+            var code = 'random.choice([' + values.join(', ') + '])';
+            
+            return [code, pythonGenerator.ORDER_FUNCTION_CALL];
+        } else {
+            // Fallback: If a standard block is connected that isn't a dropdown picker,
+            // just generate its normal code.
+            var defaultCode = pythonGenerator.valueToCode(block, 'PICKER', pythonGenerator.ORDER_ATOMIC) || 'None';
+            return [defaultCode, pythonGenerator.ORDER_ATOMIC];
+        }
+    };
+
     // --- MATH & MINECRAFT DATA STRUCTURES ---
 
     pythonGenerator.forBlock['minecraft_matrix_3d_elements'] = function (block, generator) {
@@ -244,6 +278,14 @@ export function defineMineCraftGenerators(pythonGenerator) {
         const roll = generator.valueToCode(block, 'ROLL', generator.ORDER_ATOMIC) || '0.0';
 
         const code = `Matrix3.from_euler_angles(yaw_degrees=${yaw}, pitch_degrees=${pitch}, roll_degrees=${roll})`;
+        return [code, generator.ORDER_FUNCTION_CALL];
+    };
+
+    pythonGenerator.forBlock['minecraft_matrix_3d_rodrigues'] = function (block, generator) {
+        const axis = generator.valueToCode(block, 'AXIS', generator.ORDER_ATOMIC) || '[0, 0, 0]';
+        const angle = generator.valueToCode(block, 'ANGLE', generator.ORDER_ATOMIC) || '0.0';
+
+        const code = `Matrix3.from_angle_and_direction(angle_degrees=${angle}, axis=${axis})`;
         return [code, generator.ORDER_FUNCTION_CALL];
     };
 
@@ -300,6 +342,18 @@ export function defineMineCraftGenerators(pythonGenerator) {
         return [`${matrix} @ ${vector}`, generator.ORDER_MULTIPLICATIVE];
     };
 
+    pythonGenerator.forBlock['minecraft_vector_rotation'] = function (block, generator) {
+        // Generate the code for the inputs
+        // We use ORDER_MEMBER because we are going to call a method on the matrix object
+        const matrixCode = generator.valueToCode(block, 'MATRIX', generator.ORDER_MEMBER) || 'Matrix3(np.eye(3))';
+        const vectorCode = generator.valueToCode(block, 'VECTOR', generator.ORDER_NONE) || 'Vec3()';
+        const pivotCode = generator.valueToCode(block, 'PIVOT', generator.ORDER_NONE) || 'Vec3()';
+
+        // Call the matrix's rotate_around_point method
+        const code = `${matrixCode}.rotate_around_point(vector=${vectorCode}, pivot=${pivotCode})`;
+
+        return [code, generator.ORDER_FUNCTION_CALL];
+    };
     // --- PLAYER & POSITION GENERATORS ---
 
     pythonGenerator.forBlock['minecraft_position_get_direction'] = function (block, generator) {

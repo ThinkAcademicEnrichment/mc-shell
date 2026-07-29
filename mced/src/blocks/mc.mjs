@@ -9,6 +9,20 @@ export function defineMineCraftBlocks(Blockly) {
 
     };
 
+    // -- Random Picker Adaptor ---:/
+
+    Blockly.Blocks['random_picker'] = {
+        init: function() {
+            this.appendValueInput("PICKER")
+                .appendField("Random item from");
+            
+            // Output type is null so it can plug into any matching parent input
+            this.setOutput(true, null); 
+            this.setColour("#9B59B6"); // Distinct color for logic/utility
+            this.setTooltip("Connect a picker block. This will randomly select one of its options.");
+        }
+    };
+
     // -- Colours Category ---:/
 
     Blockly.Blocks['minecraft_coloured_block_picker'] = {
@@ -94,6 +108,31 @@ export function defineMineCraftBlocks(Blockly) {
             MCED.BlocklyUtils.configureShadow(this, "ROLL");
         }
     };
+
+    Blockly.Blocks['minecraft_matrix_3d_rodrigues'] = {
+    init: function () {
+        this.appendDummyInput().appendField("Rotation Matrix (Axis-Angle)");
+        this.appendValueInput("AXIS")
+            .setCheck("3DVector") // Or whatever type your vector blocks output
+            .setAlign(Blockly.ALIGN_RIGHT)
+            .appendField("Axis [x, y, z]");
+        this.appendValueInput("ANGLE")
+            .setCheck("Number")
+            .setAlign(Blockly.ALIGN_RIGHT)
+            .appendField("Angle (degrees)");
+        this.setOutput(true, "3DMatrix");
+        this.setColour(210);
+        this.setTooltip("Define a 3x3 rotation matrix from a directional axis and a net rotation angle using Rodrigues' formula.");
+        this.setInputsInline(false);
+
+          MCED.Defaults.values['minecraft_matrix_3d_rodrigues'] = {
+              AXIS: {shadow: MCED.VECTOR_3D_SHADOW},
+              ANGLE: {shadow: '<shadow type="math_number"><field name="NUM">0</field></shadow>'}
+          };
+          MCED.BlocklyUtils.configureShadow(this, "AXIS");
+          MCED.BlocklyUtils.configureShadow(this, "ANGLE");
+    }
+};
 
     Blockly.Blocks['minecraft_vector_3d'] = {
       init: function() {
@@ -288,6 +327,38 @@ export function defineMineCraftBlocks(Blockly) {
           MCED.BlocklyUtils.configureShadow(this,"A");
           MCED.BlocklyUtils.configureShadow(this,"B");
       }
+    };
+
+    Blockly.Blocks['minecraft_vector_rotation'] = {
+        init: function () {
+            this.appendValueInput("VECTOR")
+                .setCheck("3DVector")
+                .appendField("Rotate vector");
+            this.appendValueInput("MATRIX")
+                .setCheck("3DMatrix")
+                .appendField("by matrix");
+            this.appendValueInput("PIVOT")
+                .setCheck("3DVector")
+                .appendField("around pivot");
+
+            this.setInputsInline(true);
+            this.setOutput(true, "3DVector");
+            this.setColour(180);
+            this.setTooltip("Rotates a vector around an arbitrary pivot point using a transformation matrix.");
+
+            // Assuming MCED is your custom blockly wrapper object
+            if (typeof MCED !== 'undefined' && MCED.Defaults && MCED.BlocklyUtils) {
+                MCED.Defaults.values['minecraft_vector_rotation'] = {
+                    MATRIX: {shadow: '<shadow type="minecraft_matrix_3d_euler"></shadow>'},
+                    VECTOR: {shadow: MCED.VECTOR_3D_SHADOW},
+                    PIVOT: {shadow: MCED.VECTOR_3D_SHADOW} // Or whatever standard shadow you use for (0,0,0)
+                };
+
+                MCED.BlocklyUtils.configureShadow(this, "MATRIX");
+                MCED.BlocklyUtils.configureShadow(this, "VECTOR");
+                MCED.BlocklyUtils.configureShadow(this, "PIVOT");
+            }
+        }
     };
 
     Blockly.Blocks['time_sleep'] = {
