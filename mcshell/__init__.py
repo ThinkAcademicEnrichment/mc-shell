@@ -209,6 +209,10 @@ def _resolve_modrinth_plugin(project_id, mc_version):
         if resp.ok:
             data = resp.json()
             if data and len(data) > 0:
+                print( '----------------------------------------------------------')
+                print(f'{project_id} found for Minecraft version {mc_version}')
+                print( '----------------------------------------------------------')
+
                 # Retrieve the primary file of the most recent compatible release
                 files = data[0].get("files", [])
                 for f in files:
@@ -218,6 +222,9 @@ def _resolve_modrinth_plugin(project_id, mc_version):
                     return files[0]["url"]
     except Exception as e:
         pass # Failsafe to fallback URLs
+    print( '----------------------------------------------------------')
+    print(f'!!! {project_id} not found for Minecraft version {mc_version}')
+    print( '----------------------------------------------------------')
     return None
 
 def _start_rathole_client(relay_address, token):
