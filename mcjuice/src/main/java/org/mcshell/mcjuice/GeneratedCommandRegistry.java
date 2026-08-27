@@ -268,6 +268,49 @@ public class GeneratedCommandRegistry {
                 }
             });
         });
+        registry.put("world.getBlocksMap", (args, session) -> {
+            final int _arg_x1 = Integer.parseInt(args[0]);
+            final int _arg_y1 = Integer.parseInt(args[1]);
+            final int _arg_z1 = Integer.parseInt(args[2]);
+            final int _arg_x2 = Integer.parseInt(args[3]);
+            final int _arg_y2 = Integer.parseInt(args[4]);
+            final int _arg_z2 = Integer.parseInt(args[5]);
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                try {
+                    World world = Bukkit.getWorlds().get(0);
+                    {
+  int x1 = _arg_x1, y1 = _arg_y1, z1 = _arg_z1, x2 = _arg_x2, y2 = _arg_y2, z2 = _arg_z2;
+  int xMin = Math.min(x1, x2), xMax = Math.max(x1, x2);
+  int yMin = Math.min(y1, y2), yMax = Math.max(y1, y2);
+  int zMin = Math.min(z1, z2), zMax = Math.max(z1, z2);
+  
+  java.util.Map<String, String> blockMap = new java.util.HashMap<>();
+  
+  for (int z = zMin; z <= zMax; z++) {
+    for (int y = yMin; y <= yMax; y++) {
+      for (int x = xMin; x <= xMax; x++) {
+        org.bukkit.block.Block b = world.getBlockAt(x, y, z);
+        
+        // Optimization: Only transmit structural blocks, skipping air
+        if (!b.getType().isAir()) {
+            blockMap.put(x + "," + y + "," + z, b.getType().name());
+        }
+      }
+    }
+  }
+  
+  // Convert the HashMap to a valid JSON string using GSON
+  com.google.gson.Gson gson = new com.google.gson.Gson();
+  String jsonOutput = gson.toJson(blockMap);
+  
+  session.send(jsonOutput);
+}
+
+                } catch (Exception e) {
+                    session.send("Fail," + e.getMessage());
+                }
+            });
+        });
         registry.put("world.getBlock", (args, session) -> {
             final int _arg_x = Integer.parseInt(args[0]);
             final int _arg_y = Integer.parseInt(args[1]);
