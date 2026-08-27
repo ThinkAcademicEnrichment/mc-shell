@@ -629,6 +629,7 @@ class ApiGenerator:
             "import threading",
             "import queue",
             "import socket",
+            "import json",
             "from mcshell.mcjuiceconn import MCJuiceConnection",
             "from mcshell.Vec3 import Vec3",
             "",
@@ -720,6 +721,7 @@ class ApiGenerator:
                     elif r == 'string_list': code.append("        return res.split(',')")
                     elif r == 'double': code.append("        return float(res)")
                     elif r == 'int': code.append("        return int(res)")
+                    elif r == 'blocks_map': code.append("        return {tuple(map(int, k.split(','))): v for k, v in json.loads(res).items()}")
                     else: code.append("        return res")
 
         if 'events' in self.schema:

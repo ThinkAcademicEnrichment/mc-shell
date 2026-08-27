@@ -164,6 +164,45 @@ namespaces:
     target: World
     commands:
       # --- Block Management ---
+      - name: getBlocksMap
+        bukkit: |
+          {
+            int x1 = {x1}, y1 = {y1}, z1 = {z1}, x2 = {x2}, y2 = {y2}, z2 = {z2};
+            int xMin = Math.min(x1, x2), xMax = Math.max(x1, x2);
+            int yMin = Math.min(y1, y2), yMax = Math.max(y1, y2);
+            int zMin = Math.min(z1, z2), zMax = Math.max(z1, z2);
+            
+            java.util.Map<String, String> blockMap = new java.util.HashMap<>();
+            
+            for (int z = zMin; z <= zMax; z++) {
+              for (int y = yMin; y <= yMax; y++) {
+                for (int x = xMin; x <= xMax; x++) {
+                  org.bukkit.block.Block b = world.getBlockAt(x, y, z);
+                  
+                  // Optimization: Only transmit structural blocks, skipping air
+                  if (!b.getType().isAir()) {
+                      blockMap.put(x + "," + y + "," + z, b.getType().name());
+                  }
+                }
+              }
+            }
+            
+            // Convert the HashMap to a valid JSON string using GSON
+            com.google.gson.Gson gson = new com.google.gson.Gson();
+            String jsonOutput = gson.toJson(blockMap);
+            
+            session.send(jsonOutput);
+          }
+        args: [{ name: x1, type: int }, { name: y1, type: int }, { name: z1, type: int }, { name: x2, type: int }, { name: y2, type: int }, { name: z2, type: int }]
+        returns: blocks_map 
+        blockly:
+          label: "Get Block Map from [pos1] to [pos2]"
+          tooltip: "Returns a mapping of coordinates to Block IDs in the specified area."
+          args:
+            pos1: { type: Vec3, label: "From Position" }
+            pos2: { type: Vec3, label: "To Position" }
+          call_args: [int(pos1.x), int(pos1.y), int(pos1.z), int(pos2.x), int(pos2.y), int(pos2.z)]
+
       - name: getBlock
         bukkit: getBlockAt({x}, {y}, {z}).getType().name()
         args: [{ name: x, type: int }, { name: y, type: int }, { name: z, type: int }]
