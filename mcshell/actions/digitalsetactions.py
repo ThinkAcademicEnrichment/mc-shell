@@ -44,6 +44,40 @@ class DigitalSetActions(MCActionsBase):
         return new_set
 
     # -------------------------------------------------------------------------
+    # Information & Logic
+    # -------------------------------------------------------------------------
+
+    @mced_block(
+        label="Is Empty",
+        target_set={'label': "Set"}
+    )
+    def is_empty(self, target_set: DigitalSet) -> bool:
+        """
+        Checks if a Digital Set contains zero points.
+        """
+        return len(target_set) == 0
+
+    @mced_block(
+        label="Voxel Count",
+        target_set={'label': "Set"}
+    )
+    def voxel_count(self, target_set: DigitalSet) -> int:
+        """
+        Returns the total number of blocks/points in the Digital Set.
+        """
+        return len(target_set)
+
+    @mced_block(
+        label="Get Voxels",
+        target_set={'label': "Set"}
+    )
+    def get_voxels(self, target_set: DigitalSet) -> list:
+        """
+        Returns the blocks/points in the Digital Set as a list of vectors.
+        """
+        return list(map(lambda x:Vec3(*x),target_set.voxels))
+
+    # -------------------------------------------------------------------------
     # Binary Operations (Standard CSG)
     # -------------------------------------------------------------------------
 
@@ -218,41 +252,8 @@ class DigitalSetActions(MCActionsBase):
         """
         Extrudes (sweeps) the Digital Set along a directional vector.
         """
-        return target_set.extrude(dx, dy, dz)
+        return target_set.extrude(Vec3(dx, dy, dz))
 
-    # -------------------------------------------------------------------------
-    # Information & Logic
-    # -------------------------------------------------------------------------
-
-    @mced_block(
-        label="Is Empty",
-        target_set={'label': "Set"}
-    )
-    def is_empty(self, target_set: DigitalSet) -> bool:
-        """
-        Checks if a Digital Set contains zero points.
-        """
-        return len(target_set) == 0
-
-    @mced_block(
-        label="Voxel Count",
-        target_set={'label': "Set"}
-    )
-    def voxel_count(self, target_set: DigitalSet) -> int:
-        """
-        Returns the total number of blocks/points in the Digital Set.
-        """
-        return len(target_set)
-
-    @mced_block(
-        label="Get Voxels",
-        target_set={'label': "Set"}
-    )
-    def get_voxels(self, target_set: DigitalSet) -> list:
-        """
-        Returns the blocks/points in the Digital Set as a list of vectors.
-        """
-        return list(map(lambda x:Vec3(*x),target_set.voxels))
 
     @mced_block(
         label="Get Corners",
@@ -307,6 +308,42 @@ class DigitalSetActions(MCActionsBase):
                 
                 for corner in slice_corners:
                     corner_set.add(corner)
+
+        return corner_set
+
+    @mced_block(
+        label='Get Box Diagonal',
+        box_set={'label':"Box Set"}
+    )
+    def find_bounding_box_corners(self, box_set:DigitalSet) -> DigitalSet:
+        """
+        Finds the two corners that form the diagonal across the entire bounding box
+        by finding the global minimums and global maximums of all coordinates.
+        
+        Args:
+            box_set: A Digital set of voxels representing the corners of the box.
+            
+        Returns:
+            A DigitalSet of voxels which form a diagonal
+            through the center of the box.
+        """
+        # if not box_set:
+        #     raise ValueError("The box_set cannot be empty.")
+
+        # 1. Extract all x, y, and z coordinates into separate lists
+        x_coords = [c[0] for c in box_set.voxels]
+        y_coords = [c[1] for c in box_set.voxels]
+        z_coords = [c[2] for c in box_set.voxels]
+
+        # 2. Find the minimum and maximum for each axis
+        # The minimum corner is the one with the smallest x, y, and z
+        min_corner = (min(x_coords), min(y_coords), min(z_coords))
+        
+        # The maximum corner is the one with the largest x, y, and z
+        max_corner = (max(x_coords), max(y_coords), max(z_coords))
+        corner_set = DigitalSet()
+        corner_set.add(min_corner)
+        corner_set.add(max_corner)
 
         return corner_set
 
@@ -422,3 +459,5 @@ class DigitalSetActions(MCActionsBase):
             all_paths.append(current_path)
 
         return all_paths
+
+

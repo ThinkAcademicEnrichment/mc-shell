@@ -272,3 +272,41 @@ class ServerActions(MCActionsBase):
         """Sets the spawn point for a player."""
         self._run_command(f"spawnpoint {target} {int(position.x)} {int(position.y)} {int(position.z)}")
 
+    @mced_block(
+        label="Build Physical [color] Bed at [pos] facing [direction]",
+        color={'label': 'Color'},
+        pos={'label': 'Head Position'},
+        direction={'label': 'Facing (north/south/east/west)'}
+    )
+    def build_physical_bed(self, color: 'Color', pos: 'Vec3', direction: 'QCompass'):
+        """Places a complete two-block bed in the world safely."""
+        
+        # 1. Snap coordinates to integers (Minecraft blocks are on a grid)
+        head_x, head_y, head_z = int(pos.x), int(pos.y), int(pos.z)
+        foot_x, foot_y, foot_z = head_x, head_y, head_z
+
+        # 2. Calculate where the foot goes based on the facing direction
+        # If the bed is facing North (-Z), the foot must be placed 1 block South (+Z)
+        direction = direction.lower()
+        if direction == "north":
+            foot_z += 1
+        elif direction == "south":
+            foot_z -= 1
+        elif direction == "east":
+            foot_x -= 1
+        elif direction == "west":
+            foot_x += 1
+        else:
+            print(f"Warning: Invalid bed direction '{direction}'. Defaulting to north.")
+            direction = "north"
+            foot_z += 1
+
+        bed_block = f"{color.lower()}_bed"
+
+        # 3. Construct the exact block states for Java Edition
+        cmd_foot = f"setblock {foot_x} {foot_y} {foot_z} {bed_block}[part=foot,facing={direction}] replace"
+        cmd_head = f"setblock {head_x} {head_y} {head_z} {bed_block}[part=head,facing={direction}] replace"
+
+        # 4. Execute the commands (inheriting your existing RCON helper)
+        self._run_command(cmd_foot)
+        self._run_command(cmd_head)

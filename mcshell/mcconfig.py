@@ -18,6 +18,7 @@ CAT_COLORS = {
     "Events": "#D68C45",
     "Server": "#5C7457",
     "Digital Set": "#A57582",
+    "Set": "#D68C45",
     "Player": "#61A1B0",
     "World": "#5C7457",
     "Chat": "#D68C45",
