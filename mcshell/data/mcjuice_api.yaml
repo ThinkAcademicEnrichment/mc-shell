@@ -160,11 +160,81 @@ namespaces:
             stay: { type: int, label: "Stay (Ticks)", shadow: '<shadow type="math_number"><field name="NUM">70</field></shadow>' }
           call_args: [str(title), str(subtitle), int(stay)]
 
+      - name: getTargetBlock
+        bukkit: |
+          {
+            org.bukkit.block.Block target = player.getTargetBlockExact(50); // 50 block range
+            if (target != null) {
+                session.send(target.getX() + "," + target.getY() + "," + target.getZ());
+            } else {
+                // Fallback to player's feet if looking at the sky
+                org.bukkit.Location loc = player.getLocation();
+                session.send(loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ());
+            }
+          }
+        args: []
+        returns: TileLocation
+        blockly:
+          label: "Get Target Block Position"
+          tooltip: "Gets the integer position of the block targeted by the player."
+          call_args: []
+
+      - name: drawMarquee
+        bukkit: |
+          {
+            int x1 = {x1}, y1 = {y1}, z1 = {z1}, x2 = {x2}, y2 = {y2}, z2 = {z2};
+            
+            // Add a tiny 0.05 offset so particles hover OUTSIDE the blocks!
+            double minX = Math.min(x1, x2) - 0.05;
+            double minY = Math.min(y1, y2) - 0.05;
+            double minZ = Math.min(z1, z2) - 0.05;
+            double maxX = Math.max(x1, x2) + 1.05; 
+            double maxY = Math.max(y1, y2) + 1.05;
+            double maxZ = Math.max(z1, z2) + 1.05;
+            
+            double step = 0.25; // Denser particles for a solid line
+            
+            org.bukkit.World w = player.getWorld();
+            
+            try {
+                // Using FLAME is universally safe across all Minecraft versions.
+                // The trailing 0s ensure the flames do not move/drift.
+                for (double x = minX; x <= maxX; x += step) {
+                    w.spawnParticle(org.bukkit.Particle.FLAME, x, minY, minZ, 1, 0,0,0, 0);
+                    w.spawnParticle(org.bukkit.Particle.FLAME, x, maxY, minZ, 1, 0,0,0, 0);
+                    w.spawnParticle(org.bukkit.Particle.FLAME, x, minY, maxZ, 1, 0,0,0, 0);
+                    w.spawnParticle(org.bukkit.Particle.FLAME, x, maxY, maxZ, 1, 0,0,0, 0);
+                }
+                for (double y = minY; y <= maxY; y += step) {
+                    w.spawnParticle(org.bukkit.Particle.FLAME, minX, y, minZ, 1, 0,0,0, 0);
+                    w.spawnParticle(org.bukkit.Particle.FLAME, maxX, y, minZ, 1, 0,0,0, 0);
+                    w.spawnParticle(org.bukkit.Particle.FLAME, minX, y, maxZ, 1, 0,0,0, 0);
+                    w.spawnParticle(org.bukkit.Particle.FLAME, maxX, y, maxZ, 1, 0,0,0, 0);
+                }
+                for (double z = minZ; z <= maxZ; z += step) {
+                    w.spawnParticle(org.bukkit.Particle.FLAME, minX, minY, z, 1, 0,0,0, 0);
+                    w.spawnParticle(org.bukkit.Particle.FLAME, maxX, minY, z, 1, 0,0,0, 0);
+                    w.spawnParticle(org.bukkit.Particle.FLAME, minX, maxY, z, 1, 0,0,0, 0);
+                    w.spawnParticle(org.bukkit.Particle.FLAME, maxX, maxY, z, 1, 0,0,0, 0);
+                }
+                session.send("true");
+            } catch (Exception e) {
+                session.send("false");
+            }
+          }
+        args: [
+            { name: x1, type: int }, { name: y1, type: int }, { name: z1, type: int }, 
+            { name: x2, type: int }, { name: y2, type: int }, { name: z2, type: int }
+        ]
+        returns: boolean
+        blockly:
+          label: "Draw Marquee Box"
+
   world:
     target: World
     commands:
       # --- Block Management ---
-      - name: getBlocksMap
+      - name: getMCStructure
         bukkit: |
           {
             int x1 = {x1}, y1 = {y1}, z1 = {z1}, x2 = {x2}, y2 = {y2}, z2 = {z2};
@@ -194,10 +264,10 @@ namespaces:
             session.send(jsonOutput);
           }
         args: [{ name: x1, type: int }, { name: y1, type: int }, { name: z1, type: int }, { name: x2, type: int }, { name: y2, type: int }, { name: z2, type: int }]
-        returns: blocks_map 
+        returns: MCStructure 
         blockly:
-          label: "Get Block Map from [pos1] to [pos2]"
-          tooltip: "Returns a mapping of coordinates to Block IDs in the specified area."
+          label: "Get MCStructure from [pos1] to [pos2]"
+          tooltip: "Returns a MCStructure object in the specified area."
           args:
             pos1: { type: Vec3, label: "From Position" }
             pos2: { type: Vec3, label: "To Position" }
@@ -487,6 +557,7 @@ namespaces:
           args:
             id: { type: int, label: "Entity ID" }
           call_args: [int(id)]
+
 
   chat:
     target: Server

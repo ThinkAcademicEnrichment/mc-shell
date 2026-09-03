@@ -268,7 +268,88 @@ public class GeneratedCommandRegistry {
                 }
             });
         });
-        registry.put("world.getBlocksMap", (args, session) -> {
+        registry.put("player.getTargetBlock", (args, session) -> {
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                try {
+                    int eid = Integer.parseInt(args[0]);
+                    Player player = session.getPlayerById(eid);
+                    if (player == null) { session.send("Fail,No Player"); return; }
+                    {
+  org.bukkit.block.Block target = player.getTargetBlockExact(50); // 50 block range
+  if (target != null) {
+      session.send(target.getX() + "," + target.getY() + "," + target.getZ());
+  } else {
+      // Fallback to player's feet if looking at the sky
+      org.bukkit.Location loc = player.getLocation();
+      session.send(loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ());
+  }
+}
+
+                } catch (Exception e) {
+                    session.send("Fail," + e.getMessage());
+                }
+            });
+        });
+        registry.put("player.drawMarquee", (args, session) -> {
+            final int _arg_x1 = Integer.parseInt(args[1]);
+            final int _arg_y1 = Integer.parseInt(args[2]);
+            final int _arg_z1 = Integer.parseInt(args[3]);
+            final int _arg_x2 = Integer.parseInt(args[4]);
+            final int _arg_y2 = Integer.parseInt(args[5]);
+            final int _arg_z2 = Integer.parseInt(args[6]);
+            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {
+                try {
+                    int eid = Integer.parseInt(args[0]);
+                    Player player = session.getPlayerById(eid);
+                    if (player == null) { session.send("Fail,No Player"); return; }
+                    {
+  int x1 = _arg_x1, y1 = _arg_y1, z1 = _arg_z1, x2 = _arg_x2, y2 = _arg_y2, z2 = _arg_z2;
+  
+  // Add a tiny 0.05 offset so particles hover OUTSIDE the blocks!
+  double minX = Math.min(x1, x2) - 0.05;
+  double minY = Math.min(y1, y2) - 0.05;
+  double minZ = Math.min(z1, z2) - 0.05;
+  double maxX = Math.max(x1, x2) + 1.05; 
+  double maxY = Math.max(y1, y2) + 1.05;
+  double maxZ = Math.max(z1, z2) + 1.05;
+  
+  double step = 0.25; // Denser particles for a solid line
+  
+  org.bukkit.World w = player.getWorld();
+  
+  try {
+      // Using FLAME is universally safe across all Minecraft versions.
+      // The trailing 0s ensure the flames do not move/drift.
+      for (double x = minX; x <= maxX; x += step) {
+          w.spawnParticle(org.bukkit.Particle.FLAME, x, minY, minZ, 1, 0,0,0, 0);
+          w.spawnParticle(org.bukkit.Particle.FLAME, x, maxY, minZ, 1, 0,0,0, 0);
+          w.spawnParticle(org.bukkit.Particle.FLAME, x, minY, maxZ, 1, 0,0,0, 0);
+          w.spawnParticle(org.bukkit.Particle.FLAME, x, maxY, maxZ, 1, 0,0,0, 0);
+      }
+      for (double y = minY; y <= maxY; y += step) {
+          w.spawnParticle(org.bukkit.Particle.FLAME, minX, y, minZ, 1, 0,0,0, 0);
+          w.spawnParticle(org.bukkit.Particle.FLAME, maxX, y, minZ, 1, 0,0,0, 0);
+          w.spawnParticle(org.bukkit.Particle.FLAME, minX, y, maxZ, 1, 0,0,0, 0);
+          w.spawnParticle(org.bukkit.Particle.FLAME, maxX, y, maxZ, 1, 0,0,0, 0);
+      }
+      for (double z = minZ; z <= maxZ; z += step) {
+          w.spawnParticle(org.bukkit.Particle.FLAME, minX, minY, z, 1, 0,0,0, 0);
+          w.spawnParticle(org.bukkit.Particle.FLAME, maxX, minY, z, 1, 0,0,0, 0);
+          w.spawnParticle(org.bukkit.Particle.FLAME, minX, maxY, z, 1, 0,0,0, 0);
+          w.spawnParticle(org.bukkit.Particle.FLAME, maxX, maxY, z, 1, 0,0,0, 0);
+      }
+      session.send("true");
+  } catch (Exception e) {
+      session.send("false");
+  }
+}
+
+                } catch (Exception e) {
+                    session.send("Fail," + e.getMessage());
+                }
+            });
+        });
+        registry.put("world.getMCStructure", (args, session) -> {
             final int _arg_x1 = Integer.parseInt(args[0]);
             final int _arg_y1 = Integer.parseInt(args[1]);
             final int _arg_z1 = Integer.parseInt(args[2]);
