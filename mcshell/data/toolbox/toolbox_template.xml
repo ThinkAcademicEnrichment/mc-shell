@@ -331,9 +331,6 @@
     </category>
     <category name="Variables" colour="%{BKY_VARIABLES_HUE}" custom="VARIABLE"></category>
     <category name="Functions" colour="%{BKY_PROCEDURES_HUE}" custom="PROCEDURE"></category>
-    <!-- <category name="Colour" colour="%{BKY_COLOUR_HUE}">
-        <block type="minecraft_coloured_block_picker"></block>
-    </category> -->
     <sep></sep>
     <category name="Sets" colour="#D68C45">
         <block type="setactions_empty_set"></block>

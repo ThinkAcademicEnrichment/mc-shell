@@ -125,6 +125,8 @@ MC_APP_SRC_DIR = pathlib.Path(__file__).parent.parent.joinpath('mced/src')
 MC_USER_DIR = pathlib.Path('~/.mc-shell').expanduser()
 MC_POWER_LIBRARY_DIR = MC_USER_DIR.joinpath('powers')
 
+MC_TOOLBOX_DIR = MC_DATA_DIR.joinpath('toolbox')
+
 MC_WORLDS_BASE_DIR = pathlib.Path('~').expanduser().joinpath('mc-worlds')
 MC_CENTRAL_CONFIG_FILE = pathlib.Path("/etc/mc-shell/user_map.json")
 

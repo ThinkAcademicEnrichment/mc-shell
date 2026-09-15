@@ -1,3 +1,4 @@
+from mcshell import MC_TOOLBOX_DIR
 from flask import Blueprint, current_app, render_template_string, make_response,jsonify
 from flask import Response, abort
 
@@ -65,7 +66,7 @@ def serve_dynamic_js(script_version, script_name):
         engine = TaxonomyEngine(TAXONOMY_RULES, ENTITY_RULES, prismarine_blocks, prismarine_items, prismarine_entities,verbose=False)
         materials_data, entity_data, entity_groups, picker_groups, variant_config = engine.run()
 
-        server_toolbox_path = MC_DATA_DIR / 'toolbox.xml' 
+        server_toolbox_path = MC_TOOLBOX_DIR / 'toolbox.xml' 
 
         builder = RegistryBuilder(
             toolbox_path=server_toolbox_path,

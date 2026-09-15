@@ -62,6 +62,8 @@ class RegistryBuilder:
     # def __init__(self, toolbox_path: pathlib.Path, blocks_dir: pathlib.Path, gens_dir: pathlib.Path, materials_path: pathlib.Path, entity_id_map_path: pathlib.Path):
     def __init__(self, toolbox_path: pathlib.Path, blocks_dir: pathlib.Path, gens_dir: pathlib.Path):
         self.toolbox_path = toolbox_path
+        self.toolbox_snippet_dir= self.toolbox_path.parent.joinpath('snippets')
+
         self.blocks_dir = blocks_dir
         self.gens_dir = gens_dir
         self.generated_block_pickers = [] # <--- NEW: Tracks exactly what pickers get generated
@@ -148,7 +150,7 @@ class RegistryBuilder:
         if clean_toolbox:
             self.toolbox_path.unlink(missing_ok=True)
         if not self.toolbox_path.exists():
-            template = MC_DATA_DIR / 'toolbox_template.xml'
+            template = self.toolbox_path.parent / 'toolbox_template.xml'
             if template.exists():
                 self.toolbox_path.write_text(template.read_text())
 
@@ -309,7 +311,7 @@ class RegistryBuilder:
         BlocklyGenerator.update_toolbox(f'<category name="Entities" colour="{self.COLORS["Entity"]}">{"".join(xml)}</category>', self.toolbox_path, append_separator=False)
         return js, py
 
-    def _pretty_print_xml_string(self,xml_string):
+    def _export_toolbox_xml_snippet(self,cls_name, xml_string):
         import xml.etree.ElementTree as ET
 
         # Parse the string into an Element object
@@ -320,7 +322,9 @@ class RegistryBuilder:
 
         # Convert back to a pretty-printed string
         pretty_xml = ET.tostring(root, encoding="utf-8").decode("utf-8")
-        print(pretty_xml)
+        xml_snippet_path = self.toolbox_snippet_dir.joinpath(f'{cls_name}.xml')
+        xml_snippet_path.parent.mkdir(exist_ok=True)
+        xml_snippet_path.write_text(pretty_xml)
 
     def build_actions(self):
         pick_js, pick_py = [], []
@@ -368,12 +372,8 @@ class RegistryBuilder:
                 BlocklyGenerator.update_toolbox(c_xml, self.toolbox_path,append_separator=append_separator)
             else:
                 print(f"[build_actions] Ignoring {cls.__name__} in toolbox:")
-                print()
-                self._pretty_print_xml_string(c_xml)
-                print()
+                self._export_toolbox_xml_snippet(cls.__name__, c_xml)
 
-
-            # return js_out, py_out
 
     def build_pickers_category(self):
         """
