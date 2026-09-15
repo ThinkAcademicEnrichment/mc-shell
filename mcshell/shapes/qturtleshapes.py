@@ -5,6 +5,16 @@ from mcshell.mcactions_base import MCActionsBase
 from mcshell.mcturtle import DigitalSet, generate_linear_path
 from blockapily import mced_block
 
+# Transformation matrix to rotate trimesh defaults (Z-aligned) 
+# to Minecraft defaults (Y-aligned / Y-up).
+# This represents a -90 degree rotation around the X-axis.
+Z_TO_Y_TRANSFORM = np.array([
+    [1,  0,  0,  0],
+    [0,  0, -1,  0],
+    [0,  1,  0,  0],
+    [0,  0,  0,  1]
+])
+
 class QTurtleShapes(MCActionsBase):
     """
     Generates primitive shapes by creating continuous 3D meshes using trimesh,
@@ -39,14 +49,13 @@ class QTurtleShapes(MCActionsBase):
     )
     def get_cylinder(self, radius: float, height: float) -> DigitalSet:
         mesh = trimesh.creation.cylinder(radius=radius, height=height)
+        mesh.apply_transform(Z_TO_Y_TRANSFORM) # Stand it upright
         
         voxel_grid = mesh.voxelized(pitch=1.0)
         points = np.round(voxel_grid.fill().points).astype(int)
         
-        # Trimesh cylinders are centered. If you want the base at y=0, 
-        # you can easily translate the DigitalSet here before returning.
         return DigitalSet(points.tolist())
-
+    
     @mced_block(
         label="Digital Shape: Box",
         width={'label': 'Width (X)', 'default': 5.0},
@@ -72,6 +81,8 @@ class QTurtleShapes(MCActionsBase):
         mesh = trimesh.creation.annulus(r_min=major_radius-minor_radius, 
                                         r_max=major_radius+minor_radius, 
                                         height=minor_radius*2)
+        mesh.apply_transform(Z_TO_Y_TRANSFORM) # Lay it flat on the ground (XZ plane)
+
         # We round the edges of the annulus to make it a proper tube
         # (This is a simplified torus approach using trimesh extrusion)
         
@@ -81,16 +92,25 @@ class QTurtleShapes(MCActionsBase):
         return DigitalSet(points.tolist())
 
     @mced_block(
+        label="Digital Shape: Arithmetic Plane (Square)",
+        normal={'label': 'Normal'}, # Keeping it generic input for Vec3
+        side_length={'label': 'Side Length'},
+    )
+    def get_arithmetic_plane(self, normal: Vec3, side_length: int) -> DigitalSet:
+        return generate_arithmetic_plane(normal.to_tuple(), (0,0,0), (side_length, side_length))
+
+    @mced_block(
         label="Digital Shape: Cone",
         radius={'label': 'Radius', 'default': 5.0},
         height={'label': 'Height', 'default': 10.0}
     )
     def get_cone(self, radius: float, height: float) -> DigitalSet:
         """
-        Creates a solid cone with the base centered at the origin, pointing along the Z axis.
+        Creates a solid cone with the base centered at the origin, pointing along the Y axis.
         """
         # 1. Create the continuous cone mesh
         mesh = trimesh.creation.cone(radius=radius, height=height)
+        mesh.apply_transform(Z_TO_Y_TRANSFORM) # Point it Up!
         
         # 2. Voxelize the mesh at a 1-block pitch
         voxel_grid = mesh.voxelized(pitch=1.0)
@@ -109,9 +129,4 @@ class QTurtleShapes(MCActionsBase):
         p2={'label': 'point_2'},
     )
     def get_line(self, p1: Vec3, p2: Vec3) -> DigitalSet:
-        # We can keep your custom Bresenham line algorithm for lines, 
-        # as voxelizing thin mathematical lines in trimesh can sometimes be finicky.
         return generate_linear_path(p1.to_tuple(), p2.to_tuple())
-
-
-    

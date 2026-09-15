@@ -111,6 +111,11 @@ class MCPlayer(MCClient):
     def set_q_compass_direction(self, dir: str):
         return self.mj.player.setDirection(*self._get_q_direction_vector(dir).to_tuple())
 
+    @property
+    def compass_direction(self):
+        return self._get_compass_direction(self.direction)
+
+
     def clear_events(self):
         """Clears all queued events on the server for this client."""
         self.mj.events.clearAll()

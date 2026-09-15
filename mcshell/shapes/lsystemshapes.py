@@ -23,12 +23,19 @@ class LSystemShapes(MCActionsBase):
         iterations={'label': 'Iterations'},
         step_length={'label': 'Step Length'},
         rules={'label': 'Rules (List)'},
+        scale_factor={'label': 'Scale Factor'},
+        scale={'label': 'Scale'},
+
     )
-    def get_lsystem_shape(self, axiom: str, iterations: int, step_length: int, rules: list) -> DigitalSet:
+    def get_lsystem_shape(self, axiom: str, iterations: int, step_length: int, rules: list,scale_factor:float=0.666,scale:int=1) -> DigitalSet:
         rule_dict = {r[0]: r[1] for r in rules if len(r) >= 2}
         lsys = LSystem(axiom, rule_dict)
         final_string = lsys.iterate(int(iterations))
         local_turtle = QTurtle()
+
+        local_turtle.set_scale_factor(scale_factor)
+        local_turtle.set_scale(scale)
+
         local_turtle.pos = np.array([0,0,0], dtype=int)
         local_turtle.brush = DigitalSet()
         local_turtle.brush.add((0,0,0))

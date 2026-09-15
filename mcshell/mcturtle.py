@@ -11,7 +11,7 @@ class DigitalSet:
     def __init__(self, voxels=None):
         if isinstance(voxels, DigitalSet):
             self.voxels = voxels.voxels.copy()
-        elif voxels:
+        elif voxels is not None:
             # Ensure all coordinates are standard Python ints to avoid numpy type issues
             self.voxels = { (int(v[0]), int(v[1]), int(v[2])) for v in voxels }
         else:
@@ -44,7 +44,7 @@ class DigitalSet:
         new_voxels = { (x + int(dx), y + int(dy), z + int(dz)) for x, y, z in self.voxels.copy() }
         return DigitalSet(new_voxels)
 
-    def rotate(self, axis: str, angle_degrees: float) -> 'DigitalSet':
+    def rotate(self, axis: str, angle_degrees: float):
         """
         Rotates the DigitalSet around its centroid using Matrix3.
 
@@ -272,6 +272,9 @@ class QTurtle:
     def set_scale_factor(self, factor):
         self.scale_factor = float(factor)
 
+    def set_scale(self,scale):
+        self.scale = int(scale)
+
     def rotate_90(self, axis='y', steps=1):
         axis = axis.lower()
         def apply_rotation(vec, axis_char):
@@ -294,14 +297,221 @@ class QTurtle:
             elif primary_axis == 'y': self.up = result
             elif primary_axis == 'z': self.forward = result
 
+    def set_brush(self, digital_set):
+        """
+        Smart Brush Override: If the incoming voxels appear to be world-space
+        coordinates or localized world-axes, they are automatically projected 
+        into the turtle's local frame (Right, Up, Forward).
+        """
+        if not digital_set or not hasattr(digital_set, 'voxels') or len(digital_set.voxels) == 0:
+            self.brush = DigitalSet()
+            return
+
+        # 1. Did it come from a World Capture endpoint? (Has world_offset)
+        # We must project the World axes (East, Up, South) into Turtle axes (Right, Up, Forward).
+        if hasattr(digital_set, 'world_offset') and digital_set.world_offset is not None:
+            self.brush = self._project_axes(digital_set)
+            print(f"QTurtle: Setting brush to a local {digital_set.__class__.__name__} ({len(self.brush.voxels)} blocks). Axes projected to Turtle Frame.")
+            return
+
+        # 2. Heuristics for raw DigitalSets to see if they are absolute world coordinates
+        voxels = list(digital_set.voxels)
+        min_x, max_x = min(v[0] for v in voxels), max(v[0] for v in voxels)
+        min_y, max_y = min(v[1] for v in voxels), max(v[1] for v in voxels)
+        min_z, max_z = min(v[2] for v in voxels), max(v[2] for v in voxels)
+        
+        cx = (min_x + max_x) / 2.0
+        cy = (min_y + max_y) / 2.0
+        cz = (min_z + max_z) / 2.0
+        
+        dist_to_origin = (cx**2) + (cy**2) + (cz**2)
+        dist_to_turtle = ((cx - self.pos[0])**2) + ((cy - self.pos[1])**2) + ((cz - self.pos[2])**2)
+        
+        contains_origin = (min_x <= 0 <= max_x) and (min_y <= 0 <= max_y) and (min_z <= 0 <= max_z)
+
+        if dist_to_origin < 1:
+            is_world_space = False
+        elif dist_to_turtle < dist_to_origin:
+            is_world_space = True
+        else:
+            is_world_space = not contains_origin
+
+        if is_world_space:
+            print(f"QTurtle: Auto-detecting world coordinates (Centroid at {int(cx)}, {int(cy)}, {int(cz)}). Localizing...")
+            self.brush = self._capture_absolute_world(digital_set)
+        else:
+            self.brush = digital_set
+
+    def _project_axes(self, digital_set):
+        """Projects a localized World-Axis shape into Turtle-Axis space."""
+        if getattr(digital_set, 'is_projected_to_turtle', False):
+            return digital_set # Prevent double-projection if re-assigned
+
+        r_sq = np.dot(self.right, self.right)
+        u_sq = np.dot(self.up, self.up)
+        f_sq = np.dot(self.forward, self.forward)
+        
+        if hasattr(digital_set, 'blocks_map'):
+            new_map = {}
+            for (wx, wy, wz), block in digital_set.blocks_map.items():
+                rel = np.array([wx, wy, wz])
+                # Project world offset onto turtle axes
+                lx = np.dot(rel, self.right) / r_sq
+                ly = np.dot(rel, self.up) / u_sq
+                lz = np.dot(rel, self.forward) / f_sq
+                new_map[(int(round(lx)), int(round(ly)), int(round(lz)))] = block
+            
+            # Dynamically instantiate the same class (MCStructure) to preserve types
+            new_struct = digital_set.__class__(new_map)
+            new_struct.world_offset = digital_set.world_offset
+            new_struct.is_projected_to_turtle = True
+            return new_struct
+        else:
+            local_voxels = []
+            for wx, wy, wz in digital_set.voxels:
+                rel = np.array([wx, wy, wz])
+                lx = np.dot(rel, self.right) / r_sq
+                ly = np.dot(rel, self.up) / u_sq
+                lz = np.dot(rel, self.forward) / f_sq
+                local_voxels.append((int(round(lx)), int(round(ly)), int(round(lz))))
+            
+            new_set = DigitalSet(local_voxels)
+            new_set.world_offset = digital_set.world_offset
+            new_set.is_projected_to_turtle = True
+            return new_set
+
+    def _capture_absolute_world(self, digital_set):
+        """Subtracts turtle position AND projects axes for absolute world coordinates."""
+        if getattr(digital_set, 'is_projected_to_turtle', False):
+            return digital_set
+
+        r_sq = np.dot(self.right, self.right)
+        u_sq = np.dot(self.up, self.up)
+        f_sq = np.dot(self.forward, self.forward)
+        
+        local_voxels = []
+        for wx, wy, wz in digital_set.voxels:
+            # Shift from absolute to relative, then project
+            rel = np.array([wx, wy, wz]) - self.pos
+            lx = np.dot(rel, self.right) / r_sq
+            ly = np.dot(rel, self.up) / u_sq
+            lz = np.dot(rel, self.forward) / f_sq
+            local_voxels.append((int(round(lx)), int(round(ly)), int(round(lz))))
+            
+        new_set = DigitalSet(local_voxels)
+        new_set.is_projected_to_turtle = True
+        return new_set
+
+    def _capture_brush(self, world_voxels):
+        """
+        Private Helper: Takes world coordinates (DigitalSet or MCStructure) and converts 
+        them into the turtle's local coordinate system using pure integer arithmetic.
+        """
+        import math
+        from mcshell.mcstructure import MCStructure  # Ensure safe import
+        
+        # 1. Snap the turtle's floating-point position to the integer grid
+        px = int(math.floor(self.pos[0]))
+        py = int(math.floor(self.pos[1]))
+        pz = int(math.floor(self.pos[2]))
+        
+        # 2. Extract integer direction vectors
+        rx, ry, rz = int(self.right[0]), int(self.right[1]), int(self.right[2])
+        ux, uy, uz = int(self.up[0]), int(self.up[1]), int(self.up[2])
+        fx, fy, fz = int(self.forward[0]), int(self.forward[1]), int(self.forward[2])
+        
+        is_structure = hasattr(world_voxels, 'blocks_map')
+        
+        if is_structure:
+            local_block_map = {}
+            for (wx, wy, wz), block_material in world_voxels.blocks_map.items():
+                # Distance from turtle
+                dx, dy, dz = wx - px, wy - py, wz - pz
+                
+                # Pure integer dot products
+                lx = (dx * rx) + (dy * ry) + (dz * rz)
+                ly = (dx * ux) + (dy * uy) + (dz * uz)
+                lz = (dx * fx) + (dy * fy) + (dz * fz)
+                
+                local_block_map[(lx, ly, lz)] = block_material
+                
+            return MCStructure(local_block_map, local_origin=None)
+            
+        else:
+            local_voxels = set()
+            for wx, wy, wz in world_voxels.voxels:
+                dx, dy, dz = wx - px, wy - py, wz - pz
+                
+                lx = (dx * rx) + (dy * ry) + (dz * rz)
+                ly = (dx * ux) + (dy * uy) + (dz * uz)
+                lz = (dx * fx) + (dy * fy) + (dz * fz)
+                
+                local_voxels.add((lx, ly, lz))
+                
+            return DigitalSet(local_voxels)
+
+    # def stamp(self):
+    #     if not self.brush: return DigitalSet()
+        
+    #     # 1. Identify the anchor point (world_offset) if this is a captured structure
+    #     wo_x, wo_y, wo_z = 0, 0, 0
+    #     if hasattr(self.brush, 'world_offset') and self.brush.world_offset is not None:
+    #         wo = self.brush.world_offset
+    #         # Handle both Vec3 objects and standard tuples/lists
+    #         wo_x, wo_y, wo_z = (wo.x, wo.y, wo.z) if hasattr(wo, 'x') else (wo[0], wo[1], wo[2])
+
+    #     world_voxels = []
+    #     for bx, by, bz in self.brush:
+    #         # 2. Shift the voxel so it is relative to the anchor point
+    #         rel_x = bx - wo_x
+    #         rel_y = by - wo_y
+    #         rel_z = bz - wo_z
+            
+    #         # 3. Apply the turtle's rotation matrix to the relative coordinates
+    #         offset = (rel_x * self.right) + (rel_y * self.up) + (rel_z * self.forward)
+            
+    #         # 4. Translate by the turtle's current position
+    #         final_pos = self.pos + offset 
+    #         world_voxels.append((int(final_pos[0]), int(final_pos[1]), int(final_pos[2])))
+            
+    #     return DigitalSet(world_voxels)
+
     def stamp(self):
         if not self.brush: return DigitalSet()
         world_voxels = []
         for bx, by, bz in self.brush:
             offset = (bx * self.right) + (by * self.up) + (bz * self.forward)
-            final_pos = self.pos + offset
+            final_pos = self.pos + offset 
             world_voxels.append((int(final_pos[0]), int(final_pos[1]), int(final_pos[2])))
         return DigitalSet(world_voxels)
+
+    def place(self):
+        """
+        Similar to stamp, but preserves material data if the brush is an MCStructure.
+        Returns a world-aligned MCStructure (or a default material MCStructure if just a DigitalSet).
+        """
+        if not self.brush:
+            return None # Or return empty structure if defined
+
+        import math
+        # Check if the brush has material data (is it an MCStructure?)
+        has_materials = hasattr(self.brush, 'blocks_map')
+        
+        world_block_map = {}
+        
+        for bx, by, bz in self.brush:
+            # Apply turtle transformations (rotation/scale via right, up, forward vectors)
+            offset = (bx * self.right) + (by * self.up) + (bz * self.forward)
+            final_pos = self.pos + offset
+            
+            world_coord= (int(final_pos[0]), int(final_pos[1]), int(final_pos[2]))
+
+            # Fetch material if available, otherwise default to a placeholder or let the action handle it
+            material = self.brush.blocks_map.get((bx, by, bz), "STONE") if has_materials else "STONE"
+            
+            world_block_map[world_coord] = material
+
+        return world_block_map
 
     def push_state(self):
         self.stack.append((self.pos.copy(), self.forward.copy(), self.up.copy(), self.right.copy(), self.scale))
@@ -313,16 +523,14 @@ class QTurtle:
         """
         Executes a single L-System symbol.
         Returns a DigitalSet of placed blocks (if drawing occurred), or None.
-
-        New Symbols:
-        " : Multiply scale by scale_factor (Shrink)
-        ! : Divide scale by scale_factor (Grow)
         """
         # Calculate Scaled Step Size (Minimum 1 block)
         scaled_step = max(1, int(step_size * self.scale))
 
         if symbol == 'F':
-            return self.extrude(scaled_step)
+            extrusion_set = self.extrude(scaled_step)
+            self.move(scaled_step)
+            return extrusion_set
         elif symbol == 'f':
             self.move(scaled_step)
         elif symbol == 'd':
@@ -351,11 +559,15 @@ class QTurtle:
              self.shear('z', 'x', -1)
         elif symbol == '@': # Shrink and extrude
              self.scale *= self.scale_factor
-             return self.extrude(scaled_step)
+             extrusion_set = self.extrude(scaled_step)
+             self.move(scaled_step)
+             return extrusion_set
         elif symbol == '!': # Grow and extrude
              if self.scale_factor > 0:
                  self.scale /= self.scale_factor
-             return self.extrude(scaled_step)
+             extrusion_set = self.extrude(scaled_step)
+             self.move(scaled_step)
+             return extrusion_set
         elif symbol == '$': # Shrink and jump ahead
              self.scale *= self.scale_factor
              self.move(scaled_step)
@@ -366,27 +578,6 @@ class QTurtle:
 
 
 
-    def capture_brush(self, world_voxels: DigitalSet):
-        """
-        Takes a DigitalSet of world coordinates and converts them into the
-        turtle's local coordinate system. Use this when setting a brush
-        from world blocks so that stamp() and extrude() work correctly.
-        """
-        local_voxels = []
-        # Calculate Basis Matrix components for inversion
-        # Local = Matrix^-1 * (World - Pos)
-        # For orthogonal basis, inverse is Transpose / magnitude squared
-        r_sq, u_sq, f_sq = np.dot(self.right, self.right), np.dot(self.up, self.up), np.dot(self.forward, self.forward)
-
-        for wx, wy, wz in world_voxels:
-            rel = np.array([wx, wy, wz]) - self.pos
-            # Project onto basis vectors
-            lx = np.dot(rel, self.right) / r_sq
-            ly = np.dot(rel, self.up) / u_sq
-            lz = np.dot(rel, self.forward) / f_sq
-            local_voxels.append((int(round(lx)), int(round(ly)), int(round(lz))))
-
-        self.set_brush(DigitalSet(local_voxels))
 
     def _quantize_vector(self, vec):
         if not np.any(vec): return vec
@@ -452,36 +643,3 @@ class QTurtle:
             world_voxels.append((int(final_pos[0]), int(final_pos[1]), int(final_pos[2])))
         return DigitalSet(world_voxels)
 
-    def set_brush(self, digital_set):
-        """
-        Smart Brush Override: If the incoming voxels appear to be world-space
-        coordinates, they are automatically localized relative to the turtle's
-        current position and orientation.
-        """
-        if not isinstance(digital_set, DigitalSet) or len(digital_set) == 0:
-            self.brush = DigitalSet()
-            return
-
-        # Check if the set is already localized (centroid near origin)
-        # or if it's world space (centroid near current position).
-        # We calculate the inverse transformation to shift world -> local.
-        local_voxels = []
-        r_sq, u_sq, f_sq = np.dot(self.right, self.right), np.dot(self.up, self.up), np.dot(self.forward, self.forward)
-
-        # Heuristic: If the first voxel is > 100 units from origin, it's likely world-space
-        first_v = list(digital_set.voxels)[0]
-        dist_sq = first_v[0]**2 + first_v[1]**2 + first_v[2]**2
-
-        if dist_sq < 10000: # It's probably already a local brush (within 100 blocks of 0,0,0)
-            self.brush = digital_set
-            return
-
-        # Perform the world -> local transformation
-        for wx, wy, wz in digital_set:
-            rel = np.array([wx, wy, wz]) - self.pos
-            lx = np.dot(rel, self.right) / r_sq
-            ly = np.dot(rel, self.up) / u_sq
-            lz = np.dot(rel, self.forward) / f_sq
-            local_voxels.append((int(round(lx)), int(round(ly)), int(round(lz))))
-
-        self.brush = DigitalSet(local_voxels)

@@ -36,7 +36,10 @@ TYPE_MAP = {
     "Block": "Block",
     "Material":"Material",
     "Item":"Item",
+    # in actions that use Union[] output
+    # all classes in the Union must map to the same Blockly type
     "DigitalSet": "Digital_Set",
+    "MCStructure": "Digital_Set",
     "Metric": "Metric",
     "QDirection": "QDirection",
     "Axis": "Axis",
@@ -90,6 +93,7 @@ SHADOW_MAP = dict(
     DataPath='<shadow type="picker_data_path"><field name="VALUE">Pos</field></shadow>',
 
     Color='<shadow type="picker_color_types"><field name="VALUE">WHITE</field></shadow>',
+    RotationPoint='<shadow type="picker_rotation_point"><field name="VALUE">selection_point</field></shadow>'
 )
 
 DATA_PATHS = [
@@ -157,7 +161,17 @@ METRICS = [
     ("Manhattan", "manhattan"),
     ("Chebyshev", "chebyshev"),
 ]
-AXES = [("Yaw (Y)", "y"), ("Pitch (X)", "x"), ("Roll (Z)", "z")]
+AXES = [
+    ("Yaw (Y)", "y"),
+    ("Pitch (X)", "x"),
+    ("Roll (Z)", "z")
+]
+
+ROTATIONPOINT = [
+    ("Centroid","centroid"),
+    ("Selection Point","selection_point")
+]
+
 COMPASS = [
     ("North (-Z)", "N"),
     ("South (+Z)", "S"),
@@ -424,14 +438,24 @@ GENERATED_ACTION_PICKERS = [
         "options": QHEADINGS,
         "input_type": "QHeading",
     },
-    {"id": "picker_axis", "label": "Axis", "options": AXES, "input_type": "Axis"},
+    {
+        "id": "picker_axis",
+        "label": "Axis",
+        "options": AXES,
+        "input_type": "Axis"
+    },
     {
         "id": "picker_qcompass",
         "label": "Global Q-Compass Direction",
         "options": QCOMPASS,
         "input_type": "QCompass",
     },
-
+    {
+        "id": "picker_rotation_point",
+        "label": "Rotation Point",
+        "options": ROTATIONPOINT,
+        "input_type": "RotationPoint"
+    },
 ]
 
 ACTION_PICKERS = [

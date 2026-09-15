@@ -56,6 +56,9 @@ class RegistryBuilder:
     # sometimes we make Actions classes for local utilities
     GENERATED_ACTIONS_BLACKLIST = ['AdminActions']
 
+    # we put the printed xml snippets into toolbox_template.xml ourselves
+    UNCATEGORIZED_ACTION_CLASSES = ['SetActions','DigitalSetActions']
+
     # def __init__(self, toolbox_path: pathlib.Path, blocks_dir: pathlib.Path, gens_dir: pathlib.Path, materials_path: pathlib.Path, entity_id_map_path: pathlib.Path):
     def __init__(self, toolbox_path: pathlib.Path, blocks_dir: pathlib.Path, gens_dir: pathlib.Path):
         self.toolbox_path = toolbox_path
@@ -96,11 +99,12 @@ class RegistryBuilder:
             classes = [
                 (get_class("actions","qactions", "QActions"), "Q-Stuff", self.COLORS["Turtle"]),
                 (get_class("actions","qturtleactions", "QTurtleActions"), "Q-Turtle", self.COLORS["Turtle"]),
-                (get_class("shapes","qturtleshapes", "QTurtleShapes"), "Q-Turtle Sets", self.COLORS["Turtle"]),
-                (get_class("shapes","lsystemshapes", "LSystemShapes"), "LSystem Sets", self.COLORS["LSystem"]),
-                (get_class("actions","digitalsetactions", "DigitalSetActions"), "Digital Set Ops", self.COLORS["Digital Set"]),
-                (get_class("actions","setactions", "SetActions"), "Set Ops", self.COLORS["Set"]),
+                (get_class("shapes","qturtleshapes", "QTurtleShapes"), "Q-Turtle Shapes", self.COLORS["Turtle"]),
+                (get_class("shapes","lsystemshapes", "LSystemShapes"), "LSystem Shapes", self.COLORS["LSystem"]),
+                (get_class("actions","digitalsetactions", "DigitalSetActions"), "Digital Sets", self.COLORS["Digital Set"]),
+                (get_class("actions","setactions", "SetActions"), "Sets", self.COLORS["Set"]),
                 (get_class("actions","digitalgeometryactions", "DigitalGeometryActions"), "Digital Geometry", self.COLORS["Geometry"]),
+                (get_class("actions","selectionactions", "SelectionActions"), "Selection", self.COLORS["Server"]),
                 (get_class("actions","serveractions", "ServerActions"), "Server", self.COLORS["Server"]),
                 (get_class("actions","bedwarsactions", "BedWarsActions"), "BedWars", self.COLORS["Server"]),
             ]
@@ -305,6 +309,19 @@ class RegistryBuilder:
         BlocklyGenerator.update_toolbox(f'<category name="Entities" colour="{self.COLORS["Entity"]}">{"".join(xml)}</category>', self.toolbox_path, append_separator=False)
         return js, py
 
+    def _pretty_print_xml_string(self,xml_string):
+        import xml.etree.ElementTree as ET
+
+        # Parse the string into an Element object
+        root = ET.fromstring(xml_string)
+
+        # Indent the tree in-place (default is 2 spaces)
+        ET.indent(root, space="    ")
+
+        # Convert back to a pretty-printed string
+        pretty_xml = ET.tostring(root, encoding="utf-8").decode("utf-8")
+        print(pretty_xml)
+
     def build_actions(self):
         pick_js, pick_py = [], []
         for p in self.GENERATED_ACTION_PICKERS:
@@ -331,6 +348,7 @@ class RegistryBuilder:
             res = BlocklyGenerator.generate_picker(p['id'], p['label'], p['options'], p['input_type'], self.COLORS["Picker"])
             pick_js.append(res['js']); pick_py.append(res['py'])
 
+
         for i, (cls, name, color) in enumerate(self.ACTION_CLASSES):
             gen = BlocklyGenerator(cls, self.TYPE_MAP, self.SHADOW_MAP, color, name)
             b_js, p_py, c_xml = gen.generate()
@@ -346,8 +364,15 @@ class RegistryBuilder:
             elif i == len(self.ACTION_CLASSES) - 1:
                 append_separator = True
 
+            if not cls.__name__ in self.UNCATEGORIZED_ACTION_CLASSES:
+                BlocklyGenerator.update_toolbox(c_xml, self.toolbox_path,append_separator=append_separator)
+            else:
+                print(f"[build_actions] Ignoring {cls.__name__} in toolbox:")
+                print()
+                self._pretty_print_xml_string(c_xml)
+                print()
 
-            BlocklyGenerator.update_toolbox(c_xml, self.toolbox_path,append_separator=append_separator)
+
             # return js_out, py_out
 
     def build_pickers_category(self):
@@ -590,6 +615,9 @@ class ApiGenerator:
         elif target_type == "World":
             lines.append('                    World world = Bukkit.getWorlds().get(0);')
             exec_on = "world"
+        elif target_type == "Select":
+            lines.append('                    World world = Bukkit.getWorlds().get(0);')
+            exec_on = "world"
         else:
             exec_on = "Bukkit"
 
@@ -722,7 +750,7 @@ class ApiGenerator:
                     elif r == 'string_list': code.append("        return res.split(',')")
                     elif r == 'double': code.append("        return float(res)")
                     elif r == 'int': code.append("        return int(res)")
-                    elif r == 'MCStructure': code.append("        return MCStructure({tuple(map(int, k.split(','))): v for k, v in json.loads(res).items()})")
+                    elif r == 'MCStructure': code.append("        return MCStructure({tuple(map(int, k.split(','))): v for k, v in json.loads(res).items()},local_origin='min_corner')")
                     else: code.append("        return res")
 
         if 'events' in self.schema:
@@ -1100,7 +1128,7 @@ class RegistryEngine:
                     "file": f.name,
                     "func": func_name
                 })
-                print(f"  Found {func_name} in {f.name}")
+                # print(f"  Found {func_name} in {f.name}")
 
         # Generate the JS content
         lines = ["// Auto-generated registry. Do not edit manually."]

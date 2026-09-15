@@ -6,7 +6,7 @@ from IPython.core.magic import Magics, magics_class, line_magic,needs_local_scop
 from mcshell.constants import *
 from mcshell.mcrepo import PowerRepository,SQLiteRepository
 from mcshell.mcclient import MCClient
-from mcshell.mcserver import throw_app_server_error, start_app_server, reset_app_server_context, GUI_AUTH_TOKEN
+from mcshell.mcserver import throw_app_server_error, start_app_server, reset_app_server_context, restart_app_server, GUI_AUTH_TOKEN
 from mcshell.mcserver import RUNNING_POWERS
 from mcshell.ppmanager import *
 from mcshell.ppdownloader import *
@@ -2437,6 +2437,9 @@ if __name__ == '__main__':
             print(f"Unknown command: {command}")
             print("Usage: %mc_library [list|rename-category|remove|export|import]")
 
+    @line_magic
+    def mc_restart_app_server(self,line):
+        self.app_server_thread = restart_app_server()
 # ---------------------------------------------------------------------------
 # Startup and Initialization
 # ---------------------------------------------------------------------------

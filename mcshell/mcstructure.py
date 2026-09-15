@@ -11,10 +11,13 @@ class MCStructure(DigitalSet):
     Subclasses DigitalSet to automatically inherit all boolean (CSG) 
     and morphological geometry operations, preserving block materials.
     """
-    def __init__(self, blocks_map=None, local_origin='min_corner'):
+    def __init__(self, blocks_map=None, local_origin=None):
         if blocks_map is None:
             blocks_map = {}
             
+        # Default offset is 0,0,0 unless a local_origin shift occurs
+        self.world_offset = Vec3(0, 0, 0)
+        
         if local_origin and blocks_map:
             coords = np.array(list(blocks_map.keys()))
             
@@ -26,6 +29,9 @@ class MCStructure(DigitalSet):
                 center = coords.min(axis=0)
             else:
                 center = np.array(local_origin, dtype=int)
+                
+            # Save the offset so we know where this structure came from in the world!
+            self.world_offset = Vec3(int(center[0]), int(center[1]), int(center[2]))
                 
             # Shift all coordinates so the chosen center becomes (0,0,0)
             self.blocks_map = {
@@ -70,8 +76,6 @@ class MCStructure(DigitalSet):
         survivors = {v: self.blocks_map[v] for v in pure_set.voxels if v in self.blocks_map}
         return MCStructure(survivors)
 
-    # Note: Union handles material conflicts. If 'other' is also a Structure, 
-    # its materials will overwrite overlapping spaces from 'self'.
     def union(self, other):
         new_map = self.blocks_map.copy()
         if hasattr(other, 'blocks_map'):
@@ -107,18 +111,18 @@ class MCStructure(DigitalSet):
             
         return MCStructure(new_map)
 
-    def rotate(self, axis: str, angle_degrees: float):
+    def rotate(self, axis: str, angle_degrees: float, rotation_point: Vec3 = None ):
         if not self.blocks_map:
             return MCStructure()
 
-        # Calculate Centroid
         sum_x = sum(v[0] for v in self.blocks_map.keys())
         sum_y = sum(v[1] for v in self.blocks_map.keys())
         sum_z = sum(v[2] for v in self.blocks_map.keys())
         count = len(self.blocks_map)
-        centroid = Vec3(sum_x / count, sum_y / count, sum_z / count)
+        if rotation_point is None:
+            # rotate about the centroid
+            rotation_point = Vec3(sum_x / count, sum_y / count, sum_z / count)
 
-        # Create the Rotation Matrix
         matrix = Matrix3.identity()
         ax = axis.lower()
         if ax == 'x': matrix = Matrix3.from_euler_angles(pitch_degrees=angle_degrees)
@@ -128,7 +132,7 @@ class MCStructure(DigitalSet):
         new_map = {}
         for (x, y, z), block in self.blocks_map.items():
             pos = Vec3(x, y, z)
-            rotated_vec = matrix.rotate_around_point(pos, centroid)
+            rotated_vec = matrix.rotate_around_point(pos, rotation_point)
             new_key = (int(round(rotated_vec.x)), int(round(rotated_vec.y)), int(round(rotated_vec.z)))
             
             # In case of voxel collision during rounding, the last block evaluated wins
@@ -136,12 +140,37 @@ class MCStructure(DigitalSet):
 
         return MCStructure(new_map)
 
+    def with_local_origin(self, new_world_origin: Vec3) -> 'MCStructure':
+        """
+        Shifts the local coordinate system so that the specified absolute 
+        world coordinate becomes the new local (0,0,0) anchor point.
+        """
+        if not self.blocks_map:
+            return MCStructure()
+            
+        new_offset = Vec3(int(new_world_origin.x), int(new_world_origin.y), int(new_world_origin.z))
+        
+        # Calculate how far we need to shift the internal local coordinates
+        # to line up with the new origin anchor
+        shift_x = self.world_offset.x - new_offset.x
+        shift_y = self.world_offset.y - new_offset.y
+        shift_z = self.world_offset.z - new_offset.z
+        
+        new_blocks_map = {
+            (int(x + shift_x), int(y + shift_y), int(z + shift_z)): block
+            for (x, y, z), block in self.blocks_map.items()
+        }
+        
+        # Create the new structure, bypass auto-localization, and assign the new offset
+        new_structure = MCStructure(new_blocks_map, local_origin=None)
+        new_structure.world_offset = new_offset
+        return new_structure
+
     # -------------------------------------------------------------------------
     # 3. Generative Operations (Adding new voxels)
     # -------------------------------------------------------------------------
 
     def extrude(self, vector):
-        """Sweeps the structure, dragging the materials along the vector."""
         vx, vy, vz = vector
         path = generate_linear_path((0,0,0), (vx, vy, vz))
         
@@ -153,15 +182,8 @@ class MCStructure(DigitalSet):
         return MCStructure(new_map)
 
     def dilate(self, connectivity=6):
-        """
-        Grows the structure. Since we don't know what material the new outer 
-        shell should be, we default it to a transparent placeholder.
-        """
         pure_set = super().dilate(connectivity)
         new_map = {}
         for v in pure_set.voxels:
-            # If the voxel was in the original structure, keep its material. 
-            # Otherwise, assign the new dilated shell a placeholder.
             new_map[v] = self.blocks_map.get(v, "STRUCTURE_VOID")
-            
         return MCStructure(new_map)
