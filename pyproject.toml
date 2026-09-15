@@ -50,6 +50,9 @@ click = "*" # For the mcshell CLI entry point
 pytest = "^9.0.2"
 ruamel-yaml = "^0.19.1"
 
+trimesh = "*"
+scipy = "*"
+
 [tool.poetry.scripts]
 mcshell = "mcshell.mcshell:cli"
 
