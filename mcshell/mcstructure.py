@@ -140,6 +140,48 @@ class MCStructure(DigitalSet):
 
         return MCStructure(new_map)
 
+    def scale_volume(self, volume_factor: int) -> 'MCStructure':
+        """
+        Scales the structure so its total volume is approximately multiplied
+        by the volume_factor, using nearest-neighbor interpolation to preserve 
+        materials without gaps.
+        """
+        if not self.blocks_map or volume_factor <= 0:
+            return MCStructure()
+        if volume_factor == 1:
+            return MCStructure(self.blocks_map.copy())
+
+        # 1. The linear scale factor is the cube root of the volume multiplier
+        k = volume_factor ** (1/3)
+
+        # 2. Find the original bounding box
+        coords = np.array(list(self.blocks_map.keys()))
+        min_b = coords.min(axis=0)
+        max_b = coords.max(axis=0)
+
+        # 3. Calculate the target bounding box limits
+        t_min = np.floor(min_b * k).astype(int)
+        t_max = np.ceil((max_b + 1) * k).astype(int) - 1
+
+        new_map = {}
+        # 4. Inverse Mapping: Iterate over the new target space and sample the original space
+        for tx in range(t_min[0], t_max[0] + 1):
+            for ty in range(t_min[1], t_max[1] + 1):
+                for tz in range(t_min[2], t_max[2] + 1):
+                    # Map the target coordinate backward to the original space
+                    ox = int(math.floor(tx / k))
+                    oy = int(math.floor(ty / k))
+                    oz = int(math.floor(tz / k))
+
+                    original_key = (ox, oy, oz)
+                    if original_key in self.blocks_map:
+                        new_map[(tx, ty, tz)] = self.blocks_map[original_key]
+
+        structure = MCStructure(new_map)
+        # Preserve the absolute world offset in case we need to anchor it again
+        structure.world_offset = self.world_offset
+        return structure
+
     def with_local_origin(self, new_world_origin: Vec3) -> 'MCStructure':
         """
         Shifts the local coordinate system so that the specified absolute 

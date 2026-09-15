@@ -148,6 +148,46 @@ class DigitalSet:
                 new_voxels.add((vx + px, vy + py, vz + pz))
         return DigitalSet(new_voxels)
 
+    def scale_volume(self, volume_factor: int) -> 'DigitalSet':
+        """
+        Scales the volume of the pure geometry set by approximately the given integer 
+        factor, using nearest-neighbor interpolation to prevent gaps.
+        """
+        if not hasattr(self, 'voxels') or not self.voxels or volume_factor <= 0:
+            return DigitalSet()
+        if volume_factor == 1:
+            return DigitalSet(self.voxels.copy())
+
+        import numpy as np
+        import math
+
+        # 1. The linear scale factor is the cube root of the volume multiplier
+        k = volume_factor ** (1/3)
+
+        # 2. Find the original bounding box
+        coords = np.array(list(self.voxels))
+        min_b = coords.min(axis=0)
+        max_b = coords.max(axis=0)
+
+        # 3. Calculate the target bounding box limits
+        t_min = np.floor(min_b * k).astype(int)
+        t_max = np.ceil((max_b + 1) * k).astype(int) - 1
+
+        new_voxels = set()
+        # 4. Inverse Mapping: Iterate over the target space and sample the original space
+        for tx in range(t_min[0], t_max[0] + 1):
+            for ty in range(t_min[1], t_max[1] + 1):
+                for tz in range(t_min[2], t_max[2] + 1):
+                    # Map the target coordinate backward to the original space
+                    ox = int(math.floor(tx / k))
+                    oy = int(math.floor(ty / k))
+                    oz = int(math.floor(tz / k))
+
+                    if (ox, oy, oz) in self.voxels:
+                        new_voxels.add((tx, ty, tz))
+
+        return DigitalSet(new_voxels)
+
     def _get_connectivity_offsets(self, connectivity):
         if connectivity == 6:
             return [(1,0,0), (-1,0,0), (0,1,0), (0,-1,0), (0,0,1), (0,0,-1)]
