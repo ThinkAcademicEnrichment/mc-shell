@@ -71,6 +71,8 @@ export function defineMineCraftGenerators(pythonGenerator) {
         });
 
         const imports = [
+            '# required for picker_random',
+            'import random',
             'import threading',
             'import time',
             'from mcshell.constants import *',
@@ -224,37 +226,57 @@ export function defineMineCraftGenerators(pythonGenerator) {
     // --- Random Picker Adaptor
 
     pythonGenerator.forBlock['random_picker'] = function(block, generator) {
-        // 1. Get the block physically connected to the "PICKER" input
+        // Ensure random is imported in the final Python file
+        pythonGenerator.definitions_['import_random'] = 'import random';
+
         var targetBlock = block.getInputTargetBlock('PICKER');
 
         if (!targetBlock) {
             return ['None', pythonGenerator.ORDER_ATOMIC];
         }
 
-        // 2. Target the specific dropdown field (your pickers use "VALUE")
         var field = targetBlock.getField('VALUE');
 
         if (field && typeof field.getOptions === 'function') {
-            // 3. getOptions() returns an array of pairs: [["Human Readable", "MACHINE_VALUE"], ...]
             var options = field.getOptions();
-
-            // 4. Extract only the machine values and wrap them in Python string quotes
             var values = options.map(function(opt) {
                 return '"' + opt[1] + '"'; 
             });
 
-            // 5. Construct the Python random.choice string
             var code = 'random.choice([' + values.join(', ') + '])';
-            
             return [code, pythonGenerator.ORDER_FUNCTION_CALL];
         } else {
-            // Fallback: If a standard block is connected that isn't a dropdown picker,
-            // just generate its normal code.
-            var defaultCode = pythonGenerator.valueToCode(block, 'PICKER', pythonGenerator.ORDER_ATOMIC) || 'None';
-            return [defaultCode, pythonGenerator.ORDER_ATOMIC];
+            // Fallback: Assume the connected block is returning a list, and pick from it
+            var defaultCode = generator.valueToCode(block, 'PICKER', pythonGenerator.ORDER_NONE) || '[]';
+            var fallbackCode = 'random.choice(' + defaultCode + ')';
+            return [fallbackCode, pythonGenerator.ORDER_FUNCTION_CALL];
+        }
+    }; 
+
+    // --- Picker to List Adaptor 
+    pythonGenerator.forBlock['picker_to_list'] = function(block, generator) {
+        var targetBlock = block.getInputTargetBlock('PICKER');
+
+        if (!targetBlock) {
+            return ['[]', pythonGenerator.ORDER_ATOMIC];
+        }
+
+        var field = targetBlock.getField('VALUE');
+
+        if (field && typeof field.getOptions === 'function') {
+            var options = field.getOptions();
+            var values = options.map(function(opt) {
+                return '"' + opt[1] + '"'; 
+            });
+
+            var code = '[' + values.join(', ') + ']';
+            return [code, pythonGenerator.ORDER_ATOMIC];
+        } else {
+            // Fallback: Wrap a standard block in a list
+            var defaultCode = generator.valueToCode(block, 'PICKER', pythonGenerator.ORDER_NONE) || 'None';
+            return ['[' + defaultCode + ']', pythonGenerator.ORDER_ATOMIC];
         }
     };
-
     // --- MATH & MINECRAFT DATA STRUCTURES ---
 
     pythonGenerator.forBlock['minecraft_matrix_3d_elements'] = function (block, generator) {

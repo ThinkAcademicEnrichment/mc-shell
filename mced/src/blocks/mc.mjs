@@ -16,10 +16,20 @@ export function defineMineCraftBlocks(Blockly) {
             this.appendValueInput("PICKER")
                 .appendField("Random item from");
             
-            // Output type is null so it can plug into any matching parent input
             this.setOutput(true, null); 
-            this.setColour("#9B59B6"); // Distinct color for logic/utility
+            this.setColour("#9B59B6"); 
             this.setTooltip("Connect a picker block. This will randomly select one of its options.");
+        }
+    };
+
+    Blockly.Blocks['picker_to_list'] = {
+        init: function() {
+            this.appendValueInput("PICKER")
+                .appendField("All items from");
+            
+            this.setOutput(true, 'Array'); 
+            this.setColour("#9B59B6"); 
+            this.setTooltip("Connect a picker block. This creates a list containing every option in that picker.");
         }
     };
 
