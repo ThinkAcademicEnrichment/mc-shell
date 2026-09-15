@@ -605,69 +605,6 @@ namespaces:
         ]
         returns: boolean
 
-      - name: getWandMCStructure
-        bukkit: |
-          {
-            int x1 = {x1}, y1 = {y1}, z1 = {z1}, x2 = {x2}, y2 = {y2}, z2 = {z2};
-            // 1. Calculate Cubic Radius matching the marquee
-            int dx = Math.abs(x2 - x1);
-            int dy = Math.abs(y2 - y1);
-            int dz = Math.abs(z2 - z1);
-            int radius = Math.max(dx, Math.max(dy, dz));
-            if (radius < 1) radius = 1;
-
-            int minX = x1 - radius, maxX = x1 + radius;
-            int minY = y1 - radius, maxY = y1 + radius;
-            int minZ = z1 - radius, maxZ = z1 + radius;
-
-            org.bukkit.World w = world;
-            java.util.Map<String, String> blockMap = new java.util.HashMap<>();
-
-            if (w.getBlockAt(x1, y1, z1).getType().isAir()) { 
-                session.send("{}"); 
-                return; 
-            }
-
-            java.util.Set<String> visited = new java.util.HashSet<>();
-            java.util.Queue<org.bukkit.util.Vector> queue = new java.util.LinkedList<>();
-            queue.add(new org.bukkit.util.Vector(x1, y1, z1));
-
-            int count = 0;
-            // Limit to 8000 blocks to prevent massive lag spikes on huge structures
-            while (!queue.isEmpty() && count < 8000) {
-                org.bukkit.util.Vector v = queue.poll();
-                int vx = v.getBlockX(), vy = v.getBlockY(), vz = v.getBlockZ();
-                String key = vx + "," + vy + "," + vz;
-
-                // Mark as visited BEFORE checking air or boundaries to prevent loops
-                if (visited.contains(key)) continue;
-                visited.add(key);
-
-                // Enforce the 3D bounding box
-                if (vx < minX || vx > maxX || vy < minY || vy > maxY || vz < minZ || vz > maxZ) continue;
-
-                org.bukkit.block.Block b = w.getBlockAt(vx, vy, vz);
-                if (!b.getType().isAir()) {
-                    blockMap.put(key, b.getType().toString());
-                    count++;
-
-                    queue.add(new org.bukkit.util.Vector(vx + 1, vy, vz));
-                    queue.add(new org.bukkit.util.Vector(vx - 1, vy, vz));
-                    queue.add(new org.bukkit.util.Vector(vx, vy + 1, vz));
-                    queue.add(new org.bukkit.util.Vector(vx, vy - 1, vz));
-                    queue.add(new org.bukkit.util.Vector(vx, vy, vz + 1));
-                    queue.add(new org.bukkit.util.Vector(vx, vy, vz - 1));
-                }
-            }
-
-            com.google.gson.Gson gson = new com.google.gson.Gson();
-            session.send(gson.toJson(blockMap));     
-            }
-        args: [
-          { name: x1, type: int }, { name: y1, type: int }, { name: z1, type: int },
-          { name: x2, type: int }, { name: y2, type: int }, { name: z2, type: int }
-        ]
-        returns: MCStructure
 
       - name: getContiguousStructure
         bukkit: |
@@ -905,6 +842,69 @@ namespaces:
         ]
         returns: boolean
 
+      # - name: getWandMCStructure
+      #   bukkit: |
+      #     {
+      #       int x1 = {x1}, y1 = {y1}, z1 = {z1}, x2 = {x2}, y2 = {y2}, z2 = {z2};
+      #       // 1. Calculate Cubic Radius matching the marquee
+      #       int dx = Math.abs(x2 - x1);
+      #       int dy = Math.abs(y2 - y1);
+      #       int dz = Math.abs(z2 - z1);
+      #       int radius = Math.max(dx, Math.max(dy, dz));
+      #       if (radius < 1) radius = 1;
+
+      #       int minX = x1 - radius, maxX = x1 + radius;
+      #       int minY = y1 - radius, maxY = y1 + radius;
+      #       int minZ = z1 - radius, maxZ = z1 + radius;
+
+      #       org.bukkit.World w = world;
+      #       java.util.Map<String, String> blockMap = new java.util.HashMap<>();
+
+      #       if (w.getBlockAt(x1, y1, z1).getType().isAir()) { 
+      #           session.send("{}"); 
+      #           return; 
+      #       }
+
+      #       java.util.Set<String> visited = new java.util.HashSet<>();
+      #       java.util.Queue<org.bukkit.util.Vector> queue = new java.util.LinkedList<>();
+      #       queue.add(new org.bukkit.util.Vector(x1, y1, z1));
+
+      #       int count = 0;
+      #       // Limit to 8000 blocks to prevent massive lag spikes on huge structures
+      #       while (!queue.isEmpty() && count < 8000) {
+      #           org.bukkit.util.Vector v = queue.poll();
+      #           int vx = v.getBlockX(), vy = v.getBlockY(), vz = v.getBlockZ();
+      #           String key = vx + "," + vy + "," + vz;
+
+      #           // Mark as visited BEFORE checking air or boundaries to prevent loops
+      #           if (visited.contains(key)) continue;
+      #           visited.add(key);
+
+      #           // Enforce the 3D bounding box
+      #           if (vx < minX || vx > maxX || vy < minY || vy > maxY || vz < minZ || vz > maxZ) continue;
+
+      #           org.bukkit.block.Block b = w.getBlockAt(vx, vy, vz);
+      #           if (!b.getType().isAir()) {
+      #               blockMap.put(key, b.getType().toString());
+      #               count++;
+
+      #               queue.add(new org.bukkit.util.Vector(vx + 1, vy, vz));
+      #               queue.add(new org.bukkit.util.Vector(vx - 1, vy, vz));
+      #               queue.add(new org.bukkit.util.Vector(vx, vy + 1, vz));
+      #               queue.add(new org.bukkit.util.Vector(vx, vy - 1, vz));
+      #               queue.add(new org.bukkit.util.Vector(vx, vy, vz + 1));
+      #               queue.add(new org.bukkit.util.Vector(vx, vy, vz - 1));
+      #           }
+      #       }
+
+      #       com.google.gson.Gson gson = new com.google.gson.Gson();
+      #       session.send(gson.toJson(blockMap));     
+      #       }
+      #   args: [
+      #     { name: x1, type: int }, { name: y1, type: int }, { name: z1, type: int },
+      #     { name: x2, type: int }, { name: y2, type: int }, { name: z2, type: int }
+      #   ]
+      #   returns: MCStructure
 
 
 
