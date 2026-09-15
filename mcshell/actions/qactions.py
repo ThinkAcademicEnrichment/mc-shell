@@ -10,9 +10,10 @@ class QActions(MCActionsBase):
         super().__init__(mc_player_instance, delay_between_blocks)
 
 
+    @mced_block(
         label="Set Player Q-Compass Direction",
         direction={'label':'Q-Compass Direction'}
-    
+    )
     def set_q_compass_direction(self, direction: 'QCompass'):
         self.mcplayer.set_q_compass_direction(direction)
 
