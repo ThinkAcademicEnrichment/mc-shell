@@ -55,20 +55,32 @@ class QTurtleShapes(MCActionsBase):
         points = np.round(voxel_grid.fill().points).astype(int)
         
         return DigitalSet(points.tolist())
-    
+
     @mced_block(
         label="Digital Shape: Box",
-        width={'label': 'Width (X)', 'default': 5.0},
-        height={'label': 'Height (Y)', 'default': 5.0},
-        depth={'label': 'Depth (Z)', 'default': 5.0}
+        width={'label': 'Width (X)', 'default': 5},
+        height={'label': 'Height (Y)', 'default': 5},
+        depth={'label': 'Depth (Z)', 'default': 5}
     )
-    def get_box(self, width: float, height: float, depth: float) -> DigitalSet:
-        mesh = trimesh.creation.box(extents=[width, height, depth])
+    def get_box(self, width: int, height: int, depth: int) -> DigitalSet:
+        """
+        Generates a perfectly dimensioned Box. 
+        Uses pure integer math to avoid continuous-to-discrete fencepost errors.
+        """
+        # Calculate offsets to roughly center the box around (0,0,0)
+        # Note: Even dimensions will be slightly off-center by 1 block, which is mathematically required.
+        off_x = width // 2
+        off_y = height // 2
+        off_z = depth // 2
         
-        voxel_grid = mesh.voxelized(pitch=1.0)
-        points = np.round(voxel_grid.fill().points).astype(int)
+        voxels = [
+            (x - off_x, y - off_y, z - off_z)
+            for x in range(width)
+            for y in range(height)
+            for z in range(depth)
+        ]
         
-        return DigitalSet(points.tolist())
+        return DigitalSet(voxels)
 
     @mced_block(
         label="Digital Shape: Torus (Donut)",
