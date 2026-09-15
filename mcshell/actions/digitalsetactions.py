@@ -188,17 +188,18 @@ class DigitalSetActions(MCActionsBase):
         return target_set.shear(axis_primary, axis_secondary, factor)
 
     @mced_block(
-        label="Scale",
+        label="Scale Volume",
         target_set={'label': "Set"},
-        factor={'label': "Factor"}
+        factor={'label': "Multiplier (Integer)",'shadow':'<shadow type="math_number"><field name="NUM">2</field></shadow>'}
     )
-    def scale(self, target_set: Union[MCStructure, DigitalSet], factor: float) -> Union[MCStructure, DigitalSet]:
+    def scale_volume(self, target_set: Union[MCStructure,DigitalSet] , factor: int) -> Union[MCStructure,DigitalSet]:
         """
-        Scales a Digital Set by multiplying voxel coordinates.
+        Scales the volume of the set by approximately the given integer factor.
+        Uses nearest-neighbor interpolation to prevent gaps.
         """
-        if hasattr(target_set, 'scale'):
-            return target_set.scale(factor)
-        return target_set # Fallback if missing
+        if hasattr(target_set, 'scale_volume'):
+            return target_set.scale_volume(factor)
+        return target_set
 
     @mced_block(
         label="Rotate",
