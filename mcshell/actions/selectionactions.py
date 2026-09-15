@@ -225,24 +225,24 @@ class SelectionActions(SelectActions):
         
         return captured_structure
 
-    @mced_block(
-        label="Interactive Magic Wand Selection"
-    )
-    def interactive_magic_wand_selection(self) -> MCStructure:
-        """
-        Waits for the player to select a bounded area, then captures only the contiguous 
-        non-air blocks starting from the first block clicked, confined to the bounding box.
-        """
-        # Call the helper, but tell it to use the bounded Wand particle trace!
-        pos1, pos2 = self._interactive_selection_corners(draw_method="drawWandMarquee")
-        if not pos1 or not pos2:
-            from mcshell.mcstructure import MCStructure
-            return MCStructure() 
+    # @mced_block(
+    #     label="Interactive Magic Wand Selection"
+    # )
+    # def interactive_magic_wand_selection(self) -> MCStructure:
+    #     """
+    #     Waits for the player to select a bounded area, then captures only the contiguous 
+    #     non-air blocks starting from the first block clicked, confined to the bounding box.
+    #     """
+    #     # Call the helper, but tell it to use the bounded Wand particle trace!
+    #     pos1, pos2 = self._interactive_selection_corners(draw_method="drawWandMarquee")
+    #     if not pos1 or not pos2:
+    #         from mcshell.mcstructure import MCStructure
+    #         return MCStructure() 
 
-        print(f"[Magic Wand] Selection complete! Capturing Bounded Wand MCStructure...")
+    #     print(f"[Magic Wand] Selection complete! Capturing Bounded Wand MCStructure...")
         
-        # Call the new Bukkit endpoint that performs the bounded server-side Flood Fill
-        return self.mcplayer.mj.select.getWandMCStructure(
-            int(pos1.x), int(pos1.y), int(pos1.z),
-            int(pos2.x), int(pos2.y), int(pos2.z)
-        ).with_local_origin(pos1)
+    #     # Call the new Bukkit endpoint that performs the bounded server-side Flood Fill
+    #     return self.mcplayer.mj.select.getWandMCStructure(
+    #         int(pos1.x), int(pos1.y), int(pos1.z),
+    #         int(pos2.x), int(pos2.y), int(pos2.z)
+    #     ).with_local_origin(pos1)
