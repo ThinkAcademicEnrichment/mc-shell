@@ -610,8 +610,8 @@ namespaces:
         bukkit: |
           {
             int startX = {x}, startY = {y}, startZ = {z};
-            int maxRadius = 32;   // Safety: Don't search further than 32 blocks away
-            int maxBlocks = 5000; // Safety: Abort if the structure is too massive
+            int maxRadius = 64;   // Safety: Don't search further than 64 blocks away
+            int maxBlocks = 50000; // Safety: Abort if the structure is too massive
 
             org.bukkit.block.Block startBlock = world.getBlockAt(startX, startY, startZ);
             java.util.Map<String, String> blockMap = new java.util.HashMap<>();
@@ -626,35 +626,40 @@ namespaces:
                 queue.add(startBlock);
                 visited.add(startBlock.getLocation());
                 
-                // The 6 adjacent neighbors (Up, Down, North, South, East, West)
-                int[][] offsets = {{1,0,0}, {-1,0,0}, {0,1,0}, {0,-1,0}, {0,0,1}, {0,0,-1}};
-                
                 while (!queue.isEmpty() && blockMap.size() < maxBlocks) {
                     org.bukkit.block.Block curr = queue.poll();
                     blockMap.put(curr.getX() + "," + curr.getY() + "," + curr.getZ(), curr.getType().name());
                     
-                    for (int[] off : offsets) {
-                        int nx = curr.getX() + off[0];
-                        int ny = curr.getY() + off[1];
-                        int nz = curr.getZ() + off[2];
-                        
-                        // Enforce bounding box safety limit
-                        if (Math.abs(nx - startX) > maxRadius || Math.abs(ny - startY) > maxRadius || Math.abs(nz - startZ) > maxRadius) {
-                            continue;
-                        }
-                        
-                        org.bukkit.Location nLoc = new org.bukkit.Location(world, nx, ny, nz);
-                        if (!visited.contains(nLoc)) {
-                            visited.add(nLoc);
-                            org.bukkit.block.Block nBlock = world.getBlockAt(nx, ny, nz);
-                            
-                            // Only continue the flood fill through solid blocks
-                            if (!nBlock.getType().isAir()) {
-                                queue.add(nBlock);
+                    // Loop through all 26 spatial neighbors (Faces, Edges, AND Vertices)
+                    for (int dx = -1; dx <= 1; dx++) {
+                        for (int dy = -1; dy <= 1; dy++) {
+                            for (int dz = -1; dz <= 1; dz++) {
+                                // Skip the center block itself
+                                if (dx == 0 && dy == 0 && dz == 0) continue;
+                                
+                                int nx = curr.getX() + dx;
+                                int ny = curr.getY() + dy;
+                                int nz = curr.getZ() + dz;
+                                
+                                // Enforce bounding box safety limit
+                                if (Math.abs(nx - startX) > maxRadius || Math.abs(ny - startY) > maxRadius || Math.abs(nz - startZ) > maxRadius) {
+                                    continue;
+                                }
+                                
+                                org.bukkit.Location nLoc = new org.bukkit.Location(world, nx, ny, nz);
+                                if (!visited.contains(nLoc)) {
+                                    visited.add(nLoc);
+                                    org.bukkit.block.Block nBlock = world.getBlockAt(nx, ny, nz);
+                                    
+                                    // Only continue the flood fill through solid blocks
+                                    if (!nBlock.getType().isAir()) {
+                                        queue.add(nBlock);
+                                    }
+                                }
                             }
                         }
                     }
-                }
+                } 
                 
                 com.google.gson.Gson gson = new com.google.gson.Gson();
                 session.send(gson.toJson(blockMap));
