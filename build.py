@@ -132,7 +132,7 @@ def rebuild(rebuild_mcjuice=True):
     print("\nUpdating Generator Registry...")
     reg_engine.generate_registry(GENERATORS_DIR, "registerAllGenerators", "pythonGenerator")
 
-    print(f"\n!!! Remember to update \n\t{builder.toolbox_path}\n with snippets in \n\t{builder.toolbox_snippet_dir} ")
+    print(f"\n!!! If necessary, remember to update \n\t{builder.toolbox_path.parent / 'toolbox_template.xml'}\n with snippets in \n\t{builder.toolbox_snippet_dir} and run `npm run build:quick`")
 
     print(f"\nYou can now refresh the mced editor or restart the web application.")
 
