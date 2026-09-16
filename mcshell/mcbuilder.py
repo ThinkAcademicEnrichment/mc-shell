@@ -311,6 +311,11 @@ class RegistryBuilder:
         BlocklyGenerator.update_toolbox(f'<category name="Entities" colour="{self.COLORS["Entity"]}">{"".join(xml)}</category>', self.toolbox_path, append_separator=False)
         return js, py
 
+    def _export_toolbox_json_snippet(self,cls_name,json_string):
+        json_snippet_path = self.toolbox_snippet_dir.joinpath(f'{cls_name}.json')
+        json_snippet_path.parent.mkdir(exist_ok=True)
+        json.dump(json_string, json_snippet_path.open('w'))
+
     def _export_toolbox_xml_snippet(self,cls_name, xml_string):
         import xml.etree.ElementTree as ET
 
@@ -334,7 +339,7 @@ class RegistryBuilder:
 
         for i, (cls, name, color) in enumerate(self.GENERATED_ACTION_CLASSES):
             gen = BlocklyGenerator(cls, self.TYPE_MAP, self.SHADOW_MAP, color, name)
-            b_js, p_py, c_xml = gen.generate()
+            b_js, p_py, c_xml, c_json = gen.generate()
             js_out = pick_js + [b_js] if i == 0 else [b_js]
             py_out = pick_py + [p_py] if i == 0 else [p_py]
             self._write_output(cls.__name__, cls.__name__, js_out, py_out)
@@ -344,7 +349,11 @@ class RegistryBuilder:
             if i == len(self.GENERATED_ACTION_CLASSES) -1:
                 append_separator = True
 
+            # eventually this will go away
             BlocklyGenerator.update_toolbox(c_xml, self.toolbox_path,append_separator=append_separator)
+            self._export_toolbox_json_snippet(cls.__name__, c_json)
+
+
 
 
         pick_js, pick_py = [], []
@@ -355,7 +364,7 @@ class RegistryBuilder:
 
         for i, (cls, name, color) in enumerate(self.ACTION_CLASSES):
             gen = BlocklyGenerator(cls, self.TYPE_MAP, self.SHADOW_MAP, color, name)
-            b_js, p_py, c_xml = gen.generate()
+            b_js, p_py, c_xml,c_json = gen.generate()
             js_out = pick_js + [b_js] if i == 0 else [b_js]
             py_out = pick_py + [p_py] if i == 0 else [p_py]
             self._write_output(cls.__name__, cls.__name__, js_out, py_out)
@@ -368,11 +377,9 @@ class RegistryBuilder:
             elif i == len(self.ACTION_CLASSES) - 1:
                 append_separator = True
 
-            if not cls.__name__ in self.UNCATEGORIZED_ACTION_CLASSES:
-                BlocklyGenerator.update_toolbox(c_xml, self.toolbox_path,append_separator=append_separator)
-            else:
-                print(f"[build_actions] Ignoring {cls.__name__} in toolbox:")
-                self._export_toolbox_xml_snippet(cls.__name__, c_xml)
+            # eventually this will go away
+            BlocklyGenerator.update_toolbox(c_xml, self.toolbox_path,append_separator=append_separator)
+            self._export_toolbox_json_snippet(cls.__name__, c_json)
 
 
     def build_pickers_category(self):

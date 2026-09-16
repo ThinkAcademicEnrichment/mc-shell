@@ -59,7 +59,7 @@ TYPE_MAP = {
     "DataPath": "DataPath",
 }
 
-SHADOW_MAP = dict(
+SHADOW_MAP_XML = dict(
 
     Block='<shadow type="mc_block_picker_world"><field name="VALUE">STONE</field></shadow>',
     Item='<shadow type="mc_item_picker_food"><field name="VALUE">APPLE</field></shadow>',
@@ -94,6 +94,56 @@ SHADOW_MAP = dict(
 
     Color='<shadow type="picker_color_types"><field name="VALUE">WHITE</field></shadow>',
     RotationPoint='<shadow type="picker_rotation_point"><field name="VALUE">selection_point</field></shadow>'
+)
+
+SHADOW_MAP_JSON = {
+    'Block': {"type": "mc_block_picker_world", "fields": {"VALUE": "STONE"}},
+    'Item': {"type": "mc_item_picker_food", "fields": {"VALUE": "APPLE"}},
+    'Entity': {"type": "mc_entity_picker_passive_mobs", "fields": {"VALUE": "PIG"}},
+
+    'int': {"type": "math_number", "fields": {"NUM": 1}},
+    'float': {"type": "math_number", "fields": {"NUM": 1.0}},
+    'bool': {"type": "logic_boolean", "fields": {"BOOL": "TRUE"}},
+    'math_number': {"type": "math_number", "fields": {"NUM": 1}},
+    'str': {"type": "text", "fields": {"TEXT": ""}},
+    'text': {"type": "text", "fields": {"TEXT": ""}},
+    
+    'Vec3': {
+        "type": "minecraft_vector_3d",
+        "inputs": {
+            "X": {"shadow": {"type": "math_number", "fields": {"NUM": 0}}},
+            "Y": {"shadow": {"type": "math_number", "fields": {"NUM": 0}}},
+            "Z": {"shadow": {"type": "math_number", "fields": {"NUM": 0}}}
+        }
+    },
+    'Matrix3': {"type": "minecraft_matrix_3d_euler"},
+    
+    'Metric': {"type": "picker_metric", "fields": {"VALUE": "euclidean"}},
+    'QHeading': {"type": "picker_qheading", "fields": {"VALUE": "F"}},
+    'Axis': {"type": "picker_axis", "fields": {"VALUE": "y"}},
+    'QCompass': {"type": "picker_qcompass", "fields": {"VALUE": "N"}},
+    'Time': {"type": "picker_time", "fields": {"VALUE": "day"}},
+    'TimeType': {"type": "picker_timetype", "fields": {"VALUE": "gametime"}},
+    'Weather': {"type": "picker_weather", "fields": {"VALUE": "clear"}},
+    'Difficulty': {"type": "picker_difficulty", "fields": {"VALUE": "normal"}},
+    'GameMode': {"type": "picker_gamemode", "fields": {"VALUE": "creative"}},
+    'GameRule': {"type": "picker_gamerule", "fields": {"VALUE": "advance_time"}},
+    'IntegerGameRule': {"type": "picker_integergamerule", "fields": {"VALUE": "respawn_radius"}},
+    'LocateType': {"type": "picker_locatetype", "fields": {"VALUE": "structure"}},
+    'Structure': {"type": "picker_structure", "fields": {"VALUE": "ancient_city"}},
+    'Biome': {"type": "picker_biome", "fields": {"VALUE": "badlands"}},
+    'Poi': {"type": "picker_poi", "fields": {"VALUE": "armorer"}},
+    'Effect': {"type": "picker_effect", "fields": {"VALUE": "speed"}},
+    'TitleAction': {"type": "picker_titleaction", "fields": {"VALUE": "reset"}},
+    'DataPath': {"type": "picker_data_path", "fields": {"VALUE": "Pos"}},
+
+    'Color': {"type": "picker_color_types", "fields": {"VALUE": "WHITE"}},
+    'RotationPoint': {"type": "picker_rotation_point", "fields": {"VALUE": "selection_point"}}
+}
+
+SHADOW_MAP = dict(
+    xml=SHADOW_MAP_XML,
+    json=SHADOW_MAP_JSON
 )
 
 DATA_PATHS = [

@@ -190,7 +190,16 @@ class DigitalSetActions(MCActionsBase):
     @mced_block(
         label="Scale Volume",
         target_set={'label': "Set"},
-        factor={'label': "Multiplier (Integer)",'shadow':'<shadow type="math_number"><field name="NUM">2</field></shadow>'}
+        factor={
+            'label': "Multiplier (Integer)",
+            'shadow':{
+                'xml':'<shadow type="math_number"><field name="NUM">2</field></shadow>',
+                'json':{
+                    'type': 'math_number',
+                    'fields': {'NUM': 2,},
+                },
+            }
+        }
     )
     def scale_volume(self, target_set: Union[MCStructure,DigitalSet] , factor: int) -> Union[MCStructure,DigitalSet]:
         """
@@ -269,9 +278,30 @@ class DigitalSetActions(MCActionsBase):
     @mced_block(
         label="Get Corners",
         target_set={'label': "Set"},
-        normal={'label': "Normal",'shadow':'<shadow type="minecraft_vector_3d"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">1</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow>',},
-        epsilon={'label': 'Epsilon','shadow':'<shadow type="math_number"><field name="NUM">1.0</field></shadow>'}
-    
+        normal={
+            'label': "Normal",
+            'shadow': {
+                'xml': '<shadow type="minecraft_vector_3d"><value name="X"><shadow type="math_number"><field name="NUM">0</field></shadow></value><value name="Y"><shadow type="math_number"><field name="NUM">1</field></shadow></value><value name="Z"><shadow type="math_number"><field name="NUM">0</field></shadow></value></shadow>',
+                'json': {
+                    'type': 'minecraft_vector_3d',
+                    'inputs': {
+                        'X': {'shadow': {'type': 'math_number', 'fields': {'NUM': 0}}},
+                        'Y': {'shadow': {'type': 'math_number', 'fields': {'NUM': 1}}},
+                        'Z': {'shadow': {'type': 'math_number', 'fields': {'NUM': 0}}}
+                    }
+                }
+            }
+        },
+        epsilon={
+            'label': 'Epsilon',
+            'shadow': {
+                'xml': '<shadow type="math_number"><field name="NUM">1.0</field></shadow>',
+                'json': {
+                    'type': 'math_number',
+                    'fields': {'NUM': 1.0}
+                }
+            }
+        }
     )
     def corners(self, target_set: Union[MCStructure, DigitalSet], normal:Vec3=(0, 1, 0), epsilon:float=1.0) -> Union[MCStructure, DigitalSet]:
         """

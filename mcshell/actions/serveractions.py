@@ -84,7 +84,16 @@ class ServerActions(MCActionsBase):
 
     @mced_block(
         label="Set Weather to [weather]",
-        weather={'label': 'Weather', 'shadow': '<shadow type="text"><field name="TEXT">clear</field></shadow>'}
+        weather={
+            'label': 'Weather', 
+            'shadow': {
+                'xml': '<shadow type="text"><field name="TEXT">clear</field></shadow>',
+                'json': {
+                    'type': 'text',
+                    'fields': {'TEXT': 'clear'}
+                }
+            }
+        }
     )
     def server_weather_set(self, weather: str):
         """Sets the server weather (clear, rain, thunder)."""
@@ -93,7 +102,16 @@ class ServerActions(MCActionsBase):
     @mced_block(
         label="Set Gamemode to [gamemode] for [target]",
         gamemode={'label': 'Game Mode'},
-        target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'}
+        target={
+            'label': 'Target Player', 
+            'shadow': {
+                'xml': '<shadow type="text"><field name="TEXT">SELF</field></shadow>',
+                'json': {
+                    'type': 'text',
+                    'fields': {'TEXT': 'SELF'}
+                }
+            }
+        }
     )
     def server_gamemode_set(self, gamemode: 'GameMode', target: str = "SELF"):
         """Changes a player's gamemode."""
@@ -154,7 +172,16 @@ class ServerActions(MCActionsBase):
 
     @mced_block(
         label="Clear Inventory of [target]",
-        target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'}
+        target={
+            'label': 'Target Player', 
+            'shadow': {
+                'xml': '<shadow type="text"><field name="TEXT">SELF</field></shadow>',
+                'json': {
+                    'type': 'text',
+                    'fields': {'TEXT': 'SELF'}
+                }
+            }
+        }
     )
     def server_clear_inventory(self, target: str = "SELF"):
         """Clears items from a player's inventory."""
@@ -165,7 +192,16 @@ class ServerActions(MCActionsBase):
         label="Give [count] [block|item|entity] to [target]",
         material={'label': 'Block or Item or Entity', 'shadow': 'minecraft_picker_world'},
         count={'label': 'Count', 'shadow': 'math_number'},
-        target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'}
+        target={
+            'label': 'Target Player', 
+            'shadow': {
+                'xml': '<shadow type="text"><field name="TEXT">SELF</field></shadow>',
+                'json': {
+                    'type': 'text',
+                    'fields': {'TEXT': 'SELF'}
+                }
+            }
+        }
     )
     def server_give_block_item_projectile(self, material: Union['Block','Item','Entity'], count: int = 1, target: str = "SELF"):
         """Gives an item to a player."""
@@ -183,7 +219,16 @@ class ServerActions(MCActionsBase):
 
     @mced_block(
         label="Teleport [target] to [pos]",
-        target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'},
+        target={
+            'label': 'Target Player', 
+            'shadow': {
+                'xml': '<shadow type="text"><field name="TEXT">SELF</field></shadow>',
+                'json': {
+                    'type': 'text',
+                    'fields': {'TEXT': 'SELF'}
+                }
+            }
+        },
         pos={'label': 'Position'}
     )
     def server_teleport(self, target: str, pos: Vec3):
@@ -202,7 +247,16 @@ class ServerActions(MCActionsBase):
     @mced_block(
         label="Apply [effect] to [target] for [seconds]s (Level [amplifier])",
         effect={'label': 'Effect'},
-        target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'},
+        target={
+            'label': 'Target Player', 
+            'shadow': {
+                'xml': '<shadow type="text"><field name="TEXT">SELF</field></shadow>',
+                'json': {
+                    'type': 'text',
+                    'fields': {'TEXT': 'SELF'}
+                }
+            }
+        },
         seconds={'label': 'Duration', 'shadow': 'math_number'},
         amplifier={'label': 'Level', 'shadow': 'math_number'}
     )
@@ -215,7 +269,16 @@ class ServerActions(MCActionsBase):
         label="Show Title [text] as [action] for [target]",
         text={'label': 'Message', 'shadow': 'text'},
         action={'label': 'Title Action'},
-        target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">@a</field></shadow>'}
+        target={
+            'label': 'Target Player', 
+            'shadow': {
+                'xml': '<shadow type="text"><field name="TEXT">@a</field></shadow>',
+                'json': {
+                    'type': 'text',
+                    'fields': {'TEXT': '@a'}
+                }
+            }
+        }
     )
     def server_show_title(self, text: str, action: 'TitleAction', target: str = "@a"):
         """Displays large text on the player's screen."""
@@ -225,7 +288,16 @@ class ServerActions(MCActionsBase):
 
     @mced_block(
         label="Damage [target] by [amount]",
-        target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'},
+        target={
+            'label': 'Target Player', 
+            'shadow': {
+                'xml': '<shadow type="text"><field name="TEXT">SELF</field></shadow>',
+                'json': {
+                    'type': 'text',
+                    'fields': {'TEXT': 'SELF'}
+                }
+            }
+        },
         amount={'label': 'Amount'}
     )
     def server_damage(self, amount: float, target: str = "SELF"):
@@ -266,7 +338,16 @@ class ServerActions(MCActionsBase):
     @mced_block(
         label="Set the spawnpoint for [target] at [position]",
         position={'label':'Position'},
-        target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'},
+        target={
+            'label': 'Target Player', 
+            'shadow': {
+                'xml': '<shadow type="text"><field name="TEXT">SELF</field></shadow>',
+                'json': {
+                    'type': 'text',
+                    'fields': {'TEXT': 'SELF'}
+                }
+            }
+        },
     )
     def server_spawnpoint(self,position: Vec3,target: str = "@a"):
         """Sets the spawn point for a player."""
