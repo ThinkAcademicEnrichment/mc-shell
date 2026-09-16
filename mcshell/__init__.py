@@ -1,4 +1,5 @@
 
+from mcshell.mcactions import MCActions
 from IPython.utils.capture import capture_output
 import IPython
 from IPython.core.magic import Magics, magics_class, line_magic,needs_local_scope
@@ -6,7 +7,7 @@ from IPython.core.magic import Magics, magics_class, line_magic,needs_local_scop
 from mcshell.constants import *
 from mcshell.mcrepo import PowerRepository,SQLiteRepository
 from mcshell.mcclient import MCClient
-from mcshell.mcserver import throw_app_server_error, start_app_server, reset_app_server_context, GUI_AUTH_TOKEN
+from mcshell.mcserver import throw_app_server_error, start_app_server, reset_app_server_context, restart_app_server, GUI_AUTH_TOKEN
 from mcshell.mcserver import RUNNING_POWERS
 from mcshell.ppmanager import *
 from mcshell.ppdownloader import *
@@ -2437,6 +2438,22 @@ if __name__ == '__main__':
             print(f"Unknown command: {command}")
             print("Usage: %mc_library [list|rename-category|remove|export|import]")
 
+    @line_magic
+    def mc_restart_app_server(self,line):
+        self.app_server_thread = restart_app_server()
+
+
+    @needs_local_scope
+    @line_magic
+    def mc_get_mc(self, line, local_ns):
+        _line_parts = line.strip().split()
+        if not len(_line_parts) == 1:
+            _player_name = self._get_mc_name()
+        else:
+            _player_name = _line_parts.pop()
+        print(f"the `mc` object is now available in the shell")
+        _player = self._get_player(_player_name)
+        local_ns['mc'] = MCActions(_player)
 # ---------------------------------------------------------------------------
 # Startup and Initialization
 # ---------------------------------------------------------------------------

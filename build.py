@@ -1,3 +1,4 @@
+from mcshell import MC_TOOLBOX_DIR
 import sys
 from pathlib import Path
 import xml.etree.ElementTree as ET
@@ -34,9 +35,9 @@ def rebuild(rebuild_mcjuice=True):
     # 2. Run the Engine
 
     print("\nStep 2: Remove the existing toolbox.xml file...")
-    output_toolbox_path = MC_DATA_DIR/ 'toolbox.xml'
+    output_toolbox_path = MC_TOOLBOX_DIR / 'toolbox.xml'
     output_toolbox_path.unlink(missing_ok=True)
-    toolbox_template_path = MC_DATA_DIR / 'toolbox_template.xml'
+    toolbox_template_path = MC_TOOLBOX_DIR / 'toolbox_template.xml'
     with output_toolbox_path.open('w') as f:
         f.write(toolbox_template_path.read_text())
 
@@ -53,7 +54,7 @@ def rebuild(rebuild_mcjuice=True):
 
     print("\nStep 4: Building Blockly Registries...")
     builder = RegistryBuilder(
-        toolbox_path=MC_DATA_DIR / 'toolbox.xml',
+        toolbox_path=MC_TOOLBOX_DIR / 'toolbox.xml',
         blocks_dir=MC_APP_SRC_DIR / 'blocks',
         gens_dir=MC_APP_SRC_DIR / 'generators' / 'python',
     )
@@ -115,7 +116,7 @@ def rebuild(rebuild_mcjuice=True):
 
     print(f"\nRebuild Complete!")
     print(f"\nBlocks generated in: {MC_APP_SRC_DIR / 'blocks'}")
-    print(f"\nToolbox updated: {MC_DATA_DIR / 'toolbox.xml'}")
+    print(f"\nToolbox updated: {MC_TOOLBOX_DIR / 'toolbox.xml'}")
 
 
     print("\nStep 6: Building the JS registry of blocks and generators...")
@@ -130,6 +131,8 @@ def rebuild(rebuild_mcjuice=True):
     GENERATORS_DIR = MC_APP_SRC_DIR / 'generators' / 'python'
     print("\nUpdating Generator Registry...")
     reg_engine.generate_registry(GENERATORS_DIR, "registerAllGenerators", "pythonGenerator")
+
+    print(f"\n!!! If necessary, remember to update \n\t{builder.toolbox_path.parent / 'toolbox_template.xml'}\n with snippets in \n\t{builder.toolbox_snippet_dir} and run `npm run build:quick`")
 
     print(f"\nYou can now refresh the mced editor or restart the web application.")
 

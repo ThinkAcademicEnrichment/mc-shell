@@ -18,6 +18,30 @@ class MCActionsBase:
         self.mcplayer = mc_player_instance
         self.delay_between_blocks = delay_between_blocks
 
+    def _place_block_map(self, block_map: dict, placement_offset_vec3=None):
+        """
+        Helper method to take a dictionary mapping (x,y,z) coordinates to Bukkit block string IDs,
+        and set the blocks in the world.
+        """
+        if not block_map:
+            print("No block map generated, nothing to place.")
+            return
+
+        offset_x, offset_y, offset_z = (0, 0, 0)
+        if placement_offset_vec3: # If a Vec3 object is given for overall placement
+            offset_x, offset_y, offset_z = int(placement_offset_vec3.x), int(placement_offset_vec3.y), int(placement_offset_vec3.z)
+
+        for (x, y, z), material in block_map.items():
+            final_x = x + offset_x
+            final_y = y + offset_y
+            final_z = z + offset_z
+            self.mcplayer.mj.world.setBlock(int(final_x), int(final_y), int(final_z), material)
+
+            # Pause execution for a fraction of a second to create animation effects
+            if self.delay_between_blocks > 0:
+                import time
+                time.sleep(self.delay_between_blocks)
+
     def _place_blocks_from_coords(self, coords_list, block_type_from_blockly,
                                   placement_offset_vec3=None):
         """

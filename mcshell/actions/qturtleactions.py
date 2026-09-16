@@ -2,6 +2,7 @@ from mcshell.mcactions_base import MCActionsBase, _GLOBAL_QTURTLE
 from blockapily import mced_block
 from mcshell.constants import *
 from mcshell.mcturtle import DigitalSet
+from mcshell.mcstructure import MCStructure
 
 class QTurtleActions(MCActionsBase):
     def __init__(self, mc_player_instance, delay_between_blocks=0.001):
@@ -11,7 +12,7 @@ class QTurtleActions(MCActionsBase):
     @mced_block(
         label="QTurtle: Reset to",
         position={'label': 'Position'},
-        heading_q_str={'label': 'Facing'}
+        heading_q_str={'label': 'Facing'},
     )
     def reset(self, position:Vec3, heading_q_str:'QCompass'):
         """
@@ -91,13 +92,26 @@ class QTurtleActions(MCActionsBase):
         self.turtle.rotate_90(axis, steps)
 
     @mced_block(label="QTurtle: Set Brush", shape={'label': 'Shape'})
-    def turtle_set_brush(self, shape: DigitalSet):
+    def turtle_set_brush(self, shape: Union[MCStructure,DigitalSet]):
         self.turtle.set_brush(shape)
+
+    # @mced_block(label="QTurtle: Set Structure", structure={'label': 'Structure'})
+    # def turtle_set_structure(self, structure: MCStructure):
+    #     self.turtle.set_brush(structure)
 
     @mced_block(label="QTurtle: Stamp Brush", block_type={'label': 'Material'})
     def turtle_stamp(self, block_type: Union['Block','Item']):
         shape = self.turtle.stamp()
         self._place_digital_set(shape, block_type)
+
+    @mced_block(label="QTurtle: Place Structure")
+    def turtle_place(self):
+        """
+        Places the current brush into the world, retaining its specific block materials.
+        If the brush is a simple DigitalSet without materials, it defaults to Stone.
+        """
+        world_block_map = self.turtle.place()
+        self._place_block_map(world_block_map)
 
     @mced_block(
         label="QTurtle: Extrude Brush",
@@ -109,9 +123,10 @@ class QTurtleActions(MCActionsBase):
         shape = self.turtle.extrude(length,direction)
         self._place_digital_set(shape, block_type)
 
-    @mced_block(label="QTurtle: Capture Brush", shape={'label': 'Shape'})
-    def turtle_capture_brush(self, shape: DigitalSet):
-        self.turtle.capture_brush(shape)
+    # automatically applied if necessary in set_brush
+    # @mced_block(label="QTurtle: Capture Brush", shape={'label': 'Shape'})
+    # def turtle_capture_brush(self, shape: Union[MCStructure,DigitalSet]):
+    #     self.turtle.capture_brush(shape)
 
     @mced_block(label="QTurtle: Push State")
     def turtle_push(self):

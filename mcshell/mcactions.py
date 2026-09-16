@@ -6,6 +6,7 @@ from mcshell.actions.qturtleactions import QTurtleActions
 from mcshell.actions.qactions import QActions 
 from mcshell.actions.digitalgeometryactions import DigitalGeometryActions
 from mcshell.actions.digitalsetactions import DigitalSetActions
+from mcshell.actions.selectionactions import SelectionActions
 from mcshell.shapes.lsystemshapes import LSystemShapes
 from mcshell.shapes.qturtleshapes import QTurtleShapes
 
@@ -28,7 +29,7 @@ except ImportError:
 class MCActions(
     WorldActions, PlayerActions,ChatActions,
     EventActions,ServerActions,QTurtleActions,QActions,DigitalGeometryActions,DigitalSetActions,SetActions,
-    QTurtleShapes,LSystemShapes,BedWarsActions):
+    QTurtleShapes,LSystemShapes,BedWarsActions,SelectionActions):
     """
     Unified API for Blockly combining all action groups.
     """
@@ -36,6 +37,7 @@ class MCActions(
         # Initialize all parent classes properly
         PlayerActions.__init__(self, mc_player_instance, delay_between_blocks)
         WorldActions.__init__(self, mc_player_instance, delay_between_blocks)
+        SelectionActions.__init__(self, mc_player_instance, delay_between_blocks)
         ChatActions.__init__(self, mc_player_instance, delay_between_blocks)
         EventActions.__init__(self, mc_player_instance, delay_between_blocks)
         ServerActions.__init__(self, mc_player_instance, delay_between_blocks)

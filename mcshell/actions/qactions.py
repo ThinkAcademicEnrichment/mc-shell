@@ -1,10 +1,14 @@
-from mcshell.constants import Vec3
+from mcshell.constants import Vec3, threading, time, json
 from blockapily import mced_block
 from mcshell.mcactions_base import MCActionsBase
+from mcshell.mcturtle import DigitalSet
+from mcshell.mcstructure import MCStructure
+
 
 class QActions(MCActionsBase):
     def __init__(self, mc_player_instance, delay_between_blocks=0):
         super().__init__(mc_player_instance, delay_between_blocks)
+
 
     @mced_block(
         label="Set Player Q-Compass Direction",
@@ -14,7 +18,7 @@ class QActions(MCActionsBase):
         self.mcplayer.set_q_compass_direction(direction)
 
     @mced_block(
-        label="Get Player Q-Compass Direction",
+        label="Get Player Q-Compass Orientation",
     )
     def get_q_compass_direction(self) -> 'QCompass':
         return self.mcplayer.q_compass_direction
@@ -38,7 +42,14 @@ class QActions(MCActionsBase):
 
     @mced_block(
         label="Get Q Direction",
-        direction={'label':"Q-Compass Direction"}
+        direction={'label':"in Q-Compass Orientation"}
     )
     def get_q_direction_from_q_compass_direction(self, direction: 'QCompass') -> Vec3:
         return self.mcplayer._get_q_direction_vector(direction)
+
+    @mced_block(
+        label="Get Player Compass Orientation",
+    )
+    def get_compass_direction(self) -> 'QCompass':
+        return self.mcplayer.compass_direction
+

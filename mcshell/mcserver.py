@@ -60,6 +60,14 @@ def check_auth_token():
             print(f"\n[SECURITY BLOCK] Unauthorized API access attempt to {request.path} blocked!")
             return jsonify({"error": "Unauthorized access. Invalid or missing GUI token."}), 401
 
+@app.after_request
+def add_header(response):
+    """Prevent aggressive browser caching during frontend development."""
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '-1'
+    return response
+
 # --- Suppress Flask's Default Console Logging ---
 flask_logger = logging.getLogger('werkzeug')
 flask_logger.setLevel(logging.ERROR) # Changed to ERROR to silence HTTP logs
@@ -72,6 +80,43 @@ socketio = SocketIO(
 RUNNING_POWERS = {}
 
 # --- Server Control ---
+
+import socket
+import time
+
+def restart_app_server():
+    """Gracefully restarts the server while maintaining the global Flask config."""
+    print("Initiating graceful restart of the application server...")
+    
+    with app.app_context():
+        server_data = current_app.config.get('MCSHELL_SERVER_DATA')
+        minecraft_name = current_app.config.get('MINECRAFT_PLAYER_NAME')
+        shell = current_app.config.get('IPYTHON_SHELL')
+        power_repo = current_app.config.get('POWER_REPO')
+        
+    global app_server_thread
+    port = getattr(app_server_thread, 'port', 5001) if app_server_thread else 5001
+        
+    stop_app_server()
+    
+    # Actively poll until the OS actually releases the port
+    print(f"Waiting for OS to release port {port}...")
+    for _ in range(10):  # Poll for up to 5 seconds
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            if s.connect_ex(('127.0.0.1', port)) != 0:
+                break  # Connection failed, meaning the port is finally free!
+        time.sleep(0.5)
+    else:
+        print("Warning: Port release timeout. Server start may fail silently.")
+        
+    return start_app_server(
+        server_data=server_data, 
+        minecraft_name=minecraft_name, 
+        shell=shell, 
+        power_repo=power_repo,
+        port=port
+    )
+
 def reset_app_server_context():
     """Clears the Minecraft context from the Flask app but leaves the server running."""
     with app.app_context():

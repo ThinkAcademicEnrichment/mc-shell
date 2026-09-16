@@ -1,13 +1,22 @@
 from typing import List
 from blockapily import mced_block
 from mcshell.mcturtle import DigitalSet
+from mcshell.mcstructure import MCStructure
 from mcshell.mcactions_base import MCActionsBase
 from mcshell.constants import Vec3
 import numpy as np
 
+from typing import List, Union
+from blockapily import mced_block
+from mcshell.mcturtle import DigitalSet
+from mcshell.mcactions_base import MCActionsBase
+from mcshell.constants import Vec3
+import numpy as np
+
+
 class DigitalSetActions(MCActionsBase):
     """
-    A stateless facade providing a block-friendly interface to DigitalSet operations.
+    A stateless facade providing a block-friendly interface to DigitalSet and MCStructure operations.
     These methods map perfectly to Value blocks in Blockly (Data-Flow paradigm).
     """
 
@@ -34,14 +43,12 @@ class DigitalSetActions(MCActionsBase):
         y={'label': "y"},
         z={'label': "z"}
     )
-    def add_voxel(self, target_set: DigitalSet, x: int, y: int, z: int) -> DigitalSet:
+    def add_voxel(self, target_set: Union[MCStructure, DigitalSet], x: int, y: int, z: int) -> Union[MCStructure, DigitalSet]:
         """
         Adds a single point to a set.
-        Maintains immutability by cloning the set before adding the voxel.
+        Maintains immutability. Uses union to natively preserve MCStructure materials if applicable.
         """
-        new_set = DigitalSet(target_set)
-        new_set.add((x, y, z))
-        return new_set
+        return target_set.union(DigitalSet([(x, y, z)]))
 
     # -------------------------------------------------------------------------
     # Information & Logic
@@ -51,7 +58,7 @@ class DigitalSetActions(MCActionsBase):
         label="Is Empty",
         target_set={'label': "Set"}
     )
-    def is_empty(self, target_set: DigitalSet) -> bool:
+    def is_empty(self, target_set: Union[MCStructure, DigitalSet]) -> bool:
         """
         Checks if a Digital Set contains zero points.
         """
@@ -61,7 +68,7 @@ class DigitalSetActions(MCActionsBase):
         label="Voxel Count",
         target_set={'label': "Set"}
     )
-    def voxel_count(self, target_set: DigitalSet) -> int:
+    def voxel_count(self, target_set: Union[MCStructure, DigitalSet]) -> int:
         """
         Returns the total number of blocks/points in the Digital Set.
         """
@@ -71,7 +78,7 @@ class DigitalSetActions(MCActionsBase):
         label="Get Voxels",
         target_set={'label': "Set"}
     )
-    def get_voxels(self, target_set: DigitalSet) -> list:
+    def get_voxels(self, target_set: Union[MCStructure, DigitalSet]) -> list:
         """
         Returns the blocks/points in the Digital Set as a list of vectors.
         """
@@ -86,7 +93,7 @@ class DigitalSetActions(MCActionsBase):
         set_a={'label': "Set A"},
         set_b={'label': "Set B"}
     )
-    def union(self, set_a: DigitalSet, set_b: DigitalSet) -> DigitalSet:
+    def union(self, set_a: Union[MCStructure, DigitalSet], set_b: Union[MCStructure, DigitalSet]) -> Union[MCStructure, DigitalSet]:
         """
         Combines two Digital Sets, returning a new set containing all points from both.
         """
@@ -97,7 +104,7 @@ class DigitalSetActions(MCActionsBase):
         set_a={'label': "Set A"},
         set_b={'label': "Set B"}
     )
-    def intersection(self, set_a: DigitalSet, set_b: DigitalSet) -> DigitalSet:
+    def intersection(self, set_a: Union[MCStructure, DigitalSet], set_b: Union[MCStructure, DigitalSet]) -> Union[MCStructure, DigitalSet]:
         """
         Returns a new Digital Set containing only points that exist in BOTH Set A and Set B.
         """
@@ -108,7 +115,7 @@ class DigitalSetActions(MCActionsBase):
         set_a={'label': "Set A"},
         set_b={'label': "Set B"}
     )
-    def difference(self, set_a: DigitalSet, set_b: DigitalSet) -> DigitalSet:
+    def difference(self, set_a: Union[MCStructure, DigitalSet], set_b: Union[MCStructure, DigitalSet]) -> Union[MCStructure, DigitalSet]:
         """
         Returns a new Digital Set containing points from Set A that are NOT in Set B.
         """
@@ -119,7 +126,7 @@ class DigitalSetActions(MCActionsBase):
         set_a={'label': "Set A"},
         set_b={'label': "Set B"}
     )
-    def symmetric_difference(self, set_a: DigitalSet, set_b: DigitalSet) -> DigitalSet:
+    def symmetric_difference(self, set_a: Union[MCStructure, DigitalSet], set_b: Union[MCStructure, DigitalSet]) -> Union[MCStructure, DigitalSet]:
         """
         Returns a new Digital Set containing points in either Set A or Set B, but NOT both.
         """
@@ -136,7 +143,7 @@ class DigitalSetActions(MCActionsBase):
         label="Union All",
         sets={'label': "Sets"}
     )
-    def union_all(self, sets: List[DigitalSet]) -> DigitalSet:
+    def union_all(self, sets: List[Union[MCStructure, DigitalSet]]) -> Union[MCStructure, DigitalSet]:
         """
         Combines a list of Digital Sets into a single Set.
         Used for Blockly mutator blocks taking N inputs.
@@ -161,7 +168,7 @@ class DigitalSetActions(MCActionsBase):
         dy={'label': "dy"},
         dz={'label': "dz"}
     )
-    def translate(self, target_set: DigitalSet, dx: int, dy: int, dz: int) -> DigitalSet:
+    def translate(self, target_set: Union[MCStructure, DigitalSet], dx: int, dy: int, dz: int) -> Union[MCStructure, DigitalSet]:
         """
         Moves a Digital Set by a given (dx, dy, dz) offset.
         """
@@ -174,37 +181,41 @@ class DigitalSetActions(MCActionsBase):
         axis_secondary={'label': 'Secondary Axis'},
         factor={'label': 'Factor'}
     )
-    def shear(self, target_set: DigitalSet, axis_primary: 'Axis', axis_secondary: 'Axis', factor: float) -> DigitalSet:
+    def shear(self, target_set: Union[MCStructure, DigitalSet], axis_primary: 'Axis', axis_secondary: 'Axis', factor: float) -> Union[MCStructure, DigitalSet]:
         """
         Shear a Digital Set along given axes by a specific factor.
         """
         return target_set.shear(axis_primary, axis_secondary, factor)
 
     @mced_block(
-        label="Scale",
+        label="Scale Volume",
         target_set={'label': "Set"},
-        factor={'label': "Factor"}
+        factor={'label': "Multiplier (Integer)",'shadow':'<shadow type="math_number"><field name="NUM">2</field></shadow>'}
     )
-    def scale(self, target_set: DigitalSet, factor: float) -> DigitalSet:
+    def scale_volume(self, target_set: Union[MCStructure,DigitalSet] , factor: int) -> Union[MCStructure,DigitalSet]:
         """
-        Scales a Digital Set by multiplying voxel coordinates.
+        Scales the volume of the set by approximately the given integer factor.
+        Uses nearest-neighbor interpolation to prevent gaps.
         """
-        if hasattr(target_set, 'scale'):
-            return target_set.scale(factor)
-        return target_set # Fallback if missing
+        if hasattr(target_set, 'scale_volume'):
+            return target_set.scale_volume(factor)
+        return target_set
 
     @mced_block(
         label="Rotate",
         target_set={'label': "Set"},
         axis={'label': "Axis"},
-        angle={'label': "Angle (deg)"}
+        angle={'label': "Angle (deg)"},
+        rotation_point={'label': "Rotation Point"},
     )
-    def rotate(self, target_set: DigitalSet, axis: 'Axis', angle: float) -> DigitalSet:
+    def rotate(self, target_set: Union[MCStructure, DigitalSet], axis: 'Axis', angle: float, rotation_point: 'RotationPoint') -> Union[MCStructure, DigitalSet]:
         """
         Rotates a Digital Set around a specific axis.
         """
         if hasattr(target_set, 'rotate'):
-            return target_set.rotate(axis, angle)
+            if hasattr(target_set,'world_offset') and rotation_point == 'selection_point':
+                return target_set.rotate(axis, angle, Vec3(0,0,0))
+            return target_set.rotate(axis,angle)
         return target_set
 
     # -------------------------------------------------------------------------
@@ -215,7 +226,7 @@ class DigitalSetActions(MCActionsBase):
         label="Dilate",
         target_set={'label': "Set"}
     )
-    def dilate(self, target_set: DigitalSet) -> DigitalSet:
+    def dilate(self, target_set: Union[MCStructure, DigitalSet]) -> Union[MCStructure, DigitalSet]:
         """
         Expands the Digital Set by adding a layer of voxels to its boundary.
         """
@@ -225,7 +236,7 @@ class DigitalSetActions(MCActionsBase):
         label="Erode",
         target_set={'label': "Set"}
     )
-    def erode(self, target_set: DigitalSet) -> DigitalSet:
+    def erode(self, target_set: Union[MCStructure, DigitalSet]) -> Union[MCStructure, DigitalSet]:
         """
         Shrinks the Digital Set by removing the outermost layer of voxels.
         """
@@ -235,7 +246,7 @@ class DigitalSetActions(MCActionsBase):
         label="Shell",
         target_set={'label': "Set"}
     )
-    def shell(self, target_set: DigitalSet) -> DigitalSet:
+    def shell(self, target_set: Union[MCStructure, DigitalSet]) -> Union[MCStructure, DigitalSet]:
         """
         Returns the hollow boundary (shell) of the Digital Set.
         """
@@ -248,7 +259,7 @@ class DigitalSetActions(MCActionsBase):
         dy={'label': "dy"},
         dz={'label': "dz"}
     )
-    def extrude(self, target_set: DigitalSet, dx: int, dy: int, dz: int) -> DigitalSet:
+    def extrude(self, target_set: Union[MCStructure, DigitalSet], dx: int, dy: int, dz: int) -> Union[MCStructure, DigitalSet]:
         """
         Extrudes (sweeps) the Digital Set along a directional vector.
         """
@@ -262,14 +273,9 @@ class DigitalSetActions(MCActionsBase):
         epsilon={'label': 'Epsilon','shadow':'<shadow type="math_number"><field name="NUM">1.0</field></shadow>'}
     
     )
-    def corners(self, target_set:DigitalSet, normal:Vec3=(0, 1, 0), epsilon:float=1.0) -> DigitalSet:
+    def corners(self, target_set: Union[MCStructure, DigitalSet], normal:Vec3=(0, 1, 0), epsilon:float=1.0) -> Union[MCStructure, DigitalSet]:
         """
         Finds the corner vertices for each 2D level curve slice of the DigitalSet.
-
-        :param target_set: The DigitalSet representing the shape  
-        :param normal: The unit normal vector defining the slice planes.
-        :param epsilon: The distance tolerance for the Douglas-Peucker algorithm.
-        :return: A new DigitalSet containing only the corner voxels.
         """
         if not target_set.voxels:
             return DigitalSet()
@@ -307,7 +313,11 @@ class DigitalSetActions(MCActionsBase):
                 slice_corners = self._douglas_peucker_np(boundary_arr, epsilon)
                 
                 for corner in slice_corners:
-                    corner_set.add(corner)
+                    corner_set.add(tuple(corner))
+
+        # Preserve MCStructure materials natively using intersection!
+        if hasattr(target_set, 'intersection'):
+            return target_set.intersection(corner_set)
 
         return corner_set
 
@@ -315,20 +325,14 @@ class DigitalSetActions(MCActionsBase):
         label='Get Box Diagonal',
         box_set={'label':"Box Set"}
     )
-    def find_bounding_box_corners(self, box_set:DigitalSet) -> DigitalSet:
+    def find_bounding_box_corners(self, box_set: Union[MCStructure, DigitalSet]) -> DigitalSet:
         """
-        Finds the two corners that form the diagonal across the entire bounding box
-        by finding the global minimums and global maximums of all coordinates.
-        
-        Args:
-            box_set: A Digital set of voxels representing the corners of the box.
-            
-        Returns:
-            A DigitalSet of voxels which form a diagonal
-            through the center of the box.
+        Finds the two corners that form the diagonal across the entire bounding box.
+        Always returns a pure DigitalSet, as the min/max geometric bounds are not 
+        guaranteed to be physical voxels (e.g., in a hollow shell structure).
         """
-        # if not box_set:
-        #     raise ValueError("The box_set cannot be empty.")
+        if not box_set or not box_set.voxels:
+            return DigitalSet()
 
         # 1. Extract all x, y, and z coordinates into separate lists
         x_coords = [c[0] for c in box_set.voxels]
@@ -336,11 +340,9 @@ class DigitalSetActions(MCActionsBase):
         z_coords = [c[2] for c in box_set.voxels]
 
         # 2. Find the minimum and maximum for each axis
-        # The minimum corner is the one with the smallest x, y, and z
         min_corner = (min(x_coords), min(y_coords), min(z_coords))
-        
-        # The maximum corner is the one with the largest x, y, and z
         max_corner = (max(x_coords), max(y_coords), max(z_coords))
+        
         corner_set = DigitalSet()
         corner_set.add(min_corner)
         corner_set.add(max_corner)
@@ -459,5 +461,3 @@ class DigitalSetActions(MCActionsBase):
             all_paths.append(current_path)
 
         return all_paths
-
-
