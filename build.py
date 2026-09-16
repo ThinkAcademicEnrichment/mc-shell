@@ -69,7 +69,8 @@ def rebuild(rebuild_mcjuice=True):
     # This generates:
     # 1. blocks/materials.mjs, blocks/items.mjs, blocks/entities.mjs
     # 2. generators/python/materials.mjs, ... etc.
-    # 3. Updates toolbox.xml via blockapily's structured XML injection
+    # 3. [Legacy function] Updates toolbox.xml via blockapily's structured XML injection
+    # 4. Generates toolbox JSON for each action class in MC_TOOLBOX_DIR / snippets
     builder.build_all()
 
     if rebuild_mcjuice:
@@ -131,8 +132,6 @@ def rebuild(rebuild_mcjuice=True):
     GENERATORS_DIR = MC_APP_SRC_DIR / 'generators' / 'python'
     print("\nUpdating Generator Registry...")
     reg_engine.generate_registry(GENERATORS_DIR, "registerAllGenerators", "pythonGenerator")
-
-    print(f"\n!!! If necessary, remember to update \n\t{builder.toolbox_path.parent / 'toolbox_template.xml'}\n with snippets in \n\t{builder.toolbox_snippet_dir} and run `npm run build:quick`")
 
     print(f"\nYou can now refresh the mced editor or restart the web application.")
 
