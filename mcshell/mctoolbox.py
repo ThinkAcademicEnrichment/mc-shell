@@ -50,14 +50,18 @@ class MCToolbox:
     def build(self, spec) -> dict:
         """Recursively builds the toolbox dict from the Python user spec."""
         
-        # 1. Root Toolbox
-        if hasattr(spec, 'items'):
+        # 1. Root Toolbox (Explicit class check removes ambiguity with dicts)
+        if spec.__class__.__name__ == 'Toolbox':
             return {
                 "kind": "categoryToolbox",
                 "contents": [self.build(item) for item in spec.items]
             }
             
-        # 2. Custom Category
+        # 2. Raw JSON Dictionaries (e.g., Pickers attributes)
+        elif isinstance(spec, dict):
+            return spec
+            
+        # 3. Custom Category
         elif hasattr(spec, 'name') and hasattr(spec, 'contents'):
             return {
                 "kind": "category",
@@ -66,13 +70,13 @@ class MCToolbox:
                 "contents": [self.build(item) for item in spec.contents]
             }
 
-        # 3. Separator
+        # 4. Separator
         elif spec.__class__.__name__ == 'Separator':
             return {
                 "kind": "sep"
             }
 
-        # 4. Configured Block (Overrides)
+        # 5. Configured Block (Overrides)
         elif spec.__class__.__name__ == 'ConfiguredBlock':
             class_name, method_name = spec.method.__qualname__.split('.')
             target_type = f"{class_name.lower()}_{method_name}"
@@ -95,11 +99,11 @@ class MCToolbox:
                 
             return base_block
 
-        # 5. Whole Action Class (e.g., QActions)
+        # 6. Whole Action Class (e.g., QActions)
         elif isinstance(spec, type): 
             return self._load_snippet(spec.__name__)
 
-        # 6. Specific Method (e.g., QActions.get_height_at)
+        # 7. Specific Method (e.g., QActions.get_height_at)
         elif callable(spec) and hasattr(spec, '__qualname__'):
             class_name, method_name = spec.__qualname__.split('.')
             target_type = f"{class_name.lower()}_{method_name}"
@@ -110,6 +114,10 @@ class MCToolbox:
                     return block
                     
             raise ValueError(f"Block {target_type} not found.")
+
+        # 8. Static Category by String Name (e.g., "Logic")
+        elif isinstance(spec, str):
+            return self._load_snippet(spec)
 
         else:
             raise ValueError(f"Unknown specification item: {spec}")
