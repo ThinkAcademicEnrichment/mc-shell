@@ -123,6 +123,9 @@
 
                 <main id="main-content-panel">
                     <div id="controls" style="display: flex; width: 100%; align-items: center;">
+                        <select id="toolboxSelector" class="toolbox-select" title="Choose Toolbox">
+                            <option value="">Loading toolboxes...</option>
+                        </select>                        
                         <button class="btn-picker" @click="isLibraryCollapsed = !isLibraryCollapsed">Toggle Library</button>
                         <button class="btn-events" id="executePowerButton">Run Power</button>
                         <button class="btn-block" id="cancelPowerButton">Cancel Power</button>
