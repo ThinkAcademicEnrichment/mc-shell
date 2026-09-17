@@ -6,3 +6,8 @@ class Text: """Core Blockly text manipulation."""
 class Lists: """Core Blockly list operations."""
 class Variables: """Dynamic variable flyout."""
 class Functions: """Dynamic procedure flyout."""
+
+from .pickers import Pickers
+from .blocks import Blocks
+from .items import Items
+from .entities import Entities
