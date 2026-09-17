@@ -134,7 +134,7 @@ def serve_dynamic_js(script_version, script_name):
         abort(500, description=f"Failed to compile scripts: {str(e)}")
 
 
-@config_bp.route('/<script_version>/toolbox/<toolbox_name>.json')
+@config_bp.route('/<script_version>/toolbox/<toolbox_name>')
 def serve_json_toolbox(script_version, toolbox_name):
     """
     Dynamically generates and serves a JSON toolbox based on a user-defined specification.
@@ -206,3 +206,16 @@ def load_toolbox_spec(toolbox_name: str):
     except Exception as e:
         print(f"Error loading toolbox {toolbox_name}: {e}")
         abort(500, description="Internal error evaluating toolbox specification.")
+
+@config_bp.route('/toolbox/list')
+def list_toolboxes():
+    """Returns a list of available toolbox specifications."""
+    specs_dir = Path("mcshell/data/toolbox/specs")
+    
+    # Grab all .py files, strip the extension, and ignore __init__.py
+    if specs_dir.exists():
+        toolboxes = [f.stem for f in specs_dir.glob("*.py") if f.name != "__init__.py"]
+    else:
+        toolboxes = []
+        
+    return jsonify({"toolboxes": toolboxes})
