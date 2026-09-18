@@ -124,7 +124,8 @@ class MCToolbox:
         else:
             raise ValueError(f"Unknown specification item: {spec}")
 
-    def generate_shadow_helpers(self, shadow_map: dict, output_file: str = "shadows.py"):
+    @staticmethod
+    def generate_shadow_helpers(shadow_map: dict, output_file: Path = MC_TOOLBOX_SHADOWS):
         """Generates a Python file containing factory functions from the SHADOW_MAP."""
         lines = [
             '"""Auto-generated shadow block helpers."""',
@@ -185,5 +186,7 @@ class MCToolbox:
                     ''
                 ])
 
-        with open(output_file, 'w') as f:
+        output_file.parent.mkdir(exist_ok=True)
+
+        with output_file.open('w') as f:
             f.write("\n".join(lines))
