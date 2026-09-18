@@ -52,8 +52,5 @@ poetry.toml
 
 /mcshell/data/rathole
 
-/mcshell/data/toolbox/toolbox.xml
-/mcshell/data/toolbox/snippets/
-
 
 /mcjuice/src/main/java/org/mcshell/mcjuice/GeneratedCommandRegistry.java
