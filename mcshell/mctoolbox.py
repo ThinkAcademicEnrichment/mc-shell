@@ -3,6 +3,8 @@ import copy
 from pathlib import Path
 from typing import List, Any, Callable, Union, Dict, Optional
 
+from mcshell.constants import MC_TOOLBOX_SHADOWS
+
 class Toolbox:
     """The root container for the Blockly toolbox."""
     def __init__(self, items: List[Any]):

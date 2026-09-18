@@ -1,3 +1,4 @@
+from mcshell import MC_TOOLBOX_SNIPPETS_DIR
 from flask import Blueprint, current_app, render_template_string, make_response,jsonify
 from flask import Response, abort
 import importlib.util
@@ -160,9 +161,10 @@ def serve_json_toolbox(script_version, toolbox_name):
         spec = load_toolbox_spec(toolbox_name)
 
         # Initialize the compiler (Make sure MC_TOOLBOX_DIR is in scope)
-        snippets_dir = MC_TOOLBOX_DIR / 'snippets'
+        snippets_dir = MC_TOOLBOX_SNIPPETS_DIR
         compiler = MCToolbox(snippets_dir=str(snippets_dir))
 
+        
         # Traverse the specification and build the JSON dictionary
         toolbox_json = compiler.build(spec)
 
