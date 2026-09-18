@@ -472,7 +472,8 @@ from mcshell.mcbuilder import RegistryBuilder,TaxonomyEngine,RegistryEngine
 from mcshell.mcscraper import fetch_minecraft_data
 from mcshell.constants import MC_TOOLBOX_DIR,MC_APP_SRC_DIR, MC_DATA_DIR, MC_JUICE_SRC_DIR,MC_SHELL_DIR,subprocess,shutil
 
-from mcshell.mcconfig import TAXONOMY_RULES,ENTITY_RULES
+from mcshell.mcconfig import TAXONOMY_RULES,ENTITY_RULES,SHADOW_MAP
+from mcshell.mctoolbox import MCToolbox
 
 def rebuild(rebuild_mcjuice=True):
     """
@@ -480,18 +481,9 @@ def rebuild(rebuild_mcjuice=True):
     This serves as a full-pipeline test for the data-driven migration.
     """
 
-    # print("\nStep 1: Building mcjuice Command Registry...")
-    # gen = ApiGenerator(
-    #     MC_DATA_DIR / "mcjuice_api.yaml",
-    #     MC_JUICE_SRC_DIR / "main/java/org/mcshell/mcjuice/GeneratedCommandRegistry.java",
-    #     MC_JUICE_SRC_DIR / "main/java/org/mcshell/mcjuice/GeneratedEventListener.java",
-    #     MC_SHELL_DIR / "mcjuice.py",
-    #     MC_SHELL_DIR / "actions" / "generated_actions.py"
-    #     )
-
-    # # generate the command registry Java class for the mcjuice plugin and a python client
-    # gen.run()
-
+    print("\nStep 1: Generate the shadow factories...")
+    MCToolbox.generate_shadow_helpers(SHADOW_MAP)
+   
 
     # 2. Run the Engine
 
