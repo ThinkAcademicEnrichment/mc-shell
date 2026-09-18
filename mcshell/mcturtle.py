@@ -369,12 +369,14 @@ class QTurtle:
         
         contains_origin = (min_x <= 0 <= max_x) and (min_y <= 0 <= max_y) and (min_z <= 0 <= max_z)
 
-        if dist_to_origin < 1:
-            is_world_space = False
-        elif dist_to_turtle < dist_to_origin:
-            is_world_space = True
-        else:
-            is_world_space = not contains_origin
+        is_world_space = False
+        # broken
+        # if dist_to_origin < 1:
+        #     is_world_space = False
+        # elif dist_to_turtle < dist_to_origin:
+        #     is_world_space = True
+        # else:
+        # is_world_space = not contains_origin
 
         if is_world_space:
             print(f"QTurtle: Auto-detecting world coordinates (Centroid at {int(cx)}, {int(cy)}, {int(cz)}). Localizing...")
