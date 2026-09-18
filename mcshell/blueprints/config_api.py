@@ -210,12 +210,10 @@ def load_toolbox_spec(toolbox_name: str):
 @config_bp.route('/toolbox/list')
 def list_toolboxes():
     """Returns a list of available toolbox specifications."""
-    specs_dir = Path("mcshell/data/toolbox/specs")
-    
+    specs_dir = MC_TOOLBOX_SPECS_DIR
     # Grab all .py files, strip the extension, and ignore __init__.py
     if specs_dir.exists():
         toolboxes = [f.stem for f in specs_dir.glob("*.py") if f.name != "__init__.py"]
     else:
         toolboxes = []
-        
     return jsonify({"toolboxes": toolboxes})
