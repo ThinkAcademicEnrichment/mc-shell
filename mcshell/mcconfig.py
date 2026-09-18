@@ -141,6 +141,15 @@ SHADOW_MAP_JSON = {
     'RotationPoint': {"type": "picker_rotation_point", "fields": {"VALUE": "selection_point"}},
     'TilePosition': {"type": "playeractions_get_tile_pos"},
     'CompassDirection': {"type": "qactions_get_compass_direction"},
+
+    'Y_Normal': {
+        "type": "minecraft_vector_3d",
+        "inputs": {
+            "X": {"shadow": {"type": "math_number", "fields": {"NUM": 0}}},
+            "Y": {"shadow": {"type": "math_number", "fields": {"NUM": 1}}},
+            "Z": {"shadow": {"type": "math_number", "fields": {"NUM": 0}}}
+        }
+    },
 }
 
 SHADOW_MAP = dict(
