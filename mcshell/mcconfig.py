@@ -138,7 +138,9 @@ SHADOW_MAP_JSON = {
     'DataPath': {"type": "picker_data_path", "fields": {"VALUE": "Pos"}},
 
     'Color': {"type": "picker_color_types", "fields": {"VALUE": "WHITE"}},
-    'RotationPoint': {"type": "picker_rotation_point", "fields": {"VALUE": "selection_point"}}
+    'RotationPoint': {"type": "picker_rotation_point", "fields": {"VALUE": "selection_point"}},
+    'TilePosition': {"type": "playeractions_get_tile_pos"},
+    'CompassDirection': {"type": "qactions_get_compass_direction"},
 }
 
 SHADOW_MAP = dict(

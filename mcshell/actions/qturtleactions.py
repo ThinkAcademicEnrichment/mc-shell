@@ -11,8 +11,8 @@ class QTurtleActions(MCActionsBase):
 
     @mced_block(
         label="QTurtle: Reset to",
-        position={'label': 'Position'},
-        heading_q_str={'label': 'Facing'},
+        position={'label': 'Position', 'shadow':'TilePosition'},
+        heading_q_str={'label': 'Facing', 'shadow': 'CompassDirection'},
     )
     def reset(self, position:Vec3, heading_q_str:'QCompass'):
         """
