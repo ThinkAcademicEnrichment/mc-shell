@@ -9,6 +9,7 @@ class Pickers:
     MC_BLOCK_PICKER_FLOWERS = {'kind': 'block', 'type': 'mc_block_picker_flowers'}
     MC_BLOCK_PICKER_FUNCTIONAL_STORAGE = {'kind': 'block', 'type': 'mc_block_picker_functional_storage'}
     MC_BLOCK_PICKER_GLASS = {'kind': 'block', 'type': 'mc_block_picker_glass'}
+    MC_BLOCK_PICKER_GLASS_PANE = {'kind': 'block', 'type': 'mc_block_picker_glass_pane'}
     MC_BLOCK_PICKER_LIGHTING = {'kind': 'block', 'type': 'mc_block_picker_lighting'}
     MC_BLOCK_PICKER_MISCELLANEOUS = {'kind': 'block', 'type': 'mc_block_picker_miscellaneous'}
     MC_BLOCK_PICKER_MUSIC = {'kind': 'block', 'type': 'mc_block_picker_music'}

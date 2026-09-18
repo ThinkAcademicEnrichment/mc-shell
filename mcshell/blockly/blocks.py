@@ -50,7 +50,6 @@ class Blocks:
     MC_BLOCK_PICKER_MISCELLANEOUS = {'kind': 'block', 'type': 'mc_block_picker_miscellaneous'}
     MC_BLOCK_PICKER_WOODS_AND_LOGS = {'kind': 'block', 'type': 'mc_block_picker_woods_and_logs'}
     MC_BLOCK_PICKER_ORES = {'kind': 'block', 'type': 'mc_block_picker_ores'}
-    MC_BLOCK_PICKER_GLASS = {'kind': 'block', 'type': 'mc_block_picker_glass'}
     MC_BLOCK_PICKER_REDSTONE_COMPONENTS = {'kind': 'block', 'type': 'mc_block_picker_redstone_components'}
     MC_BLOCK_PICKER_COLORED_BLOCKS = {'kind': 'block', 'type': 'mc_block_picker_colored_blocks'}
     MC_BLOCK_PICKER_FLOWERS = {'kind': 'block', 'type': 'mc_block_picker_flowers'}
@@ -59,9 +58,11 @@ class Blocks:
     MC_BLOCK_PICKER_FUNCTIONAL_STORAGE = {'kind': 'block', 'type': 'mc_block_picker_functional_storage'}
     MC_BLOCK_PICKER_NATURE = {'kind': 'block', 'type': 'mc_block_picker_nature'}
     MC_BLOCK_PICKER_MUSIC = {'kind': 'block', 'type': 'mc_block_picker_music'}
+    MC_BLOCK_PICKER_GLASS = {'kind': 'block', 'type': 'mc_block_picker_glass'}
     MC_BLOCK_PICKER_BARS = {'kind': 'block', 'type': 'mc_block_picker_bars'}
     MC_BLOCK_PICKER_CHAINS = {'kind': 'block', 'type': 'mc_block_picker_chains'}
     MC_BLOCK_PICKER_WALLS = {'kind': 'block', 'type': 'mc_block_picker_walls'}
     MC_BLOCK_PICKER_COMMANDS = {'kind': 'block', 'type': 'mc_block_picker_commands'}
+    MC_BLOCK_PICKER_GLASS_PANE = {'kind': 'block', 'type': 'mc_block_picker_glass_pane'}
     MC_BLOCK_PICKER_PLANTS = {'kind': 'block', 'type': 'mc_block_picker_plants'}
     MC_BLOCK_PICKER_COPPER_VARIANTS = {'kind': 'block', 'type': 'mc_block_picker_copper_variants'}

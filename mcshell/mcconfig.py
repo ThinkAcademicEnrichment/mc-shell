@@ -922,8 +922,13 @@ TAXONOMY_RULES = [
         "is_variant": False
     },
     {
+        "group": "glass_pane",
+        "regex": re.compile(r"^.*_STAINED_GLASS_PANE$"),
+        "is_variant": False
+    },
+    {
         "group": "glass",
-        "regex": re.compile(r".*GLASS.*"),
+        "regex": re.compile(r"^.*_STAINED_GLASS(?!_PANE)$"),
         "is_variant": False
     },
     {

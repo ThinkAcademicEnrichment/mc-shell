@@ -20,7 +20,6 @@ class Items:
     MC_ITEM_ARMOR_TYPES_NAUTILUS_ARMOR = {'kind': 'block', 'type': 'mc_item_armor_types_nautilus_armor', 'inputs': {'VARIANT': {'shadow': {'type': 'picker_armor_types_types'}}}}
     MC_ITEM_PICKER_WORLD = {'kind': 'block', 'type': 'mc_item_picker_world'}
     MC_ITEM_PICKER_MISCELLANEOUS = {'kind': 'block', 'type': 'mc_item_picker_miscellaneous'}
-    MC_ITEM_PICKER_GLASS = {'kind': 'block', 'type': 'mc_item_picker_glass'}
     MC_ITEM_PICKER_REDSTONE_COMPONENTS = {'kind': 'block', 'type': 'mc_item_picker_redstone_components'}
     MC_ITEM_PICKER_MUSIC = {'kind': 'block', 'type': 'mc_item_picker_music'}
     MC_ITEM_PICKER_COPPER_VARIANTS = {'kind': 'block', 'type': 'mc_item_picker_copper_variants'}
