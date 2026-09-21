@@ -1,9 +1,10 @@
 from mcshell.mcactions_base import MCActionsBase, _GLOBAL_QTURTLE
-from blockapily import mced_block
+from blockapily import mced_block,mced_category
 from mcshell.constants import *
 from mcshell.mcturtle import DigitalSet
 from mcshell.mcstructure import MCStructure
 
+@mced_category(name="Q-Turtle", colour="#C9A65B")
 class QTurtleActions(MCActionsBase):
     def __init__(self, mc_player_instance, delay_between_blocks=0.001):
         super().__init__(mc_player_instance, delay_between_blocks)

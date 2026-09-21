@@ -1,11 +1,12 @@
 from mcshell.mcactions_base import MCActionsBase
 from mcshell.constants import Vec3
-from blockapily import mced_block
+from blockapily import mced_block,mced_category
 import time
 import re
 import json
 from typing import Union
 
+@mced_category(name="Server",colour="#5C7457")
 class ServerActions(MCActionsBase):
     """
     Blocks for controlling server state, game rules, and mini-game management.

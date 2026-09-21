@@ -1,5 +1,5 @@
 from mcshell.mcactions_base import MCActionsBase
-from blockapily import mced_block
+from blockapily import mced_block,mced_category
 from mcshell.constants import *
 
 from mcshell.mcvoxel import (
@@ -12,7 +12,7 @@ from mcshell.mcvoxel import (
     generate_digital_sphere_coordinates
 )
 
-
+@mced_category(name="Digital Geometry",colour="#5b7ba1")
 class DigitalGeometryActions(MCActionsBase):
     def __init__(self, mc_player_instance, delay_between_blocks=0.01):
         super().__init__(mc_player_instance, delay_between_blocks)

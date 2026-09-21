@@ -1,11 +1,12 @@
 from mcshell.constants import Vec3, threading, time, json
-from blockapily import mced_block
+from blockapily import mced_block,mced_category
 from mcshell.mcactions_base import MCActionsBase
 from mcshell.mcturtle import DigitalSet
 from mcshell.mcstructure import MCStructure
 
 from mcshell.actions.generated_actions import SelectActions
 
+@mced_category(name="Selection", colour="#534c8a")
 class SelectionActions(SelectActions):
     def __init__(self, mc_player_instance, delay_between_blocks=0):
         super().__init__(mc_player_instance, delay_between_blocks)

@@ -7,13 +7,14 @@ from mcshell.constants import Vec3
 import numpy as np
 
 from typing import List, Union
-from blockapily import mced_block
+from blockapily import mced_block,mced_category
 from mcshell.mcturtle import DigitalSet
 from mcshell.mcactions_base import MCActionsBase
 from mcshell.constants import Vec3
 import numpy as np
 
 
+@mced_category(name="Shape Ops",colour="#D68C45")
 class DigitalSetActions(MCActionsBase):
     """
     A stateless facade providing a block-friendly interface to DigitalSet and MCStructure operations.

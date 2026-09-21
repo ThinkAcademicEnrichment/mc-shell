@@ -1,6 +1,7 @@
-from blockapily import mced_block
+from blockapily import mced_block, mced_category
 from mcshell.mcactions_base import MCActionsBase
 
+@mced_category(name="Sets",colour="#D68C45")
 class SetActions(MCActionsBase):
     """
     A stateless facade providing a block-friendly interface to DigitalSet operations.
