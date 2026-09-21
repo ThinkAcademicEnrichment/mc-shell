@@ -1,0 +1,654 @@
+{
+    "kind": "category",
+    "name": "World",
+    "colour": "#5C7457",
+    "contents": [
+        {
+            "kind": "block",
+            "type": "worldactions_get_block",
+            "inputs": {
+                "position": {
+                    "shadow": {
+                        "type": "minecraft_vector_3d",
+                        "inputs": {
+                            "X": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Y": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Z": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "worldactions_set_block",
+            "inputs": {
+                "position": {
+                    "shadow": {
+                        "type": "minecraft_vector_3d",
+                        "inputs": {
+                            "X": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Y": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Z": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "block_type": {
+                    "shadow": {
+                        "type": "mc_block_picker_world",
+                        "fields": {
+                            "VALUE": "STONE"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "worldactions_get_blocks",
+            "inputs": {
+                "pos1": {
+                    "shadow": {
+                        "type": "minecraft_vector_3d",
+                        "inputs": {
+                            "X": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Y": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Z": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "pos2": {
+                    "shadow": {
+                        "type": "minecraft_vector_3d",
+                        "inputs": {
+                            "X": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Y": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Z": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "worldactions_set_blocks",
+            "inputs": {
+                "pos1": {
+                    "shadow": {
+                        "type": "minecraft_vector_3d",
+                        "inputs": {
+                            "X": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Y": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Z": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "pos2": {
+                    "shadow": {
+                        "type": "minecraft_vector_3d",
+                        "inputs": {
+                            "X": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Y": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Z": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "block_type": {
+                    "shadow": {
+                        "type": "mc_block_picker_world",
+                        "fields": {
+                            "VALUE": "STONE"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "worldactions_get_height",
+            "inputs": {
+                "x": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1.0
+                        }
+                    }
+                },
+                "z": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1.0
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "worldactions_spawn_entity",
+            "inputs": {
+                "position": {
+                    "shadow": {
+                        "type": "minecraft_vector_3d",
+                        "inputs": {
+                            "X": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Y": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Z": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "entity_id": {
+                    "shadow": {
+                        "type": "mc_entity_picker_passive_mobs",
+                        "fields": {
+                            "VALUE": "PIG"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "worldactions_remove_entity",
+            "inputs": {
+                "entity_id": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "worldactions_get_entities_in_radius",
+            "inputs": {
+                "position": {
+                    "shadow": {
+                        "type": "minecraft_vector_3d",
+                        "inputs": {
+                            "X": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Y": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Z": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "radius": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1.0
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "worldactions_create_explosion",
+            "inputs": {
+                "pos": {
+                    "shadow": {
+                        "type": "minecraft_vector_3d",
+                        "inputs": {
+                            "X": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Y": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Z": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "power": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1.0
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "worldactions_set_sign",
+            "inputs": {
+                "position": {
+                    "shadow": {
+                        "type": "minecraft_vector_3d",
+                        "inputs": {
+                            "X": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Y": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Z": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "line1": {
+                    "shadow": {
+                        "type": "text",
+                        "fields": {
+                            "TEXT": ""
+                        }
+                    }
+                },
+                "line2": {
+                    "shadow": {
+                        "type": "text",
+                        "fields": {
+                            "TEXT": ""
+                        }
+                    }
+                },
+                "line3": {
+                    "shadow": {
+                        "type": "text",
+                        "fields": {
+                            "TEXT": ""
+                        }
+                    }
+                },
+                "line4": {
+                    "shadow": {
+                        "type": "text",
+                        "fields": {
+                            "TEXT": ""
+                        }
+                    }
+                },
+                "sign_type": {
+                    "shadow": {
+                        "type": "mc_block_picker_world",
+                        "fields": {
+                            "VALUE": "STONE"
+                        }
+                    }
+                },
+                "direction": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "worldactions_drop_item",
+            "inputs": {
+                "pos": {
+                    "shadow": {
+                        "type": "minecraft_vector_3d",
+                        "inputs": {
+                            "X": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Y": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Z": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "item": {
+                    "shadow": {
+                        "type": "mc_item_picker_food",
+                        "fields": {
+                            "VALUE": "APPLE"
+                        }
+                    }
+                },
+                "amount": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "worldactions_drop_random_loot",
+            "inputs": {
+                "pos": {
+                    "shadow": {
+                        "type": "minecraft_vector_3d",
+                        "inputs": {
+                            "X": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Y": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Z": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "worldactions_set_container_item",
+            "inputs": {
+                "pos": {
+                    "shadow": {
+                        "type": "minecraft_vector_3d",
+                        "inputs": {
+                            "X": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Y": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Z": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "slot": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                },
+                "item": {
+                    "shadow": {
+                        "type": "mc_item_picker_food",
+                        "fields": {
+                            "VALUE": "APPLE"
+                        }
+                    }
+                },
+                "amount": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "worldactions_get_entity_name",
+            "inputs": {
+                "id": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

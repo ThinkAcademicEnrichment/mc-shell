@@ -181,6 +181,45 @@ function loadScript(url) {
     });
 }
 
+// Helper to load the known toolboxes
+async function setupToolboxDropdown() {
+    const selector = document.getElementById('toolboxSelector');
+    
+    // 1. Fetch available toolboxes from the server
+    const response = await fetch('/config/toolbox/list');
+    const data = await response.json();
+    
+    // 2. Clear loading message
+    selector.innerHTML = '';
+    
+    // 3. Add a legacy/default fallback option
+    const defaultOption = document.createElement('option');
+    defaultOption.value = 'legacy';
+    defaultOption.textContent = 'Default (Legacy XML)';
+    selector.appendChild(defaultOption);
+
+    // 4. Populate dynamic specs
+    data.toolboxes.forEach(toolbox => {
+        const option = document.createElement('option');
+        option.value = toolbox;
+        option.textContent = toolbox;
+        selector.appendChild(option);
+    });
+
+    // 5. Select the currently active toolbox from the URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const activeToolbox = urlParams.get('toolbox') || 'legacy';
+    selector.value = activeToolbox;
+
+    // 6. Reload the page on change
+    selector.addEventListener('change', (e) => {
+        const selected = e.target.value;
+        urlParams.set('toolbox', selected);
+        // Reloads the page with the new URL parameter (e.g., ?toolbox=custom_tools)
+        window.location.search = urlParams.toString(); 
+    });
+}
+
 /**
  * --- Main Initialization ---
  */
@@ -217,15 +256,32 @@ async function init() {
         }));
     });
 
-    // 3. Inject Workspace using the bundled XML
-    // Grab the injected XML, fallback to empty string if it failed
-    const toolboxXml = window.MC_TOOLBOX_XML || '<xml></xml>';
+    // 3. Resolve the Toolbox Data
+    const urlParams = new URLSearchParams(window.location.search);
+    const requestedToolbox = urlParams.get('toolbox');
 
-    // const toolboxUrl = new URL('./toolbox.xml', import.meta.url);
-    // const toolboxXml = await fetch(toolboxUrl).then(r => r.text()).catch(() => '<xml></xml>');
+    let toolboxData;
+
+    if (requestedToolbox && requestedToolbox !== 'legacy') {
+        const tbResponse = await fetch(`/config/${version}/toolbox/${requestedToolbox}`);
+        if (tbResponse.ok) {
+            toolboxData = await tbResponse.json();
+            console.log(`Loaded JSON toolbox: ${requestedToolbox}`);
+        } else {
+            console.error("Failed to load JSON toolbox, falling back to empty XML.");
+            toolboxData = '<xml></xml>';
+        }
+    } else {
+        // Fallback to legacy injected XML
+        toolboxData = window.MC_TOOLBOX_XML || '<xml></xml>';
+        console.log("Loaded legacy XML toolbox.");
+    }
+
+    // 5. Initialize the UI dropdown
+    setupToolboxDropdown();
 
     workspace = Blockly.inject('blocklyDiv', {
-        toolbox: toolboxXml,
+        toolbox: toolboxData,
         trashcan: { position: { vertical: 'top', horizontal: 'right' } },
         grid: { spacing: 26, length: 3, colour: '#ccc', snap: true },
         zoom: { controls: true, wheel: true, startScale: 1.0, maxScale: 3, minScale: 0.3, scaleSpeed: 1.2 },

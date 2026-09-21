@@ -1,0 +1,16 @@
+{
+  "kind": "category",
+  "name": "Logic",
+  "colour": "%{BKY_LOGIC_HUE}",
+  "contents": [
+    { "kind": "block", "type": "logic_boolean", "fields": { "BOOL": "TRUE" } },
+    { "kind": "block", "type": "controls_if" },
+    { "kind": "block", "type": "controls_if", "extraState": "<mutation else=\"1\"></mutation>" },
+    { "kind": "block", "type": "controls_if", "extraState": "<mutation elseif=\"1\" else=\"1\"></mutation>" },
+    { "kind": "block", "type": "logic_compare", "fields": { "OP": "EQ" } },
+    { "kind": "block", "type": "logic_operation", "fields": { "OP": "AND" } },
+    { "kind": "block", "type": "logic_negate" },
+    { "kind": "block", "type": "logic_null" },
+    { "kind": "block", "type": "logic_ternary" }
+  ]
+}

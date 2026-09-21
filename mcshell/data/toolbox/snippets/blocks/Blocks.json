@@ -1,0 +1,582 @@
+{
+    "kind": "category",
+    "name": "Blocks",
+    "colour": "#B06161",
+    "contents": [
+        {
+            "kind": "block",
+            "type": "mc_block_wood_planks",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_wood_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_wood_wood",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_wood_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_wood_sapling",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_wood_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_wood_log",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_wood_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_wood_leaves",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_wood_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_color_bed",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_color_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_color_wool",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_color_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_color_tulip",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_color_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_armor_types_block",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_armor_types_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_wood_shelf",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_wood_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_wood_stairs",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_wood_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_wood_sign",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_wood_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_wood_door",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_wood_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_wood_hanging_sign",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_wood_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_wood_pressure_plate",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_wood_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_wood_fence",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_wood_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_color_stained_glass",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_color_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_wood_trapdoor",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_wood_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_copper_copper_bars",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_copper_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_copper_copper_chain",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_copper_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_wood_fence_gate",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_wood_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_wood_button",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_wood_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_color_terracotta",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_color_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_color_stained_glass_pane",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_color_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_color_carpet",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_color_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_color_banner",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_color_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_wood_slab",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_wood_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_color_shulker_box",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_color_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_color_glazed_terracotta",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_color_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_color_concrete",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_color_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_color_concrete_powder",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_color_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_copper_copper_lantern",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_copper_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_color_candle",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_color_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_copper_copper",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_copper_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_copper_cut_copper",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_copper_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_copper_chiseled_copper",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_copper_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_copper_cut_copper_stairs",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_copper_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_copper_cut_copper_slab",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_copper_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_copper_copper_door",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_copper_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_copper_copper_trapdoor",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_copper_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_copper_copper_grate",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_copper_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_copper_copper_bulb",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_copper_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_copper_copper_chest",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_copper_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_copper_copper_golem_statue",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_copper_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_copper_lightning_rod",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_copper_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_world"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_miscellaneous"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_woods_and_logs"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_ores"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_redstone_components"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_colored_blocks"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_flowers"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_lighting"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_spawning"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_functional_storage"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_nature"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_music"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_glass"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_bars"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_chains"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_walls"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_commands"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_glass_pane"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_plants"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_copper_variants"
+        }
+    ]
+}

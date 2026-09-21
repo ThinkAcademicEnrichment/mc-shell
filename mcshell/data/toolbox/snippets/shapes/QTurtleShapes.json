@@ -1,0 +1,230 @@
+{
+    "kind": "category",
+    "name": "Q-Turtle Shapes",
+    "colour": "#C9A65B",
+    "contents": [
+        {
+            "kind": "block",
+            "type": "qturtleshapes_get_sphere",
+            "inputs": {
+                "radius": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1.0
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "qturtleshapes_get_cylinder",
+            "inputs": {
+                "radius": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1.0
+                        }
+                    }
+                },
+                "height": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1.0
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "qturtleshapes_get_box",
+            "inputs": {
+                "width": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                },
+                "height": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                },
+                "depth": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "qturtleshapes_get_torus",
+            "inputs": {
+                "major_radius": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1.0
+                        }
+                    }
+                },
+                "minor_radius": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1.0
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "qturtleshapes_get_plane",
+            "inputs": {
+                "normal": {
+                    "shadow": {
+                        "type": "minecraft_vector_3d",
+                        "inputs": {
+                            "X": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Y": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 1
+                                    }
+                                }
+                            },
+                            "Z": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "side_length": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "qturtleshapes_get_cone",
+            "inputs": {
+                "radius": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1.0
+                        }
+                    }
+                },
+                "height": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1.0
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "qturtleshapes_get_line",
+            "inputs": {
+                "p1": {
+                    "shadow": {
+                        "type": "minecraft_vector_3d",
+                        "inputs": {
+                            "X": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Y": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Z": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "p2": {
+                    "shadow": {
+                        "type": "minecraft_vector_3d",
+                        "inputs": {
+                            "X": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Y": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Z": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

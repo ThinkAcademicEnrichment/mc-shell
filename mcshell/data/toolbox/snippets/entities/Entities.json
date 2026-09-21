@@ -1,0 +1,39 @@
+{
+    "kind": "category",
+    "name": "Entities",
+    "colour": "#8D7EB5",
+    "contents": [
+        {
+            "kind": "block",
+            "type": "mc_entity_picker_boats"
+        },
+        {
+            "kind": "block",
+            "type": "mc_entity_picker_chest_boats"
+        },
+        {
+            "kind": "block",
+            "type": "mc_entity_picker_passive_mobs"
+        },
+        {
+            "kind": "block",
+            "type": "mc_entity_picker_other_entities"
+        },
+        {
+            "kind": "block",
+            "type": "mc_entity_picker_utility"
+        },
+        {
+            "kind": "block",
+            "type": "mc_entity_picker_projectiles"
+        },
+        {
+            "kind": "block",
+            "type": "mc_entity_picker_hostile_mobs"
+        },
+        {
+            "kind": "block",
+            "type": "mc_entity_picker_minecarts"
+        }
+    ]
+}

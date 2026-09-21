@@ -1,6 +1,6 @@
 import yaml
 from pathlib import Path
-from blockapily import mced_block
+from blockapily import mced_block, mced_category
 
 from mcshell.constants import MC_WORLDS_BASE_DIR
 from mcshell.mcactions_base import MCActionsBase
@@ -8,6 +8,7 @@ from mcshell.mcactions_base import MCActionsBase
 # Assuming MC_WORLDS_BASE_DIR is defined within your application's configuration/constants
 # from your_config_module import MC_WORLDS_BASE_DIR
 
+@mced_category(name="Bed Wars!",colour="#694436")
 class BedWarsActions(MCActionsBase):
     """
     Blocks for building and configuring Screaming Bedwars arenas via YAML generation.

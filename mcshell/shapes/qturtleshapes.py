@@ -3,18 +3,20 @@ import trimesh
 from mcshell.constants import *
 from mcshell.mcactions_base import MCActionsBase
 from mcshell.mcturtle import DigitalSet, generate_linear_path
-from blockapily import mced_block
+from blockapily import mced_block,mced_category
+from mcshell.mcvoxel import generate_digital_plane_coordinates
 
 # Transformation matrix to rotate trimesh defaults (Z-aligned) 
 # to Minecraft defaults (Y-aligned / Y-up).
 # This represents a -90 degree rotation around the X-axis.
 Z_TO_Y_TRANSFORM = np.array([
     [1,  0,  0,  0],
-    [0,  0, -1,  0],
-    [0,  1,  0,  0],
+    [0,  0,  1,  0],
+    [0,  -1,  0,  0],
     [0,  0,  0,  1]
 ])
 
+@mced_category(name="Q-Turtle Shapes",colour="#C9A65B")
 class QTurtleShapes(MCActionsBase):
     """
     Generates primitive shapes by creating continuous 3D meshes using trimesh,
@@ -104,12 +106,13 @@ class QTurtleShapes(MCActionsBase):
         return DigitalSet(points.tolist())
 
     @mced_block(
-        label="Digital Shape: Arithmetic Plane (Square)",
-        normal={'label': 'Normal'}, # Keeping it generic input for Vec3
+        label="Digital Shape: Plane (Square)",
+        normal={'label': 'Normal', 'shadow':'Y_Normal'},
         side_length={'label': 'Side Length'},
     )
-    def get_arithmetic_plane(self, normal: Vec3, side_length: int) -> DigitalSet:
-        return generate_arithmetic_plane(normal.to_tuple(), (0,0,0), (side_length, side_length))
+    def get_plane(self, normal: Vec3, side_length: int) -> DigitalSet:
+        coords = generate_digital_plane_coordinates(normal.to_tuple(), (0,0,0), (side_length, side_length))
+        return DigitalSet(coords)
 
     @mced_block(
         label="Digital Shape: Cone",

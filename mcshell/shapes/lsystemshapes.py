@@ -2,8 +2,9 @@ from mcshell.constants import *
 from mcshell.mclsystem import LSystem
 from mcshell.mcactions_base import MCActionsBase
 from mcshell.mcturtle import DigitalSet,QTurtle
-from blockapily import mced_block
+from blockapily import mced_block,mced_category
 
+@mced_category(name="L-System Shapes",colour="#7A9473")
 class LSystemShapes(MCActionsBase):
     def __init__(self, player, delay_between_blocks=0.01):
         super().__init__(player, delay_between_blocks)

@@ -1,0 +1,6 @@
+{
+  "kind": "category",
+  "name": "Functions",
+  "colour": "%{BKY_PROCEDURES_HUE}",
+  "custom": "PROCEDURE"
+}

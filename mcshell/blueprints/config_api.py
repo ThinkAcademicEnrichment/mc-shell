@@ -1,17 +1,15 @@
-from mcshell import MC_TOOLBOX_DIR
+from mcshell import MC_TOOLBOX_SNIPPETS_DIR
 from flask import Blueprint, current_app, render_template_string, make_response,jsonify
 from flask import Response, abort
+import importlib.util
 
-# 1. Create a Blueprint instance.
-#    'powers_api' is the name of the blueprint.
-#    __name__ helps Flask locate the blueprint.
-#    url_prefix='/api' automatically prepends '/api' to all routes in this file.
 config_bp = Blueprint('config_api', __name__, url_prefix='/config')
 
-from mcshell.constants import MC_DATA_DIR, MC_APP_SRC_DIR, MC_VERSION,json
+from mcshell.constants import MC_DATA_DIR,MC_VERSION,json, Path , MC_TOOLBOX_SPECS_DIR, MC_TOOLBOX_DIR
 from mcshell.mcconfig import TAXONOMY_RULES, ENTITY_RULES
 from mcshell.mcscraper import fetch_minecraft_data
 from mcshell.mcbuilder import RegistryBuilder, TaxonomyEngine
+from mcshell.mctoolbox import MCToolbox
 
 @config_bp.route('/taxonomy')
 def get_taxonomy():
@@ -135,3 +133,89 @@ def serve_dynamic_js(script_version, script_name):
         
     except Exception as e:
         abort(500, description=f"Failed to compile scripts: {str(e)}")
+
+
+@config_bp.route('/<script_version>/toolbox/<toolbox_name>')
+def serve_json_toolbox(script_version, toolbox_name):
+    """
+    Dynamically generates and serves a JSON toolbox based on a user-defined specification.
+    """
+    # 1. Verify the requested version matches the active server version
+    try:
+        # Safely access nested config data
+        server_data = current_app.config.get('MCSHELL_SERVER_DATA') or {}
+        active_version = server_data.get('mc_version')
+    except Exception as e:
+        active_version = None
+    
+    if not active_version:
+        abort(500, description="Minecraft version not initialized in application config.")
+        
+    if script_version != active_version:
+        print(f"Warning: Client requested toolbox for {script_version}, but server is running {active_version}")
+        # Proceeding anyway, as in the legacy endpoint
+
+    # 2. Load and build the requested toolbox
+    try:
+        # Locate the Python spec file and extract the 'spec' variable
+        spec = load_toolbox_spec(toolbox_name)
+
+        # Initialize the compiler (Make sure MC_TOOLBOX_DIR is in scope)
+        snippets_dir = MC_TOOLBOX_SNIPPETS_DIR
+        compiler = MCToolbox(snippets_dir=str(snippets_dir))
+
+        
+        # Traverse the specification and build the JSON dictionary
+        toolbox_json = compiler.build(spec)
+
+        # Return the payload natively as JSON
+        return jsonify(toolbox_json)
+
+    except ValueError as ve:
+        print(f"Toolbox compilation error for '{toolbox_name}': {ve}")
+        abort(400, description=f"Invalid toolbox configuration: {ve}")
+    except FileNotFoundError as e:
+        print(f"Snippet or Spec not found: {e}")
+        abort(404, description=f"Missing file required for toolbox '{toolbox_name}'.")
+    except Exception as e:
+        print(f"Unexpected toolbox generation error for '{toolbox_name}': {e}")
+        abort(500, description=f"Internal server error generating toolbox '{toolbox_name}'.")
+
+def load_toolbox_spec(toolbox_name: str):
+    """Dynamically loads a Python toolbox specification by name."""
+    
+    # Security: Ensure the name is a valid Python identifier to prevent directory traversal
+    if not toolbox_name.isidentifier():
+        abort(400, description="Invalid toolbox name format.")
+
+    file_path = MC_TOOLBOX_SPECS_DIR / f"{toolbox_name}.py"
+    
+    if not file_path.exists():
+        abort(404, description=f"Toolbox specification '{toolbox_name}' not found.")
+
+    try:
+        # Dynamically load the module from the file path
+        module_spec = importlib.util.spec_from_file_location(toolbox_name, file_path)
+        module = importlib.util.module_from_spec(module_spec)
+        module_spec.loader.exec_module(module)
+        
+        # Extract the expected 'spec' variable
+        if not hasattr(module, 'spec'):
+            abort(500, description=f"Module '{toolbox_name}.py' missing 'spec' variable.")
+            
+        return module.spec
+        
+    except Exception as e:
+        print(f"Error loading toolbox {toolbox_name}: {e}")
+        abort(500, description="Internal error evaluating toolbox specification.")
+
+@config_bp.route('/toolbox/list')
+def list_toolboxes():
+    """Returns a list of available toolbox specifications."""
+    specs_dir = MC_TOOLBOX_SPECS_DIR
+    # Grab all .py files, strip the extension, and ignore __init__.py
+    if specs_dir.exists():
+        toolboxes = [f.stem for f in specs_dir.glob("*.py") if f.name != "__init__.py"]
+    else:
+        toolboxes = []
+    return jsonify({"toolboxes": toolboxes})

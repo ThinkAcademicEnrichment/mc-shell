@@ -1,0 +1,27 @@
+{
+    "kind": "category",
+    "name": "Sets",
+    "colour": "#D68C45",
+    "contents": [
+        {
+            "kind": "block",
+            "type": "setactions_empty_set"
+        },
+        {
+            "kind": "block",
+            "type": "setactions_add_element"
+        },
+        {
+            "kind": "block",
+            "type": "setactions_is_empty"
+        },
+        {
+            "kind": "block",
+            "type": "setactions_element_count"
+        },
+        {
+            "kind": "block",
+            "type": "setactions_get_elements"
+        }
+    ]
+}

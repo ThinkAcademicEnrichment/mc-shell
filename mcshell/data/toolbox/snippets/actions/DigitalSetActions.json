@@ -1,0 +1,268 @@
+{
+    "kind": "category",
+    "name": "Shape Ops",
+    "colour": "#D68C45",
+    "contents": [
+        {
+            "kind": "block",
+            "type": "digitalsetactions_empty_set"
+        },
+        {
+            "kind": "block",
+            "type": "digitalsetactions_add_voxel",
+            "inputs": {
+                "x": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                },
+                "y": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                },
+                "z": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "digitalsetactions_is_empty"
+        },
+        {
+            "kind": "block",
+            "type": "digitalsetactions_voxel_count"
+        },
+        {
+            "kind": "block",
+            "type": "digitalsetactions_get_voxels"
+        },
+        {
+            "kind": "block",
+            "type": "digitalsetactions_union"
+        },
+        {
+            "kind": "block",
+            "type": "digitalsetactions_intersection"
+        },
+        {
+            "kind": "block",
+            "type": "digitalsetactions_difference"
+        },
+        {
+            "kind": "block",
+            "type": "digitalsetactions_symmetric_difference"
+        },
+        {
+            "kind": "block",
+            "type": "digitalsetactions_union_all"
+        },
+        {
+            "kind": "block",
+            "type": "digitalsetactions_translate",
+            "inputs": {
+                "dx": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                },
+                "dy": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                },
+                "dz": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "digitalsetactions_shear",
+            "inputs": {
+                "axis_primary": {
+                    "shadow": {
+                        "type": "picker_axis",
+                        "fields": {
+                            "VALUE": "y"
+                        }
+                    }
+                },
+                "axis_secondary": {
+                    "shadow": {
+                        "type": "picker_axis",
+                        "fields": {
+                            "VALUE": "y"
+                        }
+                    }
+                },
+                "factor": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1.0
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "digitalsetactions_scale_volume",
+            "inputs": {
+                "factor": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 2
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "digitalsetactions_rotate",
+            "inputs": {
+                "axis": {
+                    "shadow": {
+                        "type": "picker_axis",
+                        "fields": {
+                            "VALUE": "y"
+                        }
+                    }
+                },
+                "angle": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1.0
+                        }
+                    }
+                },
+                "rotation_point": {
+                    "shadow": {
+                        "type": "picker_rotation_point",
+                        "fields": {
+                            "VALUE": "selection_point"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "digitalsetactions_dilate"
+        },
+        {
+            "kind": "block",
+            "type": "digitalsetactions_erode"
+        },
+        {
+            "kind": "block",
+            "type": "digitalsetactions_shell"
+        },
+        {
+            "kind": "block",
+            "type": "digitalsetactions_extrude",
+            "inputs": {
+                "dx": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                },
+                "dy": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                },
+                "dz": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "digitalsetactions_corners",
+            "inputs": {
+                "normal": {
+                    "shadow": {
+                        "type": "minecraft_vector_3d",
+                        "inputs": {
+                            "X": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Y": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 1
+                                    }
+                                }
+                            },
+                            "Z": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "epsilon": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1.0
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "digitalsetactions_find_bounding_box_corners"
+        }
+    ]
+}

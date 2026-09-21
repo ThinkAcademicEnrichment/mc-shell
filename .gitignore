@@ -21,7 +21,7 @@ scripts
 poetry.toml
 
 # generated code
----------------
+# ---------------
 
 /mced/src/blocks/[^a-z]*Actions.mjs
 /mced/src/generators/python/[^a-z]*Actions.mjs
@@ -42,18 +42,18 @@ poetry.toml
 /mced/src/generators/python/action_classes.mjs
 /mced/src/toolbox.xml
 
-/mcjuice/target/
-/mcshell/data/mcjuice-*.jar
+/mcshell/data/toolbox/toolbox.xml
 
 /mcshell/mcjuice.py
 /mcshell/actions/generated_actions.py
 
 /site
 
-/mcshell/data/rathole
-
-/mcshell/data/toolbox/toolbox.xml
-/mcshell/data/toolbox/snippets/
-
-
 /mcjuice/src/main/java/org/mcshell/mcjuice/GeneratedCommandRegistry.java
+
+# binaries 
+# --------
+
+/mcjuice/target/
+/mcshell/data/rathole
+/mcshell/data/mcjuice-*.jar
