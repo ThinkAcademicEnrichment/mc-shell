@@ -6,19 +6,14 @@
 
 import re
 
+# Colours for generated categories
 CAT_COLORS = {
     "Block": "#B06161",
     "Item": "#D4A373",
     "Material": "#D68C45",
     "Entity": "#8D7EB5",
     "Picker": "#95A5A6",
-    "Geometry": "#5B7BA1",
-    "Turtle": "#C9A65B",
-    "LSystem": "#7A9473",
     "Events": "#D68C45",
-    "Server": "#5C7457",
-    "Digital Set": "#A57582",
-    "Set": "#D68C45",
     "Player": "#61A1B0",
     "World": "#5C7457",
     "Chat": "#D68C45",
