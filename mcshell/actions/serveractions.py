@@ -191,7 +191,7 @@ class ServerActions(MCActionsBase):
 
     @mced_block(
         label="Give [count] [block|item|entity] to [target]",
-        material={'label': 'Block or Item or Entity', 'shadow': 'minecraft_picker_world'},
+        material={'label': 'Block or Item or Entity', 'shadow': 'Block'},
         count={'label': 'Count', 'shadow': 'math_number'},
         target={
             'label': 'Target Player', 
