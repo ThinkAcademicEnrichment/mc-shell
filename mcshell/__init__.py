@@ -143,16 +143,24 @@ from mcshell.mcregistry import TAILSCALE_REGISTRY
 # Networking & Plugin Helper Functions
 # =====================================================================
 
-def _get_local_ip():
+def _get_local_ip(last_wifi_ip=''):
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
             s.connect(("8.8.8.8", 80))
-            return s.getsockname()[0]
-    except Exception:
+            ip = s.getsockname()[0]
+            # # --- CHROMEOS CROSTINI DETECTION & FIX ---
+            if ip.startswith("100.115.92.") or os.path.exists("/dev/.cros_milestones"):
+                print("\n[!] ChromeOS Environment Detected")
+                print("Linux cannot see your physical Wi-Fi IP address. LAN players need this to connect.")
+                print("You can find it in your Chromebook by clicking the time (bottom right) -> Wi-Fi -> Network.")
+                ip = Prompt.ask("Enter your Chromebook's Wi-Fi IP address", default=last_wifi_ip).strip()
+            return ip
+    except Exception as e:
+        print(e)
         return "127.0.0.1"
 
 
-def _get_vpn_ip() -> str | None:
+def _get_vpn_ip(last_wifi_ip) -> str | None:
     """
     Scans the host's network interfaces for a VPN IP address.
     Specifically targets Tailscale while avoiding ChromeOS Crostini subnet collisions.
@@ -178,10 +186,14 @@ def _get_vpn_ip() -> str | None:
                     elif ip.startswith('100.') and not ip.startswith('100.115.92.'):
                         # print(f"Detected VPN interface '{interface}' with IP: {ip}")
                         return ip
+                    # # --- CHROMEOS CROSTINI DETECTION & FIX ---
+                    elif ip.startswith("100.115.92.") or os.path.exists("/dev/.cros_milestones"):
+                        # we previously detected this
+                        return last_wifi_ip
                         
+
     except Exception as e:
         print(f"Failed to scan network interfaces for VPN: {e}")
-
     return None
 
 def _resolve_geysermc_plugin(project_id: str, platform: str = "spigot") -> str:
@@ -319,13 +331,16 @@ class MCShell(Magics):
         self.managed_tailscale = False
         self.current_ssh_token = None
 
-    def _connect_tailscale(self, authkey: str, accept_routes: bool = False):
-        from mcshell.mcplatforms import CrossPlatformBinary
-        from mcshell.mcregistry import TAILSCALE_REGISTRY
+    # def _connect_tailscale(self, authkey: str, accept_routes: bool = False):
+    #     from mcshell.mcplatforms import CrossPlatformBinary
+    #     from mcshell.mcregistry import TAILSCALE_REGISTRY
 
     def _connect_tailscale(self, authkey: str, accept_routes: bool = False):
         """Automatically authenticates and connects to Tailscale cross-platform."""
         print("\n[TAILSCALE] Authenticating device to VPN...")
+
+        from mcshell.mcplatforms import CrossPlatformBinary
+        from mcshell.mcregistry import TAILSCALE_REGISTRY
 
         tailscale = CrossPlatformBinary(TAILSCALE_REGISTRY)
 
@@ -377,36 +392,14 @@ class MCShell(Magics):
             rcon_p = self.server_data.get('rcon_port', MC_RCON_PORT)
             mj_p = self.server_data.get('mj_port', MJ_PLUGIN_PORT)
             mc_v = self.server_data.get('mc_version', MC_VERSION)
-            
             if mc_p == 25565 and rcon_p == 25575 and mj_p == 4721:
                 return base_target
             return f"{base_target}@{mc_p}-{rcon_p}-{mj_p}-{mc_v}"
 
-        vpn_ip = _get_vpn_ip()
-        local_ip = _get_local_ip()  # Native Python socket check
         authkey = self.server_data.get('tailscale_authkey')
         rh_host = self.server_data.get('rh_host')
-
-        # --- CHROMEOS CROSTINI DETECTION & FIX ---
-        if local_ip.startswith("100.115.92.") or os.path.exists("/dev/.cros_milestones"):
-            print("\n[!] ChromeOS Environment Detected")
-            print("Linux cannot see your physical Wi-Fi IP address. LAN players need this to connect.")
-            print("You can find it in your Chromebook by clicking the time (bottom right) -> Wi-Fi -> Network.")
-            
-            # Prompt the user, defaulting to the last IP they entered to save time
-            last_ip = self.server_data.get('last_wifi_ip', '')
-            local_ip = Prompt.ask("Enter your Chromebook's Wi-Fi IP address", default=last_ip).strip()
-
-            # TODO: does not actually store the last_ip address ??? 
-            # only works for server owner
-            # Save it for next time
-            if 'server_data' in self.server_data.keys() and local_ip and local_ip != last_ip:
-                self.server_data['last_wifi_ip'] = local_ip
-                creds_path = MC_WORLDS_BASE_DIR / self.server_data['world_name'] / '.mc_creds.json'
-                import json
-                with creds_path.open('w') as f:
-                    json.dump(self.server_data, f)
-        # -----------------------------------------
+        local_ip = self.server_data.get('local_ip') 
+        vpn_ip = self.server_data.get('vpn_ip')
 
         data = {
             "local_ip": local_ip,
@@ -947,6 +940,18 @@ class MCShell(Magics):
             yaml.dump(geyser_data, geyser_config)
             print(f"Updated bedrock mtu in {geyser_config.name}")
 
+        mcjuice_client = self._get_client().mj_client()
+        #check the ip address
+        last_wifi_ip = mcjuice_client.admin.getIpAddr()
+
+        # networking data
+        last_wifi_ip = local_ip = _get_local_ip(last_wifi_ip)  # Native Python socket check
+        vpn_ip = _get_vpn_ip(last_wifi_ip)
+
+        self.server_data['local_ip'] = local_ip
+        self.server_data['vpn_ip'] = vpn_ip
+        self.server_data['last_wifi_ip'] = last_wifi_ip
+
         # join the world or not
         if not parsed_args.do_not_join:
             # suspend the logs for the user name prompt
@@ -967,6 +972,7 @@ class MCShell(Magics):
             self.active_paper_server.suspend_logs = False 
         else:
             self.ip.run_line_magic('mc_server_info','')
+
 
     @line_magic
     def pp_join_world(self, line):
@@ -1193,6 +1199,25 @@ class MCShell(Magics):
 
         # get the sql db of user powers
         power_repo = SQLiteRepository(minecraft_name)
+
+        try:
+            mcjuice_client = self._get_client().mj_client()
+        except ConnectionRefusedError:
+            print(f"Connection refused at {target_host}! The requested server may be down.")
+            self.ip.run_line_magic('pp_leave_world','')
+            return
+
+        #check the ip address
+        last_wifi_ip = mcjuice_client.admin.getIpAddr()
+
+        # networking data
+        last_wifi_ip = local_ip = _get_local_ip(last_wifi_ip)  # Native Python socket check
+        vpn_ip = _get_vpn_ip(last_wifi_ip)
+
+        self.server_data['local_ip'] = local_ip
+        self.server_data['vpn_ip'] = vpn_ip
+        self.server_data['last_wifi_ip'] = last_wifi_ip
+
 
         print(f"Assigning application server context to Minecraft player: {minecraft_name}")
         self.app_server_thread = start_app_server(self.server_data, minecraft_name, self.shell, power_repo)
@@ -1471,7 +1496,8 @@ class MCShell(Magics):
             print("[red bold]Unable to send command. Is the server running?[/]")
             pprint(self.server_data)
         except RCONAuthenticationError as e:
-            print("[red bold]The password is wrong. Use %mc_login[/]")
+            print(e)
+            print("[red bold]The password is missing or wrong. Use %mc_login[/]")
 
     def _get_client(self):
         return MCClient(**self.server_data)
@@ -1572,6 +1598,7 @@ class MCShell(Magics):
             socketio.emit('state_changed', {'status': 'active'})
 
         except Exception as e:
+            print(e)
             print("[red bold]login failed[/]")
 
     @line_magic

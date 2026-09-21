@@ -85,6 +85,14 @@ public class RemoteSession implements Runnable {
         }
     }
 
+    // for ip validation
+    public String getRemoteIp() {
+        if (socket != null && socket.getInetAddress() != null) {
+            return socket.getInetAddress().getHostAddress();
+        }
+        return null;
+    }
+
     public Player getPlayerById(int id) {
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (player.getEntityId() == id) return player;
