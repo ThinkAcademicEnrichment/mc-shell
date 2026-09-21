@@ -489,12 +489,9 @@ class RegistryBuilder:
             if i == len(self.GENERATED_ACTION_CLASSES) -1:
                 append_separator = True
 
-            # eventually this will go away
             BlocklyGenerator.update_toolbox(c_xml, self.toolbox_path,append_separator=append_separator)
+
             self._export_toolbox_json_snippet(cls.__name__, c_json)
-
-
-
 
         pick_js, pick_py = [], []
         for p in self.ACTION_PICKERS:
@@ -517,8 +514,8 @@ class RegistryBuilder:
             elif i == len(self.ACTION_CLASSES) - 1:
                 append_separator = True
 
-            # eventually this will go away
             BlocklyGenerator.update_toolbox(c_xml, self.toolbox_path,append_separator=append_separator)
+
             self._export_toolbox_json_snippet(cls.__name__, c_json)
 
     def build_shapes(self):
@@ -529,10 +526,9 @@ class RegistryBuilder:
             py_out = [p_py]
             self._write_output(cls.__name__, cls.__name__, js_out, py_out)
 
-            # eventually this will go away
             BlocklyGenerator.update_toolbox(c_xml, self.toolbox_path,append_separator=False)
-            self._export_toolbox_json_snippet(cls.__name__, c_json,'shapes')
 
+            self._export_toolbox_json_snippet(cls.__name__, c_json,'shapes')
 
     def build_pickers_category(self):
         """
