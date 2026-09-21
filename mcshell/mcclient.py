@@ -1,3 +1,4 @@
+from mctools.errors import RCONAuthenticationError
 from mcshell.constants import *
 try:
     from mcshell.mcjuice import MCJuiceClient
@@ -24,6 +25,11 @@ class MCClient:
         self.password = password
         self.mj_port  = mj_port
 
+    @lru_cache(maxsize=1)
+    def mj_client(self,player_name=None):
+        player_name = '' if player_name is None else player_name
+        return MCJuiceClient.create(address=self.host,port=self.mj_port,playerName=player_name)
+
     @property
     def server_args(self):
         """For helping create fellow players on the same server"""
@@ -34,8 +40,7 @@ class MCClient:
         Executes a command via RCON using mctools to handle fragmentation.
         """
         if not self.password:
-            raise PermissionError("An admin password is required!\nUse %mc_login to authenticate.")
-
+            raise RCONAuthenticationError('An admin password is required! Use %mc_login.')
         if not args:
             return
 
@@ -54,25 +59,24 @@ class MCClient:
         finally:
             rcon.stop()
 
-    @lru_cache(maxsize=1)
-    def mj_client(self,player_name=None):
-        player_name = '' if player_name is None else player_name
-        return MCJuiceClient.create(address=self.host,port=self.mj_port,playerName=player_name)
-
     def help(self,*args):
         if not self.password:
-            print('An admin password is required! Use %mc_login.')
-            return
+            raise RCONAuthenticationError('An admin password is required! Use %mc_login.')
         _help_cmd = 'minecraft:help'
         _response = self.run(_help_cmd,*args)
+        if _response =='Authentication failed.': 
+            raise RCONAuthenticationError(_response)
         return _response
 
     def data(self, operation, *args):
         if not self.password:
-            print('An admin password is required! Use %mc_login.')
-            return
+            raise RCONAuthenticationError('An admin password is required! Use %mc_login.')
+            # print('An admin password is required! Use %mc_login.')
+            # return
 
         _response = self.run('data', operation, *args)
+        if _response =='Authentication failed.': 
+            raise RCONAuthenticationError(_response)
         try:
             _response = _response[_response.index(':') + 1:]
             return json.loads(self._fix_json(_response.strip()))
