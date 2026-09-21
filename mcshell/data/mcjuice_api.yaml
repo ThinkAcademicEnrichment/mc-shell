@@ -564,6 +564,32 @@ namespaces:
           args:
             material: { type: str, label: "Material Name (e.g. ACACIA_BOAT)" }
           call_args: [str(material)]
+      - name: isAssumedIpCorrect
+        bukkit: |
+          {
+             String actualIp = session.getRemoteIp();
+             if (actualIp != null && !actualIp.equals("null")) {
+                 session.send(String.valueOf(actualIp.equals({assumedIp})));
+             } else {
+                 session.send("false");
+             }
+          }
+        args: 
+          - {name: assumedIp, type: String}
+        returns: string
+      - name: getIpAddr 
+        bukkit: |
+          {
+             String actualIp = session.getRemoteIp();
+             if (actualIp != null && !actualIp.equals("null")) {
+                 session.send(String.valueOf(actualIp));
+             } else {
+                 session.send("null");
+             }
+          }
+        returns: string
+
+
   select:
     target: Select
     commands:
