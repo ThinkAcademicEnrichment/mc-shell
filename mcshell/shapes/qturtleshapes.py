@@ -3,7 +3,7 @@ import trimesh
 from mcshell.constants import *
 from mcshell.mcactions_base import MCActionsBase
 from mcshell.mcturtle import DigitalSet, generate_linear_path
-from blockapily import mced_block
+from blockapily import mced_block,mced_category
 from mcshell.mcvoxel import generate_digital_plane_coordinates
 
 # Transformation matrix to rotate trimesh defaults (Z-aligned) 
@@ -11,11 +11,12 @@ from mcshell.mcvoxel import generate_digital_plane_coordinates
 # This represents a -90 degree rotation around the X-axis.
 Z_TO_Y_TRANSFORM = np.array([
     [1,  0,  0,  0],
-    [0,  0, -1,  0],
-    [0,  1,  0,  0],
+    [0,  0,  1,  0],
+    [0,  -1,  0,  0],
     [0,  0,  0,  1]
 ])
 
+@mced_category(name="Q-Turtle Shapes",colour="#C9A65B")
 class QTurtleShapes(MCActionsBase):
     """
     Generates primitive shapes by creating continuous 3D meshes using trimesh,
