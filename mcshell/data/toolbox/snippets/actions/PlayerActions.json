@@ -1,0 +1,240 @@
+{
+    "kind": "category",
+    "name": "Player",
+    "colour": "#61A1B0",
+    "contents": [
+        {
+            "kind": "block",
+            "type": "playeractions_get_pos"
+        },
+        {
+            "kind": "block",
+            "type": "playeractions_set_pos",
+            "inputs": {
+                "pos": {
+                    "shadow": {
+                        "type": "minecraft_vector_3d",
+                        "inputs": {
+                            "X": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Y": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Z": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "playeractions_get_tile_pos"
+        },
+        {
+            "kind": "block",
+            "type": "playeractions_set_tile_pos",
+            "inputs": {
+                "pos": {
+                    "shadow": {
+                        "type": "minecraft_vector_3d",
+                        "inputs": {
+                            "X": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Y": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Z": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "playeractions_get_direction"
+        },
+        {
+            "kind": "block",
+            "type": "playeractions_set_direction",
+            "inputs": {
+                "dir": {
+                    "shadow": {
+                        "type": "minecraft_vector_3d",
+                        "inputs": {
+                            "X": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Y": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Z": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "playeractions_get_rotation"
+        },
+        {
+            "kind": "block",
+            "type": "playeractions_set_rotation",
+            "inputs": {
+                "yaw": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1.0
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "playeractions_get_pitch"
+        },
+        {
+            "kind": "block",
+            "type": "playeractions_set_pitch",
+            "inputs": {
+                "pitch": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1.0
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "playeractions_get_health"
+        },
+        {
+            "kind": "block",
+            "type": "playeractions_set_health",
+            "inputs": {
+                "health": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1.0
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "playeractions_get_food_level"
+        },
+        {
+            "kind": "block",
+            "type": "playeractions_set_food_level",
+            "inputs": {
+                "level": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "playeractions_get_deaths"
+        },
+        {
+            "kind": "block",
+            "type": "playeractions_send_title",
+            "inputs": {
+                "title": {
+                    "shadow": {
+                        "type": "text",
+                        "fields": {
+                            "TEXT": ""
+                        }
+                    }
+                },
+                "subtitle": {
+                    "shadow": {
+                        "type": "text",
+                        "fields": {
+                            "TEXT": ""
+                        }
+                    }
+                },
+                "stay": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "playeractions_get_target_block"
+        }
+    ]
+}

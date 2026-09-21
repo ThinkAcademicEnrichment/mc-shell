@@ -1,0 +1,183 @@
+{
+    "kind": "category",
+    "name": "Pickers",
+    "colour": "#95A5A6",
+    "contents": [
+        {
+            "kind": "block",
+            "type": "picker_wood_types"
+        },
+        {
+            "kind": "block",
+            "type": "picker_color_types"
+        },
+        {
+            "kind": "block",
+            "type": "picker_copper_types"
+        },
+        {
+            "kind": "block",
+            "type": "picker_armor_types_types"
+        },
+        {
+            "kind": "block",
+            "type": "picker_tool_types_types"
+        },
+        {
+            "kind": "block",
+            "type": "picker_timetype"
+        },
+        {
+            "kind": "block",
+            "type": "picker_time"
+        },
+        {
+            "kind": "block",
+            "type": "picker_weather"
+        },
+        {
+            "kind": "block",
+            "type": "picker_difficulty"
+        },
+        {
+            "kind": "block",
+            "type": "picker_gamemode"
+        },
+        {
+            "kind": "block",
+            "type": "picker_gamerule"
+        },
+        {
+            "kind": "block",
+            "type": "picker_integergamerule"
+        },
+        {
+            "kind": "block",
+            "type": "picker_locatetype"
+        },
+        {
+            "kind": "block",
+            "type": "picker_structure"
+        },
+        {
+            "kind": "block",
+            "type": "picker_biome"
+        },
+        {
+            "kind": "block",
+            "type": "picker_poi"
+        },
+        {
+            "kind": "block",
+            "type": "picker_effect"
+        },
+        {
+            "kind": "block",
+            "type": "picker_titleaction"
+        },
+        {
+            "kind": "block",
+            "type": "picker_metric"
+        },
+        {
+            "kind": "block",
+            "type": "picker_data_path"
+        },
+        {
+            "kind": "block",
+            "type": "picker_qheading"
+        },
+        {
+            "kind": "block",
+            "type": "picker_axis"
+        },
+        {
+            "kind": "block",
+            "type": "picker_qcompass"
+        },
+        {
+            "kind": "block",
+            "type": "picker_rotation_point"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_world"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_miscellaneous"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_woods_and_logs"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_ores"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_redstone_components"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_colored_blocks"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_flowers"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_lighting"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_spawning"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_functional_storage"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_nature"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_music"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_glass"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_bars"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_chains"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_walls"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_commands"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_glass_pane"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_plants"
+        },
+        {
+            "kind": "block",
+            "type": "mc_block_picker_copper_variants"
+        }
+    ]
+}

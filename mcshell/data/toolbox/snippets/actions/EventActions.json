@@ -1,0 +1,127 @@
+{
+    "kind": "category",
+    "name": "Event",
+    "colour": "#D68C45",
+    "contents": [
+        {
+            "kind": "block",
+            "type": "eventactions_wait_for_right_block_hit",
+            "inputs": {
+                "player_name": {
+                    "shadow": {
+                        "type": "text",
+                        "fields": {
+                            "TEXT": "SELF"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "eventactions_wait_for_left_block_hit",
+            "inputs": {
+                "player_name": {
+                    "shadow": {
+                        "type": "text",
+                        "fields": {
+                            "TEXT": "SELF"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "eventactions_wait_for_block_place",
+            "inputs": {
+                "player_name": {
+                    "shadow": {
+                        "type": "text",
+                        "fields": {
+                            "TEXT": "SELF"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "eventactions_wait_for_block_break",
+            "inputs": {
+                "player_name": {
+                    "shadow": {
+                        "type": "text",
+                        "fields": {
+                            "TEXT": "SELF"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "eventactions_wait_for_chat",
+            "inputs": {
+                "player_name": {
+                    "shadow": {
+                        "type": "text",
+                        "fields": {
+                            "TEXT": "SELF"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "eventactions_wait_for_projectile_hit_block"
+        },
+        {
+            "kind": "block",
+            "type": "eventactions_wait_for_projectile_hit_entity"
+        },
+        {
+            "kind": "block",
+            "type": "eventactions_wait_for_projectile_launch",
+            "inputs": {
+                "player_name": {
+                    "shadow": {
+                        "type": "text",
+                        "fields": {
+                            "TEXT": "SELF"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "eventactions_wait_for_player_death",
+            "inputs": {
+                "player_name": {
+                    "shadow": {
+                        "type": "text",
+                        "fields": {
+                            "TEXT": "SELF"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "eventactions_wait_for_player_respawn",
+            "inputs": {
+                "player_name": {
+                    "shadow": {
+                        "type": "text",
+                        "fields": {
+                            "TEXT": "SELF"
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}
