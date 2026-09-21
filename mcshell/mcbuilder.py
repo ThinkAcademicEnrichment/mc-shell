@@ -57,9 +57,6 @@ class RegistryBuilder:
     # sometimes we make Actions classes for local utilities
     GENERATED_ACTIONS_BLACKLIST = ['AdminActions']
 
-    # we put the printed xml snippets into toolbox_template.xml ourselves
-    UNCATEGORIZED_ACTION_CLASSES = ['SetActions','DigitalSetActions']
-
     # def __init__(self, toolbox_path: pathlib.Path, blocks_dir: pathlib.Path, gens_dir: pathlib.Path, materials_path: pathlib.Path, entity_id_map_path: pathlib.Path):
     def __init__(self, toolbox_path: pathlib.Path, blocks_dir: pathlib.Path, gens_dir: pathlib.Path):
         self.toolbox_path = toolbox_path
@@ -95,30 +92,25 @@ class RegistryBuilder:
                 except Exception as e:
                     print(f"Warning: Failed to auto-discover generated classes: {e}")
 
-            # if self.GENERATED_ACTIONS_BLACKLIST:
-            #     print(f"Skipping {','.join(self.GENERATED_ACTIONS_BLACKLIST)} block generation")
 
             self.GENERATED_ACTION_CLASSES.extend([(c, n, col) for c, n, col in classes if c is not None and not c.__name__ in self.GENERATED_ACTIONS_BLACKLIST])
 
-            classes = [
-                (get_class("actions","qactions", "QActions"), "Q-Stuff", self.COLORS["Turtle"]),
-                (get_class("actions","qturtleactions", "QTurtleActions"), "Q-Turtle", self.COLORS["Turtle"]),
-                (get_class("actions","digitalsetactions", "DigitalSetActions"), "Digital Sets", self.COLORS["Digital Set"]),
-                (get_class("actions","setactions", "SetActions"), "Sets", self.COLORS["Set"]),
-                (get_class("actions","digitalgeometryactions", "DigitalGeometryActions"), "Digital Geometry", self.COLORS["Geometry"]),
-                (get_class("actions","selectionactions", "SelectionActions"), "Selection", self.COLORS["Server"]),
-                (get_class("actions","serveractions", "ServerActions"), "Server", self.COLORS["Server"]),
-                (get_class("actions","bedwarsactions", "BedWarsActions"), "BedWars", self.COLORS["Server"]),
+            self.ACTION_CLASSES= [
+                get_class("actions","qactions", "QActions"),
+                get_class("actions","qturtleactions", "QTurtleActions"),
+                get_class("actions","digitalsetactions", "DigitalSetActions"),
+                get_class("actions","setactions", "SetActions"),
+                get_class("actions","digitalgeometryactions", "DigitalGeometryActions"),
+                get_class("actions","selectionactions", "SelectionActions"),
+                get_class("actions","serveractions", "ServerActions"),
+                get_class("actions","bedwarsactions", "BedWarsActions"),
             ]
 
-            self.ACTION_CLASSES.extend([(c, n, col) for c, n, col in classes if c is not None])
-
-            classes = [
-                (get_class("shapes","qturtleshapes", "QTurtleShapes"), "Q-Turtle Shapes", self.COLORS["Turtle"]),
-                (get_class("shapes","lsystemshapes", "LSystemShapes"), "LSystem Shapes", self.COLORS["LSystem"]),
+            self.SHAPE_CLASSES = [
+                get_class("shapes","qturtleshapes", "QTurtleShapes"),
+                get_class("shapes","lsystemshapes", "LSystemShapes"),
             ]
 
-            self.SHAPE_CLASSES.extend([(c, n, col) for c, n, col in classes if c is not None])
 
     def _normalize_name(self, name: str) -> str:
         return name.replace('_', ' ').title()
@@ -142,7 +134,7 @@ class RegistryBuilder:
         self.export_taxonomy()
         
     def build_action_classes_export(self):
-        class_names = [cls.__name__ for cls, _, _ in self.SHAPE_CLASSES + self.ACTION_CLASSES + self.GENERATED_ACTION_CLASSES]
+        class_names = [cls.__name__ for cls in self.SHAPE_CLASSES + self.ACTION_CLASSES] + [cls.__name__ for cls, _, _ in self.GENERATED_ACTION_CLASSES]
         js_content = f"export const ACTION_CLASSES = {class_names!r};\n"
         out_path = self.gens_dir / "action_classes.mjs"
         out_path.write_text(js_content, encoding='utf-8')
@@ -510,8 +502,8 @@ class RegistryBuilder:
             pick_js.append(res['js']); pick_py.append(res['py'])
 
 
-        for i, (cls, name, color) in enumerate(self.ACTION_CLASSES):
-            gen = BlocklyGenerator(cls, self.TYPE_MAP, self.SHADOW_MAP, color, name)
+        for i, cls in enumerate(self.ACTION_CLASSES):
+            gen = BlocklyGenerator(cls, self.TYPE_MAP, self.SHADOW_MAP)
             b_js, p_py, c_xml,c_json = gen.generate()
             js_out = pick_js + [b_js] if i == 0 else [b_js]
             py_out = pick_py + [p_py] if i == 0 else [p_py]
@@ -520,7 +512,7 @@ class RegistryBuilder:
             # this is so fragile
             separated_action_classes = ['ServerActions','DigitalGeometryActions']
             append_separator = False
-            if i < len(self.ACTION_CLASSES) - 1 and self.ACTION_CLASSES[i+1][0].__name__ in separated_action_classes:
+            if i < len(self.ACTION_CLASSES) - 1 and self.ACTION_CLASSES[i+1].__name__ in separated_action_classes:
                 append_separator = True
             elif i == len(self.ACTION_CLASSES) - 1:
                 append_separator = True
@@ -530,9 +522,8 @@ class RegistryBuilder:
             self._export_toolbox_json_snippet(cls.__name__, c_json)
 
     def build_shapes(self):
-
-        for i, (cls, name, color) in enumerate(self.SHAPE_CLASSES):
-            gen = BlocklyGenerator(cls, self.TYPE_MAP, self.SHADOW_MAP, color, name)
+        for i, cls in enumerate(self.SHAPE_CLASSES):
+            gen = BlocklyGenerator(cls, self.TYPE_MAP, self.SHADOW_MAP)
             b_js, p_py, c_xml,c_json = gen.generate()
             js_out = [b_js]
             py_out = [p_py]
