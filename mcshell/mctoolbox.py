@@ -5,6 +5,13 @@ from typing import List, Any, Callable, Union, Dict, Optional
 
 from mcshell.constants import MC_TOOLBOX_SHADOWS
 
+def ColouredPicker(picker_dict: dict, colour: str) -> dict:
+    """Helper to inject a custom color into a static picker's extraState."""
+    import copy
+    configured = copy.deepcopy(picker_dict)
+    configured.setdefault("extraState", {})["customColour"] = colour
+    return configured
+
 class Toolbox:
     """The root container for the Blockly toolbox."""
     def __init__(self, items: List[Any]):
@@ -21,12 +28,20 @@ class Separator:
     """A visual separator in the toolbox menu."""
     pass
 
+# class ConfiguredBlock:
+#     """Wrapper to override default inputs or fields in a user specification."""
+#     def __init__(self, method, inputs=None, fields=None):
+#         self.method = method
+#         self.inputs = inputs or {}
+#         self.fields = fields or {}
+
 class ConfiguredBlock:
-    """Wrapper to override default inputs or fields in a user specification."""
-    def __init__(self, method, inputs=None, fields=None):
+    """Wrapper to override default inputs, fields, or colour in a user specification."""
+    def __init__(self, method, inputs=None, fields=None, colour=None):
         self.method = method
         self.inputs = inputs or {}
         self.fields = fields or {}
+        self.colour = colour
 
 class MCToolbox:
     def __init__(self, snippets_dir: str):
@@ -98,8 +113,32 @@ class MCToolbox:
                 base_block.setdefault("inputs", {}).update(spec.inputs)
             if spec.fields:
                 base_block.setdefault("fields", {}).update(spec.fields)
+            if spec.colour:
+                base_block.setdefault("extraState", {})["customColour"] = spec.colour
                 
             return base_block
+
+        # elif spec.__class__.__name__ == 'ConfiguredBlock':
+        #     class_name, method_name = spec.method.__qualname__.split('.')
+        #     target_type = f"{class_name.lower()}_{method_name}"
+        #     category_json = self._load_snippet(class_name)
+            
+        #     base_block = None
+        #     for block in category_json.get('contents', []):
+        #         if block.get('type') == target_type:
+        #             import copy
+        #             base_block = copy.deepcopy(block)
+        #             break
+                    
+        #     if not base_block:
+        #         raise ValueError(f"Block {target_type} not found.")
+
+        #     if spec.inputs:
+        #         base_block.setdefault("inputs", {}).update(spec.inputs)
+        #     if spec.fields:
+        #         base_block.setdefault("fields", {}).update(spec.fields)
+                
+        #     return base_block
 
         # 6. Whole Action Class (e.g., QActions)
         elif isinstance(spec, type): 
