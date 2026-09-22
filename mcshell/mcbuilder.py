@@ -96,19 +96,19 @@ class RegistryBuilder:
             self.GENERATED_ACTION_CLASSES.extend([(c, n, col) for c, n, col in classes if c is not None and not c.__name__ in self.GENERATED_ACTIONS_BLACKLIST])
 
             self.ACTION_CLASSES= [
-                get_class("actions","qactions", "QActions"),
-                get_class("actions","qturtleactions", "QTurtleActions"),
-                get_class("actions","digitalsetactions", "DigitalSetActions"),
-                get_class("actions","setactions", "SetActions"),
-                get_class("actions","digitalgeometryactions", "DigitalGeometryActions"),
-                get_class("actions","selectionactions", "SelectionActions"),
-                get_class("actions","serveractions", "ServerActions"),
-                get_class("actions","bedwarsactions", "BedWarsActions"),
+                (get_class("actions","qactions", "QActions"),None,None),
+                (get_class("actions","qturtleactions", "QTurtleActions"),None,None),
+                (get_class("actions","digitalsetactions", "DigitalSetActions"),None,None),
+                (get_class("actions","setactions", "SetActions"),None,None),
+                (get_class("actions","digitalgeometryactions", "DigitalGeometryActions"),None,None),
+                (get_class("actions","selectionactions", "SelectionActions"),None,None),
+                (get_class("actions","serveractions", "ServerActions"),None,None),
+                (get_class("actions","bedwarsactions", "BedWarsActions"),None,None),
             ]
 
             self.SHAPE_CLASSES = [
-                get_class("shapes","qturtleshapes", "QTurtleShapes"),
-                get_class("shapes","lsystemshapes", "LSystemShapes"),
+                (get_class("shapes","qturtleshapes", "QTurtleShapes"),None,None),
+                (get_class("shapes","lsystemshapes", "LSystemShapes"),None,None),
             ]
 
 
@@ -127,6 +127,8 @@ class RegistryBuilder:
         self.build_actions()
         self.build_shapes()
 
+        self.build_pickers()
+
         self.build_pickers_category()
         self.build_pickers_module()
 
@@ -134,7 +136,7 @@ class RegistryBuilder:
         self.export_taxonomy()
         
     def build_action_classes_export(self):
-        class_names = [cls.__name__ for cls in self.SHAPE_CLASSES + self.ACTION_CLASSES] + [cls.__name__ for cls, _, _ in self.GENERATED_ACTION_CLASSES]
+        class_names = [cls.__name__ for cls,_,_ in self.ACTION_CLASSES + self.GENERATED_ACTION_CLASSES + self.SHAPE_CLASSES]
         js_content = f"export const ACTION_CLASSES = {class_names!r};\n"
         out_path = self.gens_dir / "action_classes.mjs"
         out_path.write_text(js_content, encoding='utf-8')
@@ -451,8 +453,8 @@ class RegistryBuilder:
 
         return js, py
 
-    def _export_toolbox_json_snippet(self,cls_name,json_string,snippet_dir='actions'):
-        json_snippet_path = self.toolbox_snippet_dir.joinpath(f'{snippet_dir}/{cls_name}.json')
+    def _export_toolbox_json_snippet(self,cls_name,json_string,snippets_dir='actions'):
+        json_snippet_path = self.toolbox_snippet_dir.joinpath(f'{snippets_dir}/{cls_name}.json')
         json_snippet_path.parent.mkdir(exist_ok=True)
         json.dump(json_string, json_snippet_path.open('w'), indent=4)
 
@@ -471,64 +473,30 @@ class RegistryBuilder:
         xml_snippet_path.parent.mkdir(exist_ok=True)
         xml_snippet_path.write_text(pretty_xml)
 
-    def build_actions(self):
+    def build_pickers(self):
         pick_js, pick_py = [], []
-        for p in self.GENERATED_ACTION_PICKERS:
+        for p in self.GENERATED_ACTION_PICKERS + self.ACTION_PICKERS:
             res = BlocklyGenerator.generate_picker(p['id'], p['label'], p['options'], p['input_type'], self.COLORS["Picker"])
             pick_js.append(res['js']); pick_py.append(res['py'])
 
-        for i, (cls, name, color) in enumerate(self.GENERATED_ACTION_CLASSES):
+        self._write_output('pickers', 'Picker', pick_js, pick_py)
+
+    def _build_helper(self,classes_to_build,snippets_dir):
+        for cls, name, color in classes_to_build:
             gen = BlocklyGenerator(cls, self.TYPE_MAP, self.SHADOW_MAP, color, name)
             b_js, p_py, c_xml, c_json = gen.generate()
-            js_out = pick_js + [b_js] if i == 0 else [b_js]
-            py_out = pick_py + [p_py] if i == 0 else [p_py]
-            self._write_output(cls.__name__, cls.__name__, js_out, py_out)
+            self._write_output(cls.__name__, cls.__name__, [b_js], [p_py])
 
-            # fragile
-            append_separator = False
-            if i == len(self.GENERATED_ACTION_CLASSES) -1:
-                append_separator = True
+            BlocklyGenerator.update_toolbox(c_xml, self.toolbox_path,append_separator=True)
 
-            BlocklyGenerator.update_toolbox(c_xml, self.toolbox_path,append_separator=append_separator)
+            self._export_toolbox_json_snippet(cls.__name__, c_json, snippets_dir)
 
-            self._export_toolbox_json_snippet(cls.__name__, c_json)
-
-        pick_js, pick_py = [], []
-        for p in self.ACTION_PICKERS:
-            res = BlocklyGenerator.generate_picker(p['id'], p['label'], p['options'], p['input_type'], self.COLORS["Picker"])
-            pick_js.append(res['js']); pick_py.append(res['py'])
-
-
-        for i, cls in enumerate(self.ACTION_CLASSES):
-            gen = BlocklyGenerator(cls, self.TYPE_MAP, self.SHADOW_MAP)
-            b_js, p_py, c_xml,c_json = gen.generate()
-            js_out = pick_js + [b_js] if i == 0 else [b_js]
-            py_out = pick_py + [p_py] if i == 0 else [p_py]
-            self._write_output(cls.__name__, cls.__name__, js_out, py_out)
-
-            # this is so fragile
-            separated_action_classes = ['ServerActions','DigitalGeometryActions']
-            append_separator = False
-            if i < len(self.ACTION_CLASSES) - 1 and self.ACTION_CLASSES[i+1].__name__ in separated_action_classes:
-                append_separator = True
-            elif i == len(self.ACTION_CLASSES) - 1:
-                append_separator = True
-
-            BlocklyGenerator.update_toolbox(c_xml, self.toolbox_path,append_separator=append_separator)
-
-            self._export_toolbox_json_snippet(cls.__name__, c_json)
+    def build_actions(self):
+        self._build_helper(self.GENERATED_ACTION_CLASSES,'actions')
+        self._build_helper(self.ACTION_CLASSES,'actions')
 
     def build_shapes(self):
-        for i, cls in enumerate(self.SHAPE_CLASSES):
-            gen = BlocklyGenerator(cls, self.TYPE_MAP, self.SHADOW_MAP)
-            b_js, p_py, c_xml,c_json = gen.generate()
-            js_out = [b_js]
-            py_out = [p_py]
-            self._write_output(cls.__name__, cls.__name__, js_out, py_out)
-
-            BlocklyGenerator.update_toolbox(c_xml, self.toolbox_path,append_separator=False)
-
-            self._export_toolbox_json_snippet(cls.__name__, c_json,'shapes')
+        self._build_helper(self.SHAPE_CLASSES,'shapes')
 
     def build_pickers_category(self):
         """
