@@ -34,10 +34,12 @@ poetry.toml
 /mced/src/blocks/items.mjs
 /mced/src/blocks/blocks.mjs
 /mced/src/blocks/entities.mjs
+/mced/src/blocks/pickers.mjs
 
 /mced/src/generators/python/items.mjs
 /mced/src/generators/python/blocks.mjs
 /mced/src/generators/python/entities.mjs
+/mced/src/generators/python/pickers.mjs
 
 /mced/src/generators/python/action_classes.mjs
 /mced/src/toolbox.xml
