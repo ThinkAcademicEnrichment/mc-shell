@@ -1,4 +1,4 @@
-from mctools.errors import RCONAuthenticationError
+from mctools.errors import RCONError,RCONAuthenticationError 
 from mcshell.constants import *
 try:
     from mcshell.mcjuice import MCJuiceClient
@@ -9,6 +9,13 @@ except ImportError:
             raise NotImplementedError
 
 from functools import lru_cache
+
+class RCONConnectionError(RCONError): 
+    pass
+
+class RCONDataError(RCONError): 
+    pass
+
 class _DEBUG:
     data = False
 
@@ -35,56 +42,36 @@ class MCClient:
         """For helping create fellow players on the same server"""
         return dict(zip(('host','port','rcon_port','mj_port','password'), (self.host, self.port, self.rcon_port, self.mj_port, self.password)))
 
+
     def run(self, *args):
-        """
-        Executes a command via RCON using mctools to handle fragmentation.
-        """
-        if not self.password:
-            raise RCONAuthenticationError('An admin password is required! Use %mc_login.')
-        if not args:
-            return
+        """Executes a command via RCON using mctools to handle fragmentation."""
 
         full_command = " ".join(str(a) for a in args)
-
-        # mctools handles the fragmented packet reassembly internally
         rcon = RCONClient(self.host, port=self.rcon_port)
 
         try:
-            if rcon.login(self.password):
-                # frag_check=True is the default in mctools
-                response = rcon.command(full_command)
-                return self._strip_ansi(response)
-            else:
-                return "Authentication failed."
+            if not rcon.login(self.password):
+                # Raise immediately instead of returning a magic string
+                raise RCONAuthenticationError("Authentication failed. The password is wrong.")
+            response = rcon.command(full_command)
+            return self._strip_ansi(response)
+        except ConnectionRefusedError as e:
+            raise RCONConnectionError(f"Connection refused: {e}")
         finally:
             rcon.stop()
 
-    def help(self,*args):
-        if not self.password:
-            raise RCONAuthenticationError('An admin password is required! Use %mc_login.')
-        _help_cmd = 'minecraft:help'
-        _response = self.run(_help_cmd,*args)
-        if _response =='Authentication failed.': 
-            raise RCONAuthenticationError(_response)
-        return _response
+    def help(self, *args):
+        # run() automatically handles password checks and raises errors if auth fails.
+        return self.run('minecraft:help', *args)
 
     def data(self, operation, *args):
-        if not self.password:
-            raise RCONAuthenticationError('An admin password is required! Use %mc_login.')
-            # print('An admin password is required! Use %mc_login.')
-            # return
-
         _response = self.run('data', operation, *args)
-        if _response =='Authentication failed.': 
-            raise RCONAuthenticationError(_response)
         try:
             _response = _response[_response.index(':') + 1:]
             return json.loads(self._fix_json(_response.strip()))
         except Exception as e:
-            if _DEBUG.data:
-                print(e)
-                print(_response)
-            return {}
+            # Wrap the raw error and response in a dedicated exception
+            raise RCONDataError(f"Failed to parse JSON data: {e}\nRaw Response: {_response}")
 
     async def data_async(self, varname, namespace, operation, *args):
         """

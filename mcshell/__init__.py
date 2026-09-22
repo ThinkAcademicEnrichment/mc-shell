@@ -6,7 +6,7 @@ from IPython.core.magic import Magics, magics_class, line_magic,needs_local_scop
 
 from mcshell.constants import *
 from mcshell.mcrepo import PowerRepository,SQLiteRepository
-from mcshell.mcclient import MCClient
+from mcshell.mcclient import *
 from mcshell.mcserver import throw_app_server_error, start_app_server, reset_app_server_context, restart_app_server, GUI_AUTH_TOKEN
 from mcshell.mcserver import RUNNING_POWERS
 from mcshell.ppmanager import *
@@ -1480,30 +1480,36 @@ class MCShell(Magics):
 
         self.active_paper_server.suspend_logs = not self.active_paper_server.suspend_logs
 
-    def _send(self,kind,*args):
-        assert kind in ('help','run','data')
-
-        _rcon_client = self._get_client()
-        try:
-            if kind == 'run':
-                _response = _rcon_client.run(*args)
-            elif kind == 'data':
-                _response = _rcon_client.data(*args)
-            elif kind == 'help':
-                _response = _rcon_client.help(*args)
-            return _response
-        except ConnectionRefusedError as e:
-            print("[red bold]Unable to send command. Is the server running?[/]")
-            pprint(self.server_data)
-        except RCONAuthenticationError as e:
-            print(e)
-            print("[red bold]The password is missing or wrong. Use %mc_login[/]")
-
     def _get_client(self):
         return MCClient(**self.server_data)
 
     def _get_player(self, name):
         return MCPlayer(name, **self.server_data)
+
+    def _send(self, kind, *args):
+        assert kind in ('help', 'run', 'data')
+
+        _rcon_client = self._get_client()
+        try:
+            if kind == 'run':
+                return _rcon_client.run(*args)
+            elif kind == 'data':
+                return _rcon_client.data(*args)
+            elif kind == 'help':
+                return _rcon_client.help(*args)
+                
+        except RCONConnectionError:
+            console.print("Unable to send command. Is the server running?", style="error")
+            # console.print(self.server_data) # Rich automatically pretty-prints dicts
+            return None
+        except RCONAuthenticationError as e:
+            # console.print(str(e), style="error")
+            console.print("The password is missing or wrong. Use %mc_login", style="warning")
+            return None
+        except RCONDataError as e:
+            console.print(f"Data parsing error:", style="error")
+            console.print(str(e))
+            return None
 
     def _help(self, *args):
         return self._send('help', *args)
@@ -1627,10 +1633,22 @@ class MCShell(Magics):
 
             _cmd += [' '.join(_line_parts)]
 
-        _raw_help = self._help(*_cmd)
-        if not _raw_help:
-            print("No help available!")
+        try:
+            _raw_help = self._help(*_cmd)
+        except RCONAuthenticationError:
             return
+        
+        # If _raw_help is None, an error was already printed by _send.
+        if _raw_help is None:
+            return
+        if not _raw_help:
+            console.print("No help available!", style="warning")
+            return
+
+        # _raw_help = self._help(*_cmd)
+        # if not _raw_help:
+        #     print("No help available!")
+        #     return
 
         _help_text = _raw_help
 
@@ -1654,8 +1672,10 @@ class MCShell(Magics):
             output.append(entry.replace('-', '_'))
 
         # Sort alphabetically for easy scanning
+        # for line in sorted(output):
+        #     print(line)
         for line in sorted(output):
-            print(line)
+            console.print(line, style="info")
 
     def _complete_mc_help(self, ipyshell, event):
         """
@@ -1692,35 +1712,26 @@ class MCShell(Magics):
         return arg_matches
 
     @line_magic
-    def mc_run(self,line):
-        '''
-        %mc_run COMMAND
-        '''
-
+    def mc_run(self, line):
+        '''%mc_run COMMAND'''
         _arg_list = line.split(' ')
-        _arg_list[0] = _arg_list[0].replace('_','-')
+        _arg_list[0] = _arg_list[0].replace('_', '-')
 
         if _arg_list[0] == 'help':
-            print("Use %mc_help instead.")
+            console.print("Use %mc_help instead.", style="warning")
             return
 
-        try:
-            response = self._run(*_arg_list)
-            if response == '':
-                return
-        except:
-            return
-        if not response:
+        response = self._run(*_arg_list)
+        
+        if response is None or response == '':
             return
 
-        print('Response:')
-        print('-' * 100)
         if response.split()[0] == 'Unknown':
-            print("[red]Error in usage:[/]")
+            console.print("Error in usage:", style="error")
             self.mc_help(line)
         else:
-            print(response)
-        print('-' * 100)
+            # Wrap the server response in a clean visual box
+            console.print(Panel(response, title="[info]Server Response[/info]", border_style="cyan", expand=False))
 
     def _get_rconn_completions(self, ipyshell, raw_event, line, text_to_complete):
         """
@@ -1862,28 +1873,28 @@ class MCShell(Magics):
         self.mc_name = minecraft_name
         return self.mc_name
 
-   
-
     @needs_local_scope
     @line_magic
-    def mc_data(self, line,local_ns):
-        '''
-        %mc_data OPERATION ARGUMENTS
-        '''
-
+    def mc_data(self, line, local_ns):
+        '''%mc_data OPERATION ARGUMENTS'''
         _arg_list = line.split(' ')
-        try:
-            assert _arg_list[0] in ('get','modify','merge','remove')
-        except AssertionError:
-            print(f"Wrong arguments!")
+        
+        if not _arg_list or _arg_list[0] not in ('get', 'modify', 'merge', 'remove'):
+            console.print("Wrong arguments! Operation must be get, modify, merge, or remove.", style="error")
             return
-        print(f"Requesting data: {' '.join(_arg_list)}")
+
+        console.print(f"Requesting data: {' '.join(_arg_list)}", style="info")
         _uuid = str(uuid.uuid1())[:4]
         _var_name = f"data_{_arg_list[0]}_{_uuid}"
-        print(f"requested data will be available as {_var_name} locally")
+        
         _data = self._data(*_arg_list)
-        local_ns.update({_var_name:_data})
-
+        
+        if _data is None:
+            return
+            
+        console.print(f"Requested data is now available as [cmd]{_var_name}[/cmd] locally.", style="success")
+        local_ns.update({_var_name: _data})
+  
     @needs_local_scope
     @line_magic
     def mc_client(self,line,local_ns):
