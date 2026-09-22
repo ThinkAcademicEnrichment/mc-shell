@@ -31,10 +31,6 @@ TYPE_MAP = {
     "Block": "Block",
     "Material":"Material",
     "Item":"Item",
-    # in actions that use Union[] output
-    # all classes in the Union must map to the same Blockly type
-    "DigitalSet": "Digital_Set",
-    "MCStructure": "Digital_Set",
     "Metric": "Metric",
     "QDirection": "QDirection",
     "Axis": "Axis",
@@ -52,6 +48,12 @@ TYPE_MAP = {
     "Entity": "Entity",
     "Effect": "Effect",
     "DataPath": "DataPath",
+
+    # in actions that use Union[] output
+    # all classes in the Union must map to the same Blockly type
+    "DigitalSet": "Digital_Set",
+    "MCStructure": "Digital_Set",
+
 }
 
 SHADOW_MAP_XML = dict(
