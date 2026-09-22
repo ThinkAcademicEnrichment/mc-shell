@@ -16,6 +16,21 @@ from mcshell.mcplayer import MCPlayer
 from mcshell.mcplatforms import CrossPlatformBinary
 from mcshell.mcregistry import TAILSCALE_REGISTRY
 
+from rich.console import Console
+from rich.theme import Theme
+from rich.panel import Panel
+from rich import print as rprint
+
+# Define semantic styles for mcshell 
+mc_theme = Theme({
+    "error": "red bold",
+    "warning": "yellow",
+    "info": "cyan",
+    "success": "green bold",
+    "cmd": "magenta"
+})
+
+console = Console(theme=mc_theme)
 
 # =====================================================================
 # SSH Tunnel Helper Functions
