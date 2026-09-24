@@ -47,6 +47,9 @@ def execute_ipython_magic():
 @ipython_bp.route('/lobby_data', methods=['GET'])
 def get_lobby_data():
     """Returns the current server status, connection hub info, and privilege level."""
+    import os
+    is_appliance = os.environ.get('MCSHELL_APPLIANCE_MODE') == '1'
+
     shell = current_app.config.get('IPYTHON_SHELL')
     mc_name = current_app.config.get('MINECRAFT_PLAYER_NAME')
 
@@ -85,12 +88,14 @@ def get_lobby_data():
                 "player": mc_name,
                 "is_host": is_host,
                 "is_admin": is_admin,
-                "hub": hub_data
+                "hub": hub_data,
+                "appliance_mode": is_appliance,
             })
+
     except Exception as e:
         print(f"Error fetching connection hub data: {e}")
 
-    return jsonify({"status": "active", "player": mc_name, "is_host": False, "is_admin": False, "hub": None})
+    return jsonify({"status": "active", "player": mc_name, "is_host": False, "is_admin": False, "hub": None,"appliance_mode": is_appliance})
 
 
 @ipython_bp.route('/join_world', methods=['POST'])
