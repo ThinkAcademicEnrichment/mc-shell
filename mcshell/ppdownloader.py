@@ -1,3 +1,5 @@
+from mcshell import JRE_BINARY
+from mcshell import MC_WORLDS_BASE_DIR
 import requests
 import os
 import platform
@@ -22,15 +24,19 @@ class PaperDownloader:
 
     def ensure_jre(self, version: str = "25") -> bool:
         """Ensures a local JRE is present in the specified jre directory."""
-        if MC_JRE_PATH.exists():
-            return True
+        jre_dir= MC_WORLDS_BASE_DIR.joinpath(f'jre-{version}')
+        jre_path = jre_dir.joinpath(JRE_BINARY)
 
-        print(f"JRE not found at {MC_JRE_PATH}. Downloading JRE {version}...")
+        if jre_path.exists():
+            print(f"JRE found at {jre_path}...")
+            return jre_path
+
+        print(f"JRE not found at {jre_path}. Downloading JRE {version}...")
 
         url = self._get_jre_download_url(version)
         if not url:
             print(f"Error: Could not determine JRE URL for {platform.system()} {platform.machine()}.")
-            return False
+            return None 
 
         try:
             temp_archive = self.download_dir / "jre_archive.tmp"
@@ -40,8 +46,8 @@ class PaperDownloader:
                     for chunk in r.iter_content(chunk_size=8192):
                         f.write(chunk)
 
-            MC_JRE_DIR.mkdir(parents=True, exist_ok=True)
-            temp_extract_path = MC_JRE_DIR / "tmp_extraction"
+            jre_dir.mkdir(exist_ok=True)
+            temp_extract_path = jre_dir / "tmp_extraction"
             temp_extract_path.mkdir(exist_ok=True)
 
             if url.endswith('.zip') or platform.system().lower() == 'windows':
@@ -53,23 +59,23 @@ class PaperDownloader:
 
             inner_dir = next(temp_extract_path.iterdir())
             for item in inner_dir.iterdir():
-                dest = MC_JRE_DIR / item.name
+                dest = jre_dir / item.name
                 if dest.exists():
                     if dest.is_dir(): shutil.rmtree(dest)
                     else: dest.unlink()
-                shutil.move(str(item), str(MC_JRE_DIR))
+                shutil.move(str(item), str(jre_dir))
 
             shutil.rmtree(temp_extract_path)
             temp_archive.unlink()
 
-            if os.name != 'nt' and MC_JRE_PATH.exists():
-                MC_JRE_PATH.chmod(MC_JRE_PATH.stat().st_mode | 0o111)
+            if os.name != 'nt' and jre_path.exists():
+                jre_path.chmod(jre_path.stat().st_mode | 0o111)
+            return jre_path 
 
-            return True
         except Exception as e:
             print(f"Error: JRE install failed: {e}")
-            if MC_JRE_DIR.exists(): shutil.rmtree(MC_JRE_DIR)
-            return False
+            if jre_dir.exists(): shutil.rmtree(jre_dir)
+            return None 
 
     def _get_jre_download_url(self, version: str) -> Optional[str]:
         """Maps system platform and architecture to an Adoptium API download URL."""

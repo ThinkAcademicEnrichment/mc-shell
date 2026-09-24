@@ -1,3 +1,5 @@
+from mcshell import MC_DEFAULT_JRE_VERSION
+from mcshell import MC_DEFAULT_JRE_PATH
 from mcshell import MC_WORLDS_BASE_DIR
 import subprocess
 import pexpect
@@ -34,6 +36,7 @@ class PaperServerManager:
             self.world_manifest = json.load(f)
 
         self.jar_path = self.world_directory.parent / self.world_manifest.get('server_jar_path')
+
     def update_jar_path(self):
         downloader = PaperDownloader(MC_WORLDS_BASE_DIR / 'server-jars')
         paper_version = self.world_manifest["paper_version"]
@@ -134,7 +137,7 @@ class PaperServerManager:
         and logs its output in real-time.
         """
         command = [
-            str(MC_JRE_PATH),
+            str(self.world_manifest.get('jre_path',MC_DEFAULT_JRE_PATH)),
             '-Xms2G', '-Xmx2G',
             '-jar', str(self.jar_path),
             'nogui'
@@ -312,16 +315,20 @@ class PaperServerManager:
         Ensures the environment is ready and starts the server in a background thread.
         Handles JRE acquisition and first-time configuration automatically.
         """
+
+        self.apply_manifest_settings(**kwargs)
+
         downloader = PaperDownloader(MC_WORLDS_BASE_DIR / 'server-jars')
-        if not downloader.ensure_jre():
-            print("Abort: Managed JRE could not be initialized.")
-            return
+
+        #backwards compatibility
+        jre_version = self.world_manifest.get('jre_version',MC_DEFAULT_JRE_VERSION)
+        downloader.ensure_jre(jre_version)
 
         if not (self.world_directory / "server.properties").exists():
             print("First-time setup: Initializing server to generate configuration files...")
             try:
                 subprocess.run(
-                    [str(MC_JRE_PATH), "-jar", str(self.jar_path), "--initSettings"],
+                    [str(self.world_manifest.get('jre_path',MC_DEFAULT_JRE_PATH)), "-jar", str(self.jar_path), "--initSettings"],
                     cwd=self.world_directory,
                     check=True,
                     capture_output=True
@@ -331,7 +338,6 @@ class PaperServerManager:
                 print(f"Error during initialization: {e.stderr.decode()}")
                 return
 
-        self.apply_manifest_settings(**kwargs)
         
         # --- NEW: Provision the RAM disk and seed data before starting the server ---
         # Note: If the world folder hasn't been generated yet (first run), this will safely 

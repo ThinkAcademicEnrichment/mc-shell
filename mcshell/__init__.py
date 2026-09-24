@@ -598,8 +598,9 @@ class MCShell(Magics):
 
         # Quick version check (assuming semantic versioning format)
         v_parts = [int(x) for x in mc_version.split('.')]
-        if v_parts[0] == 1 and (v_parts[1] < 20 or (v_parts[1] == 20 and v_parts[2] < 5)):
-            print(f"Error: mcshell requires Minecraft 1.20.5 or newer (Java 21). Version '{mc_version}' is not supported.")
+        # if v_parts[0] == 1 and (v_parts[1] < 20 or (v_parts[1] == 20 and v_parts[2] < 5)):
+        if v_parts[0] == 1 and (v_parts[1] < 18):
+            print(f"Error: mcshell requires Minecraft 1.18 or newer. Version '{mc_version}' is not supported.")
             return
 
         # NEW: handle versions
@@ -699,20 +700,61 @@ class MCShell(Magics):
 
         # Map the exact filenames you want to the resolved URLs
         plugin_urls= {
-            "Geyser.jar": _resolve_geysermc_plugin('geyser'),
-            "Floodgate.jar": _resolve_geysermc_plugin('floodgate'),
+            "Geyser.jar": _resolve_geysermc_plugin('geyser',mc_version),
+            "Floodgate.jar": _resolve_geysermc_plugin('floodgate',mc_version),
             "ViaVersion.jar": _resolve_modrinth_plugin('viaversion', mc_version)
         }
 
         for plugin_to_install in plugins_to_install:
             plugin_urls.update({f"{plugin_to_install}.jar":_resolve_modrinth_plugin(plugin_to_install,mc_version)})
 
-        # Create the world_manifest.json file with required Geyser/Floodgate/ViaVersion plugins
+        # Always install versioned McJuice from bundled version
+        from packaging.version import Version
+        parsed_version = Version(mc_version)
 
+        # Select the correct artifact based on hard Java/API boundaries
+        if parsed_version >= Version("26.1"):
+            # Covers 26.1, 26.2, and future Java 25 versions
+            jar_name = "mcjuice-26.1.jar"
+            jre_version = '25'
+            jre_path = downloader.ensure_jre(jre_version)
+        elif parsed_version >= Version("1.20.5"):
+            # Covers 1.20.5 through 1.21.4 (Java 21 era)
+            jar_name = "mcjuice-1.21.jar"
+            jre_version = '21'
+            jre_path = downloader.ensure_jre(jre_version)
+        else:
+            # Covers 1.18 through 1.20.4 (Java 17 era)
+            jar_name = "mcjuice-1.18.jar"
+            jre_version = '17'
+            jre_path = downloader.ensure_jre(jre_version)
+
+        if jre_path is None:
+            print("No Java Runtime. Cannot create world")
+            return
+
+        print(f"Java Runtime available at {jre_path}")
+
+        mc_juice_jar_path = MC_DATA_DIR / jar_name
+
+        if not mc_juice_jar_path.exists():
+            print(f"The McJuice plugin ({jar_name}) does not exist!")
+            print(f"Are you doing development? Run build.py to generate all required classes and artifacts.")
+            print(f"The world {world_name} could not be created. :-(" )
+            return
+            
+        plugins_dir.joinpath(mc_juice_jar_path.name).symlink_to(mc_juice_jar_path)
+
+        # Install the plugins listed in the manifest (Downloads Geyser & Floodgate automatically)
+        downloader.install_plugins(plugin_urls, plugins_dir)
+
+
+        # Create the world_manifest.json file with required Geyser/Floodgate/ViaVersion plugins
         manifest = {
             "world_name": world_name,
             "paper_version": mc_version,
-            "java_path": "java", # Assumes java is in the system's PATH
+            "jre_version": jre_version,
+            "jre_path": str(jre_path),
             "server_jar_path": str(jar_path.relative_to(world_dir.parent)), # Store a path relative to the world_dir
             "world_data_path": str((world_dir / "world").relative_to(world_dir)),
             "plugins": plugin_urls,
@@ -751,19 +793,6 @@ class MCShell(Magics):
         except IOError as e:
             print(f"Error: Could not write world_manifest.json file. {e}")
             return
-
-        # Always install versioned McJuice from bundled version
-        mc_major_version = '.'.join(mc_version.split('.')[:2])
-        mc_juice_jar_path =  MC_DATA_DIR / f"mcjuice-{mc_major_version}.jar"
-        if not mc_juice_jar_path.exists():
-            print(f"The McJuice plugin does not exist!")
-            print(f"Are you doing development? Run build.py to generate all required classes and artifacts.")
-            print(f"The world {world_name} could not be created. :-(" )
-            return
-        plugins_dir.joinpath(mc_juice_jar_path.name).symlink_to(mc_juice_jar_path)
-
-        # Install the plugins listed in the manifest (Downloads Geyser & Floodgate automatically)
-        downloader.install_plugins(plugin_urls, plugins_dir)
 
         print("Patching configurations dynamically...")
        
@@ -908,7 +937,7 @@ class MCShell(Magics):
         self.active_paper_server.start(**extra_server_properties)
         # now start it after files are generated and it is terminated once
         if not self.active_paper_server.is_alive():
-            self.active_paper_server = PaperServerManager(world_name, world_directory)
+            self.active_paper_server = PaperServerManager(world_name, world_directory,self.mc_jre_path)
             # get a new PaperMC jar if available
             self.active_paper_server.update_jar_path()
             self.active_paper_server.start(**extra_server_properties)

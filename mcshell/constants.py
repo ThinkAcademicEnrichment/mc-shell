@@ -98,6 +98,17 @@ MC_SERVER_PORT = 25566
 MJ_PLUGIN_PORT = 4721
 MC_APP_PORT = 5001
 
+# Determine the binary name based on the OS
+JRE_BINARY = "java.exe" if os.name == "nt" else "bin/java"
+
+MC_WORLDS_BASE_DIR = pathlib.Path('~').expanduser().joinpath('mc-worlds')
+
+# this is the default
+MC_DEFAULT_JRE_VERSION = '25'
+MC_DEFAULT_JRE_DIR = MC_WORLDS_BASE_DIR / f'jre-{MC_DEFAULT_JRE_VERSION}'
+MC_DEFAULT_JRE_PATH = MC_DEFAULT_JRE_DIR / JRE_BINARY
+
+
 MC_SERVER_DATA = {
     'host':MC_SERVER_HOST,
     'port':MC_SERVER_PORT,
@@ -107,6 +118,7 @@ MC_SERVER_DATA = {
     'password': None,
     'mc_version': MC_VERSION,
     'rh_host': None,
+    'jre_path': str(MC_DEFAULT_JRE_PATH),
 }
 
 MC_SHELL_DIR = pathlib.Path(__file__).parent
@@ -130,7 +142,6 @@ MC_TOOLBOX_SPECS_DIR = MC_TOOLBOX_DIR / "specs"
 MC_TOOLBOX_SNIPPETS_DIR = MC_TOOLBOX_DIR / "snippets"
 MC_TOOLBOX_SHADOWS = MC_SHELL_DIR/ "shadows" / "factories.py" # the specs need to import the shadow helpers
 
-MC_WORLDS_BASE_DIR = pathlib.Path('~').expanduser().joinpath('mc-worlds')
 MC_CENTRAL_CONFIG_FILE = pathlib.Path("/etc/mc-shell/user_map.json")
 
 MC_INTERNAL_DATAPACKS = MC_DATA_DIR / 'datapacks'
@@ -138,11 +149,6 @@ MC_DATAPACK_LIB_DIR = MC_WORLDS_BASE_DIR / 'datapacks-library'
 
 MC_JUICE_SRC_DIR = pathlib.Path(__file__).parent.parent / 'mcjuice' / 'src'
 
-MC_JRE_DIR = MC_WORLDS_BASE_DIR / 'jre'
-# Determine the binary name based on the OS
-JRE_BINARY = "java.exe" if os.name == "nt" else "bin/java"
-
-MC_JRE_PATH = MC_JRE_DIR / JRE_BINARY
 
 RE_NON_JSON_VALUE = r"(?<!\")\b(?:[0-9]+[a-zA-Z]+|[0-9]+(?:\.[0-9]+)?[a-zA-Z]+|true|false|null)\b(?!\")"
 RE_NON_JSON_ARRAY = r"\[[BISL];\s*[^\]]+\]"
