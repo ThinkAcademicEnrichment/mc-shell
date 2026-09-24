@@ -93,7 +93,7 @@ def restart_app_server():
         minecraft_name = current_app.config.get('MINECRAFT_PLAYER_NAME')
         shell = current_app.config.get('IPYTHON_SHELL')
         power_repo = current_app.config.get('POWER_REPO')
-        
+
     global app_server_thread
     port = getattr(app_server_thread, 'port', 5001) if app_server_thread else 5001
         
@@ -147,6 +147,8 @@ def throw_app_server_error(error):
 def start_app_server(server_data=None, minecraft_name=None, shell=None, power_repo=None, port=5001):
     """Starts or updates the main Flask-SocketIO application server in a separate thread."""
 
+    is_appliance = os.environ.get('MCSHELL_APPLIANCE_MODE') == '1'
+
     # Safely inject the new Minecraft parameters into the active Flask Application Context
     with app.app_context():
         if server_data is not None: app.config['MCSHELL_SERVER_DATA'] = server_data
@@ -155,7 +157,7 @@ def start_app_server(server_data=None, minecraft_name=None, shell=None, power_re
         if power_repo is not None: app.config['POWER_REPO'] = power_repo
 
         # Ping the frontend via WebSocket to drop the 401 error and reload the editor
-        socketio.emit('state_changed', {'status': 'active'})
+        socketio.emit('state_changed', {'status': 'active','appliance_mode': is_appliance})
 
     use_port = port
     if app.config.get('MCSHELL_SERVER_DATA') and 'app_port' in app.config['MCSHELL_SERVER_DATA']:
