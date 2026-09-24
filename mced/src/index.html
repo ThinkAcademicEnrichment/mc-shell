@@ -131,7 +131,10 @@
                         <button class="btn-block" id="cancelPowerButton">Cancel Power</button>
                         <button class="btn-digital-set" @click="window.prepareAndOpenSaveModal()">Save Workspace</button>
                         <button class="btn-entity" id="clearWorkspaceButton">Clear Workspace</button>
-                        <button class="btn-item" @click="keyboardVisible = !keyboardVisible">Keyboard</button>
+                        <!-- <button class="btn-item" @click="keyboardVisible = !keyboardVisible">Keyboard</button> -->
+                        <button class="btn-item" @click="toggleKeyboard()">Keyboard</button>
+                        <!-- <button class="btn-geometry" @click="toggleTerminal()">Terminal</button> -->
+                        <button class="btn-geometry" x-show="applianceMode" x-cloak @click="toggleTerminal()">Terminal</button>
                         <button class="btn-geometry" @click="isCodeCollapsed = !isCodeCollapsed">Toggle Python</button>
                         <button class="btn-picker" @click="openControlDeck()">Control</button>
 
@@ -262,6 +265,18 @@
                     isCodeCollapsed: true,
                     keyboardVisible: false,
 
+                    isTerminalCollapsed: true,
+                    applianceMode: false,
+
+                    toggleKeyboard() {
+                        this.keyboardVisible = !this.keyboardVisible;
+                        if (this.keyboardVisible) this.isTerminalCollapsed = true;
+                    },
+                    toggleTerminal() {
+                        this.isTerminalCollapsed = !this.isTerminalCollapsed;
+                        if (!this.isTerminalCollapsed) this.keyboardVisible = false;
+                    },
+
                     // Lobby State
                     lobbyState: 'loading', // 'loading', 'standby', 'active', 'unauthorized', 'terminated', 'error'
                     lobbyData: null,
@@ -280,6 +295,7 @@
                                 this.isJoining = false; // Reset to prevent getting stuck
                                 this.isSwitchingPorts = false;
                                 this.lobbyState = 'terminated';
+                                this.applianceMode = data.appliance_mode === true; 
                                 return;
                             }
 
@@ -289,6 +305,7 @@
                                 this.isJoining = false;
                                 this.isSwitchingPorts = false;
 
+                                this.applianceMode = data.appliance_mode === true; 
                                 this.lobbyState = 'error';
                                 // Extract the message passed from throw_app_server_error()
                                 this.errorMessage = data.message || 'An unexpected error occurred.';
@@ -327,6 +344,7 @@
                         socket.on('reload', () => {
                             if (!this.isSwitchingPorts) window.location.reload();
                         });
+
                     },
 
                     async checkLobbyState() {
@@ -338,6 +356,8 @@
 
                                 this.lobbyState = data.status;
                                 this.lobbyData = data;
+                                // Extract the appliance mode 
+                                this.applianceMode = data.appliance_mode === true;
 
                                 // Extract the message if we are booting up directly into an error state
                                 if (data.status === 'error') {
@@ -416,6 +436,27 @@
                 }));
             });
         </script>
+
+        <div id="terminal-pane"
+            x-cloak
+            x-show="!isTerminalCollapsed"
+            style="position: fixed; bottom: 0; left: 0; width: 100%; height: 350px; z-index: 41000; background: #000; padding: 10px; box-sizing: border-box; box-shadow: 0 -2px 10px rgba(0,0,0,0.5);">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; background: #222; padding: 5px 10px; margin-bottom: 5px; border-radius: 4px;">
+                <span style="color: #aaa; font-family: monospace; font-size: 14px;">Appliance Terminal</span>
+                <button @click="isTerminalCollapsed = true" style="background: none; border: none; color: white; cursor: pointer; font-size: 16px;">✖</button>
+            </div>
+
+            <!-- ttyd handles xterm.js natively. Just iframe it in. -->
+            <template x-if="!isTerminalCollapsed">
+                <iframe src="http://127.0.0.1:7681" style="width: 100%; height: calc(100% - 40px); border: none;"></iframe>
+            </template>
+        </div>
+
+        <div class="simple-keyboard"
+            x-show="keyboardVisible"
+            style="position: fixed; bottom: 0; left: 0; width: 100%; z-index: 41000; background: white;">
+        </div>
 
         <div class="simple-keyboard"
              x-show="keyboardVisible"
