@@ -50,7 +50,7 @@ class MCClient:
         rcon = RCONClient(self.host, port=self.rcon_port)
 
         try:
-            if not rcon.login(self.password):
+            if not self.password or not rcon.login(self.password):
                 # Raise immediately instead of returning a magic string
                 raise RCONAuthenticationError("Authentication failed. The password is wrong.")
             response = rcon.command(full_command)
