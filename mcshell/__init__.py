@@ -893,6 +893,12 @@ class MCShell(Magics):
             # without killing the IPython kernel
             return
 
+        if getattr(self, 'app_server_thread', None) and self.app_server_thread.is_alive():
+            mc_host = self.server_data['host']
+            print(f"It looks like your code server is still connected to {mc_host}.")
+            print("Use %pp_leave_world before starting one.")
+            return
+
         world_name = parsed_args.world_name
         world_directory = MC_WORLDS_BASE_DIR / parsed_args.world_name
 
@@ -1312,7 +1318,11 @@ class MCShell(Magics):
         except KeyError:
             pass
 
-        print("Session stopped successfully.")
+        print("World stopped successfully.")
+
+        self.ip.run_line_magic('pp_leave_world','')
+
+
 
     @line_magic
     def pp_list_worlds(self, line):
@@ -2608,6 +2618,9 @@ def load_ipython_extension(ip):
 
         # Clean up Tailscale if the user just hits Ctrl+D instead of %mc_stop_app
         mcshell_instance._disconnect_tailscale()
+
+        # stop all forwarders
+        ip.run_line_magic('pp_leave_world','')
 
         # Ensure the background Flask thread is fully killed on exit
         ip.run_line_magic('pp_stop_world','')
