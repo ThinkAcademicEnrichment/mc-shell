@@ -52,10 +52,15 @@ def get_lobby_data():
 
     shell = current_app.config.get('IPYTHON_SHELL')
     mc_name = current_app.config.get('MINECRAFT_PLAYER_NAME')
+    default_lobby_name = current_app.config.get('DEFAULT_LOBBY_NAME')
 
     # If there is no active player context, the server is in Standby Mode
     if not shell or not mc_name:
-        return jsonify({"status": "standby", "appliance_mode": is_appliance})
+        return jsonify({
+            "status": "standby", 
+            "appliance_mode": is_appliance,
+            "player": default_lobby_name  # Send the default safely
+        }) 
 
     # Security Check: Ensure the user actually holds the token.
     from mcshell.mcserver import GUI_AUTH_TOKEN
@@ -95,7 +100,7 @@ def get_lobby_data():
     except Exception as e:
         print(f"Error fetching connection hub data: {e}")
 
-    return jsonify({"status": "active", "player": mc_name, "is_host": False, "is_admin": False, "hub": None,"appliance_mode": is_appliance})
+    return jsonify({"status": "active", "player": mc_name, "is_host": False, "is_admin": False, "hub": None,"appliance_mode": is_appliance })
 
 
 @ipython_bp.route('/join_world', methods=['POST'])

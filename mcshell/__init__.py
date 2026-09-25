@@ -154,6 +154,36 @@ console = Console(theme=mc_theme)
 #     return None
 
 
+def _get_user_bound_minecraft_name():
+    if MC_CENTRAL_CONFIG_FILE.exists():
+        print(f"Found system-wide configuration at {MC_CENTRAL_CONFIG_FILE}.")
+        try:
+            linux_user = os.getlogin()
+        except OSError:
+            linux_user = os.environ.get('USER')
+
+        if not linux_user:
+            print("Fatal Error: Could not determine Linux username.")
+            return None
+
+        try:
+            with open(MC_CENTRAL_CONFIG_FILE, 'r') as f:
+                user_map = json.load(f)
+
+            name_from_map = user_map.get(linux_user)
+            if not name_from_map:
+                print(f"Error: Your Linux user '{linux_user}' is not registered. Please contact your administrator.")
+                return None
+
+            print(f"Authenticated as Minecraft user: {name_from_map}")
+            return name_from_map
+
+        except (IOError, json.JSONDecodeError) as e:
+            print(f"Fatal Error: Could not read or parse the system configuration file: {e}")
+            return None
+    else:
+        return None
+
 # =====================================================================
 # Networking & Plugin Helper Functions
 # =====================================================================
@@ -1881,35 +1911,11 @@ class MCShell(Magics):
         minecraft_name = None
 
         # --- Lab Setup: Check for the central config file first ---
-        if MC_CENTRAL_CONFIG_FILE.exists():
-            print(f"Found system-wide configuration at {MC_CENTRAL_CONFIG_FILE}.")
-            try:
-                linux_user = os.getlogin()
-            except OSError:
-                linux_user = os.environ.get('USER')
-
-            if not linux_user:
-                print("Fatal Error: Could not determine Linux username.")
-                return None
-
-            try:
-                with open(MC_CENTRAL_CONFIG_FILE, 'r') as f:
-                    user_map = json.load(f)
-
-                name_from_map = user_map.get(linux_user)
-                if not name_from_map:
-                    print(f"Error: Your Linux user '{linux_user}' is not registered. Please contact your administrator.")
-                    return None
-
-                print(f"Authenticated as Minecraft user: {name_from_map}")
-                minecraft_name = name_from_map
-
-            except (IOError, json.JSONDecodeError) as e:
-                print(f"Fatal Error: Could not read or parse the system configuration file: {e}")
-                return None
-
+    
         # --- Personal Use: Fallback to prompting the user ---
-        else:
+        minecraft_name = _get_user_bound_minecraft_name()
+
+        if minecraft_name is None:
             print("No system-wide configuration found. Running in personal use mode.")
             try:
                 name_from_input = input("Please enter your Minecraft username: ").strip()
@@ -2590,6 +2596,8 @@ def load_ipython_extension(ip):
     """
     sync_datapack_library()
 
+    default_lobby_name = _get_user_bound_minecraft_name()
+
     mcshell_instance = MCShell(ip)
     ip.register_magics(mcshell_instance)
 
@@ -2601,7 +2609,8 @@ def load_ipython_extension(ip):
         minecraft_name=None,
         shell=ip,
         power_repo=None,
-        port=MC_APP_PORT
+        port=MC_APP_PORT,
+        default_lobby_name=default_lobby_name,
     )
 
     time.sleep(1)

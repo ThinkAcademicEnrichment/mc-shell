@@ -412,6 +412,10 @@
                             this.lobbyData = data;
                             this.isAppliance = data.appliance_mode === true;
 
+                            if (data.player && !this.minecraftName) {
+                                this.minecraftName = data.player;
+                            }
+
                             if (data.status === 'unauthorized') {
                                 this.transitionTo(UI_STATES.UNAUTHORIZED);
                                 return;
