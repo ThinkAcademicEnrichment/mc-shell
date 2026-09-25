@@ -113,6 +113,11 @@ def appliance(port):
         f"{env_cmd} {python_exec} {script_path} start"
     ], check=True)
 
+    # Enable native mouse scrolling in the tmux pane
+    subprocess.run([
+        "tmux", "set-option", "-t", session_name, "-g", "mouse", "on"
+    ], check=True)
+
     print("IPython and Flask initialized in tmux.")
     
     time.sleep(2) 
@@ -122,6 +127,7 @@ def appliance(port):
         subprocess.run([
             "ttyd", "-W", "-p", "7681", "tmux", "attach", "-t", session_name
         ])
+        
     except KeyboardInterrupt:
         print("\nShutting down appliance...")
         subprocess.run(["tmux", "kill-session", "-t", session_name])
