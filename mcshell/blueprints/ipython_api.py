@@ -55,7 +55,7 @@ def get_lobby_data():
 
     # If there is no active player context, the server is in Standby Mode
     if not shell or not mc_name:
-        return jsonify({"status": "standby"})
+        return jsonify({"status": "standby", "appliance_mode": is_appliance})
 
     # Security Check: Ensure the user actually holds the token.
     from mcshell.mcserver import GUI_AUTH_TOKEN
@@ -65,7 +65,7 @@ def get_lobby_data():
         token = auth_header.split(" ")[1]
 
     if token != GUI_AUTH_TOKEN:
-        return jsonify({"status": "unauthorized"})
+        return jsonify({"status": "unauthorized", "appliance_mode": is_appliance})
 
     try:
         # Extract the active MCShell magic instance from IPython's registry
