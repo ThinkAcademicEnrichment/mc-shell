@@ -91,33 +91,36 @@ def appliance(port):
     import subprocess
     import time
 
-    # Set the flag so the web UI knows to render the terminal button
-    os.environ['MCSHELL_APPLIANCE_MODE'] = '1'
-
     session_name = "mcshell-appliance"
     python_exec = sys.executable
     script_path = sys.argv[0]
 
+    # Capture the active virtual environment paths
+    current_path = os.environ.get('PATH', '')
+    venv = os.environ.get('VIRTUAL_ENV', '')
+
+    # Build the strict environment injection string
+    env_cmd = f"env MCSHELL_APPLIANCE_MODE=1 PATH=\"{current_path}\""
+    if venv:
+        env_cmd += f" VIRTUAL_ENV=\"{venv}\""
+
     print("Booting appliance mode...")
 
-    # 1. Start the actual application inside a detached tmux session.
-    # This runs the standard 'start' command, so IPython and Flask share memory exactly as designed.
+    # Start the actual application inside a detached tmux session,
+    # forcing the execution context to match the parent virtual environment exactly.
     subprocess.run([
         "tmux", "new-session", "-d", "-s", session_name,
-        f"{python_exec} {script_path} start"
+        f"{env_cmd} {python_exec} {script_path} start"
     ], check=True)
 
     print("IPython and Flask initialized in tmux.")
     
-    # Give Flask a second to bind to its port before exposing the terminal
     time.sleep(2) 
 
-    # 2. Launch ttyd in the foreground to bridge the web to the tmux session.
-    # It listens on 7681 and simply attaches to the existing tmux session when a browser connects.
     try:
         print("Starting ttyd web terminal broker on port 7681...")
         subprocess.run([
-            "ttyd","-W", "-p", "7681", "tmux", "attach", "-t", session_name
+            "ttyd", "-W", "-p", "7681", "tmux", "attach", "-t", session_name
         ])
     except KeyboardInterrupt:
         print("\nShutting down appliance...")
