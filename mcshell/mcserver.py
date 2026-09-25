@@ -157,7 +157,7 @@ def start_app_server(server_data=None, minecraft_name=None, shell=None, power_re
         if power_repo is not None: app.config['POWER_REPO'] = power_repo
 
         # Ping the frontend via WebSocket to drop the 401 error and reload the editor
-        socketio.emit('state_changed', {'status': 'active','appliance_mode': is_appliance})
+        socketio.emit('state_changed', {'status': 'active','appliance_mode': is_appliance, 'gui_token': GUI_AUTH_TOKEN})
 
     use_port = port
     if app.config.get('MCSHELL_SERVER_DATA') and 'app_port' in app.config['MCSHELL_SERVER_DATA']:
