@@ -2533,9 +2533,15 @@ if __name__ == '__main__':
             _player_name = self._get_mc_name()
         else:
             _player_name = _line_parts.pop()
-        print(f"the `mc` object is now available in the shell")
         _player = self._get_player(_player_name)
-        local_ns['mc'] = MCActions(_player)
+        _mc = MCActions(_player)
+        try:
+            _mc._run_command()
+        except Exception as e:
+            print(f"Sorry! Could not get mc object. Do you need to run %mc_login?")
+            return
+        local_ns['mc'] = _mc
+        print(f"The `mc` object is now available in the shell")
 # ---------------------------------------------------------------------------
 # Startup and Initialization
 # ---------------------------------------------------------------------------
