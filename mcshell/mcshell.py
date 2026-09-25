@@ -53,6 +53,15 @@ def initialize_config():
     c.Application.log_level = 0
     return c
 
+from IPython.terminal.prompts import Prompts, Token
+
+class MCShellPrompt(Prompts):
+    def in_prompt_tokens(self, cli=None):
+        return [(Token.Prompt, 'mcshell> ')]
+
+    def out_prompt_tokens(self, cli=None):
+        return [] # Hides the 'Out [1]:' entirely
+
 @click.group(cls=SpecialHelpOrder)
 def cli():
     """
@@ -75,6 +84,20 @@ def start():
     c.InteractiveShellApp.extensions += [
         'mcshell',
     ]
+
+    c.Application.log_level = 30  # 30 translates to logging.WARN
+    c.TerminalIPythonApp.display_banner = False
+
+    # tame traceback output
+    c.InteractiveShell.xmode = 'Plain'
+    # colour scheme
+    c.TerminalInteractiveShell.highlighting_style = 'monokai' # or 'rrt', 'paraiso-dark'
+    # disable confirmations
+    c.TerminalInteractiveShell.confirm_exit = False
+    # allow missing parantheis in magics?
+    c.InteractiveShell.autocall = 1
+    # custom prompt
+    c.TerminalInteractiveShell.prompts_class = MCShellPrompt
 
     import IPython
     IPython.start_ipython(config=c, argv=[])
