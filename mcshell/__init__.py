@@ -923,12 +923,6 @@ class MCShell(Magics):
             # without killing the IPython kernel
             return
 
-        if getattr(self, 'app_server_thread', None) and self.app_server_thread.is_alive():
-            mc_host = self.server_data['host']
-            print(f"It looks like your code server is still connected to {mc_host}.")
-            print("Use %pp_leave_world before starting one.")
-            return
-
         world_name = parsed_args.world_name
         world_directory = MC_WORLDS_BASE_DIR / parsed_args.world_name
 
@@ -2551,11 +2545,10 @@ if __name__ == '__main__':
             _player_name = _line_parts.pop()
         _player = self._get_player(_player_name)
         _mc = MCActions(_player)
-        try:
-            _mc._run_command()
-        except Exception as e:
-            print(f"Sorry! Could not get mc object. Do you need to run %mc_login?")
-            return
+        # try:
+        #     _ = _mc._run_command('list')
+        # except Exception as e:
+        #     print(f"Sorry! Could not get mc object. Do you need to run %mc_login?")
         local_ns['mc'] = _mc
         print(f"The `mc` object is now available in the shell")
 # ---------------------------------------------------------------------------
