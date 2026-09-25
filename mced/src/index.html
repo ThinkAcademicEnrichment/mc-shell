@@ -53,7 +53,7 @@
     <body x-data="EditorApp()">
 
             <!-- SUBSTAGE 2C: The Lobby Overlay -->
-            <div x-cloak x-show="['standby', 'unauthorized', 'terminated'].includes(lobbyState)" class="lobby-overlay">
+            <div x-cloak x-show="(lobbyState === 'standby' && !uiBypass) || ['unauthorized', 'terminated', 'error'].includes(lobbyState)" class="lobby-overlay">
                 <div class="lobby-card">
                     <!-- Standby / Join Form -->
                     <template x-if="lobbyState === 'standby'">
@@ -267,6 +267,8 @@
 
                     isTerminalCollapsed: true,
                     applianceMode: false,
+                    uiBypass: false,
+                    showStandbyTerminal: false,
 
                     toggleKeyboard() {
                         this.keyboardVisible = !this.keyboardVisible;
@@ -296,6 +298,7 @@
                                 this.isSwitchingPorts = false;
                                 this.lobbyState = 'terminated';
                                 this.applianceMode = data.appliance_mode === true; 
+                                this.showStandbyTerminal = false;
                                 return;
                             }
 
@@ -306,10 +309,26 @@
                                 this.isSwitchingPorts = false;
 
                                 this.applianceMode = data.appliance_mode === true; 
+                                this.showStandbyTerminal = false;
                                 this.lobbyState = 'error';
                                 // Extract the message passed from throw_app_server_error()
                                 this.errorMessage = data.message || 'An unexpected error occurred.';
                                 return;
+                            }
+
+                            if (data && data.status === 'active') {
+                                this.applianceMode = data.appliance_mode === true;
+                                this.showStandbyTerminal = false;
+                                this.uiBypass = false; // Instantly clear the bypass
+                                
+                                // Trigger the clean reload immediately if we are waking up
+                                if (this.lobbyState === 'standby') {
+                                    window.location.href = '/';
+                                    return; 
+                                }
+
+                                this.lobbyState = 'active';
+                                window.dispatchEvent(new Event('app-active'));
                             }
 
                             if (this.isJoining || this.isSwitchingPorts) return;
@@ -390,10 +409,19 @@
                         this.joinError = 'Please enter your Minecraft username.';
                         return;
                     }
+                    // --- NEW: Presentation Layer Bypass ---
                     if (!token) {
-                        this.joinError = 'Please enter a valid join token.';
+                        this.uiBypass = true;
+                        // If in appliance mode, automatically open the bottom terminal
+                        if (this.applianceMode) {
+                            this.isTerminalCollapsed = false;
+                        }
                         return;
                     }
+                    // if (!token) {
+                    //     this.joinError = 'Please enter a valid join token.';
+                    //     return;
+                    // }
 
                     this.isJoining = true;
                     try {
@@ -437,22 +465,80 @@
             });
         </script>
 
-        <div id="terminal-pane"
+        <!-- <div id="terminal-pane"
             x-cloak
-            x-show="!isTerminalCollapsed"
-            style="position: fixed; bottom: 0; left: 0; width: 100%; height: 350px; z-index: 41000; background: #000; padding: 10px; box-sizing: border-box; box-shadow: 0 -2px 10px rgba(0,0,0,0.5);">
-            
+            x-show="applianceMode && ((lobbyState === 'standby' && showStandbyTerminal && !uiBypass) || ((lobbyState === 'active' || uiBypass) && !isTerminalCollapsed))"
+            :style="(lobbyState === 'standby' && !uiBypass) 
+                ? 'position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 60000; background: #000; display: flex; flex-direction: column;' 
+                : 'position: fixed; bottom: 0; left: 0; width: 100%; height: 350px; z-index: 41000; background: #000; padding: 10px; box-sizing: border-box; box-shadow: 0 -2px 10px rgba(0,0,0,0.5);'"
+        > -->
+        <!-- <div id="terminal-pane"
+            x-cloak
+            x-show="applianceMode && ((lobbyState === 'standby' && showStandbyTerminal && !uiBypass) || ((lobbyState === 'active' || uiBypass) && !isTerminalCollapsed))"
+            style="display: flex; flex-direction: column; background: #000; box-sizing: border-box;"
+            :style="(lobbyState === 'standby' && !uiBypass) 
+                ? 'position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 60000;' 
+                : 'position: fixed; bottom: 0; left: 0; width: 100%; height: 350px; z-index: 41000; padding: 10px; box-shadow: 0 -2px 10px rgba(0,0,0,0.5);'"
+        >
             <div style="display: flex; justify-content: space-between; align-items: center; background: #222; padding: 5px 10px; margin-bottom: 5px; border-radius: 4px;">
-                <span style="color: #aaa; font-family: monospace; font-size: 14px;">Appliance Terminal</span>
-                <button @click="isTerminalCollapsed = true" style="background: none; border: none; color: white; cursor: pointer; font-size: 16px;">✖</button>
+                <span style="color: #aaa; font-family: monospace; font-size: 14px;" 
+                    x-text="(lobbyState === 'standby' && !uiBypass) ? 'Appliance Console (Run %mc_login or %create_world to begin)' : 'Appliance Terminal'">
+                </span>
+                
+                <div style="display: flex; gap: 10px;">
+                    <button x-show="lobbyState === 'standby' && !uiBypass" 
+                            @click="showStandbyTerminal = false" 
+                            style="background: #444; border: 1px solid #666; border-radius: 4px; color: white; padding: 4px 10px; cursor: pointer; font-size: 12px;">
+                        ◀ Back to Lobby
+                    </button>
+                    <button x-show="lobbyState === 'active' || uiBypass" 
+                            @click="isTerminalCollapsed = true" 
+                            style="background: none; border: none; color: white; cursor: pointer; font-size: 16px;">
+                        ✖
+                    </button>
+                </div>
             </div>
 
-            <!-- ttyd handles xterm.js natively. Just iframe it in. -->
-            <template x-if="!isTerminalCollapsed">
-                <iframe src="http://127.0.0.1:7681" style="width: 100%; height: calc(100% - 40px); border: none;"></iframe>
+            <!-- Ensure iframe only renders in appliance mode -->
+            <template x-if="applianceMode">
+                <iframe src="http://127.0.0.1:7681" style="flex: 1; border: none; width: 100%;"></iframe>
             </template>
-        </div>
+        </div> -->
 
+        <!-- VISIBILITY WRAPPER: Exclusively handles x-show -->
+        <div x-cloak x-show="applianceMode && ((lobbyState === 'standby' && showStandbyTerminal && !uiBypass) || ((lobbyState === 'active' || uiBypass) && !isTerminalCollapsed))">
+            
+            <!-- LAYOUT CHILD: Exclusively handles structural CSS and dynamic positioning -->
+            <div id="terminal-pane"
+                style="display: flex; flex-direction: column; background: #000; box-sizing: border-box;"
+                :style="(lobbyState === 'standby' && !uiBypass) 
+                    ? 'position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 60000;' 
+                    : 'position: fixed; bottom: 0; left: 0; width: 100%; height: 350px; z-index: 41000; padding: 10px; box-shadow: 0 -2px 10px rgba(0,0,0,0.5);'"
+            >
+                <div style="display: flex; justify-content: space-between; align-items: center; background: #222; padding: 5px 10px; margin-bottom: 5px; border-radius: 4px;">
+                    <span style="color: #aaa; font-family: monospace; font-size: 14px;" 
+                        x-text="(lobbyState === 'standby' && !uiBypass) ? 'Appliance Console (Run %mc_login or %create_world to begin)' : 'Appliance Terminal'">
+                    </span>
+                    
+                    <div style="display: flex; gap: 10px;">
+                        <button x-show="lobbyState === 'standby' && !uiBypass" 
+                                @click="showStandbyTerminal = false" 
+                                style="background: #444; border: 1px solid #666; border-radius: 4px; color: white; padding: 4px 10px; cursor: pointer; font-size: 12px;">
+                            ◀ Back to Lobby
+                        </button>
+                        <button x-show="lobbyState === 'active' || uiBypass" 
+                                @click="isTerminalCollapsed = true" 
+                                style="background: none; border: none; color: white; cursor: pointer; font-size: 16px;">
+                            ✖
+                        </button>
+                    </div>
+                </div>
+
+                <template x-if="applianceMode">
+                    <iframe src="http://127.0.0.1:7681" style="flex: 1; border: none; width: 100%;"></iframe>
+                </template>
+            </div>
+        </div>
         <div class="simple-keyboard"
             x-show="keyboardVisible"
             style="position: fixed; bottom: 0; left: 0; width: 100%; z-index: 41000; background: white;">
