@@ -156,7 +156,7 @@ console = Console(theme=mc_theme)
 
 def _get_user_bound_minecraft_name():
     if MC_CENTRAL_CONFIG_FILE.exists():
-        print(f"Found system-wide configuration at {MC_CENTRAL_CONFIG_FILE}.")
+        # print(f"Found system-wide configuration at {MC_CENTRAL_CONFIG_FILE}.")
         try:
             linux_user = os.getlogin()
         except OSError:
@@ -2643,11 +2643,32 @@ def rconn_shortcut_transformer(lines):
         new_lines.append(line)
     return new_lines
 
+def _disable_ipython_eof(ip):
+    """Intercepts Ctrl-D at the prompt_toolkit layer to prevent shutdown."""
+    # Ensure we are in a terminal environment that uses prompt_toolkit
+    if getattr(ip, 'pt_app', None) is None:
+        return
+
+    from prompt_toolkit.keys import Keys
+
+    # Register a high-priority custom binding for Ctrl-D
+    @ip.pt_app.key_bindings.add(Keys.ControlD)
+    def _ignore_eof(event):
+        print("[Appliance Mode] Terminal shutdown is disabled. Please use the web UI to manage the server.")
+        # Force prompt_toolkit to redraw the input line cleanly
+        event.app.invalidate()
+
 def load_ipython_extension(ip):
     """
     Called by IPython when the extension is loaded.
     This is where we register the magics and the shutdown hook.
     """
+
+
+    # Secure the terminal if running in Appliance Mode
+    if os.environ.get('MCSHELL_APPLIANCE_MODE') == '1':
+        _disable_ipython_eof(ip)
+
     sync_datapack_library()
 
     default_lobby_name = _get_user_bound_minecraft_name()
