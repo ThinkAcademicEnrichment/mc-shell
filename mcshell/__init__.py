@@ -554,6 +554,46 @@ class MCShell(Magics):
 
         return arg_matches
 
+
+    def _get_fsm_state(self):
+        """Dynamically computes the FSM state based on existing system realities."""
+        from mcshell.mcserver import app
+        
+        # Check if the UI is active via Flask config
+        try:
+            with self.flask_app.app_context(): # Assuming you store a ref to your app
+                is_joined = bool(app.config.get('MINECRAFT_PLAYER_NAME'))
+        except Exception:
+            is_joined = False
+
+        # Check if the local PaperMC process is running
+        is_hosting = bool(self.active_paper_server and self.active_paper_server.is_alive())
+
+        if is_joined and is_hosting: return 'HOSTING_JOINED'
+        if is_joined and not is_hosting: return 'REMOTE_JOINED'
+        if not is_joined and is_hosting: return 'HOSTING_STANDBY'
+        return 'STANDBY'
+
+    def _enforce_transition(self, action):
+        """Gatekeeper that blocks invalid state transitions."""
+        current_state = self._get_fsm_state()
+
+        if action == 'start_world':
+            if current_state != 'STANDBY':
+                raise RuntimeError(f"Cannot start a new server. Current state is {current_state}. Please run %pp_stop_world first.")
+                
+        elif action == 'join_world':
+            if current_state in ['REMOTE_JOINED', 'HOSTING_JOINED']:
+                raise RuntimeError("You are already joined to a world. Please run %pp_leave_world first.")
+                
+        elif action == 'leave_world':
+            if current_state in ['STANDBY', 'HOSTING_STANDBY']:
+                raise RuntimeError("You are not currently joined to any world.")
+                
+        elif action == 'stop_world':
+            if current_state in ['STANDBY', 'REMOTE_JOINED']:
+                raise RuntimeError("There is no local server running to stop.")
+
     @line_magic
     def pp_create_world(self, line):
         """Creates a new PaperMC server world environment. 
@@ -898,6 +938,13 @@ class MCShell(Magics):
         Use `%pp_start_world --help` for the full list of configurable options.
 
         """
+
+        try:
+            self._enforce_transition('start_world')
+        except RuntimeError as e:
+            print(f"[FSM Block] {e}")
+            return 
+
         parser = argparse.ArgumentParser(
             prog="%pp_start_world", 
             description="Starts a Paper server for a given world name."
@@ -1054,6 +1101,13 @@ class MCShell(Magics):
         
         Type %pp_join_world --help for available configuration flags.
         """
+
+     
+        try:
+            self._enforce_transition('join_world')
+        except RuntimeError as e:
+            print(f"[FSM Block] {e}")
+            return 
 
         parser = argparse.ArgumentParser(
             prog="%pp_join_world",
@@ -1304,7 +1358,14 @@ class MCShell(Magics):
     def pp_stop_world(self, line):
         """
         Stops the currently running Paper server and its associated mc-ed app server.
+
         """
+        try:
+            self._enforce_transition('stop_world')
+        except RuntimeError as e:
+            print(f"[FSM Block] {e}")
+            return 
+
         if not self.active_paper_server or not self.active_paper_server.is_alive():
             print("No active Paper server session is currently running.")
             return
