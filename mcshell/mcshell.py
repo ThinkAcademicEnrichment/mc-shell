@@ -33,6 +33,10 @@ class SpecialHelpOrder(SpecialHelpOrderBase):
 
         return decorator
 
+import warnings
+
+# Suppress invalid escape sequence warnings from third-party dependencies
+warnings.filterwarnings("ignore", category=SyntaxWarning, module="mctools.encoding") 
 
 from traitlets.config import Config
 # configure the ipython shell
@@ -48,7 +52,7 @@ def initialize_config():
         '%autoreload 2',
         # requires pickleshare
         "%store -r",
-        'pdb',
+        # 'pdb',
     ]
     c.Application.log_level = 0
     return c
