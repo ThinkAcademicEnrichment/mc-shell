@@ -1551,27 +1551,27 @@ class MCShell(Magics):
         Hosts must safely shut down their local server first using %pp_stop_world.
         """
         print("\n--- Leaving World ---")
-
+        # TODO: what happens here??
         # Intercept if we are the host
-        if getattr(self, 'active_paper_server', None) and self.active_paper_server.is_alive():
-            world_name = getattr(self.active_paper_server, 'world_name', 'Unknown World')
-            error_msg = (
-                f"Cannot leave world '{world_name}'. You are the current host. "
-                f"Please use '%pp_stop_world' in the console to safely shut down the server first."
-            )
-            print(f"[Error] {error_msg}")
-            
+        # if getattr(self, 'active_paper_server', None) and self.active_paper_server.is_alive():
+        #     world_name = getattr(self.active_paper_server, 'world_name', 'Unknown World')
+        #     error_msg = (
+        #         f"Cannot leave world '{world_name}'. You are the current host. "
+        #         f"Please use '%pp_stop_world' in the console to safely shut down the server first."
+        #     )
+        #     print(f"[Error] {error_msg}")
+        #     return
             # Assuming throw_app_server_error is imported/available in this scope
-            throw_app_server_error(error_msg)
+            # throw_app_server_error(error_msg)
 
-            # delete the world key if it exists
-            try:
-                del self.server_data["world_name"]
-            except KeyError:
-                pass
+            # # delete the world key if it exists
+            # try:
+            #     del self.server_data["world_name"]
+            # except KeyError:
+            #     pass
 
            
-            return  # Abort the leave sequence
+            # return  # Abort the leave sequence
 
         # Reset Flask application context to put UI into standby mode
         print("Returning application server to standby mode...")
