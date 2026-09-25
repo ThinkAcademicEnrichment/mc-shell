@@ -5,7 +5,7 @@ import time
 import uuid
 from threading import Thread, Event
 
-from flask import Flask, current_app,request, jsonify, send_from_directory
+from flask import Flask, cli, current_app,request, jsonify, send_from_directory
 from flask_socketio import SocketIO
 
 
@@ -26,6 +26,13 @@ app_server_thread = None
 
 # --- Server Setup ---
 app = Flask(__name__, static_folder=str(MC_APP_DIR)) # Serve files from Parcel's build output
+
+# Mute the "* Serving Flask app..." and debug mode startup banner
+cli.show_server_banner = lambda *args: None
+
+# Mute the ongoing Werkzeug HTTP request logs (e.g., GET /api/lobby_data 200 OK)
+logging.getLogger('werkzeug').setLevel(logging.ERROR)
+
 app.secret_key = str(uuid.uuid4())
 
 GUI_AUTH_TOKEN = uuid.uuid4().hex
