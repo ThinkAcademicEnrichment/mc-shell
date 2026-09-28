@@ -1,4 +1,6 @@
 
+from mcshell.mcclient import MCClient
+from mcshell import mcjuice
 from mcshell.mcactions import MCActions
 from IPython.utils.capture import capture_output
 import IPython
@@ -716,6 +718,309 @@ class MCShell(Magics):
             # Stopping only cares about the hosting axis
             if host_state == 'STANDBY':
                 raise RuntimeError("There is no local server running to stop.")
+
+    @line_magic
+    def mc_check_state(self,line):
+        ic(self.server_data)
+        ic(self._fetch_remote_world_name(self.server_data['host'],self.server_data['port']))
+        print(self._get_fsm_state())
+
+    @line_magic
+    def mc_check_state_new(self,line):
+        ic(self.connection)
+        ic(self.local_server)
+        ic(self._fetch_remote_world_name(self.server_data['host'],self.server_data['port']))
+        print(self._get_fsm_state_new())
+
+
+    @line_magic
+    def pp_create_world_new(self, line):
+        """Creates a new PaperMC server world environment. 
+        
+        Type %pp_create_world --help for available formatting choices.
+        """
+
+        parser = argparse.ArgumentParser(
+            prog="%pp_create_world",
+            description="Creates a new PaperMC world with optional version and datapacks configuration."
+        )
+        
+        # Positional required argument
+        parser.add_argument(
+            "world_name", 
+            help="The name of the world directory to create."
+        )
+        
+        # Optional arguments with string value assignments
+        parser.add_argument(
+            "--version", 
+            default=MC_VERSION, 
+            help=f"Minecraft version string override. Defaults to current system default: {MC_VERSION}"
+        )
+        parser.add_argument(
+            "--datapacks", 
+            default=None, 
+            help="Comma-separated list of datapack names to pull and inject automatically."
+        )
+
+        parser.add_argument(
+            "--plugins", 
+            default=None, 
+            help="Comma-separated list of plugin names to pull and inject automatically."
+        )
+
+
+        split_args = shlex.split(line)
+        
+        try:
+            parsed_args = parser.parse_args(split_args)
+        except SystemExit:
+            # Captures standard argparse help strings and structural syntax errors
+            # seamlessly without crashing the ongoing IPython kernel loop session.
+            return
+
+
+        # Extract values from normalized argument configuration
+        world_name = parsed_args.world_name
+        mc_version = parsed_args.version
+        
+        # Safely split into list structure if arguments were given
+        if parsed_args.datapacks is not None:
+            datapacks_to_install = parsed_args.datapacks.split(",")
+            for datapack_to_install in datapacks_to_install:
+                datapack_mcmeta_file = MC_DATAPACK_LIB_DIR / datapack_to_install / 'pack.mcmeta'
+                if not datapack_mcmeta_file.exists():
+                    print(f"Cannot install datapack {datapack_to_install}: {datapack_mcmeta_file} does not exist.")
+                    print(f"{parsed_args.world_name} world was not created.")
+                    return
+        else:
+            datapacks_to_install = []
+
+        if parsed_args.plugins is not None:
+            plugins_to_install = parsed_args.plugins.split(",")
+        else:
+            plugins_to_install = []
+
+        # Proceed with execution using the sanitized variables
+        print(f"Creating world '{world_name}' (Version: {mc_version})")
+        if datapacks_to_install:
+            print(f"Injecting datapacks: {datapacks_to_install}")
+
+        # Quick version check (assuming semantic versioning format)
+        v_parts = [int(x) for x in mc_version.split('.')]
+        # if v_parts[0] == 1 and (v_parts[1] < 20 or (v_parts[1] == 20 and v_parts[2] < 5)):
+        if v_parts[0] == 1 and (v_parts[1] < 18):
+            print(f"Error: mcshell requires Minecraft 1.18 or newer. Version '{mc_version}' is not supported.")
+            return
+
+        # Define paths
+        world_dir = MC_WORLDS_BASE_DIR.joinpath(world_name)
+        server_jars_dir = MC_WORLDS_BASE_DIR.joinpath('server-jars')
+
+        if world_dir.exists():
+            print(f"Error: A world named '{world_name}' already exists at '{world_dir}'")
+            return
+
+        print(f"Creating new world '{world_name}' for Minecraft {mc_version}...")
+
+        # Create the world directory structure
+        world_dir.mkdir(parents=True)
+        plugins_dir = (world_dir / "plugins")
+        plugins_dir.mkdir(exist_ok=True)
+        server_jars_dir.mkdir(exist_ok=True)
+
+        # Prompt for a password
+        try:
+            password = getpass.getpass(prompt=f"Create a password for world '{world_name}' (leave empty for random): ")
+            if not password:
+                # Generate a simple mnemonic password
+                adjectives = ["brave", "swift", "calm", "bright", "bold", "cool", "fast"]
+                nouns = ["creeper", "steve", "zombie", "pickaxe", "torch", "diamond", "sword"]
+                num = random.randint(10, 99)
+                password = f"{random.choice(adjectives)}-{random.choice(nouns)}-{num}"
+
+                # Print in a parseable format for test frameworks
+                print(f"MNEMONIC_PASSWORD: {password}")
+
+        except (EOFError, KeyboardInterrupt):
+            print("\nWorld creation cancelled.")
+            return
+
+        creds = {'password':password}
+        creds_path = world_dir / '.mc_creds.json'
+        with creds_path.open('w') as f:
+            json.dump(creds, f)
+
+        # Set file permissions to be readable/writable by owner only
+        creds_path.chmod(0o600)
+
+
+        #  Download the Paper server JAR if needed
+        downloader = PaperDownloader(server_jars_dir)
+        jar_path = downloader.get_jar_path(mc_version)
+        if not jar_path:
+            return # Stop if download failed
+
+        # Create the eula.txt file and automatically agree to it
+        try:
+            with open(world_dir / "eula.txt", "w") as f:
+                f.write("# By agreeing to the EULA you are indicating your agreement to our EULA (https://aka.ms/MinecraftEULA).\n")
+                f.write("eula=true\n")
+            print("Automatically agreed to Minecraft EULA.")
+        except IOError as e:
+            print(f"Error: Could not write eula.txt file. {e}")
+            return
+
+        print(f"Resolving compatible Geyser/Floodgate/ViaVersion plugins for Minecraft {mc_version}...")
+
+        # Map the exact filenames you want to the resolved URLs
+        plugin_urls= {
+            "Geyser.jar": _resolve_geysermc_plugin('geyser',mc_version),
+            "Floodgate.jar": _resolve_geysermc_plugin('floodgate',mc_version),
+            "ViaVersion.jar": _resolve_modrinth_plugin('viaversion', mc_version)
+        }
+
+        for plugin_to_install in plugins_to_install:
+            plugin_urls.update({f"{plugin_to_install}.jar":_resolve_modrinth_plugin(plugin_to_install,mc_version)})
+
+        # Always install versioned McJuice from bundled version
+        from packaging.version import Version
+        parsed_version = Version(mc_version)
+
+        # Select the correct artifact based on hard Java/API boundaries
+        if parsed_version >= Version("26.1"):
+            # Covers 26.1, 26.2, and future Java 25 versions
+            jar_name = "mcjuice-26.1.jar"
+            jre_version = '25'
+            jre_path = downloader.ensure_jre(jre_version)
+        elif parsed_version >= Version("1.20.5"):
+            # Covers 1.20.5 through 1.21.4 (Java 21 era)
+            jar_name = "mcjuice-1.21.jar"
+            jre_version = '21'
+            jre_path = downloader.ensure_jre(jre_version)
+        else:
+            # Covers 1.18 through 1.20.4 (Java 17 era)
+            jar_name = "mcjuice-1.18.jar"
+            jre_version = '17'
+            jre_path = downloader.ensure_jre(jre_version)
+
+        if jre_path is None:
+            print("No Java Runtime. Cannot create world")
+            return
+
+        print(f"Java Runtime available at {jre_path}")
+
+        mc_juice_jar_path = MC_DATA_DIR / jar_name
+
+        if not mc_juice_jar_path.exists():
+            print(f"The McJuice plugin ({jar_name}) does not exist!")
+            print(f"Are you doing development? Run build.py to generate all required classes and artifacts.")
+            print(f"The world {world_name} could not be created. :-(" )
+            return
+            
+        plugins_dir.joinpath(mc_juice_jar_path.name).symlink_to(mc_juice_jar_path)
+
+        # Install the plugins listed in the manifest (Downloads Geyser & Floodgate automatically)
+        downloader.install_plugins(plugin_urls, plugins_dir)
+
+        # Create the world_manifest.json file with required Geyser/Floodgate/ViaVersion plugins
+        manifest = {
+            "world_name": world_name,
+            "paper_version": mc_version,
+            "jre_version": jre_version,
+            "jre_path": str(jre_path),
+            "server_jar_path": str(jar_path.relative_to(world_dir.parent)), # Store a path relative to the world_dir
+            "world_data_path": str((world_dir / "world").relative_to(world_dir)),
+            "plugins": plugin_urls,
+            "server_properties": {
+                "gamemode": "creative",
+                "motd": f"MC-ED World: {world_name}",
+                "enable-rcon": "true",
+                "enable-query": "true",
+                "rcon.password": password,
+                "enable-command-block":'true',
+            },
+            "paper": {
+                "packet-limiter": {
+                    "all-packets": {
+                        "max-rate": 1000.0,
+                        "interval": 4.0
+                    },
+                    "overrides": {
+                        "ServerboundUseItemOnPacket": {
+                            "action": "DROP",
+                            "interval": 2.0,
+                            "max-packet-rate": 5000.0
+                        }
+                    }
+                },
+            }
+        }
+
+        try:
+            with open(world_dir / "world_manifest.json", "w") as f:
+                json.dump(manifest, f, indent=4)
+            print(f"Created world manifest at: {world_dir / 'world_manifest.json'}")
+        except IOError as e:
+            print(f"Error: Could not write world_manifest.json file. {e}")
+            return
+
+        print("Patching configurations dynamically...")
+       
+        # 1. Patch Floodgate
+        def patch_floodgate(data):
+            # make arbitrary Bedrock names look the same as Java names
+            data['username-prefix'] = ""
+            
+        downloader.extract_and_patch_jar_config(plugins_dir,"Floodgate.jar", "floodgate", patch_floodgate)
+
+        # --- Pre-seed Server Configs ---
+        # Paper will read these partial files on first boot and append all missing defaults automatically.
+        
+        # 3. Pre-seed Spigot.yml
+        spigot_file = world_dir / "spigot.yml"
+        # We define only the structure we want to override
+        spigot_data = {'settings': {'timeout-time': 240}}
+        
+        with open(spigot_file, 'w') as f:
+            yaml.dump(spigot_data, f)
+        print(f"Pre-seeded overrides into {spigot_file.name}")
+
+        # 4. Pre-seed Bukkit.yml
+        bukkit_file = world_dir / "bukkit.yml"
+        bukkit_data = {'ticks-per': {'autosave': 10000}}
+        
+        with open(bukkit_file, 'w') as f:
+            yaml.dump(bukkit_data, f)
+        print(f"Pre-seeded overrides into {bukkit_file.name}")
+
+        # --- Datapack Installation Logic ---
+        if datapacks_to_install:
+            # Datapacks must be in 'world_persistent/datapacks' for first-run generation
+            world_datapacks_dir = world_dir / "world_persistent" / "datapacks"
+            world_datapacks_dir.mkdir(parents=True, exist_ok=True)
+
+            for pack_name in datapacks_to_install:
+                pack_name = pack_name.strip()
+                source = MC_DATAPACK_LIB_DIR / pack_name
+
+                # Check for the name directly (folder) or with .zip extension
+                if not source.exists():
+                    source = MC_DATAPACK_LIB_DIR / f"{pack_name}.zip"
+
+                if source.exists():
+                    target = world_datapacks_dir / source.name
+                    if source.is_dir():
+                        shutil.copytree(source, target)
+                    else:
+                        shutil.copy2(source, target)
+                    print(f"Installed datapack: {pack_name}")
+                else:
+                    print(f"Warning: Datapack '{pack_name}' not found in library.")
+
+        print(f"\nWorld '{world_name}' created successfully.")
+        print(f"To start it, run: %pp_start_world {world_name}")
+
 
     @line_magic
     def pp_create_world(self, line):
