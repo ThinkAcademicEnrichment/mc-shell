@@ -981,12 +981,6 @@ class MCShell(Magics):
 
         """
 
-        try:
-            self._enforce_transition('start_world')
-        except RuntimeError as e:
-            print(f"[FSM Block] {e}")
-            return 
-
         parser = argparse.ArgumentParser(
             prog="%pp_start_world", 
             description="Starts a Paper server for a given world name."
@@ -1011,6 +1005,16 @@ class MCShell(Magics):
             # This catches '--help' or invalid arguments and stops the function
             # without killing the IPython kernel
             return
+
+        try:
+            if parsed_args.do_not_join:
+                self._enforce_transition('start_world_do_not_join')
+            else:
+                self._enforce_transition('start_world')
+        except RuntimeError as e:
+            print(f"[FSM Block] {e}")
+            return 
+
 
         world_name = parsed_args.world_name
         world_directory = MC_WORLDS_BASE_DIR / parsed_args.world_name
@@ -1189,17 +1193,6 @@ class MCShell(Magics):
             # Prevent argparse exceptions or help prints from aborting IPython
             return
 
-        # 0. Clean up previous Bedrock relays before binding new ones
-        if getattr(self, 'socat_udp_process', None) and self.socat_udp_process.poll() is None:
-            print("Stopping previous Bedrock UDP-to-UDP relay (socat)...")
-            self.socat_udp_process.terminate()
-            self.socat_udp_process.wait(timeout=3)
-
-        if getattr(self, 'socat_tcp_process', None) and self.socat_tcp_process.poll() is None:
-            print("Stopping previous Bedrock TCP-to-TCP relay (socat)...")
-            self.socat_tcp_process.terminate()
-            self.socat_tcp_process.wait(timeout=3)
-
 
         # 1. Profile Username Resolution
         if parsed_args.mc_name is not None:
@@ -1321,8 +1314,45 @@ class MCShell(Magics):
         self.server_data['app_port'] = local_app
 
         # save the world name in case we need to write to plugin files in its directory
-        if self.active_paper_server:
-            self.server_data['world_name'] = self.active_paper_server.world_name
+        # !!!!!! this only makes sense if we join the world we started!
+        # if self.active_paper_server:
+        #     self.server_data['world_name'] = self.active_paper_server.world_name
+
+        # Assume target_host and target_port are already parsed from your join token
+        
+        # 1. Query the target server's MOTD to extract the world name
+        connected_world = self._fetch_remote_world_name(self.server_data['host'],self.server_data['port'] )
+        ic(connected_world)
+        hosted_world = self.active_paper_server.world_name if getattr(self, 'active_paper_server', None) else None
+        ic(hosted_world)
+
+        # 2. Clean up previous Bedrock relays before binding new ones
+        if getattr(self, 'socat_udp_process', None) and self.socat_udp_process.poll() is None:
+            print("Stopping previous Bedrock UDP-to-UDP relay (socat)...")
+            self.socat_udp_process.terminate()
+            self.socat_udp_process.wait(timeout=3)
+
+        if getattr(self, 'socat_tcp_process', None) and self.socat_tcp_process.poll() is None:
+            print("Stopping previous Bedrock TCP-to-TCP relay (socat)...")
+            self.socat_tcp_process.terminate()
+            self.socat_tcp_process.wait(timeout=3)
+
+        # 3. Guard: Only start new socat relays if the target world is strictly remote
+        if hosted_world and connected_world == hosted_world:
+            print("Joining locally hosted server. Bypassing socat forwarders...")
+        else:
+            print("Joining remote server. Starting socat forwarders...")
+
+            # 0. Clean up previous Bedrock relays before binding new ones
+            if getattr(self, 'socat_udp_process', None) and self.socat_udp_process.poll() is None:
+                print("Stopping previous Bedrock UDP-to-UDP relay (socat)...")
+                self.socat_udp_process.terminate()
+                self.socat_udp_process.wait(timeout=3)
+
+            if getattr(self, 'socat_tcp_process', None) and self.socat_tcp_process.poll() is None:
+                print("Stopping previous Bedrock TCP-to-TCP relay (socat)...")
+                self.socat_tcp_process.terminate()
+                self.socat_tcp_process.wait(timeout=3)
 
 
         # 4. Start local Bedrock UDP->TCP translator (Only if NOT using local loopback SSH fallback)
