@@ -554,6 +554,30 @@ class MCShell(Magics):
 
         return arg_matches
 
+    def _fetch_remote_world_name(self, host, port):
+        from mctools import PINGClient
+        ic(host) 
+        ic(port)
+        try:
+            ping = PINGClient(host, port=port)
+            stats = ping.get_stats()
+            
+            motd = stats.get('description', '')
+            ic(motd)
+            if isinstance(motd, dict):
+                motd = motd.get('text', '')
+
+            # Regex to match and remove any ANSI escape sequence (e.g., \x1b[0m, \x1b[31m)
+            ansi_escape = re.compile(r'\x1b\[[0-9;]*m')
+            clean_motd = ansi_escape.sub('', motd)
+                
+            if "MC-ED World" in clean_motd:
+                return clean_motd.split(":")[-1].replace('\\', '').strip()
+                
+        except Exception as e:
+            print(f"Failed to query remote server MOTD: {e}")
+            
+        return "unknown_world"
 
     def _get_fsm_state(self):
         """Dynamically computes the FSM state based on existing system realities."""
@@ -832,6 +856,7 @@ class MCShell(Magics):
                 "gamemode": "creative",
                 "motd": f"MC-ED World: {world_name}",
                 "enable-rcon": "true",
+                "enable-query": "true",
                 "server-port": self.server_data.get('port', MC_SERVER_PORT),
                 "query.port": self.server_data.get('port', MC_SERVER_PORT),
                 "rcon.port": self.server_data.get('rcon_port', MC_RCON_PORT),
