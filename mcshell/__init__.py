@@ -383,7 +383,20 @@ def _stop_rathole_client(process, config_path):
     if config_path and os.path.exists(config_path):
         os.remove(config_path)
 
- 
+def _find_available_ports(base_port=25565):
+    """Scans for an open base port and calculates deterministic offsets."""
+    port = base_port
+    while True:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            if s.connect_ex(('127.0.0.1', port)) != 0:
+                # Port is free. Return the suite of required ports.
+                return {
+                    'mc_port': port,
+                    'rcon_port': port + 10,
+                    'mj_port': port + 2000,
+                    'app_port': 5001 # Kept static as it binds to the persistent UI thread
+                }
+        port += 1
 
 @magics_class
 class MCShell(Magics):
