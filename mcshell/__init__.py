@@ -31,6 +31,53 @@ mc_theme = Theme({
 })
 
 console = Console(theme=mc_theme)
+from dataclasses import dataclass
+from typing import Optional
+
+# =====================================================================
+# Conection metadata 
+# =====================================================================
+
+@dataclass
+class ConnectionContext:
+    """Tracks the active routing and identity of the connected player."""
+    player_name: str = None
+    target_host: Optional[str] = None
+    mc_port: int = None
+    rcon_port: int = None 
+    mj_port: int = None 
+    world_name: Optional[str] = None
+    
+    @property
+    def is_joined(self) -> bool:
+        return self.player_name is not None and self.target_host is not None
+
+    def clear(self):
+        """Purges connection data to prevent FSM ghost states."""
+        self.player_name = None
+        self.target_host = None
+        self.target_port = None
+        self.target_world_name = None
+
+@dataclass
+class LocalHostingContext:
+    """Tracks the metadata and resources of the local PaperMC background process."""
+    mc_port: int = MC_SERVER_PORT
+    rcon_port: int = MC_RCON_PORT
+    mj_port: int = MJ_PLUGIN_PORT 
+    world_name: Optional[str] = None
+
+    # You can store the actual process reference here instead of directly on self
+    process: Optional[object] = None 
+    
+    @property
+    def is_running(self) -> bool:
+        return self.process is not None and self.process.is_alive()
+
+    def clear(self):
+        self.world_name = None
+        self.process = None
+        # Do not clear ports here; they remain the default for the next start
 
 # =====================================================================
 # SSH Tunnel Helper Functions
@@ -358,7 +405,10 @@ class MCShell(Magics):
         self.mc_cmd_docs = _mc_cmd_docs
         self.rcon_commands = {}
 
-        self.server_data = MC_SERVER_DATA
+        # --- Refactored State Management ---
+        self.server_data = MC_SERVER_DATA.copy()  # Static configuration template
+        self.connection = ConnectionContext()     # Runtime UI/Player state
+        self.local_server = LocalHostingContext() # Runtime PaperMC state
 
         self.ip.set_hook('complete_command', self._complete_mc_run, re_key='%mc_run')
         self.ip.set_hook('complete_command', self._complete_slash_run, re_key='^/')
@@ -579,6 +629,23 @@ class MCShell(Magics):
             print(f"Failed to query remote server MOTD: {e}")
             
         return "unknown_world"
+
+    def _get_fsm_state_new(self):
+            # --- Axis 1: Hosting State ---
+            host_state = 'HOSTING' if self.local_server.is_running else 'STANDBY'
+
+            # --- Axis 2: Connection State ---
+            if not self.connection.is_joined:
+                conn_state = 'UNJOINED'
+            else:
+                # We know they are joined, just check if the target matches the local host
+                is_pointing_local = (
+                    self.local_server.is_running and 
+                    self.connection.target_world_name == self.local_server.world_name
+                )
+                conn_state = 'JOINED_LOCAL' if is_pointing_local else 'JOINED_REMOTE'
+
+            return (host_state, conn_state)
 
     def _get_fsm_state(self):
         """Returns a state vector: (Hosting State, Connection State)"""
@@ -1672,8 +1739,32 @@ class MCShell(Magics):
 
         self.active_paper_server.suspend_logs = not self.active_paper_server.suspend_logs
 
+    def _get_local_client(self):
+        host_state,conn_state = self._get_fsm_state_new()
+        if host_state == 'HOSTING':
+            return MCClient(
+                'localhost',
+                self.local_server.mc_port,
+                self.local_server.rcon_port,
+                self.local_server.mj_port,
+                self.creds.get('password',None))
+
     def _get_client(self):
-        return MCClient(**self.server_data)
+        host_state,conn_state = self._get_fsm_state_new()
+        if conn_state == 'JOINED_REMOTE':
+            return MCClient(
+                self.connection.target_host,
+                self.connection.mc_port,
+                self.connection.rcon_port,
+                self.connection.mj_port,
+                self.creds.get('password',None))
+        elif conn_state == 'JOINED_LOCAL':
+            return MCClient(
+                'localhost',
+                self.local_server.mc_port,
+                self.local_server.rcon_port,
+                self.local_server.mj_port,
+                self.creds.get('password',None))
 
     def _get_player(self, name):
         return MCPlayer(name, **self.server_data)
@@ -2066,10 +2157,14 @@ class MCShell(Magics):
     @needs_local_scope
     @line_magic
     def mc_client(self,line,local_ns):
+        _client = self._get_client()
+        if not _client:
+            print("You must join a world first.")
+            return
         _uuid = str(uuid.uuid1())[:4]
         _var_name = f"mcc_{_uuid}"
         print(f"requested client will be available as {_var_name} locally")
-        local_ns[_var_name] = self._get_client()
+        local_ns[_var_name] = _client
 
     @needs_local_scope
     @line_magic
