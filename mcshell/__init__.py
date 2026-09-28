@@ -1419,9 +1419,10 @@ class MCShell(Magics):
         self.server_data['vpn_ip'] = vpn_ip
         self.server_data['last_wifi_ip'] = last_wifi_ip
 
-
+        connected_world_name = self._fetch_remote_world_name(self.server_data['host'],self.server_data['port'])
+        ic(connected_world_name)
         print(f"Assigning application server context to Minecraft player: {minecraft_name}")
-        self.app_server_thread = start_app_server(self.server_data, minecraft_name, self.shell, power_repo)
+        self.app_server_thread = start_app_server(self.server_data, minecraft_name, self.shell, power_repo,connected_world_name=connected_world_name)
 
         self._print_connection_hub()
 
@@ -1446,7 +1447,7 @@ class MCShell(Magics):
         print(f"--- Stopping session for world: {self.active_paper_server.world_name} ---")
 
         print("Returning application server to standby mode...")
-        reset_app_server_context()
+
         self.mc_name = None
 
         print("Stopping Paper server (this may take a moment)...")
@@ -1478,9 +1479,9 @@ class MCShell(Magics):
 
         print("World stopped successfully.")
 
-        self.ip.run_line_magic('pp_leave_world','')
-
-
+        host_state, conn_state = self._get_fsm_state()
+        if conn_state == 'JOINED_LOCAL':
+            self.ip.run_line_magic('pp_leave_world','')
 
     @line_magic
     def pp_list_worlds(self, line):
