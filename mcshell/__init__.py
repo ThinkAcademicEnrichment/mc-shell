@@ -388,7 +388,7 @@ def _stop_rathole_client(process, config_path):
 @magics_class
 class MCShell(Magics):
 
-    def __init__(self,shell):
+    def __init__(self,shell,mc_name):
         super(MCShell,self).__init__(shell)
 
         self.ip = IPython.get_ipython()
@@ -400,7 +400,8 @@ class MCShell(Magics):
             from mcshell.mcscraper import make_docs
             _mc_cmd_docs = make_docs()
 
-        self.mc_name = None
+        # bind the instance to ONE name
+        self.mc_name = mc_name 
 
         self.mc_cmd_docs = _mc_cmd_docs
         self.rcon_commands = {}
@@ -2821,7 +2822,8 @@ def load_ipython_extension(ip):
 
     default_lobby_name = _get_user_bound_minecraft_name()
 
-    mcshell_instance = MCShell(ip)
+    mcshell_instance = MCShell(ip,default_lobby_name)
+
     ip.register_magics(mcshell_instance)
 
     # --- REGISTER THE '/' SHORTCUT TRANSFORMER ---
