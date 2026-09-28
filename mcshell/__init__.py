@@ -580,42 +580,59 @@ class MCShell(Magics):
         return "unknown_world"
 
     def _get_fsm_state(self):
-        """Dynamically computes the FSM state based on existing system realities."""
-        from mcshell.mcserver import app
+        """Returns a state vector: (Hosting State, Connection State)"""
+        from mcshell.mcserver import app 
         
-        # Check if the UI is active via Flask config
-        try:
-            with self.flask_app.app_context(): # Assuming you store a ref to your app
-                is_joined = bool(app.config.get('MINECRAFT_PLAYER_NAME'))
-        except Exception:
-            is_joined = False
-
-        # Check if the local PaperMC process is running
+        # --- Axis 1: Hosting State ---
         is_hosting = bool(self.active_paper_server and self.active_paper_server.is_alive())
+        host_state = 'HOSTING' if is_hosting else 'STANDBY'
+        hosted_world = self.active_paper_server.world_name if is_hosting else None
 
-        if is_joined and is_hosting: return 'HOSTING_JOINED'
-        if is_joined and not is_hosting: return 'REMOTE_JOINED'
-        if not is_joined and is_hosting: return 'HOSTING_STANDBY'
-        return 'STANDBY'
+        # --- Axis 2: Connection State ---
+        try:
+            is_joined = bool(app.config.get('MINECRAFT_PLAYER_NAME'))
+            connected_world = app.config.get('CONNECTED_WORLD_NAME')
+        except Exception as e:
+            print(f"Config read error: {e}")
+            is_joined = False
+            connected_world = None
+
+        if not is_joined:
+            conn_state = 'UNJOINED'
+        else:
+            # Determine if the joined world is the local one or a remote one
+            if is_hosting and connected_world == hosted_world:
+                conn_state = 'JOINED_LOCAL'
+            else:
+                conn_state = 'JOINED_REMOTE'
+
+        return (host_state, conn_state)
 
     def _enforce_transition(self, action):
         """Gatekeeper that blocks invalid state transitions."""
-        current_state = self._get_fsm_state()
+        host_state, conn_state = self._get_fsm_state()
 
         if action == 'start_world':
-            if current_state != 'STANDBY':
-                raise RuntimeError(f"Cannot start a new server. Current state is {current_state}. Please run %pp_stop_world first.")
-                
-        elif action == 'join_world':
-            if current_state in ['REMOTE_JOINED', 'HOSTING_JOINED']:
+            # Starting a world only cares about the hosting axis
+            if host_state == 'HOSTING':
+                raise RuntimeError("A local server is already running. Please run %pp_stop_world first.")
+            if conn_state != 'UNJOINED':
                 raise RuntimeError("You are already joined to a world. Please run %pp_leave_world first.")
-                
+        elif action == 'start_world_do_not_join':
+            # Starting a world only cares about the hosting axis
+            if host_state == 'HOSTING':
+                raise RuntimeError("A local server is already running. Please run %pp_stop_world first.")
+        elif action == 'join_world':
+            # Joining only cares about the connection axis
+            if conn_state != 'UNJOINED':
+                raise RuntimeError("You are already joined to a world. Please run %pp_leave_world first.")
         elif action == 'leave_world':
-            if current_state in ['STANDBY', 'HOSTING_STANDBY']:
+            # Leaving only cares about the connection axis
+            if conn_state == 'UNJOINED':
                 raise RuntimeError("You are not currently joined to any world.")
-                
         elif action == 'stop_world':
-            if current_state in ['STANDBY', 'REMOTE_JOINED']:
+            # Stopping only cares about the hosting axis
+            if host_state == 'STANDBY':
                 raise RuntimeError("There is no local server running to stop.")
 
     @line_magic
