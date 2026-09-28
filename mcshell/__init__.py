@@ -521,6 +521,7 @@ class MCShell(Magics):
             # Standard Direct Tokens
             print("\n[ DIRECT CONNECTION (Local LAN) ]")
             print(f"Local LAN Token :\n{' '*4}{data['tokens']['lan']}")
+        print(f"="*55)
 
 
     def _complete_world_command(self, ipyshell, event):
@@ -1623,27 +1624,6 @@ class MCShell(Magics):
         Hosts must safely shut down their local server first using %pp_stop_world.
         """
         print("\n--- Leaving World ---")
-        # TODO: what happens here??
-        # Intercept if we are the host
-        # if getattr(self, 'active_paper_server', None) and self.active_paper_server.is_alive():
-        #     world_name = getattr(self.active_paper_server, 'world_name', 'Unknown World')
-        #     error_msg = (
-        #         f"Cannot leave world '{world_name}'. You are the current host. "
-        #         f"Please use '%pp_stop_world' in the console to safely shut down the server first."
-        #     )
-        #     print(f"[Error] {error_msg}")
-        #     return
-            # Assuming throw_app_server_error is imported/available in this scope
-            # throw_app_server_error(error_msg)
-
-            # # delete the world key if it exists
-            # try:
-            #     del self.server_data["world_name"]
-            # except KeyError:
-            #     pass
-
-           
-            # return  # Abort the leave sequence
 
         # Reset Flask application context to put UI into standby mode
         print("Returning application server to standby mode...")
@@ -2761,11 +2741,13 @@ def load_ipython_extension(ip):
     )
 
     time.sleep(1)
-    print("\n" + "="*60)
-    print("🚀 MC-SHELL STANDBY LOBBY ACTIVATED")
-    print("="*60)
-    print(f"Lobby Access: http://localhost:{MC_APP_PORT}/lobby?auth={GUI_AUTH_TOKEN}")
-    print("="*60 + "\n")
+    ip.run_line_magic('mc_server_info','')
+
+    # print("\n" + "="*60)
+    # print("🚀 MC-SHELL STANDBY LOBBY ACTIVATED")
+    # print("="*60)
+    # print(f"Lobby Access: http://localhost:{MC_APP_PORT}/lobby?auth={GUI_AUTH_TOKEN}")
+    # print("="*60 + "\n")
 
     def shutdown_hook():
         print("\nIPython is shutting down. Stopping active mc-shell session...")
