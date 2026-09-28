@@ -1357,6 +1357,162 @@ class MCShell(Magics):
         print(f"To start it, run: %pp_start_world {world_name}")
 
     @line_magic
+    def pp_start_world_new(self, line):
+        """
+        Starts a Paper server for a given world name.
+        
+        This command handles world initialization, Tailscale network configuration,
+        and server process lifecycle. 
+        
+        Use `%pp_start_world --help` for the full list of configurable options.
+
+        """
+
+        parser = argparse.ArgumentParser(
+            prog="%pp_start_world", 
+            description="Starts a Paper server for a given world name."
+        )
+        parser.add_argument("world_name", help="The name of the world to start")
+
+        # we may need to remove this
+        # parser.add_argument("--ssh", action="store_true", help="Enable SSH tunnel")
+        
+        parser.add_argument("--authkey", help="Tailscale Auth Key")
+        parser.add_argument("--clear-authkey", action="store_true", help="Wipe cached auth key")
+        
+        parser.add_argument("--do-not-join", action="store_true", help="Prevent auto-joining the world") 
+
+        parser.add_argument("--relay", type=str, help="Hostname/IP of the rathole relay server (e.g., thunk.local)")
+
+        args = shlex.split(line)
+        
+        try:
+            parsed_args = parser.parse_args(args)
+        except SystemExit:
+            # This catches '--help' or invalid arguments and stops the function
+            # without killing the IPython kernel
+            return
+
+        # 1. State Gatekeeper
+        host_state, ui_state = self._get_fsm_state()
+        if host_state == 'HOSTING':
+            print(f"Error: Local server '{self.local_server.world_name}' is already running. Stop it first.")
+            return
+
+        if not parsed_args.do_not_join and ui_state != 'UNJOINED':
+            print("Error: You are already joined to a world. Leave it first, or use --do-not-join.")
+            return
+
+        world_name = parsed_args.world_name
+        world_directory = MC_WORLDS_BASE_DIR / world_name
+
+        if not world_directory.exists():
+            print(f"Error: World directory does not exist at '{world_directory}'.")
+            return
+
+        # 1. Load the existing credentials early to grab the cached Auth Key and settings
+        creds_path = world_directory / '.mc_creds.json'
+        with creds_path.open('r') as f:
+            self.creds = json.load(f)
+
+        authkey = parsed_args.authkey
+        # 2. Evaluate final authkey and routing mode from cache vs CLI
+        if parsed_args.clear_authkey:
+            if 'tailscale_authkey' in self.server_data:
+                del self.creds['tailscale_authkey']
+        if authkey:
+            self.creds['tailscale_authkey'] = authkey
+
+        with creds_path.open('w') as f:
+            json.dump(self.creds, f)
+        creds_path.chmod(0o600)  # Ensure it remains secure
+ 
+        print(f"--- Starting new session for world: {world_name} ---")
+
+        # 2. Ephemeral Port Allocation
+        ports = _find_available_ports()
+
+        extra_server_properties = {
+            'server-ip': '0.0.0.0',
+            'server-port': str(ports['mc_port']),
+            'query.port': str(ports['mc_port']),
+            'rcon.port': str(ports['rcon_port']),
+            'mcjuice-host': '0.0.0.0',
+            'mcjuice-port': str(ports['mj_port'])
+        }
+
+        # 3. Process Execution
+        process = PaperServerManager(world_name, world_directory)
+        process.update_jar_path()
+        process.start(**extra_server_properties)
+
+        if not process.is_alive():
+            print("Could not start Paper server. Aborting.")
+            return
+
+        # 4. Update the Local Hosting Context 
+        self.local_server.world_name = world_name
+        self.local_server.mc_port = ports['mc_port']
+        self.local_server.rcon_port = ports['rcon_port']
+        self.local_server.mj_port = ports['mj_port']
+        self.local_server.process = process
+
+        yaml = YAML()
+        yaml.preserve_quotes = True
+
+        # geyser generates its config.yml after first startup :-(
+        geyser_config = world_directory / "plugins" / "Geyser-Spigot" / "config.yml"
+
+        if geyser_config.is_file():
+            geyser_data = yaml.load(geyser_config)
+
+            # force fragmenting of the nasty RakNet handshake packet
+            geyser_data['advanced']['bedrock']['mtu'] = "1200"
+            
+            # ruamel.yaml can write directly to a pathlib.Path object
+            yaml.dump(geyser_data, geyser_config)
+            print(f"Updated bedrock mtu in {geyser_config.name}")
+
+        # McJuice needs dynamic port setting
+        mcjuice_config = world_directory / "plugins" / "McJuice" / "config.yml"
+
+        if mcjuice_config.is_file():
+            mcjuice_data = yaml.load(mcjuice_config)
+
+            # force fragmenting of the nasty RakNet handshake packet
+            mcjuice_data['port'] = self.local_server.mj_port
+            
+            # ruamel.yaml can write directly to a pathlib.Path object
+            yaml.dump(mcjuice_data, mcjuice_config)
+            print(f"Updated port in {mcjuice_config.name}")
+
+        # ---------------------------------------------
+        # get a client on the locally hosted server
+        mcjuice_client = self._get_local_client().mj_client()
+        #check the ip address
+        last_wifi_ip = mcjuice_client.admin.getIpAddr()
+
+        # networking data
+        last_wifi_ip = local_ip = _get_local_ip(last_wifi_ip)  # Native Python socket check
+        vpn_ip = _get_vpn_ip(last_wifi_ip)
+
+        self.server_data['local_ip'] = local_ip
+        self.server_data['vpn_ip'] = vpn_ip
+        self.server_data['last_wifi_ip'] = last_wifi_ip
+        # ---------------------------------------------
+
+
+        # 5. The Simplified Join Handoff
+        if not parsed_args.do_not_join:
+            self.local_server.process.suspend_logs = True
+            # We now pass a simple flag instead of a massive string of ports
+            self.ip.run_line_magic('pp_join_world', '--local')
+            self.local_server.process.suspend_logs = False 
+        else:
+            self.ip.run_line_magic('mc_server_info', '')
+
+
+    @line_magic
     def pp_start_world(self, line):
         """
         Starts a Paper server for a given world name.
