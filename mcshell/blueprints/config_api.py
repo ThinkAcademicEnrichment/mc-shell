@@ -28,7 +28,7 @@ def get_taxonomy():
 def get_config():
     try:
         return jsonify({
-            'version': current_app.config.get('MCSHELL_SERVER_DATA').get('mc_version')
+            'version': current_app.config.get('MINECRAFT_VERSION')
         })
     except Exception as e:
         # we are in an app state with no config data yet
@@ -41,7 +41,7 @@ def get_config():
 def serve_dynamic_js(script_version, script_name):
     # 1. (Optional) Verify the requested version matches the active server version
     try:
-        active_version = current_app.config.get('MCSHELL_SERVER_DATA').get('mc_version')
+        active_version = current_app.config.get('MINECRAFT_VERSION')
     except Exception as e:
         active_version = None
     
@@ -55,7 +55,6 @@ def serve_dynamic_js(script_version, script_name):
     # 2. Call your Python logic to generate the literal JS string
     try:
         # NOTE: Replace this with your actual generator module/function
-        # js_content = your_generator_module.create_js(script_version, script_name)
         prismarine_blocks = fetch_minecraft_data(script_version,'blocks')
         prismarine_items = fetch_minecraft_data(script_version,'items')
         prismarine_entities = fetch_minecraft_data(script_version,'entities')
@@ -143,8 +142,7 @@ def serve_json_toolbox(script_version, toolbox_name):
     # 1. Verify the requested version matches the active server version
     try:
         # Safely access nested config data
-        server_data = current_app.config.get('MCSHELL_SERVER_DATA') or {}
-        active_version = server_data.get('mc_version')
+        active_version = current_app.config.get('MINECRAFT_VERSION')
     except Exception as e:
         active_version = None
     
