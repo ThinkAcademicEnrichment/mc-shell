@@ -1898,31 +1898,6 @@ class MCShell(Magics):
             self.connection.password = None
 
     @line_magic
-    def mc_login_old(self,line=''):
-        '''
-        %mc_login
-        '''
-
-        self.server_data.update({
-            'host': Prompt.ask('Server Address:', default=self.server_data['host']),
-            'rcon_port': int(Prompt.ask('Server Port:', default=str(self.server_data['rcon_port']))),
-            'mj_port': int(Prompt.ask('Plugin Port:', default=str(self.server_data['mj_port']))),
-            'password': Prompt.ask('Server Password:', password=True)
-        })
-
-        try:
-            self._get_client().help()
-            print("[green bold]Login successful! Admin privileges unlocked.[/]")
-
-            # --- NEW: Trigger a UI refresh to update the Admin Badge ---
-            from mcshell.mcserver import socketio
-            socketio.emit('state_changed', {'status': 'active'})
-
-        except Exception as e:
-            print(e)
-            print("[red bold]login failed[/]")
-
-    @line_magic
     def mc_server_info(self, line):
         self._print_connection_hub()
 
