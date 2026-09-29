@@ -1,4 +1,6 @@
 
+from mcshell.mcclient import MCClient
+from mcshell import mcjuice
 from mcshell.mcactions import MCActions
 from IPython.utils.capture import capture_output
 import IPython
@@ -7,7 +9,7 @@ from IPython.core.magic import Magics, magics_class, line_magic,needs_local_scop
 from mcshell.constants import *
 from mcshell.mcrepo import PowerRepository,SQLiteRepository
 from mcshell.mcclient import *
-from mcshell.mcserver import throw_app_server_error, start_app_server, reset_app_server_context, restart_app_server, GUI_AUTH_TOKEN
+from mcshell.mcserver import start_app_server, reset_app_server_context, restart_app_server, GUI_AUTH_TOKEN
 from mcshell.mcserver import RUNNING_POWERS
 from mcshell.ppmanager import *
 from mcshell.ppdownloader import *
@@ -31,6 +33,82 @@ mc_theme = Theme({
 })
 
 console = Console(theme=mc_theme)
+from dataclasses import dataclass
+from typing import Optional
+
+# =====================================================================
+# Conection metadata 
+# =====================================================================
+
+@dataclass
+class ConnectionContext:
+    """Tracks the active routing and identity of the connected player."""
+    player_name: str = None
+    target_host: Optional[str] = None
+    mc_port: int = None
+    rcon_port: int = None 
+    mj_port: int = None 
+    world_name: Optional[str] = None
+    mc_version: Optional[str] = None
+    rh_host: Optional[str] = None
+
+    # --- New Auth Tracking ---
+    password: Optional[str] = None
+    is_admin: bool = False
+
+    # --- Local Proxy Tracking ---
+    local_proxy_mc_port: Optional[int] = None
+    local_proxy_bedrock_port: Optional[int] = None
+    
+    @property
+    def is_joined(self) -> bool:
+        # TODO: this awkward; player_names never mutate
+        return self.player_name is not None and self.target_host is not None
+
+    def clear(self):
+        """Purges connection data to prevent FSM ghost states."""
+        self.player_name: str = None
+        self.target_host: Optional[str] = None
+        self.mc_port: int = None
+        self.rcon_port: int = None 
+        self.mj_port: int = None 
+        self.world_name: Optional[str] = None
+        self.mc_version: Optional[str] = None
+        self.rh_host: Optional[str] = None
+        self.password: Optional[str] = None
+        self.is_admin: bool = False
+        self.local_proxy_mc_port: Optional[int] = None
+        self.local_proxy_bedrock_port: Optional[int] = None
+         
+@dataclass
+class LocalHostingContext:
+    """Tracks the metadata and resources of the local PaperMC background process."""
+    mc_port: int = MC_SERVER_PORT
+    rcon_port: int = MC_RCON_PORT
+    mj_port: int = MJ_PLUGIN_PORT 
+    mc_version: Optional[str] = MC_VERSION
+    world_name: Optional[str] = None
+    rh_host: Optional[str] = None
+
+    local_ip: Optional[str] = None 
+    vpn_ip: Optional[str] = None
+    last_wifi_ip: Optional[str] = None
+
+    # You can store the actual process reference here instead of directly on self
+    process: Optional[object] = None 
+    
+    @property
+    def is_running(self) -> bool:
+        return self.process is not None and self.process.is_alive()
+
+    def clear(self):
+        self.world_name = None
+        self.process = None
+        # Do not clear ports here; they remain the default for the next start
+        local_ip = None 
+        vpn_ip = None 
+        last_wifi_ip = None
+
 
 # =====================================================================
 # SSH Tunnel Helper Functions
@@ -153,6 +231,36 @@ console = Console(theme=mc_theme)
 #         time.sleep(0.1)
 #     return None
 
+
+def _get_user_bound_minecraft_name():
+    if MC_CENTRAL_CONFIG_FILE.exists():
+        # print(f"Found system-wide configuration at {MC_CENTRAL_CONFIG_FILE}.")
+        try:
+            linux_user = os.getlogin()
+        except OSError:
+            linux_user = os.environ.get('USER')
+
+        if not linux_user:
+            print("Fatal Error: Could not determine Linux username.")
+            return None
+
+        try:
+            with open(MC_CENTRAL_CONFIG_FILE, 'r') as f:
+                user_map = json.load(f)
+
+            name_from_map = user_map.get(linux_user)
+            if not name_from_map:
+                print(f"Error: Your Linux user '{linux_user}' is not registered. Please contact your administrator.")
+                return None
+
+            print(f"Authenticated as Minecraft user: {name_from_map}")
+            return name_from_map
+
+        except (IOError, json.JSONDecodeError) as e:
+            print(f"Fatal Error: Could not read or parse the system configuration file: {e}")
+            return None
+    else:
+        return None
 
 # =====================================================================
 # Networking & Plugin Helper Functions
@@ -306,12 +414,50 @@ def _stop_rathole_client(process, config_path):
     if config_path and os.path.exists(config_path):
         os.remove(config_path)
 
- 
+def _find_available_ports(base_port=25565):
+    """Scans for an open base port and calculates deterministic offsets."""
+    port = base_port
+    while True:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            if s.connect_ex(('127.0.0.1', port)) != 0:
+                # Port is free. Return the suite of required ports.
+                return {
+                    'mc_port': port,
+                    'rcon_port': port + 10,
+                    'mj_port': port + 2000,
+                    'app_port': 5001 # Kept static as it binds to the persistent UI thread
+                }
+        port += 1
+
+def _find_available_forwarder_ports(start_tcp=25565, start_udp=19132):
+    """Scans for open local ports to bind the socat forwarders."""
+    
+    def is_tcp_free(p):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            return s.connect_ex(('127.0.0.1', p)) != 0
+            
+    def is_udp_free(p):
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            try:
+                s.bind(('127.0.0.1', p))
+                return True
+            except OSError:
+                return False
+
+    tcp_port = start_tcp
+    while not is_tcp_free(tcp_port):
+        tcp_port += 1
+        
+    udp_port = start_udp
+    while not is_udp_free(udp_port):
+        udp_port += 1
+        
+    return tcp_port, udp_port
 
 @magics_class
 class MCShell(Magics):
 
-    def __init__(self,shell):
+    def __init__(self,shell,mc_name):
         super(MCShell,self).__init__(shell)
 
         self.ip = IPython.get_ipython()
@@ -323,12 +469,16 @@ class MCShell(Magics):
             from mcshell.mcscraper import make_docs
             _mc_cmd_docs = make_docs()
 
-        self.mc_name = None
+        # bind the instance to ONE name
+        self.mc_name = mc_name 
 
         self.mc_cmd_docs = _mc_cmd_docs
         self.rcon_commands = {}
 
-        self.server_data = MC_SERVER_DATA
+        # --- Refactored State Management ---
+        self.server_data = MC_SERVER_DATA.copy()  # Static configuration template
+        self.connection = ConnectionContext()     # Runtime UI/Player state
+        self.local_server = LocalHostingContext() # Runtime PaperMC state
 
         self.ip.set_hook('complete_command', self._complete_mc_run, re_key='%mc_run')
         self.ip.set_hook('complete_command', self._complete_slash_run, re_key='^/')
@@ -338,11 +488,11 @@ class MCShell(Magics):
         self.ip.set_hook('complete_command', self._complete_world_command, re_key='%pp_start_world')
         self.ip.set_hook('complete_command', self._complete_world_command, re_key='%pp_delete_world')
 
-        self.app_server_thread = None
-
+        # move to new conn objects
+        # TODO: this needs to stay for now; lots of checks use it
         self.active_paper_server: Optional[PaperServerManager ,None ] = None
 
-        # Track if this session automatically joined Tailscale so we can clean it up
+        self.app_server_thread = None
         self.managed_tailscale = False
         self.current_ssh_token = None
 
@@ -434,64 +584,103 @@ class MCShell(Magics):
         return data
 
     def _print_connection_hub(self):
-        """Helper method to print the share tokens cleanly."""
-        data = self._get_connection_hub_data()
-        app_port = self.server_data.get('app_port')
+        """Helper method to cleanly print the connection hub using FSM states."""
+        from mcshell.mcserver import GUI_AUTH_TOKEN
+        
+        host_state, ui_state = self._get_fsm_state()
+        ic(host_state)
+        ic(ui_state)
+        app_port = self.server_data.get('app_port', 5001)
 
         print(f"\n" + "="*55)
-        # App Server (mc-ed) Status (Locked to localhost for ChromeOS constraints)
-        if getattr(self, 'app_server_thread', None) and self.app_server_thread.is_alive():
-            if getattr(self, 'mc_name', None):
-                print(f"🟢 MCED App Server  : RUNNING (Active Player: {self.mc_name})")
-                print(f"   Editor URL       : http://localhost:{app_port}/?auth={GUI_AUTH_TOKEN}")
-                print(f"   Control URL      : http://localhost:{app_port}/control?auth={GUI_AUTH_TOKEN}")
-
-                # Bedrock Instructions
-                print("\n" + "="*60)
-                print("🎮 BEDROCK PLAYERS:")
-                print("="*60)
-                if data.get('rh_host'):
-                    # Use Case 3: Dedicated rathole relay handling Bedrock UDP
-                    print(f"Please open Minecraft and connect to the public relay:\n{' '*4}{data['rh_host']}:19132")
-                else:
-                    # Use Cases 1 & 2: Local LAN or Tailscale socat UDP forwarder
-                    print(f"Please open Minecraft and connect to this computer's IP:\n{' '*4}{data['local_ip']}:19132")
-
-                # Java Instructions 
-                print("\n" + "="*60)
-                print("💻 JAVA PLAYERS:")
-                # print("🎮 JAVA PLAYERS:")
-                print("="*60)
-                print(f"Please open Minecraft and connect to this computer's IP:\n{' '*4}{data['local_ip']}:{self.server_data['port']}")
-
-            else:
-                print(f"🟡 MCED App Server  : STANDBY")
-                print(f"   Lobby URL        : http://localhost:{app_port}/lobby?auth={GUI_AUTH_TOKEN}")
-        else:
+        
+        # --- 1. UI & Editor Routing (Driven exclusively by ui_state) ---
+        if ui_state == 'STOPPED':
             print("🔴 Editor App Server  : STOPPED")
+            
+        elif ui_state == 'UNJOINED':
+            print(f"🟡 MCED App Server  : STANDBY")
+            print(f"   Lobby URL        : http://localhost:{app_port}/lobby?auth={GUI_AUTH_TOKEN}")
+            
+        elif ui_state in ['JOINED_LOCAL', 'JOINED_REMOTE']:
+            mc_name = self.connection.player_name
+            target_world = self.connection.world_name
+            
+            print(f"🟢 MCED App Server  : RUNNING (Active Player: {mc_name})")
+            print(f"   Connected World  : {target_world}")
+            print(f"   Editor URL       : http://localhost:{app_port}/?auth={GUI_AUTH_TOKEN}")
+            print(f"   Control URL      : http://localhost:{app_port}/control?auth={GUI_AUTH_TOKEN}")
 
-        if getattr(self, 'active_paper_server', None) and self.active_paper_server.is_alive():
+        if ui_state == 'JOINED_REMOTE':
+            print("\n" + "="*60)
+            print("🎮 BEDROCK PLAYERS:")
+            print("="*60)
+            # if rh_host:
+            #     print(f"Please open Minecraft and connect to the public relay:\n{' '*4}{rh_host}:19132")
+            # else:
+            print(f"Please open Minecraft and connect to this computer's IP:\n{' '*4}{self.local_server.local_ip}:{self.connection.local_proxy_bedrock_port}")
+
+            print("\n" + "="*60)
+            print("💻 JAVA PLAYERS:")
+            print("="*60)
+            print(f"Please open Minecraft and connect to this computer's IP:\n{' '*4}{self.local_server.local_ip}:{self.connection.local_proxy_mc_port}")
+        elif ui_state == 'JOINED_LOCAL':
+            print("\n" + "="*60)
+            print("🎮 BEDROCK PLAYERS:")
+            print("="*60)
+            # if rh_host:
+            #     print(f"Please open Minecraft and connect to the public relay:\n{' '*4}{rh_host}:19132")
+            # else:
+            print(f"Please open Minecraft and connect to this computer's IP:\n{' '*4}{self.local_server.local_ip}:19132")
+
+            print("\n" + "="*60)
+            print("💻 JAVA PLAYERS:")
+            print("="*60)
+            print(f"Please open Minecraft and connect to this computer's IP:\n{' '*4}{self.local_server.local_ip}:{self.local_server.mc_port}")
+            
             print(f"\n" + "="*60)
+
+        # --- 2. Multiplayer Networking (Driven exclusively by host_state) ---
+        if host_state == 'HOSTING':
+            # Network routing variables are still read safely from the hardware state
+            authkey = self.creds.get('tailscale_authkey',None)
+            rh_host = self.local_server.rh_host
+            local_ip = self.local_server.local_ip
+            vpn_ip = self.local_server.vpn_ip
+            
+            # The exact ephemeral port currently occupied by Java
+            mc_port = self.local_server.mc_port
+            
+            def _make_token(ip):
+                """Inline helper to generate tokens dynamically based on active ports."""
+                base = f"{ip},{rh_host}" if rh_host else str(ip)
+                # If using standard ports, keep the token aesthetically clean
+                if mc_port == 25565 and self.local_server.rcon_port == 25575 and self.local_server.mj_port == 4721:
+                    return base
+                # Otherwise, append the custom ephemeral port routing block
+                return f"{base}@{mc_port}-{self.local_server.rcon_port}-{self.local_server.mj_port}-{self.local_server.mc_version}"
+
             print("🌍 CONNECTION HUB: Share these tokens with your friends!")
             print("="*60)
 
             # VPN (Tailscale) Tokens
-            if data.get('authkey'):
-                if 'classroom_vpn' in data['tokens']:
+            if authkey:
+                if vpn_ip:
                     print("\n[ VPN CONNECTION (Automated Tailscale Mesh) ]")
-                    print(f"Token :\n{' '*4}{data['tokens']['classroom_vpn']}")
+                    print(f"Token :\n{' '*4}{_make_token(vpn_ip)}^{authkey}")
                 else:
                     print("\n[ VPN CONNECTION ]")
                     print("⚠️  ERROR: Tailscale failed to acquire a VPN IP.")
                     print("⚠️  Cannot generate an automated remote token. Check your Tailscale installation.")
-            elif 'tailscale' in data['tokens']:
+            elif vpn_ip:
                 print("\n[ TAILSCALE CONNECTION (Manual Mesh) ]")
-                print(f"Token :\n{' '*4}{data['tokens']['tailscale']}")
+                print(f"Token :\n{' '*4}{_make_token(vpn_ip)}")
 
             # Standard Direct Tokens
             print("\n[ DIRECT CONNECTION (Local LAN) ]")
-            print(f"Local LAN Token :\n{' '*4}{data['tokens']['lan']}")
-
+            print(f"Local LAN Token :\n{' '*4}{_make_token(local_ip)}")
+            
+        print(f"="*55)
 
     def _complete_world_command(self, ipyshell, event):
         ipyshell.user_ns.update(dict(rcon_event=event))
@@ -523,6 +712,132 @@ class MCShell(Magics):
             ipyshell.user_ns.update({'world_matches':arg_matches})
 
         return arg_matches
+
+    def _fetch_remote_world_name(self, host, port):
+        from mctools import PINGClient
+        ic(host) 
+        ic(port)
+        try:
+            ping = PINGClient(host, port=port)
+            stats = ping.get_stats()
+            
+            motd = stats.get('description', '')
+            ic(motd)
+            if isinstance(motd, dict):
+                motd = motd.get('text', '')
+
+            # Regex to match and remove any ANSI escape sequence (e.g., \x1b[0m, \x1b[31m)
+            ansi_escape = re.compile(r'\x1b\[[0-9;]*m')
+            clean_motd = ansi_escape.sub('', motd)
+                
+            if "MC-ED World" in clean_motd:
+                return clean_motd.split(":")[-1].replace('\\', '').strip()
+                
+        except Exception as e:
+            print(f"Failed to query remote server MOTD: {e}")
+            
+        return "unknown_world"
+
+    def _get_fsm_state(self):
+            # --- Axis 1: Hosting State ---
+            host_state = 'HOSTING' if self.local_server.is_running else 'STANDBY'
+
+            # --- Axis 2: Connection State ---
+            if not self.connection.is_joined:
+                conn_state = 'UNJOINED'
+            else:
+                # We know they are joined, just check if the target matches the local host
+                is_pointing_local = (
+                    self.local_server.is_running and 
+                    self.connection.world_name == self.local_server.world_name
+                )
+                conn_state = 'JOINED_LOCAL' if is_pointing_local else 'JOINED_REMOTE'
+
+            return (host_state, conn_state)
+
+    def _enforce_transition(self, action):
+        """Gatekeeper that blocks invalid state transitions."""
+        host_state, conn_state = self._get_fsm_state()
+
+        if action == 'start_world':
+            # Starting a world only cares about the hosting axis
+            if host_state == 'HOSTING':
+                raise RuntimeError("A local server is already running. Please run %pp_stop_world first.")
+            if conn_state != 'UNJOINED':
+                raise RuntimeError("You are already joined to a world. Please run %pp_leave_world first.")
+        elif action == 'start_world_do_not_join':
+            # Starting a world only cares about the hosting axis
+            if host_state == 'HOSTING':
+                raise RuntimeError("A local server is already running. Please run %pp_stop_world first.")
+        elif action == 'join_world':
+            # Joining only cares about the connection axis
+            if conn_state != 'UNJOINED':
+                raise RuntimeError("You are already joined to a world. Please run %pp_leave_world first.")
+        elif action == 'leave_world':
+            # Leaving only cares about the connection axis
+            if conn_state == 'UNJOINED':
+                raise RuntimeError("You are not currently joined to any world.")
+        elif action == 'stop_world':
+            # Stopping only cares about the hosting axis
+            if host_state == 'STANDBY':
+                raise RuntimeError("There is no local server running to stop.")
+
+    @line_magic
+    def mc_check_state(self, line):
+        """Displays a formatted dashboard of the current application state."""
+        from rich.console import Console
+        from rich.table import Table
+        from rich.panel import Panel
+        from rich import print as rprint
+
+        console = Console()
+        host_state, ui_state = self._get_fsm_state()
+
+        # 1. FSM State Vector
+        state_color = "green" if host_state == "HOSTING" or "JOINED" in ui_state else "yellow"
+        rprint(Panel(
+            f"[bold cyan]Host State:[/bold cyan] {host_state} | [bold cyan]UI State:[/bold cyan] {ui_state}", 
+            title="[bold white]FSM State Vector[/bold white]",
+            border_style=state_color,
+            expand=False
+        ))
+
+        # 2. Local Hosting Context
+        host_table = Table(show_header=True, header_style="bold magenta", title="\n[Local Hosting Context]")
+        host_table.add_column("Property", style="cyan", width=20)
+        host_table.add_column("Value", style="white")
+
+        is_running = self.local_server.is_running
+        host_table.add_row("Status", "[bold green]RUNNING[/bold green]" if is_running else "[bold yellow]STOPPED[/bold yellow]")
+        host_table.add_row("World Name", str(self.local_server.world_name))
+        host_table.add_row("MC Version", str(getattr(self.local_server, 'mc_version', None)))
+        host_table.add_row("MC Port", str(self.local_server.mc_port))
+        host_table.add_row("RCON Port", str(self.local_server.rcon_port))
+        host_table.add_row("McJuice Port", str(self.local_server.mj_port))
+
+        # 3. Connection Context
+        conn_table = Table(show_header=True, header_style="bold magenta", title="\n[Connection Context]")
+        conn_table.add_column("Property", style="cyan", width=20)
+        conn_table.add_column("Value", style="white")
+
+        is_joined = getattr(self.connection, 'is_joined', self.connection.player_name is not None)
+        conn_table.add_row("Status", "[bold green]JOINED[/bold green]" if is_joined else "[bold yellow]UNJOINED[/bold yellow]")
+
+        # New Admin Badge check
+        admin_status = "[bold green]YES[/bold green]" if getattr(self.connection, 'is_admin', False) else "[bold red]NO[/bold red]"
+        conn_table.add_row("Admin Status", admin_status)
+
+        conn_table.add_row("Player Name", str(self.connection.player_name))
+        conn_table.add_row("Target Host", str(self.connection.target_host))
+        conn_table.add_row("Target World", str(getattr(self.connection, 'world_name', None)))
+        conn_table.add_row("MC Version", str(getattr(self.connection, 'mc_version', None)))
+        conn_table.add_row("MC Port", str(self.connection.mc_port))
+        conn_table.add_row("RCON Port", str(self.connection.rcon_port))
+        conn_table.add_row("McJuice Port", str(self.connection.mj_port))
+
+        console.print(host_table)
+        console.print(conn_table)
+        print() # Padding for terminal prompt
 
     @line_magic
     def pp_create_world(self, line):
@@ -570,6 +885,7 @@ class MCShell(Magics):
             # seamlessly without crashing the ongoing IPython kernel loop session.
             return
 
+
         # Extract values from normalized argument configuration
         world_name = parsed_args.world_name
         mc_version = parsed_args.version
@@ -603,13 +919,9 @@ class MCShell(Magics):
             print(f"Error: mcshell requires Minecraft 1.18 or newer. Version '{mc_version}' is not supported.")
             return
 
-        # NEW: handle versions
-        self.server_data['mc_version'] = mc_version 
-
         # Define paths
         world_dir = MC_WORLDS_BASE_DIR.joinpath(world_name)
         server_jars_dir = MC_WORLDS_BASE_DIR.joinpath('server-jars')
-
 
         if world_dir.exists():
             print(f"Error: A world named '{world_name}' already exists at '{world_dir}'")
@@ -640,51 +952,20 @@ class MCShell(Magics):
             print("\nWorld creation cancelled.")
             return
 
-        self.server_data['password'] = password
-
-        print("Input the ports for the server, rcon and plugin. These only need to be changed if you are running more than one mc-shell!")
-        try:
-            # Capturing strings first ensures we don't crash on int('')
-            resp_port = Prompt.ask('Server Port:', default=str(self.server_data['port']))
-            resp_rcon = Prompt.ask('RCON Port:', default=str(self.server_data['rcon_port']))
-            resp_mj   = Prompt.ask('McJuice Port:', default=str(self.server_data['mj_port']))
-            resp_app  = Prompt.ask('Application Port:', default=str(self.server_data['app_port']))
-
-            # Robust casting logic
-            ports = {
-                'port': int(resp_port) if resp_port else self.server_data['port'],
-                'rcon_port': int(resp_rcon) if resp_rcon else self.server_data['rcon_port'],
-                'mj_port': int(resp_mj) if resp_mj else self.server_data['mj_port'],
-                'app_port': int(resp_app) if resp_app else self.server_data['app_port']
-            }
-
-
-            self.server_data['port'] = ports['port']
-            self.server_data['rcon_port'] = ports['rcon_port']
-            self.server_data['mj_port'] = ports['mj_port']
-            self.server_data['app_port'] = ports['app_port']
-
-        except (EOFError, KeyboardInterrupt):
-            print("\nWorld creation cancelled.")
-            return
-        except ValueError as e:
-            print(f"Error: Invalid port number provided. {e}")
-            return
-
+        creds = {'password':password}
         creds_path = world_dir / '.mc_creds.json'
-
         with creds_path.open('w') as f:
-            json.dump(self.server_data, f)
+            json.dump(creds, f)
 
         # Set file permissions to be readable/writable by owner only
         creds_path.chmod(0o600)
+
 
         #  Download the Paper server JAR if needed
         downloader = PaperDownloader(server_jars_dir)
         jar_path = downloader.get_jar_path(mc_version)
         if not jar_path:
             return # Stop if download failed
-
 
         # Create the eula.txt file and automatically agree to it
         try:
@@ -700,8 +981,8 @@ class MCShell(Magics):
 
         # Map the exact filenames you want to the resolved URLs
         plugin_urls= {
-            "Geyser.jar": _resolve_geysermc_plugin('geyser',mc_version),
-            "Floodgate.jar": _resolve_geysermc_plugin('floodgate',mc_version),
+            "Geyser.jar": _resolve_geysermc_plugin('geyser'),
+            "Floodgate.jar": _resolve_geysermc_plugin('floodgate'),
             "ViaVersion.jar": _resolve_modrinth_plugin('viaversion', mc_version)
         }
 
@@ -748,7 +1029,6 @@ class MCShell(Magics):
         # Install the plugins listed in the manifest (Downloads Geyser & Floodgate automatically)
         downloader.install_plugins(plugin_urls, plugins_dir)
 
-
         # Create the world_manifest.json file with required Geyser/Floodgate/ViaVersion plugins
         manifest = {
             "world_name": world_name,
@@ -762,11 +1042,8 @@ class MCShell(Magics):
                 "gamemode": "creative",
                 "motd": f"MC-ED World: {world_name}",
                 "enable-rcon": "true",
-                "server-port": self.server_data.get('port', MC_SERVER_PORT),
-                "query.port": self.server_data.get('port', MC_SERVER_PORT),
-                "rcon.port": self.server_data.get('rcon_port', MC_RCON_PORT),
-                "app.port": self.server_data.get('app_port', MC_APP_PORT),
-                "rcon.password": self.server_data.get('password'),
+                "enable-query": "true",
+                "rcon.password": password,
                 "enable-command-block":'true',
             },
             "paper": {
@@ -802,13 +1079,6 @@ class MCShell(Magics):
             data['username-prefix'] = ""
             
         downloader.extract_and_patch_jar_config(plugins_dir,"Floodgate.jar", "floodgate", patch_floodgate)
-
-        # this does not work; geyser generates its config.yml; must do it on server startup
-        # # 2. Patch Geyser
-        # def patch_geyser(data):
-        #     # force fragmenting of the nasty RakNet handshake packet
-        #     data['advanced']['bedrock']['mtu'] = "1200"
-            
 
         # --- Pre-seed Server Configs ---
         # Paper will read these partial files on first boot and append all missing defaults automatically.
@@ -857,6 +1127,7 @@ class MCShell(Magics):
         print(f"\nWorld '{world_name}' created successfully.")
         print(f"To start it, run: %pp_start_world {world_name}")
 
+
     @line_magic
     def pp_start_world(self, line):
         """
@@ -868,6 +1139,7 @@ class MCShell(Magics):
         Use `%pp_start_world --help` for the full list of configurable options.
 
         """
+
         parser = argparse.ArgumentParser(
             prog="%pp_start_world", 
             description="Starts a Paper server for a given world name."
@@ -893,86 +1165,86 @@ class MCShell(Magics):
             # without killing the IPython kernel
             return
 
+        # 1. State Gatekeeper
+        host_state, ui_state = self._get_fsm_state()
+        if host_state == 'HOSTING':
+            print(f"Error: Local server '{self.local_server.world_name}' is already running. Stop it first.")
+            return
+
+        if not parsed_args.do_not_join and ui_state != 'UNJOINED':
+            print("Error: You are already joined to a world. Leave it first, or use --do-not-join.")
+            return
+
         world_name = parsed_args.world_name
-        world_directory = MC_WORLDS_BASE_DIR / parsed_args.world_name
+        world_directory = MC_WORLDS_BASE_DIR / world_name
 
         if not world_directory.exists():
             print(f"Error: World directory does not exist at '{world_directory}'.")
-            print(f"Please create it first with: %pp_create_world {world_name}")
             return
+
+        world_manifest_path = world_directory / "world_manifest.json"
+        with world_manifest_path.open('r') as f:
+            world_manifest = json.load(f)
 
         # 1. Load the existing credentials early to grab the cached Auth Key and settings
         creds_path = world_directory / '.mc_creds.json'
         with creds_path.open('r') as f:
-            self.server_data = json.load(f)
+            self.creds = json.load(f)
 
+        relay_server_address = None
         authkey = parsed_args.authkey
         # 2. Evaluate final authkey and routing mode from cache vs CLI
         if parsed_args.clear_authkey:
             if 'tailscale_authkey' in self.server_data:
-                del self.server_data['tailscale_authkey']
+                del self.creds['tailscale_authkey']
         if authkey:
-            self.server_data['tailscale_authkey'] = authkey
+            self.creds['tailscale_authkey'] = authkey
+            if parsed_args.relay is not None:
+                relay_server_address = parsed_args.relay
+                self.rathole_process, self.rathole_config = _start_rathole_client(relay_server_address, authkey)
 
         with creds_path.open('w') as f:
-            json.dump(self.server_data, f)
+            json.dump(self.creds, f)
         creds_path.chmod(0o600)  # Ensure it remains secure
-
-        # Stop any currently active server session first
-        if getattr(self, 'active_paper_server', None) and self.active_paper_server.is_alive():
-            print(f"Stopping the currently active server for world '{self.active_paper_server.world_name}'...")
-            self.active_paper_server.stop()
-            
+ 
         print(f"--- Starting new session for world: {world_name} ---")
 
-        # Omni-Routing: Always bind to 0.0.0.0 so LAN, Tailscale, and SSH can hit it simultaneously
+        # 2. Ephemeral Port Allocation
+        ports = _find_available_ports(self.local_server.mc_port)
+
         extra_server_properties = {
             'server-ip': '0.0.0.0',
+            'server-port': str(ports['mc_port']),
+            'query.port': str(ports['mc_port']),
+            'rcon.port': str(ports['rcon_port']),
             'mcjuice-host': '0.0.0.0',
-            'mcjuice-port': f"{self.server_data['mj_port']}"
+            'mcjuice-port': str(ports['mj_port'])
         }
 
-        # Start the Paper server
-        self.active_paper_server = PaperServerManager(world_name, world_directory)
-        self.active_paper_server.start(**extra_server_properties)
-        # now start it after files are generated and it is terminated once
-        if not self.active_paper_server.is_alive():
-            self.active_paper_server = PaperServerManager(world_name, world_directory,self.mc_jre_path)
-            # get a new PaperMC jar if available
-            self.active_paper_server.update_jar_path()
-            self.active_paper_server.start(**extra_server_properties)
+        # 3. Process Execution
+        process = PaperServerManager(world_name, world_directory)
+        process.update_jar_path()
+        process.start(**extra_server_properties)
 
-        if not self.active_paper_server.is_alive():
+        if not process.is_alive():
             print("Could not start Paper server. Aborting.")
             return
 
-        if not 'app_port' in list(self.server_data.keys()):
-            self.server_data['app_port'] = 5001
+        # 4. Update the Local Hosting Context 
+        self.local_server.world_name = world_name
+        self.local_server.mc_port = ports['mc_port']
+        self.local_server.rcon_port = ports['rcon_port']
+        self.local_server.mj_port = ports['mj_port']
+        self.local_server.process = process
+        self.local_server.mc_version = world_manifest['paper_version']
+        self.local_server.player_name = self._get_mc_name()
+        self.local_server.rh_host = relay_server_address
 
-        # if parsed_args.ssh: 
-        #     # Start the background SSH Tunnel gateway if --ssh if requrested
-        #     print("Starting secure SSH tunnel gateway in the background...")
-        #     self.current_ssh_token = _start_secure_tunnel_host(
-        #         self.server_data['port'], 
-        #         self.server_data['rcon_port'], 
-        #         self.server_data['mj_port'], 
-        #         self.server_data['mc_version'],
-        #         use_ssh=parsed_args.ssh
-        #     )
-
-        # Cross-platform automated host login (ONLY if we aren't relying on an external Subnet Router)
-        if authkey:
-            self._connect_tailscale(authkey, accept_routes=False)
-            if parsed_args.relay is not None:
-                relay_server_address = parsed_args.relay
-                self.server_data['rh_host'] = relay_server_address
-                self.rathole_process, self.rathole_config = _start_rathole_client(relay_server_address, authkey)
-                
-        geyser_config = world_directory / "plugins" / "Geyser-Spigot" / "config.yml"
-
-        # geyser generates its config.yml after first startup :-(
         yaml = YAML()
         yaml.preserve_quotes = True
+
+        # geyser generates its config.yml after first startup :-(
+        geyser_config = world_directory / "plugins" / "Geyser-Spigot" / "config.yml"
 
         if geyser_config.is_file():
             geyser_data = yaml.load(geyser_config)
@@ -984,7 +1256,22 @@ class MCShell(Magics):
             yaml.dump(geyser_data, geyser_config)
             print(f"Updated bedrock mtu in {geyser_config.name}")
 
-        mcjuice_client = self._get_client().mj_client()
+        # McJuice needs dynamic port setting
+        mcjuice_config = world_directory / "plugins" / "McJuice" / "config.yml"
+
+        if mcjuice_config.is_file():
+            mcjuice_data = yaml.load(mcjuice_config)
+
+            # force fragmenting of the nasty RakNet handshake packet
+            mcjuice_data['port'] = self.local_server.mj_port
+            
+            # ruamel.yaml can write directly to a pathlib.Path object
+            yaml.dump(mcjuice_data, mcjuice_config)
+            print(f"Updated port in {mcjuice_config.name}")
+
+        # ---------------------------------------------
+        # get a client on the locally hosted server
+        mcjuice_client = self._get_local_client().mj_client()
         #check the ip address
         last_wifi_ip = mcjuice_client.admin.getIpAddr()
 
@@ -992,78 +1279,41 @@ class MCShell(Magics):
         last_wifi_ip = local_ip = _get_local_ip(last_wifi_ip)  # Native Python socket check
         vpn_ip = _get_vpn_ip(last_wifi_ip)
 
-        self.server_data['local_ip'] = local_ip
-        self.server_data['vpn_ip'] = vpn_ip
-        self.server_data['last_wifi_ip'] = last_wifi_ip
+        self.local_server.local_ip = local_ip
+        self.local_server.vpn_ip = vpn_ip
+        self.local_server.last_wifi_ip = last_wifi_ip
+        # self.server_data['local_ip'] = local_ip
+        # self.server_data['vpn_ip'] = vpn_ip
+        # self.server_data['last_wifi_ip'] = last_wifi_ip
+        # ---------------------------------------------
 
-        # join the world or not
+
+        # 5. The Simplified Join Handoff
         if not parsed_args.do_not_join:
-            # suspend the logs for the user name prompt
-            self.active_paper_server.suspend_logs = True
-            magic_cmd_line = f"\
-                    127.0.0.1 \
-                    --local-mc    {self.server_data['port']} \
-                    --local-rcon  {self.server_data['rcon_port']} \
-                    --local-mj    {self.server_data['mj_port']} \
-                    --local-app   {self.server_data['app_port']} \
-                    --mc_version  {self.server_data['mc_version']} \
-                    --mc_name     {self._get_mc_name()} \
-                    --password    {self.server_data['password']} \
-                    "
-
-            self.ip.run_line_magic('pp_join_world',magic_cmd_line)
-            # restore server logs
-            self.active_paper_server.suspend_logs = False 
+            self.local_server.process.suspend_logs = True
+            # We now pass a simple flag instead of a massive string of ports
+            self.ip.run_line_magic('pp_join_world', '--local')
+            self.local_server.process.suspend_logs = False 
         else:
-            self.ip.run_line_magic('mc_server_info','')
+            self.ip.run_line_magic('mc_server_info', '')
 
+    def _cleanup_rathole(self):
+        """Terminates the rathole process and cleans up the temporary config."""
 
-    @line_magic
-    def pp_join_world(self, line):
-        """Connects to a PaperMC server instance.
-        
-        Type %pp_join_world --help for available configuration flags.
-        """
+        if getattr(self, 'rathole_process', None) and self.rathole_process.poll() is None:
+            print("[*] Terminating rathole relay client...")
+            self.rathole_process.terminate()
+            try:
+                self.rathole_process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                self.rathole_process.kill()
+            del self.rathole_process
+            
+        if getattr(self,'rathole_config',None) and self.rathole_config and os.path.exists(self.rathole_config):
+            os.remove(self.rathole_config)
+            del self.rathole_config
 
-        parser = argparse.ArgumentParser(
-            prog="%pp_join_world",
-            description="Starts the client connection architecture to link with a specific world server."
-        )
-        
-        # Optional positional target (Token or IP)
-        parser.add_argument(
-            "connection_target",
-            nargs="?",
-            default=None,
-            help="The direct target connection string (Token or IP address)."
-        )
-
-        # Authentication properties
-        parser.add_argument("--password", default=None, help="Access security password required by remote server.")
-        parser.add_argument("--authkey", default=None, help="Tailscale absolute authorization key string.")
-
-        # MC overrides
-        parser.add_argument("--mc_version", default=None, help="Minecraft version configuration override.")
-        parser.add_argument("--mc_name", default=None, help="Minecraft player profile name override.")
-
-        # Connection port overrides
-        parser.add_argument("--local-mc", type=int, default=None, help="Minecraft local game port override.")
-        parser.add_argument("--local-rcon", type=int, default=None, help="Local RCON admin port override.")
-        parser.add_argument("--local-mj", type=int, default=None, help="Local McJuice API plugin port override.")
-        parser.add_argument("--local-app", type=int, default=None, help="Local control panel web application port override.")
-        
-        # Toggles
-        parser.add_argument("--login", action="store_true", help="Enable authenticating profile login state directly.")
-
-        split_args = shlex.split(line)
-        
-        try:
-            parsed_args = parser.parse_args(split_args)
-        except SystemExit:
-            # Prevent argparse exceptions or help prints from aborting IPython
-            return
-
-        # 0. Clean up previous Bedrock relays before binding new ones
+    def _cleanup_socat_forwarders(self):
         if getattr(self, 'socat_udp_process', None) and self.socat_udp_process.poll() is None:
             print("Stopping previous Bedrock UDP-to-UDP relay (socat)...")
             self.socat_udp_process.terminate()
@@ -1074,137 +1324,13 @@ class MCShell(Magics):
             self.socat_tcp_process.terminate()
             self.socat_tcp_process.wait(timeout=3)
 
-
-        # 1. Profile Username Resolution
-        if parsed_args.mc_name is not None:
-            minecraft_name = parsed_args.mc_name
-        else:
-            minecraft_name = self._get_mc_name()
-        self.mc_name = minecraft_name
-
-        # 2. Server Password Resolution
-        server_password = parsed_args.password
-        self.server_data.update({'password': server_password})
-
-        # 3. Connection Token & Tailscale Logic Parsing
-        token = parsed_args.connection_target
-        authkey = parsed_args.authkey
-
-        # Split complex connection string format token (e.g. IP@ports^tskey-...)
-        if token and '^' in token:
-            token, extracted_key = token.split('^', 1)
-            if extracted_key:
-                authkey = extracted_key
-
-        if authkey:
-            self._connect_tailscale(authkey, accept_routes=False)
-
-        if not token:
-            self.server_data.update({
-                'host': Prompt.ask('Server Address:', default=self.server_data['host']),
-            })
-
-            # 4. Interactive Configuration Fallbacks (Prompt if option missing)
-            if parsed_args.local_mc is not None:
-                local_mc = parsed_args.local_mc
-            else:
-                local_mc = int(Prompt.ask('Server Port:', default=str(self.server_data['port'])))
-
-            if parsed_args.local_rcon is not None:
-                local_rcon = parsed_args.local_rcon
-            else:
-                local_rcon = int(Prompt.ask('Rcon Port:', default=str(self.server_data['rcon_port'])))
-
-            if parsed_args.local_mj is not None:
-                local_mj = parsed_args.local_mj
-            else:
-                local_mj = int(Prompt.ask('Plugin Port:', default=str(self.server_data['mj_port'])))
-
-            if parsed_args.mc_version is not None:
-                mc_version = parsed_args.mc_version
-            else:
-                mc_version = str(Prompt.ask('Minecraft Version:', default=str(self.server_data['mc_version'])))
-
-        if parsed_args.local_app is not None:
-            local_app = parsed_args.local_app
-        else:
-            local_app = int(self.server_data['app_port'])
-
-        is_login = parsed_args.login 
-
-        if token:
-            # DEFINE VARS FIRST: Determine intended local ports from defaults
-            local_mc = self.server_data.get('port', MC_SERVER_PORT)
-            local_rcon = self.server_data.get('rcon_port', MC_RCON_PORT)
-            local_mj = self.server_data.get('mj_port', MJ_PLUGIN_PORT)
-            mc_version = self.server_data.get('mc_version',MC_VERSION)
-            local_app = self.server_data.get('app_port',MC_APP_PORT)
-
-            # SAFETY CHECK
-            if hasattr(self, 'active_paper_server') and getattr(self, 'active_paper_server') and self.active_paper_server.is_alive():
-                print("A local Minecraft server is already running. Proceeding with proxy connections anyway.")
-
-
-        # SMART TOKEN ROUTING
-        # if token and '#' in token:
-        #     print("Connecting to secure tunnel...")
-        #     _start_secure_tunnel_client(token, local_mc, local_rcon, local_mj)
-
-        #     target_host = '127.0.0.1'
-        #     rh_host = None  # Secure tunnels don't use the UDP relay
-        #     time.sleep(1.0)
-        #     print("Tunnel connection established.")
-
-        if token:
-            # 1. Separate the IP/Relay routing segment from the ports segment
-            if '@' in token:
-                ip_relay_part, ports_part = token.split('@', 1)
-                try:
-                    p_mc, p_rcon, p_mj, p_ver = ports_part.split('-')
-                    local_mc = int(p_mc)
-                    local_rcon = int(p_rcon)
-                    local_mj = int(p_mj)
-                    mc_version = p_ver
-                except ValueError:
-                    print("\n[ERROR] Invalid Direct Token format. Falling back to default ports.")
-            else:
-                ip_relay_part = token
-
-            # 2. Extract target IP and the Relay Host from the routing segment
-            if ',' in ip_relay_part:
-                target_host, raw_rh = ip_relay_part.split(',', 1)
-                rh_host = None if raw_rh == 'none' else raw_rh
-            else:
-                target_host = ip_relay_part
-                rh_host = None
-
-            if '@' in token:
-                print(f"\n[DIRECT CONNECT] Parsed token for {target_host} (Relay: {rh_host or 'None'}) with custom ports...")
-        else:
-             # Fallback if no token was used (interactive mode)
-             target_host = self.server_data['host']
-             rh_host = self.server_data.get('rh_host')
-
-        # 3. Commit resolved target properties to in-memory data
-        self.server_data['host'] = target_host
-        self.server_data['rh_host'] = rh_host
-        self.server_data['port'] = local_mc
-        self.server_data['rcon_port'] = local_rcon
-        self.server_data['mj_port'] = local_mj
-        self.server_data['mc_version'] = mc_version
-        self.server_data['app_port'] = local_app
-
-        # save the world name in case we need to write to plugin files in its directory
-        if self.active_paper_server:
-            self.server_data['world_name'] = self.active_paper_server.world_name
-
-
+    def _start_socat_forwarders(self,target_host,mc_port,proxy_tcp,proxy_udp):
         # 4. Start local Bedrock UDP->TCP translator (Only if NOT using local loopback SSH fallback)
         if target_host and target_host != '127.0.0.1':
             print(f"Starting socat UDP forwarder for local Bedrock clients...")
             socat_udp_cmd = [
                 "socat",
-                "UDP4-LISTEN:19132,reuseaddr,fork",
+                f"UDP4-LISTEN:{proxy_udp},reuseaddr,fork",
                 f"UDP4:{target_host}:19132"
             ]
             try:
@@ -1222,8 +1348,8 @@ class MCShell(Magics):
             print("Starting socat TCP forwarder for local Java clients...")
             socat_tcp_cmd = [
                 "socat",
-                f"TCP4-LISTEN:{local_mc},reuseaddr,fork",
-                f"TCP4:{target_host}:{local_mc}"
+                f"TCP4-LISTEN:{proxy_tcp},reuseaddr,fork",
+                f"TCP4:{target_host}:{mc_port}"
             ]
             try:
                 self.socat_tcp_process = subprocess.Popen(
@@ -1235,84 +1361,204 @@ class MCShell(Magics):
                 print("[WARNING] 'socat' not found. Local Java forwarding disabled.")
                 self.socat_tcp_process = None
 
-        # get the server password if required
-        if is_login and self.server_data['password'] is None:
-            self.server_data.update({
-                'password': Prompt.ask('Server Password:', password=True)
-            })
+    @line_magic
+    def pp_join_world(self, line):
+        """Connects the UI and player to a specific Minecraft server."""
+        try:
+            self._enforce_transition('join_world')
+        except RuntimeError as e:
+            print(f"[FSM Block] {e}")
+            return 
 
-        # get the sql db of user powers
-        power_repo = SQLiteRepository(minecraft_name)
+        parser = argparse.ArgumentParser(
+            prog="%pp_join_world",
+            description="Starts the client connection architecture to link with a server."
+        )
+        
+        # Core Routing
+        parser.add_argument("connection_target", nargs="?", default=None, help="IP address or Token")
+        parser.add_argument("--local", action="store_true", help="Join the currently running local server")
+        
+        # Identity & Security
+        parser.add_argument("--mc_name", default=None, help="Minecraft player profile name override")
+        parser.add_argument("--password", default=None, help="Server access password")
+        parser.add_argument("--authkey", default=None, help="Tailscale auth key")
+        parser.add_argument("--login", action="store_true", help="Prompt for password authentication")
 
         try:
-            mcjuice_client = self._get_client().mj_client()
-        except ConnectionRefusedError:
-            print(f"Connection refused at {target_host}! The requested server may be down.")
-            self.ip.run_line_magic('pp_leave_world','')
+            parsed_args = parser.parse_args(shlex.split(line))
+        except SystemExit:
             return
 
-        #check the ip address
-        last_wifi_ip = mcjuice_client.admin.getIpAddr()
+        # 1. Identify the Player
+        minecraft_name = parsed_args.mc_name or self._get_mc_name()
 
-        # networking data
-        last_wifi_ip = local_ip = _get_local_ip(last_wifi_ip)  # Native Python socket check
-        vpn_ip = _get_vpn_ip(last_wifi_ip)
+        # 2. Target Routing Resolution (No User Port Prompts Allowed)
+        # Default fallback to standard remote Minecraft ports
+        mc_port, rcon_port, mj_port = MC_SERVER_PORT, MC_RCON_PORT, MJ_PLUGIN_PORT 
+        rh_host = None
 
-        self.server_data['local_ip'] = local_ip
-        self.server_data['vpn_ip'] = vpn_ip
-        self.server_data['last_wifi_ip'] = last_wifi_ip
+        if parsed_args.local:
+            if not self.local_server.is_running:
+                print("Error: No local server is running. Start one first or connect to a remote IP.")
+                return
+            
+            print("Connecting to local ephemeral server instance...")
+            target_host = '127.0.0.1'
+            mc_port = self.local_server.mc_port
+            rcon_port = self.local_server.rcon_port
+            mj_port = self.local_server.mj_port
+            mc_version = self.local_server.mc_version
+            
+        elif parsed_args.connection_target:
+            token = parsed_args.connection_target
+            
+            # Extract Tailscale authkey from token if present
+            if '^' in token:
+                token, extracted_key = token.split('^', 1)
+                if extracted_key: parsed_args.authkey = extracted_key
 
+            # Extract Ports if specifically generated by a connection hub token
+            if '@' in token:
+                ip_relay_part, ports_part = token.split('@', 1)
+                try:
+                    p_mc, p_rcon, p_mj, p_ver = ports_part.split('-')
+                    mc_port, rcon_port, mj_port = int(p_mc), int(p_rcon), int(p_mj)
+                    mc_version = str(p_ver)
+                except ValueError:
+                    print("[WARNING] Invalid Token port format. Assuming default standard ports.")
+            else:
+                ip_relay_part = token
+
+            # Extract Target Host and UDP Relay
+            if ',' in ip_relay_part:
+                target_host, raw_rh = ip_relay_part.split(',', 1)
+                rh_host = None if raw_rh == 'none' else raw_rh
+            else:
+                target_host = ip_relay_part
+                
+        else:
+            print("Error: You must provide an IP address, a connection token, or use the --local flag.")
+            return
+
+        # 3. Handle External Networks (Tailscale / Rathole)
+        if parsed_args.authkey:
+            self._connect_tailscale(parsed_args.authkey, accept_routes=False)
+            
+        # Optional: Save password into server template if requested
+        if parsed_args.login and not self.server_data.get('password'):
+            from rich.prompt import Prompt
+            self.server_data['password'] = Prompt.ask('Server Password:', password=True)
+
+        # 4. Extract Remote World Identity
+        connected_world_name = self._fetch_remote_world_name(target_host, mc_port)
+        
+       # 5. Populate the Connection Context Object
+        self.connection.target_host = target_host
+        self.connection.player_name = minecraft_name
+        self.connection.world_name = connected_world_name
+        self.connection.mc_port = mc_port
+        self.connection.rcon_port = rcon_port
+        self.connection.mj_port = mj_port
+        
+        if parsed_args.local:
+            self.connection.mc_version = self.local_server.mc_version
+        else:
+            self.connection.mc_version = mc_version 
+
+        # 7. Bind to Flask UI
+        # Check McJuice API connectivity
+        try:
+            # You may need to pass the target host and ports explicitly to your client getter now
+            # mcjuice_client = self._get_client(host=target_host, port=mj_port).mj_client()
+            mcjuice_client = self._get_client().mj_client()
+            last_wifi_ip = mcjuice_client.admin.getIpAddr()
+            
+            # We preserve this limited mutation as it's purely for the UI Hub display
+            # self.server_data['local_ip'] = _get_local_ip(last_wifi_ip)
+            # self.server_data['vpn_ip'] = _get_vpn_ip(last_wifi_ip)
+            # self.server_data['rh_host'] = rh_host
+            self.local_server.local_ip = _get_local_ip(last_wifi_ip)
+            self.local_server.vpn_ip = _get_vpn_ip(last_wifi_ip)
+            self.local_server.rh_host = rh_host
+            
+ 
+        except ConnectionRefusedError:
+            print(f"Connection refused at {target_host}! The requested server API may be down.")
+            self.connection.clear()
+            return
 
         print(f"Assigning application server context to Minecraft player: {minecraft_name}")
-        self.app_server_thread = start_app_server(self.server_data, minecraft_name, self.shell, power_repo)
+        power_repo = SQLiteRepository(minecraft_name)
+
+        self.app_server_thread = start_app_server(
+            mc_version,
+            self._get_mc_name(),
+            self.ip,
+            power_repo,
+            5001,
+            connected_world_name
+        )
+
+
+        # Manage Background Forwarders (socat)
+        self._cleanup_socat_forwarders() # Helper to terminate existing Popen objects
+
+        # Only start relays if we are traversing out to a remote machine 
+        is_pointing_local = (self.local_server.is_running and connected_world_name == self.local_server.world_name)
+        
+        if is_pointing_local or target_host == '127.0.0.1':
+            print("Joining locally hosted server. Bypassing socat forwarders...")
+            self.connection.local_proxy_mc_port = None
+            self.connection.local_proxy_bedrock_port = None
+        else:
+            print(f"Joining remote server '{connected_world_name}'. Starting socat forwarders...")
+            
+            # 1. Ephemeral Proxy Allocation
+            proxy_tcp, proxy_udp = _find_available_forwarder_ports()
+            self.connection.local_proxy_mc_port = proxy_tcp
+            self.connection.local_proxy_bedrock_port = proxy_udp
+
+            self._start_socat_forwarders(target_host,mc_port,proxy_tcp,proxy_udp) 
+            print(f"  -> Local Java Proxy bound to TCP {proxy_tcp}")
+            print(f"  -> Local Bedrock Proxy bound to UDP {proxy_udp}")
 
         self._print_connection_hub()
-
-        return
 
     @line_magic
     def pp_stop_world(self, line):
         """
         Stops the currently running Paper server and its associated mc-ed app server.
+
         """
-        if not self.active_paper_server or not self.active_paper_server.is_alive():
+
+        # get this before anything changes!
+        host_state, conn_state = self._get_fsm_state()
+        try:
+            self._enforce_transition('stop_world')
+        except RuntimeError as e:
+            print(f"[FSM Block] {e}")
+            return 
+
+        if not self.local_server.process or not self.local_server.process.is_alive():
             print("No active Paper server session is currently running.")
             return
 
-        print(f"--- Stopping session for world: {self.active_paper_server.world_name} ---")
+        print(f"--- Stopping session for world: {self.local_server.world_name} ---")
 
         print("Returning application server to standby mode...")
-        reset_app_server_context()
+
         self.mc_name = None
 
         print("Stopping Paper server (this may take a moment)...")
-        self.active_paper_server.stop()
-        self.active_paper_server = None
-        if getattr(self, 'rathole_process', None) and self.rathole_process.poll() is None:
-            _stop_rathole_client(self.rathole_process,self.rathole_config)
-            del self.rathole_process
-            del self.rathole_config
+        self.local_server.process.stop()
+        self.local_server.process = None
+        self.local_server.clear()
 
-        # Stop any active socat translator process
-        if getattr(self, 'socat_udp_process', None) and self.socat_udp_process.poll() is None:
-            print("Stopping previous Bedrock UDP-to-UDP relay (socat)...")
-            self.socat_udp_process.terminate()
-            self.socat_udp_process.wait(timeout=3)
-            del self.socat_udp_process
+        print("World stopped successfully.")
 
-        if getattr(self, 'socat_tcp_process', None) and self.socat_tcp_process.poll() is None:
-            print("Stopping previous Bedrock TCP-to-TCP relay (socat)...")
-            self.socat_tcp_process.terminate()
-            self.socat_tcp_process.wait(timeout=3)
-            del self.socat_tcp_process
-
-        # delete the world key if it exists
-        try:
-            del self.server_data["world_name"]
-        except KeyError:
-            pass
-
-        print("Session stopped successfully.")
+        if conn_state == 'JOINED_LOCAL':
+            self.ip.run_line_magic('pp_leave_world','')
 
     @line_magic
     def pp_list_worlds(self, line):
@@ -1457,61 +1703,20 @@ class MCShell(Magics):
         """
         print("\n--- Leaving World ---")
 
-        # Intercept if we are the host
-        if getattr(self, 'active_paper_server', None) and self.active_paper_server.is_alive():
-            world_name = getattr(self.active_paper_server, 'world_name', 'Unknown World')
-            error_msg = (
-                f"Cannot leave world '{world_name}'. You are the current host. "
-                f"Please use '%pp_stop_world' in the console to safely shut down the server first."
-            )
-            print(f"[Error] {error_msg}")
-            
-            # Assuming throw_app_server_error is imported/available in this scope
-            throw_app_server_error(error_msg)
-
-            # delete the world key if it exists
-            try:
-                del self.server_data["world_name"]
-            except KeyError:
-                pass
-
-           
-            return  # Abort the leave sequence
-
         # Reset Flask application context to put UI into standby mode
         print("Returning application server to standby mode...")
         reset_app_server_context()
-        self.mc_name = None
+
+        # reset the connection data
+        self.connection.clear()
 
         # Drop VPN connection if it was auto-managed
         self._disconnect_tailscale()
 
-        # Stop any active socat translator process
-        if getattr(self, 'socat_udp_process', None) and self.socat_udp_process.poll() is None:
-            print("Stopping previous Bedrock UDP-to-UDP relay (socat)...")
-            self.socat_udp_process.terminate()
-            self.socat_udp_process.wait(timeout=3)
-            del self.socat_udp_process
+        self._cleanup_socat_forwarders() 
+        self._cleanup_rathole()
 
-        if getattr(self, 'socat_tcp_process', None) and self.socat_tcp_process.poll() is None:
-            print("Stopping previous Bedrock TCP-to-TCP relay (socat)...")
-            self.socat_tcp_process.terminate()
-            self.socat_tcp_process.wait(timeout=3)
-            del self.socat_tcp_process
-
-        if getattr(self, 'rathole_process', None) and self.rathole_process.poll() is None:
-            _stop_rathole_client(self.rathole_process,self.rathole_config)
-            del self.rathole_process
-            del self.rathole_config
-
-        # Ensure MC_APP_PORT is defined in your scope, usually via current_app.config or global
-        app_port = globals().get('MC_APP_PORT', 5001) 
-
-        print("="*60)
-        print("🚀 RETURNED TO LOBBY")
-        print("="*60)
-        print(f"Lobby Access: http://localhost:{app_port}/lobby?auth={GUI_AUTH_TOKEN}")
-        print("="*60 + "\n")
+        self._print_connection_hub()
 
     @line_magic
     def pp_toggle_logs(self, line):
@@ -1524,11 +1729,39 @@ class MCShell(Magics):
 
         self.active_paper_server.suspend_logs = not self.active_paper_server.suspend_logs
 
-    def _get_client(self):
-        return MCClient(**self.server_data)
+    def _get_local_client(self):
+        host_state,conn_state = self._get_fsm_state()
+        if host_state == 'HOSTING':
+            return MCClient(
+                'localhost',
+                self.local_server.mc_port,
+                self.local_server.rcon_port,
+                self.local_server.mj_port,)
 
+    def _get_client(self,password=None):
+        password = password if password is not None else self.connection.password
+        host_state,conn_state = self._get_fsm_state()
+        if conn_state != 'UNJOINED':
+            return MCClient(
+                host=self.connection.target_host,
+                port=self.connection.mc_port,
+                rcon_port=self.connection.rcon_port,
+                mj_port=self.connection.mj_port,
+                app_port=MC_APP_PORT,
+                password=password)
+        
     def _get_player(self, name):
-        return MCPlayer(name, **self.server_data)
+        host_state,conn_state = self._get_fsm_state()
+        if conn_state != 'UNJOINED':
+            return MCPlayer(
+                name=self.connection.player_name,
+                host= self.connection.target_host,
+                port=self.connection.mc_port,
+                rcon_port=self.connection.rcon_port,
+                mj_port=self.connection.mj_port,
+                app_port=MC_APP_PORT,
+                world_name=self.connection.world_name,
+                password=self.connection.password)
 
     def _send(self, kind, *args):
         assert kind in ('help', 'run', 'data')
@@ -1627,33 +1860,47 @@ class MCShell(Magics):
         return self.rcon_commands
 
     @line_magic
-    def mc_login(self,line=''):
-        '''
-        %mc_login
-        '''
+    def mc_login(self, line=''):
+        """Authenticates the user as an admin on the currently joined server."""
+        from rich.prompt import Prompt
+        from mcshell.mcserver import socketio
 
-        self.server_data.update({
-            'host': Prompt.ask('Server Address:', default=self.server_data['host']),
-            'rcon_port': int(Prompt.ask('Server Port:', default=str(self.server_data['rcon_port']))),
-            'mj_port': int(Prompt.ask('Plugin Port:', default=str(self.server_data['mj_port']))),
-            'password': Prompt.ask('Server Password:', password=True)
-        })
+        if not self.connection.is_joined:
+            print("[red bold]Error: You must be joined to a server before you can log in.[/red bold]")
+            return
+
+        # Prompt for password without asking for ports or IP
+        password = Prompt.ask('Server Password', password=True)
 
         try:
-            self._get_client().help()
-            print("[green bold]Login successful! Admin privileges unlocked.[/]")
+            # Inject the targeted credentials directly into your client getter
+            client = self._get_client(password)
+            
+            # Test authentication by issuing a harmless command
+            client.help()
 
-            # --- NEW: Trigger a UI refresh to update the Admin Badge ---
-            from mcshell.mcserver import socketio
-            socketio.emit('state_changed', {'status': 'active'})
+            # Update the ephemeral state
+            self.connection.password = password
+            self.connection.is_admin = True
+
+            print("[green bold]Login successful! Admin privileges unlocked.[/green bold]")
+
+            # Trigger UI refresh to show the Admin Badge
+            socketio.emit('state_changed', {
+                'status': 'active',
+                'appliance_mode': os.environ.get('MCSHELL_APPLIANCE_MODE') == '1',
+                'gui_token': getattr(self, 'GUI_AUTH_TOKEN', '')
+            })
 
         except Exception as e:
-            print(e)
-            print("[red bold]login failed[/]")
+            print(f"[red bold]Login failed: Authentication rejected or server unreachable.[/red bold]")
+            self.connection.is_admin = False
+            self.connection.password = None
 
     @line_magic
     def mc_server_info(self, line):
         self._print_connection_hub()
+
 
     @line_magic
     def mc_help(self, line):
@@ -1871,35 +2118,11 @@ class MCShell(Magics):
         minecraft_name = None
 
         # --- Lab Setup: Check for the central config file first ---
-        if MC_CENTRAL_CONFIG_FILE.exists():
-            print(f"Found system-wide configuration at {MC_CENTRAL_CONFIG_FILE}.")
-            try:
-                linux_user = os.getlogin()
-            except OSError:
-                linux_user = os.environ.get('USER')
-
-            if not linux_user:
-                print("Fatal Error: Could not determine Linux username.")
-                return None
-
-            try:
-                with open(MC_CENTRAL_CONFIG_FILE, 'r') as f:
-                    user_map = json.load(f)
-
-                name_from_map = user_map.get(linux_user)
-                if not name_from_map:
-                    print(f"Error: Your Linux user '{linux_user}' is not registered. Please contact your administrator.")
-                    return None
-
-                print(f"Authenticated as Minecraft user: {name_from_map}")
-                minecraft_name = name_from_map
-
-            except (IOError, json.JSONDecodeError) as e:
-                print(f"Fatal Error: Could not read or parse the system configuration file: {e}")
-                return None
-
+    
         # --- Personal Use: Fallback to prompting the user ---
-        else:
+        minecraft_name = _get_user_bound_minecraft_name()
+
+        if minecraft_name is None:
             print("No system-wide configuration found. Running in personal use mode.")
             try:
                 name_from_input = input("Please enter your Minecraft username: ").strip()
@@ -1942,10 +2165,14 @@ class MCShell(Magics):
     @needs_local_scope
     @line_magic
     def mc_client(self,line,local_ns):
+        _client = self._get_client()
+        if not _client:
+            print("You must join a world first.")
+            return
         _uuid = str(uuid.uuid1())[:4]
         _var_name = f"mcc_{_uuid}"
         print(f"requested client will be available as {_var_name} locally")
-        local_ns[_var_name] = self._get_client()
+        local_ns[_var_name] = _client
 
     @needs_local_scope
     @line_magic
@@ -1955,8 +2182,13 @@ class MCShell(Magics):
             _player_name = self._get_mc_name()
         else:
             _player_name = _line_parts.pop()
+
+        _player = self._get_player(_player_name)
+        if not _player:
+            print("You must join a world first.")
+            return
         print(f"requested player will be available as the variable {_player_name} locally")
-        local_ns[_player_name] = self._get_player(_player_name)
+        local_ns[_player_name] = _player
 
 
     @line_magic
@@ -2533,9 +2765,14 @@ if __name__ == '__main__':
             _player_name = self._get_mc_name()
         else:
             _player_name = _line_parts.pop()
-        print(f"the `mc` object is now available in the shell")
         _player = self._get_player(_player_name)
-        local_ns['mc'] = MCActions(_player)
+        if _player:
+            _mc = MCActions(_player)
+            local_ns['mc'] = _mc
+            print(f"The `mc` object is now available in the shell")
+        else:
+            print(f"You must join a world first.")
+
 # ---------------------------------------------------------------------------
 # Startup and Initialization
 # ---------------------------------------------------------------------------
@@ -2567,33 +2804,55 @@ def rconn_shortcut_transformer(lines):
         new_lines.append(line)
     return new_lines
 
+def _disable_ipython_eof(ip):
+    """Intercepts Ctrl-D at the prompt_toolkit layer to prevent shutdown."""
+    # Ensure we are in a terminal environment that uses prompt_toolkit
+    if getattr(ip, 'pt_app', None) is None:
+        return
+
+    from prompt_toolkit.keys import Keys
+
+    # Register a high-priority custom binding for Ctrl-D
+    @ip.pt_app.key_bindings.add(Keys.ControlD)
+    def _ignore_eof(event):
+        print("[Appliance Mode] Terminal shutdown is disabled. Please use the web UI to manage the server.")
+        # Force prompt_toolkit to redraw the input line cleanly
+        event.app.invalidate()
+
 def load_ipython_extension(ip):
     """
     Called by IPython when the extension is loaded.
     This is where we register the magics and the shutdown hook.
     """
+
+    # Secure the terminal if running in Appliance Mode
+    if os.environ.get('MCSHELL_APPLIANCE_MODE') == '1':
+        _disable_ipython_eof(ip)
+
     sync_datapack_library()
 
-    mcshell_instance = MCShell(ip)
+    default_lobby_name = _get_user_bound_minecraft_name()
+
+    mcshell_instance = MCShell(ip,default_lobby_name)
+
     ip.register_magics(mcshell_instance)
 
     # --- REGISTER THE '/' SHORTCUT TRANSFORMER ---
     ip.input_transformers_cleanup.append(rconn_shortcut_transformer)
 
     mcshell_instance.app_server_thread = start_app_server(
-        server_data=None,
+        minecraft_version=MC_VERSION,
         minecraft_name=None,
         shell=ip,
         power_repo=None,
-        port=MC_APP_PORT
+        port=MC_APP_PORT,
+        connected_world_name=None,
+        default_lobby_name=default_lobby_name,
     )
 
     time.sleep(1)
-    print("\n" + "="*60)
-    print("🚀 MC-SHELL STANDBY LOBBY ACTIVATED")
-    print("="*60)
-    print(f"Lobby Access: http://localhost:{MC_APP_PORT}/lobby?auth={GUI_AUTH_TOKEN}")
-    print("="*60 + "\n")
+
+    ip.run_line_magic('mc_server_info','')
 
     def shutdown_hook():
         print("\nIPython is shutting down. Stopping active mc-shell session...")
@@ -2602,6 +2861,9 @@ def load_ipython_extension(ip):
 
         # Clean up Tailscale if the user just hits Ctrl+D instead of %mc_stop_app
         mcshell_instance._disconnect_tailscale()
+
+        # stop all forwarders
+        ip.run_line_magic('pp_leave_world','')
 
         # Ensure the background Flask thread is fully killed on exit
         ip.run_line_magic('pp_stop_world','')
@@ -2613,4 +2875,3 @@ def load_ipython_extension(ip):
         print("Cleanup complete.")
 
     atexit.register(shutdown_hook)
-

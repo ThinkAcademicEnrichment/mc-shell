@@ -33,6 +33,10 @@ class SpecialHelpOrder(SpecialHelpOrderBase):
 
         return decorator
 
+import warnings
+
+# Suppress invalid escape sequence warnings from third-party dependencies
+warnings.filterwarnings("ignore", category=SyntaxWarning, module="mctools.encoding") 
 
 from traitlets.config import Config
 # configure the ipython shell
@@ -48,10 +52,19 @@ def initialize_config():
         '%autoreload 2',
         # requires pickleshare
         "%store -r",
-        'pdb',
+        # 'pdb',
     ]
     c.Application.log_level = 0
     return c
+
+from IPython.terminal.prompts import Prompts, Token
+
+class MCShellPrompt(Prompts):
+    def in_prompt_tokens(self, cli=None):
+        return [(Token.Prompt, 'mcshell> ')]
+
+    def out_prompt_tokens(self, cli=None):
+        return [] # Hides the 'Out [1]:' entirely
 
 @click.group(cls=SpecialHelpOrder)
 def cli():
@@ -76,5 +89,72 @@ def start():
         'mcshell',
     ]
 
+    c.Application.log_level = 30  # 30 translates to logging.WARN
+    c.TerminalIPythonApp.display_banner = False
+
+    # tame traceback output
+    c.InteractiveShell.xmode = 'Plain'
+    # colour scheme
+    c.TerminalInteractiveShell.highlighting_style = 'monokai' # or 'rrt', 'paraiso-dark'
+    # disable confirmations
+    c.TerminalInteractiveShell.confirm_exit = False
+    # allow missing parantheis in magics?
+    c.InteractiveShell.autocall = 1
+    # custom prompt
+    c.TerminalInteractiveShell.prompts_class = MCShellPrompt
+
     import IPython
     IPython.start_ipython(config=c, argv=[])
+
+@cli.command(
+    help_priority=26,
+    cls=click.Command,
+    help="start the application in headless appliance mode"
+)
+@click.option('--port', default=5001, help='Port for the web server')
+def appliance(port):
+    import os
+    import sys
+    import subprocess
+    import time
+
+    session_name = "mcshell-appliance"
+    python_exec = sys.executable
+    script_path = sys.argv[0]
+
+    # Capture the active virtual environment paths
+    current_path = os.environ.get('PATH', '')
+    venv = os.environ.get('VIRTUAL_ENV', '')
+
+    # Build the strict environment injection string
+    env_cmd = f"env MCSHELL_APPLIANCE_MODE=1 PATH=\"{current_path}\""
+    if venv:
+        env_cmd += f" VIRTUAL_ENV=\"{venv}\""
+
+    print("Booting appliance mode...")
+
+    # Start the actual application inside a detached tmux session,
+    # forcing the execution context to match the parent virtual environment exactly.
+    subprocess.run([
+        "tmux", "new-session", "-d", "-s", session_name,
+        f"{env_cmd} {python_exec} {script_path} start"
+    ], check=True)
+
+    # Enable native mouse scrolling in the tmux pane
+    subprocess.run([
+        "tmux", "set-option", "-t", session_name, "-g", "mouse", "on"
+    ], check=True)
+
+    print("IPython and Flask initialized in tmux.")
+    
+    time.sleep(2) 
+
+    try:
+        print("Starting ttyd web terminal broker on port 7681...")
+        subprocess.run([
+            "ttyd", "-W", "-p", "7681", "tmux", "attach", "-t", session_name
+        ])
+        
+    except KeyboardInterrupt:
+        print("\nShutting down appliance...")
+        subprocess.run(["tmux", "kill-session", "-t", session_name])

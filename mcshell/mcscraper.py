@@ -24,7 +24,6 @@ try:
     PLAYWRIGHT_AVAILABLE = True
 except ImportError:
     PLAYWRIGHT_AVAILABLE = False
-    print("Warning: Playwright is not installed. Browser fetching will fail.")
 
 def fetch_minecraft_data(version: str, file_type: str = "blocks"):
     """

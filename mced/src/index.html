@@ -53,10 +53,12 @@
     <body x-data="EditorApp()">
 
             <!-- SUBSTAGE 2C: The Lobby Overlay -->
-            <div x-cloak x-show="['standby', 'unauthorized', 'terminated'].includes(lobbyState)" class="lobby-overlay">
+            <!-- <div x-cloak x-show="(lobbyState === 'standby' && !uiBypass) || ['unauthorized', 'terminated', 'error'].includes(lobbyState)" class="lobby-overlay"> -->
+            <div x-cloak x-show="[UI_STATES.LOBBY_CARD, UI_STATES.UNAUTHORIZED, UI_STATES.TERMINATED, UI_STATES.ERROR].includes(uiState)" class="lobby-overlay">
                 <div class="lobby-card">
                     <!-- Standby / Join Form -->
-                    <template x-if="lobbyState === 'standby'">
+                    <!-- <template x-if="lobbyState === 'standby'"> -->
+                    <template x-if="uiState === UI_STATES.LOBBY_CARD">
                         <div>
                             <h2 style="margin-top: 0;">MC-ED Editor Lobby</h2>
                             <p style="color: #aaa; margin-bottom: 20px;">Waiting for an active Minecraft session. Enter your username and token to join a world instantly.</p>
@@ -71,7 +73,8 @@
                     </template>
 
                     <!-- Unauthorized Viewer -->
-                    <template x-if="lobbyState === 'unauthorized'">
+                    <!-- <template x-if="lobbyState === 'unauthorized'"> -->
+                    <template x-if="uiState === UI_STATES.UNAUTHORIZED">
                         <div>
                             <h2 style="margin-top: 0; color: #ff453a;">Access Denied</h2>
                             <p style="color: #aaa; margin-bottom: 10px;">The server is currently active, but you are missing the required security token.</p>
@@ -80,7 +83,8 @@
                     </template>
 
                     <!-- Terminated Viewer -->
-                    <template x-if="lobbyState === 'terminated'">
+                    <!-- <template x-if="lobbyState === 'terminated'"> -->
+                    <template x-if="uiState === UI_STATES.TERMINATED">
                         <div>
                             <h2 style="margin-top: 0; color: #ff453a;">Session Ended</h2>
                             <p style="color: #aaa; margin-bottom: 10px;">The mc-shell terminal application has been closed.</p>
@@ -88,13 +92,14 @@
                         </div>
                     </template>
 
-                    <template x-if="lobbyState === 'error'">
+                    <!-- <template x-if="lobbyState === 'error'"> -->
+                    <template x-if="uiState === UI_STATES.ERROR">
                         <div>
                             <h2 style="margin-top: 0; color: #ff453a;">Application Error</h2>
                             <p style="color: #aaa; margin-bottom: 10px;" x-text="errorMessage || 'An unexpected error occurred.'"></p>
                             <p style="color: #888; font-size: 0.9rem;">Please check the backend console for more details.</p>
 
-                            <button @click="lobbyState = 'standby'; errorMessage = ''; joinError = '';" class="lobby-btn" style="margin-top: 15px;">
+                            <button @click="uiState= 'standby'; errorMessage = ''; joinError = '';" class="lobby-btn" style="margin-top: 15px;">
                                 Return to Lobby
                             </button>
                         </div>
@@ -104,7 +109,11 @@
 
             </div>
 
-            <div class="editor-layout" :class="{ 'library-collapsed': isLibraryCollapsed, 'code-collapsed': isCodeCollapsed }">
+            <!-- <div class="editor-layout" :class="{ 'library-collapsed': isLibraryCollapsed, 'code-collapsed': isCodeCollapsed }"> -->
+            <div class="editor-layout" 
+                x-cloak 
+                x-show="uiState === UI_STATES.EDITOR" 
+                :class="{ 'library-collapsed': isLibraryCollapsed, 'code-collapsed': isCodeCollapsed }">
                 <aside id="power-library-panel">
                     <div class="panel-header">
                         <h2 x-show="!isLibraryCollapsed">Power Library</h2>
@@ -131,13 +140,16 @@
                         <button class="btn-block" id="cancelPowerButton">Cancel Power</button>
                         <button class="btn-digital-set" @click="window.prepareAndOpenSaveModal()">Save Workspace</button>
                         <button class="btn-entity" id="clearWorkspaceButton">Clear Workspace</button>
-                        <button class="btn-item" @click="keyboardVisible = !keyboardVisible">Keyboard</button>
+                        <!-- <button class="btn-item" @click="keyboardVisible = !keyboardVisible">Keyboard</button> -->
+                        <button class="btn-item" @click="toggleKeyboard()">Keyboard</button>
+                        <!-- <button class="btn-geometry" @click="toggleTerminal()">Terminal</button> -->
+                        <button class="btn-geometry" x-show="isAppliance" x-cloak @click="toggleTerminal()">Terminal</button>
                         <button class="btn-geometry" @click="isCodeCollapsed = !isCodeCollapsed">Toggle Python</button>
                         <button class="btn-picker" @click="openControlDeck()">Control</button>
 
                         <div style="margin-left: auto; display: flex; align-items: center; gap: 10px;">
                             <!-- The State Awareness Badge -->
-                            <div x-cloak x-show="lobbyState === 'active'" style="padding: 6px 12px; border-radius: 8px; background: rgba(0,0,0,0.4); color: white; font-size: 0.9rem; border: 1px solid #444; cursor: help;" :title="lobbyData?.is_admin ? 'You have Server OP privileges.' : 'Guest Mode. Run %mc_login in the terminal to elevate privileges.'">
+                            <div x-cloak x-show="uiState=== 'active'" style="padding: 6px 12px; border-radius: 8px; background: rgba(0,0,0,0.4); color: white; font-size: 0.9rem; border: 1px solid #444; cursor: help;" :title="lobbyData?.is_admin ? 'You have Server OP privileges.' : 'Guest Mode. Run %mc_login in the terminal to elevate privileges.'">
                                 <span x-text="lobbyData?.is_admin ? '👑 Admin' : '👤 Guest'"></span>
                             </div>
                             <button class="btn-picker" id="leaveWorldButton" style="background-color: #ff3b30; color: white; border: none;">Leave World</button>
@@ -256,123 +268,210 @@
         <!-- SUBSTAGE 2C: Global Application Context -->
         <script>
             document.addEventListener('alpine:init', () => {
-                Alpine.data('EditorApp', () => ({
-                    // Visual Layout State
-                    isLibraryCollapsed: true,
-                    isCodeCollapsed: true,
-                    keyboardVisible: false,
+            // Define strict presentation states
+            const UI_STATES = {
+                BOOTING: 'BOOTING',
+                LOBBY_CARD: 'LOBBY_CARD',
+                LOBBY_TERM: 'LOBBY_TERM',
+                EDITOR: 'EDITOR',
+                UNAUTHORIZED: 'UNAUTHORIZED',
+                TERMINATED: 'TERMINATED',
+                ERROR: 'ERROR'
+            };
 
-                    // Lobby State
-                    lobbyState: 'loading', // 'loading', 'standby', 'active', 'unauthorized', 'terminated', 'error'
-                    lobbyData: null,
-                    joinToken: '',
-                    minecraftName: '',
-                    joinError: '',
-                    errorMessage: '',      // <-- NEW: Added to track the server error text
-                    isJoining: false,
-                    isSwitchingPorts: false,
+            Alpine.data('EditorApp', () => ({
+                // Expose states to the HTML template
+                UI_STATES: UI_STATES,
 
-                    init() {
-                        this.checkLobbyState();
-                        const socket = io();
-                        socket.on('state_changed', (data) => {
-                            if (data && data.status === 'terminated') {
-                                this.isJoining = false; // Reset to prevent getting stuck
-                                this.isSwitchingPorts = false;
-                                this.lobbyState = 'terminated';
-                                return;
-                            }
+                // The Single Source of Truth
+                uiState: UI_STATES.BOOTING,
+                
+                // Core Data Context
+                isAppliance: false,
+                lobbyData: null,
+                joinToken: '',
+                minecraftName: '',
+                joinError: '',
+                errorMessage: '',
+                isJoining: false,
+                isSwitchingPorts: false,
 
-                            // --- ROBUST ERROR HANDLING ---
-                            if (data && data.status === 'error') {
-                                // Forcefully clear loading states so the UI updates
-                                this.isJoining = false;
-                                this.isSwitchingPorts = false;
+                // Sub-states (Editor Layout)
+                isLibraryCollapsed: true,
+                isCodeCollapsed: true,
+                keyboardVisible: false,
+                isTerminalCollapsed: true,
 
-                                this.lobbyState = 'error';
-                                // Extract the message passed from throw_app_server_error()
-                                this.errorMessage = data.message || 'An unexpected error occurred.';
-                                return;
-                            }
+                toggleKeyboard() {
+                    this.keyboardVisible = !this.keyboardVisible;
+                    if (this.keyboardVisible) this.isTerminalCollapsed = true;
+                },
+                toggleTerminal() {
+                    this.isTerminalCollapsed = !this.isTerminalCollapsed;
+                    if (!this.isTerminalCollapsed) this.keyboardVisible = false;
+                },
 
-                            if (this.isJoining || this.isSwitchingPorts) return;
-                            this.checkLobbyState();
-                        });
+                // The Transition Engine
+                transitionTo(newState) {
+                    console.log(`[UI Transition] ${this.uiState} ➔ ${newState}`);
+                    this.uiState = newState;
+                    
+                    // Handle specific side-effects of entering a new state
+                    if (newState === UI_STATES.EDITOR) {
+                        this.isTerminalCollapsed = !this.isAppliance; // Auto-open terminal if on appliance
+                        this.keyboardVisible = false;
+                    }
+                },
 
-                        socket.on('port_switch', (data) => {
-                            this.isSwitchingPorts = true;
-                            this.isJoining = true;
+                init() {
+                    // Drop into unauthorized state if the token is rejected globally
+                    window.addEventListener('auth-invalid', () => this.transitionTo(UI_STATES.UNAUTHORIZED));
+                    
+                    this.checkLobbyState();
+                    this.setupSockets();
+                },
 
-                            const targetPort = String(data.new_port);
-                            const currentPort = window.location.port || (window.location.protocol === 'https:' ? '443' : '80');
+                setupSockets() {
+                    const socket = io();
+                    
+                    socket.on('state_changed', (data) => {
+                        if (!data) return;
+                        
+                        // Always keep appliance mode in sync with the backend broadcast
+                        this.isAppliance = data.appliance_mode === true;
 
-                            if (targetPort !== currentPort) {
-                                // Keep checking the new port until the background thread starts it
-                                const checkAndRedirect = async () => {
-                                    try {
-                                        const testUrl = `${window.location.protocol}//${window.location.hostname}:${targetPort}/api/lobby_data`;
-                                        await fetch(testUrl, { method: 'GET', mode: 'no-cors' });
-
-                                        // The new server is alive! Append the token securely cross-origin.
-                                        const token = sessionStorage.getItem('GUI_AUTH_TOKEN') || '';
-                                        window.location.href = `${window.location.protocol}//${window.location.hostname}:${targetPort}/?auth=${token}`;
-                                    } catch (e) {
-                                        setTimeout(checkAndRedirect, 500); // Retry in 500ms
-                                    }
-                                };
-                                setTimeout(checkAndRedirect, 1000);
-                            }
-                        });
-
-                        socket.on('reload', () => {
-                            if (!this.isSwitchingPorts) window.location.reload();
-                        });
-                    },
-
-                    async checkLobbyState() {
-                        try {
-                            const response = await fetch('/api/lobby_data', { cache: 'no-store' });
-                            if (response.ok) {
-                                const data = await response.json();
-                                const previousState = this.lobbyState;
-
-                                this.lobbyState = data.status;
-                                this.lobbyData = data;
-
-                                // Extract the message if we are booting up directly into an error state
-                                if (data.status === 'error') {
-                                    this.errorMessage = data.message || 'An unexpected error occurred.';
-                                }
-
-                                if (data.status === 'active' && previousState === 'standby') {
-                                    window.location.href = '/';
-                                } else if (data.status === 'standby' && previousState === 'active') {
-                                    window.location.reload();
-                                }
-                            } else {
-                                this.lobbyState = 'standby';
-                            }
-                        } catch (e) {
-                            console.error("Failed to fetch lobby state", e);
-                            this.lobbyState = 'standby';
+                        if (data.gui_token) {
+                            sessionStorage.setItem('GUI_AUTH_TOKEN', data.gui_token);
                         }
-                    },
+
+                        if (data.status === 'terminated') {
+                            this.isJoining = false;
+                            this.isSwitchingPorts = false;
+                            this.transitionTo(UI_STATES.TERMINATED);
+                            return;
+                        }
+
+                        if (data.status === 'error') {
+                            this.isJoining = false;
+                            this.isSwitchingPorts = false;
+                            this.errorMessage = data.message || 'An unexpected error occurred.';
+                            this.transitionTo(UI_STATES.ERROR);
+                            return;
+                        }
+
+                        if (data.status === 'active') {
+                            // Trigger a clean reload immediately if we are waking up from standby
+                            if ([UI_STATES.LOBBY_CARD, UI_STATES.LOBBY_TERM].includes(this.uiState)) {
+                                window.location.href = '/';
+                                return;
+                            }
+
+                            this.transitionTo(UI_STATES.EDITOR);
+                            window.dispatchEvent(new Event('app-active'));
+                        }
+
+                        if (this.isJoining || this.isSwitchingPorts) return;
+                        this.checkLobbyState();
+                    });
+
+                    socket.on('port_switch', (data) => {
+                        this.isSwitchingPorts = true;
+                        this.isJoining = true;
+
+                        const targetPort = String(data.new_port);
+                        const currentPort = window.location.port || (window.location.protocol === 'https:' ? '443' : '80');
+
+                        if (targetPort !== currentPort) {
+                            const checkAndRedirect = async () => {
+                                try {
+                                    const testUrl = `${window.location.protocol}//${window.location.hostname}:${targetPort}/api/lobby_data`;
+                                    await fetch(testUrl, { method: 'GET', mode: 'no-cors' });
+
+                                    const token = sessionStorage.getItem('GUI_AUTH_TOKEN') || '';
+                                    window.location.href = `${window.location.protocol}//${window.location.hostname}:${targetPort}/?auth=${token}`;
+                                } catch (e) {
+                                    setTimeout(checkAndRedirect, 500);
+                                }
+                            };
+                            setTimeout(checkAndRedirect, 1000);
+                        }
+                    });
+
+                    socket.on('reload', () => {
+                        if (!this.isSwitchingPorts) window.location.reload();
+                    });
+                },
+
+                async checkLobbyState() {
+                    try {
+                        const response = await fetch('/api/lobby_data', { cache: 'no-store' });
+                        if (response.ok) {
+                            const data = await response.json();
+                            const previousState = this.uiState;
+
+                            this.lobbyData = data;
+                            this.isAppliance = data.appliance_mode === true;
+
+                            if (data.player && !this.minecraftName) {
+                                this.minecraftName = data.player;
+                            }
+
+                            if (data.status === 'unauthorized') {
+                                this.transitionTo(UI_STATES.UNAUTHORIZED);
+                                return;
+                            }
+
+                            if (data.status === 'error') {
+                                this.errorMessage = data.message || 'An unexpected error occurred.';
+                                this.transitionTo(UI_STATES.ERROR);
+                                return;
+                            }
+
+                            if (data.status === 'active') {
+                                if ([UI_STATES.LOBBY_CARD, UI_STATES.LOBBY_TERM].includes(previousState)) {
+                                    window.location.href = '/';
+                                    return;
+                                }
+                                this.transitionTo(UI_STATES.EDITOR);
+                                window.dispatchEvent(new Event('app-active'));
+                                
+                            } else if (data.status === 'standby') {
+                                if (previousState === UI_STATES.EDITOR) {
+                                    window.location.reload();
+                                } else if (![UI_STATES.UNAUTHORIZED, UI_STATES.ERROR, UI_STATES.TERMINATED].includes(this.uiState)) {
+                                    // Always default to the lobby card form
+                                    this.transitionTo(UI_STATES.LOBBY_CARD);
+                                } 
+                            }
+                        } else {
+                            if (this.uiState === UI_STATES.BOOTING) this.transitionTo(UI_STATES.LOBBY_CARD);
+                        }
+                    } catch (e) {
+                        console.error("Failed to fetch lobby state", e);
+                        if (this.uiState === UI_STATES.BOOTING) this.transitionTo(UI_STATES.LOBBY_CARD);
+                    }
+                },
 
                 async joinWorld() {
                     this.joinError = '';
 
-                    // Safely trim inputs
                     const username = this.minecraftName ? this.minecraftName.trim() : '';
                     const token = this.joinToken ? this.joinToken.trim() : '';
 
-                    // Step-by-step UX validation
                     if (!username) {
                         this.joinError = 'Please enter your Minecraft username.';
                         return;
                     }
+                    
+                    // Bypass to Editor mode directly via FSM transition in appliance mode
                     if (!token) {
-                        this.joinError = 'Please enter a valid join token.';
-                        return;
+                        if (this.isAppliance) {
+                            this.transitionTo(UI_STATES.LOBBY_TERM);
+                            return;
+                        } else {
+                            this.joinError = 'Please enter a valid join token.';
+                            return;
+                        }
                     }
 
                     this.isJoining = true;
@@ -400,7 +499,6 @@
                             this.joinError = errData.error || 'Failed to connect. Server rejected request.';
                         }
                     } catch (e) {
-                        // If the backend drops connection during a port switch, ignore the network error
                         if (this.isSwitchingPorts) return;
 
                         this.isJoining = false;
@@ -408,14 +506,52 @@
                         console.error(e);
                     }
                 },
-                    // Safely spawn a new authenticated Control Deck tab
-                    openControlDeck() {
-                        const token = sessionStorage.getItem('GUI_AUTH_TOKEN') || '';
-                        window.location.open(`/control?auth=${token}`, '_blank');
-                    }
-                }));
-            });
+
+                openControlDeck() {
+                    const token = sessionStorage.getItem('GUI_AUTH_TOKEN') || '';
+                    window.location.open(`/control?auth=${token}`, '_blank');
+                }
+            }));
+        }); 
         </script>
+
+        <!-- Visible in FULLSCREEN standby OR as a bottom pane in the EDITOR -->
+        <div x-cloak x-show="uiState === UI_STATES.LOBBY_TERM || (uiState === UI_STATES.EDITOR && isAppliance && !isTerminalCollapsed)">
+           <div id="terminal-pane"
+                :style="uiState === UI_STATES.LOBBY_TERM
+                    ? 'display: flex; flex-direction: column; background: #000; box-sizing: border-box; position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 60000;' 
+                    : 'display: flex; flex-direction: column; background: #000; box-sizing: border-box; position: fixed; bottom: 0; left: 0; width: 100%; height: 350px; z-index: 41000; padding: 10px; box-shadow: 0 -2px 10px rgba(0,0,0,0.5);'"
+            > 
+                <div style="display: flex; justify-content: space-between; align-items: center; background: #222; padding: 5px 10px; margin-bottom: 5px; border-radius: 4px;">
+                    <span style="color: #aaa; font-family: monospace; font-size: 14px;" 
+                        x-text="uiState === UI_STATES.LOBBY_TERM ? 'Appliance Console' : 'Appliance Terminal'">
+                    </span>
+                    
+                    <div style="display: flex; gap: 10px;">
+                        <button x-show="uiState === UI_STATES.LOBBY_TERM" 
+                                @click="transitionTo(UI_STATES.LOBBY_CARD)" 
+                                style="background: #444; border: 1px solid #666; border-radius: 4px; color: white; padding: 4px 10px; cursor: pointer; font-size: 12px;">
+                            ◀ Back to Lobby
+                        </button>
+                        <button x-show="uiState === UI_STATES.EDITOR" 
+                                @click="isTerminalCollapsed = true" 
+                                style="background: none; border: none; color: white; cursor: pointer; font-size: 16px;">
+                            ✖
+                        </button>
+                    </div>
+                </div>
+                <!-- iframe -->
+                <template x-if="isAppliance">
+                    <iframe src="http://127.0.0.1:7681" style="flex: 1; border: none; width: 100%;"></iframe>
+                </template>
+            </div>
+        </div>
+
+
+        <div class="simple-keyboard"
+            x-show="keyboardVisible"
+            style="position: fixed; bottom: 0; left: 0; width: 100%; z-index: 41000; background: white;">
+        </div>
 
         <div class="simple-keyboard"
              x-show="keyboardVisible"
