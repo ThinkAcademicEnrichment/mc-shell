@@ -78,7 +78,7 @@ class PowerCancelledException(Exception):
 
 try:
     from icecream import ic
-    ic.configureOutput(includeContext=False)
+    ic.configureOutput(includeContext=True)
 except ImportError:  # Graceful fallback if IceCream isn't installed.
     ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
@@ -95,7 +95,7 @@ MC_VERSION = '26.1.2'
 MC_SERVER_HOST = 'localhost'
 MC_RCON_PORT = 25576
 MC_SERVER_PORT = 25566
-MJ_PLUGIN_PORT = 4721
+MJ_PLUGIN_PORT = 27566
 MC_APP_PORT = 5001
 
 # Determine the binary name based on the OS
