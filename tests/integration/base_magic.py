@@ -57,8 +57,8 @@ class BaseMagicTest(unittest.TestCase):
                 if cls.mcshell.local_server.process and cls.mcshell.local_server.process.is_alive():
                     try:
                         # Ping server via RCON. '/help' is a safe check.
-                        resp = cls.player.run("help")
-                        if resp and "Unknown command" not in resp:
+                        world_name = cls.mcshell._fetch_remote_world_name(cls.mcshell.local_server.local_ip,cls.mcshell.local_server.mc_port)
+                        if world_name and world_name == cls.mcshell.local_server.world_name:
                             success = True
                             break
                     except Exception:
