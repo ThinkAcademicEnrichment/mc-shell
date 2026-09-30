@@ -1463,22 +1463,14 @@ class MCShell(Magics):
         # 7. Bind to Flask UI
         # Check McJuice API connectivity
         try:
-            # You may need to pass the target host and ports explicitly to your client getter now
-            # mcjuice_client = self._get_client(host=target_host, port=mj_port).mj_client()
             mcjuice_client = self._get_client().mj_client()
             last_wifi_ip = mcjuice_client.admin.getIpAddr()
-            
-            # We preserve this limited mutation as it's purely for the UI Hub display
-            # self.server_data['local_ip'] = _get_local_ip(last_wifi_ip)
-            # self.server_data['vpn_ip'] = _get_vpn_ip(last_wifi_ip)
-            # self.server_data['rh_host'] = rh_host
             self.local_server.local_ip = _get_local_ip(last_wifi_ip)
             self.local_server.vpn_ip = _get_vpn_ip(last_wifi_ip)
             self.local_server.rh_host = rh_host
-            
- 
-        except ConnectionRefusedError:
-            print(f"Connection refused at {target_host}! The requested server API may be down.")
+        except Exception as e:
+            print(e)
+            # print(f"Connection refused at {target_host}! The requested server API may be down.")
             self.connection.clear()
             return
 
