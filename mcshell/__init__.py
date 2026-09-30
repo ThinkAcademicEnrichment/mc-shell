@@ -490,16 +490,9 @@ class MCShell(Magics):
         self.ip.set_hook('complete_command', self._complete_world_command, re_key='%pp_start_world')
         self.ip.set_hook('complete_command', self._complete_world_command, re_key='%pp_delete_world')
 
-        # move to new conn objects
-        # self.active_paper_server: Optional[PaperServerManager ,None ] = None
-
         self.app_server_thread = None
         self.managed_tailscale = False
         self.current_ssh_token = None
-
-    # def _connect_tailscale(self, authkey: str, accept_routes: bool = False):
-    #     from mcshell.mcplatforms import CrossPlatformBinary
-    #     from mcshell.mcregistry import TAILSCALE_REGISTRY
 
     def _connect_tailscale(self, authkey: str, accept_routes: bool = False):
         """Automatically authenticates and connects to Tailscale cross-platform."""
@@ -716,14 +709,11 @@ class MCShell(Magics):
 
     def _fetch_remote_world_name(self, host, port):
         from mctools import PINGClient
-        ic(host) 
-        ic(port)
         try:
             ping = PINGClient(host, port=port)
             stats = ping.get_stats()
             
             motd = stats.get('description', '')
-            ic(motd)
             if isinstance(motd, dict):
                 motd = motd.get('text', '')
 
