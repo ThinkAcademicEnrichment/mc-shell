@@ -491,8 +491,7 @@ class MCShell(Magics):
         self.ip.set_hook('complete_command', self._complete_world_command, re_key='%pp_delete_world')
 
         # move to new conn objects
-        # TODO: this needs to stay for now; lots of checks use it
-        self.active_paper_server: Optional[PaperServerManager ,None ] = None
+        # self.active_paper_server: Optional[PaperServerManager ,None ] = None
 
         self.app_server_thread = None
         self.managed_tailscale = False
@@ -1592,9 +1591,9 @@ class MCShell(Magics):
                             manifest = json.load(f)
 
                         status = "RUNNING" if (
-                            self.active_paper_server and
-                            self.active_paper_server.world_name == world_dir.name and
-                            self.active_paper_server.is_alive()
+                            self.local_server.process and
+                            self.local_server.world_name == world_dir.name and
+                            self.local_server.process.is_alive()
                         ) else "Stopped"
 
                         found_worlds.append({
@@ -1670,7 +1669,7 @@ class MCShell(Magics):
             return
 
         # Safety Check: Is this world currently running?
-        if self.active_paper_server and self.active_paper_server.world_name == world_name and self.active_paper_server.is_alive():
+        if self.local_server.process and self.local_server.world_name == world_name and self.local_server.process.is_alive():
             print(f"Error: Cannot delete the world '{world_name}' because it is currently running.")
             print("Please stop the server first with: %pp_stop_world")
             return
@@ -1728,11 +1727,11 @@ class MCShell(Magics):
         """
         Turn server logs ON or OFF. 
         """
-        if not self.active_paper_server or not self.active_paper_server.is_alive():
+        if not self.local_server.process or not self.local_server.process.is_alive():
             print("No active Paper server session is currently running.")
             return
 
-        self.active_paper_server.suspend_logs = not self.active_paper_server.suspend_logs
+        self.local_server.process.suspend_logs = not self.local_server.process.suspend_logs
 
     def _get_local_client(self):
         host_state,conn_state = self._get_fsm_state()
@@ -2861,7 +2860,7 @@ def load_ipython_extension(ip):
 
     def shutdown_hook():
         print("\nIPython is shutting down. Stopping active mc-shell session...")
-        if mcshell_instance.active_paper_server and mcshell_instance.active_paper_server.is_alive():
+        if mcshell_instance.local_server.process and mcshell_instance.local_server.process.is_alive():
             mcshell_instance.pp_stop_world('')
 
         # Clean up Tailscale if the user just hits Ctrl+D instead of %mc_stop_app

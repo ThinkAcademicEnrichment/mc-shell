@@ -76,7 +76,7 @@ def get_lobby_data():
         # Extract the active MCShell magic instance from IPython's registry
         mcshell_instance = shell.magics_manager.registry.get('MCShell')
         if mcshell_instance:
-            is_host = bool(mcshell_instance.active_paper_server and mcshell_instance.active_paper_server.is_alive())
+            is_host = bool(mcshell_instance.local_server.process and mcshell_instance.local_server.process.is_alive())
 
             # --- NEW: Check if the user holds OP privileges ---
             is_admin = bool(mcshell_instance.server_data.get('password'))
