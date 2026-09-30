@@ -101,6 +101,7 @@ jobs:
 
   # --- JOB 2: ChromeOS / Debian Container Run ---
   chromeos-container-test:
+    needs: build-and-test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.ref_name == 'main'
     strategy:
@@ -112,10 +113,16 @@ jobs:
       
     steps:
       - name: Install base container dependencies
-        run: apt-get update && apt-get install -y curl git build-essential maven
+        run: apt-get update && apt-get install -y curl git build-essential
 
       - name: Check out repository
         uses: actions/checkout@v4
+
+      - name: Download McJuice JARs from Job 1
+        uses: actions/download-artifact@v4
+        with:
+          name: mcjuice-jar-python-3.10
+          path: mcshell/data/
 
       - name: Run core build and test steps
         uses: ./.github/actions/build-test-mc-shell
@@ -123,9 +130,3 @@ jobs:
           python-version: '3.10'
           run-integration-tests: 'true'
           skip-python-setup: 'true'
-          
-      - name: Upload McJuice JAR (Debian)
-        uses: actions/upload-artifact@v4
-        with:
-          name: mcjuice-jar-debian-${{ matrix.debian-version }}
-          path: mcshell/data/mcjuice-*.jar  
