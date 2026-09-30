@@ -11,6 +11,7 @@ on:
 
 jobs:
   # --- JOB 1: Standard Ubuntu Run ---
+  # --- JOB 1: Standard Ubuntu Run ---
   build-and-test:
     runs-on: ubuntu-latest
     env:
@@ -22,7 +23,70 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      # Call the composite action
+      # 1. Install all three JDKs
+      - name: Set up JDK 17
+        id: java-17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up JDK 21
+        id: java-21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      # Installed last so JAVA_HOME defaults to Java 25
+      - name: Set up JDK 25
+        id: java-25
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '25'
+
+      # 2. Generate toolchains.xml dynamically from the installed paths
+      - name: Configure Maven Toolchains
+        run: |
+          mkdir -p ~/.m2
+          cat <<EOF > ~/.m2/toolchains.xml
+          <?xml version="1.0" encoding="UTF-8"?>
+          <toolchains>
+            <toolchain>
+              <type>jdk</type>
+              <provides>
+                <version>17</version>
+                <vendor>openjdk</vendor>
+              </provides>
+              <configuration>
+                <jdkHome>${{ steps.java-17.outputs.path }}</jdkHome>
+              </configuration>
+            </toolchain>
+            <toolchain>
+              <type>jdk</type>
+              <provides>
+                <version>21</version>
+                <vendor>openjdk</vendor>
+              </provides>
+              <configuration>
+                <jdkHome>${{ steps.java-21.outputs.path }}</jdkHome>
+              </configuration>
+            </toolchain>
+            <toolchain>
+              <type>jdk</type>
+              <provides>
+                <version>25</version>
+                <vendor>openjdk</vendor>
+              </provides>
+              <configuration>
+                <jdkHome>${{ steps.java-25.outputs.path }}</jdkHome>
+              </configuration>
+            </toolchain>
+          </toolchains>
+          EOF
+
+      # 3. Call the composite action (now has access to toolchains.xml and all 3 JDKs)
       - name: Run core build and test steps
         uses: ./.github/actions/build-test-mc-shell
         with:
@@ -32,8 +96,8 @@ jobs:
       - name: Upload McJuice JAR
         uses: actions/upload-artifact@v4
         with:
-          name: mcjuice-jar-debian-${{ matrix.debian-version }}
-          path: mcshell/data/mcjuice-*.jar  
+          name: mcjuice-jar-python-${{ matrix.python-version }}
+          path: mcshell/data/mcjuice-*.jar
 
   # --- JOB 2: ChromeOS / Debian Container Run ---
   chromeos-container-test:
