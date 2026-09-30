@@ -26,7 +26,7 @@ class MagicTest(unittest.TestCase):
         self._cleanup()
 
     def _cleanup(self):
-        if self.mcshell.active_paper_server and self.mcshell.active_paper_server.is_alive():
+        if self.mcshell.local_server.process and self.mcshell.local_server.process.is_alive():
              self.ip.run_line_magic('pp_stop_world', '')
         world_path = MC_WORLDS_BASE_DIR / self.test_world
         if world_path.exists():
@@ -47,12 +47,12 @@ class MagicTest(unittest.TestCase):
 
             # 2. Start (Now protected by patches against stdin capture errors)
             self.ip.run_line_magic('pp_start_world', self.test_world)
-            self.assertTrue(self.mcshell.active_paper_server.is_alive())
+            self.assertTrue(self.mcshell.local_server.process.is_alive())
 
             # 3. Stop
             self.ip.run_line_magic('pp_stop_world', '')
             time.sleep(2)
-            is_alive = self.mcshell.active_paper_server.is_alive() if self.mcshell.active_paper_server else False
+            is_alive = self.mcshell.local_server.process.is_alive() if self.mcshell.local_server.process else False
             self.assertFalse(is_alive)
 
     def test_pp_create_world_mnemonic(self):
