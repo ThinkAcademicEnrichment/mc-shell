@@ -2914,3 +2914,13 @@ def load_ipython_extension(ip):
         print("Cleanup complete.")
 
     atexit.register(shutdown_hook)
+
+    import signal
+    import sys
+
+    def handle_sigterm(signum, frame):
+        print("Received SIGTERM from OS. Initiating graceful shutdown...")
+        shutdown_hook() 
+        sys.exit(0)
+
+    signal.signal(signal.SIGTERM, handle_sigterm)
