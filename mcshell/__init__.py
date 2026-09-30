@@ -33,82 +33,6 @@ mc_theme = Theme({
 })
 
 console = Console(theme=mc_theme)
-from dataclasses import dataclass
-from typing import Optional
-
-# =====================================================================
-# Conection metadata 
-# =====================================================================
-
-@dataclass
-class ConnectionContext:
-    """Tracks the active routing and identity of the connected player."""
-    player_name: str = None
-    target_host: Optional[str] = None
-    mc_port: int = None
-    rcon_port: int = None 
-    mj_port: int = None 
-    world_name: Optional[str] = None
-    mc_version: Optional[str] = None
-    rh_host: Optional[str] = None
-
-    # --- New Auth Tracking ---
-    password: Optional[str] = None
-    is_admin: bool = False
-
-    # --- Local Proxy Tracking ---
-    local_proxy_mc_port: Optional[int] = None
-    local_proxy_bedrock_port: Optional[int] = None
-    
-    @property
-    def is_joined(self) -> bool:
-        # TODO: this awkward; player_names never mutate
-        return self.player_name is not None and self.target_host is not None
-
-    def clear(self):
-        """Purges connection data to prevent FSM ghost states."""
-        self.player_name: str = None
-        self.target_host: Optional[str] = None
-        self.mc_port: int = None
-        self.rcon_port: int = None 
-        self.mj_port: int = None 
-        self.world_name: Optional[str] = None
-        self.mc_version: Optional[str] = None
-        self.rh_host: Optional[str] = None
-        self.password: Optional[str] = None
-        self.is_admin: bool = False
-        self.local_proxy_mc_port: Optional[int] = None
-        self.local_proxy_bedrock_port: Optional[int] = None
-         
-@dataclass
-class LocalHostingContext:
-    """Tracks the metadata and resources of the local PaperMC background process."""
-    mc_port: int = MC_SERVER_PORT
-    rcon_port: int = MC_RCON_PORT
-    mj_port: int = MJ_PLUGIN_PORT 
-    mc_version: Optional[str] = MC_VERSION
-    world_name: Optional[str] = None
-    rh_host: Optional[str] = None
-
-    local_ip: Optional[str] = None 
-    vpn_ip: Optional[str] = None
-    last_wifi_ip: Optional[str] = None
-
-    # You can store the actual process reference here instead of directly on self
-    process: Optional[object] = None 
-    
-    @property
-    def is_running(self) -> bool:
-        return self.process is not None and self.process.is_alive()
-
-    def clear(self):
-        self.world_name = None
-        self.process = None
-        # Do not clear ports here; they remain the default for the next start
-        local_ip = None 
-        vpn_ip = None 
-        last_wifi_ip = None
-
 
 # =====================================================================
 # SSH Tunnel Helper Functions
@@ -453,6 +377,84 @@ def _find_available_forwarder_ports(start_tcp=25565, start_udp=19132):
         udp_port += 1
         
     return tcp_port, udp_port
+
+
+from dataclasses import dataclass
+from typing import Optional
+
+# =====================================================================
+# Conection metadata 
+# =====================================================================
+
+@dataclass
+class ConnectionContext:
+    """Tracks the active routing and identity of the connected player."""
+    player_name: str = None
+    target_host: Optional[str] = None
+    mc_port: int = None
+    rcon_port: int = None 
+    mj_port: int = None 
+    world_name: Optional[str] = None
+    mc_version: Optional[str] = None
+    rh_host: Optional[str] = None
+
+    # --- New Auth Tracking ---
+    password: Optional[str] = None
+    is_admin: bool = False
+
+    # --- Local Proxy Tracking ---
+    local_proxy_mc_port: Optional[int] = None
+    local_proxy_bedrock_port: Optional[int] = None
+    
+    @property
+    def is_joined(self) -> bool:
+        # TODO: this awkward; player_names never mutate
+        return self.player_name is not None and self.target_host is not None
+
+    def clear(self):
+        """Purges connection data to prevent FSM ghost states."""
+        self.player_name: str = None
+        self.target_host: Optional[str] = None
+        self.mc_port: int = None
+        self.rcon_port: int = None 
+        self.mj_port: int = None 
+        self.world_name: Optional[str] = None
+        self.mc_version: Optional[str] = None
+        self.rh_host: Optional[str] = None
+        self.password: Optional[str] = None
+        self.is_admin: bool = False
+        self.local_proxy_mc_port: Optional[int] = None
+        self.local_proxy_bedrock_port: Optional[int] = None
+         
+@dataclass
+class LocalHostingContext:
+    """Tracks the metadata and resources of the local PaperMC background process."""
+    mc_port: int = MC_SERVER_PORT
+    rcon_port: int = MC_RCON_PORT
+    mj_port: int = MJ_PLUGIN_PORT 
+    mc_version: Optional[str] = MC_VERSION
+    world_name: Optional[str] = None
+    rh_host: Optional[str] = None
+
+    local_ip: Optional[str] = _get_local_ip()
+    vpn_ip: Optional[str] = None
+    last_wifi_ip: Optional[str] = None
+
+    # You can store the actual process reference here instead of directly on self
+    process: Optional[object] = None 
+    
+    @property
+    def is_running(self) -> bool:
+        return self.process is not None and self.process.is_alive()
+
+    def clear(self):
+        self.world_name = None
+        self.process = None
+        # Do not clear ports here; they remain the default for the next start
+        local_ip = None 
+        vpn_ip = None 
+        last_wifi_ip = None
+
 
 @magics_class
 class MCShell(Magics):
@@ -814,6 +816,9 @@ class MCShell(Magics):
         host_table.add_row("MC Port", str(self.local_server.mc_port))
         host_table.add_row("RCON Port", str(self.local_server.rcon_port))
         host_table.add_row("McJuice Port", str(self.local_server.mj_port))
+
+        host_table.add_row("Local IP",str(self.local_server.local_ip))
+        host_table.add_row("VPN IP",str(self.local_server.vpn_ip))
 
         # 3. Connection Context
         conn_table = Table(show_header=True, header_style="bold magenta", title="\n[Connection Context]")
