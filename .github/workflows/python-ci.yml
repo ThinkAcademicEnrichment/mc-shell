@@ -33,7 +33,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: mcjuice-jar-debian-${{ matrix.debian-version }}
-          path: mcshell/data/*.jar  
+          path: mcshell/data/mcjuice-*.jar  
 
   # --- JOB 2: ChromeOS / Debian Container Run ---
   chromeos-container-test:
@@ -64,4 +64,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: mcjuice-jar-debian-${{ matrix.debian-version }}
-          path: mcshell/data/*.jar  
+          path: mcshell/data/mcjuice-*.jar  
