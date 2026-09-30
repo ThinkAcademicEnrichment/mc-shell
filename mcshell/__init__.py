@@ -494,6 +494,54 @@ class MCShell(Magics):
         self.managed_tailscale = False
         self.current_ssh_token = None
 
+    @staticmethod
+    def _destroy_all_ramdisks(base_dir=MC_WORLDS_BASE_DIR):
+        """Finds and safely unmounts all RAM disks mounted under base_dir."""
+        import os
+        import platform
+        import subprocess
+        from pathlib import Path
+
+        base_path = Path(base_dir).resolve()
+        if not base_path.exists():
+            return
+
+        # Find any directory under base_path recognized as a mount point by the OS
+        mount_points = []
+        for root, dirs, _ in os.walk(base_path):
+            for d in list(dirs):
+                dir_path = Path(root) / d
+                if os.path.ismount(str(dir_path)):
+                    mount_points.append(dir_path)
+                    # Prune to prevent scanning files inside the mounted RAM disk
+                    dirs.remove(d)
+
+        if not mount_points:
+            return
+
+        # Unmount deepest paths first to handle any nested mounts cleanly
+        mount_points.sort(key=lambda p: len(p.parts), reverse=True)
+
+        os_system = platform.system()
+        for mp in mount_points:
+            try:
+                if os_system == "Linux":
+                    subprocess.run(
+                        ["sudo", "umount", "-l", str(mp)],
+                        check=True,
+                        capture_output=True,
+                    )
+                elif os_system == "Darwin":
+                    subprocess.run(
+                        ["hdiutil", "detach", str(mp), "-force"],
+                        check=True,
+                        capture_output=True,
+                    )
+                print(f"RAM disk unmounted successfully: {mp}")
+            except subprocess.CalledProcessError as e:
+                err = e.stderr.decode().strip() if e.stderr else e.output.decode().strip()
+                print(f"Warning: Failed to unmount RAM disk at {mp}: {err}")
+
     def _connect_tailscale(self, authkey: str, accept_routes: bool = False):
         """Automatically authenticates and connects to Tailscale cross-platform."""
         print("\n[TAILSCALE] Authenticating device to VPN...")
@@ -2804,6 +2852,8 @@ def _disable_ipython_eof(ip):
         print("[Appliance Mode] Terminal shutdown is disabled. Please use the web UI to manage the server.")
         # Force prompt_toolkit to redraw the input line cleanly
         event.app.invalidate()
+            
+
 
 def load_ipython_extension(ip):
     """
@@ -2847,6 +2897,9 @@ def load_ipython_extension(ip):
 
         # Clean up Tailscale if the user just hits Ctrl+D instead of %mc_stop_app
         mcshell_instance._disconnect_tailscale()
+
+        # just in case
+        mcshell_instance._destroy_all_ramdisks()
 
         # stop all forwarders
         ip.run_line_magic('pp_leave_world','')
