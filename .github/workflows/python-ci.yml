@@ -130,3 +130,4 @@ jobs:
           python-version: '3.10'
           run-integration-tests: 'true'
           skip-python-setup: 'true'
+          skip-mcjuice-build: 'true'
