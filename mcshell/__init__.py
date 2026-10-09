@@ -2807,6 +2807,18 @@ if __name__ == '__main__':
         else:
             print(f"You must join a world first.")
 
+    @line_magic
+    def toggle_vi(self,line):
+        from prompt_toolkit.enums import EditingMode
+        app = self.ip.pt_app.app
+        if app.editing_mode == EditingMode.VI:
+            app.editing_mode = EditingMode.EMACS
+            print("Switched to Emacs mode")
+        else:
+            app.editing_mode = EditingMode.VI
+            print("Switched to Vi mode")
+
+
 # ---------------------------------------------------------------------------
 # Startup and Initialization
 # ---------------------------------------------------------------------------

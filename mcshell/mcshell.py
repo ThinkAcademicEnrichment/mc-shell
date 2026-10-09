@@ -1,3 +1,4 @@
+from rich.traceback import Traceback
 import click
 class SpecialHelpOrderBase(click.Group):
     pass
@@ -39,22 +40,39 @@ import warnings
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="mctools.encoding") 
 
 from traitlets.config import Config
-# configure the ipython shell
-def initialize_config():
+
+# this should be reusable
+def initialize_config() -> Config:
     c = Config()
+    
+    # Vi editing mode
+    c.TerminalInteractiveShell.editing_mode = 'emacs'
+    
+    # UI & Shell behaviors
     c.TerminalIPythonApp.display_banner = False
-    c.InteractiveShellApp.extensions = [
-        'rich'
-    ]
+    c.InteractiveShell.confirm_exit = False
+    c.InteractiveShell.autocall = 1
+    c.InteractiveShell.xmode = 'Plain'
+    c.TerminalInteractiveShell.highlighting_style = 'monokai' # or 'rrt', 'paraiso-dark'
+
+    c.Application.log_level = 30  # 30 translates to logging.WARN
+
+    # Common extensions & magics
+    c.InteractiveShellApp.extensions = ['rich']
     c.InteractiveShellApp.exec_lines = [
-        '%gui asyncio',
         '%load_ext autoreload',
         '%autoreload 2',
-        # requires pickleshare
-        "%store -r",
-        # 'pdb',
+        '%gui asyncio',
+        '%store -r',
+        'pdb',
+        # a terrible 3.10 hack to make pdb work
+        '''
+        import sys
+        if not hasattr(sys, 'last_value'):
+            sys.last_value = None
+        ''',
     ]
-    c.Application.log_level = 0
+
     return c
 
 from IPython.terminal.prompts import Prompts, Token
@@ -89,22 +107,13 @@ def start():
         'mcshell',
     ]
 
-    c.Application.log_level = 30  # 30 translates to logging.WARN
-    c.TerminalIPythonApp.display_banner = False
-
-    # tame traceback output
-    c.InteractiveShell.xmode = 'Plain'
-    # colour scheme
-    c.TerminalInteractiveShell.highlighting_style = 'monokai' # or 'rrt', 'paraiso-dark'
-    # disable confirmations
-    c.TerminalInteractiveShell.confirm_exit = False
-    # allow missing parantheis in magics?
-    c.InteractiveShell.autocall = 1
-    # custom prompt
     c.TerminalInteractiveShell.prompts_class = MCShellPrompt
 
-    import IPython
-    IPython.start_ipython(config=c, argv=[])
+    try:
+        import IPython
+        IPython.start_ipython(config=c, argv=[])
+    except ModuleNotFoundError:
+        print(Traceback())
 
 @cli.command(
     help_priority=26,
