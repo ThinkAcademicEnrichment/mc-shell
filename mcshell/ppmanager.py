@@ -1,3 +1,4 @@
+from click import File
 from mcshell import MC_DEFAULT_JRE_VERSION
 from mcshell import MC_DEFAULT_JRE_PATH
 from mcshell import MC_WORLDS_BASE_DIR
@@ -269,6 +270,9 @@ class PaperServerManager:
             print(f"[{self.world_name}] Warning: Failed to provision RAM disk: {e}. Falling back to standard I/O.")
         except PermissionError as e:
             print(f"[{self.world_name}] Warning: Permission denied seeding RAM disk: {e}. Falling back to standard I/O.")
+        except FileNotFoundError as e:
+            print(f"[{self.world_name}] Warning: {e}. Falling back to standard I/O.")
+
 
 
     def _destroy_ramdisk(self):
