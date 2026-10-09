@@ -110,6 +110,9 @@ jobs:
         
     container:
       image: python:3.10-${{ matrix.debian-version }}
+      credentials:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
       
     steps:
       - name: Install base container dependencies
