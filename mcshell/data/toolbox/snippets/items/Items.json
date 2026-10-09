@@ -1,0 +1,254 @@
+{
+    "kind": "category",
+    "name": "Items",
+    "colour": "#D4A373",
+    "contents": [
+        {
+            "kind": "block",
+            "type": "mc_item_color_harness",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_color_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_item_wood_boat",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_wood_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_item_wood_chest_boat",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_wood_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_item_armor_types_helmet",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_armor_types_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_item_armor_types_sword",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_armor_types_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_item_armor_types_shovel",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_armor_types_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_item_armor_types_pickaxe",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_armor_types_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_item_armor_types_axe",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_armor_types_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_item_armor_types_hoe",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_armor_types_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_item_armor_types_chestplate",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_armor_types_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_item_armor_types_leggings",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_armor_types_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_item_armor_types_boots",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_armor_types_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_item_color_bundle",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_color_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_item_color_dye",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_color_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_item_armor_types_horse_armor",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_armor_types_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_item_armor_types_spear",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_armor_types_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_item_armor_types_nautilus_armor",
+            "inputs": {
+                "VARIANT": {
+                    "shadow": {
+                        "type": "picker_armor_types_types"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "mc_item_picker_world"
+        },
+        {
+            "kind": "block",
+            "type": "mc_item_picker_miscellaneous"
+        },
+        {
+            "kind": "block",
+            "type": "mc_item_picker_redstone_components"
+        },
+        {
+            "kind": "block",
+            "type": "mc_item_picker_music"
+        },
+        {
+            "kind": "block",
+            "type": "mc_item_picker_copper_variants"
+        },
+        {
+            "kind": "block",
+            "type": "mc_item_picker_armor"
+        },
+        {
+            "kind": "block",
+            "type": "mc_item_picker_food"
+        },
+        {
+            "kind": "block",
+            "type": "mc_item_picker_tools"
+        },
+        {
+            "kind": "block",
+            "type": "mc_item_picker_seeds"
+        },
+        {
+            "kind": "block",
+            "type": "mc_item_picker_buckets"
+        },
+        {
+            "kind": "block",
+            "type": "mc_item_picker_fish"
+        },
+        {
+            "kind": "block",
+            "type": "mc_item_picker_spawn_eggs"
+        },
+        {
+            "kind": "block",
+            "type": "mc_item_picker_charges"
+        },
+        {
+            "kind": "block",
+            "type": "mc_item_picker_books"
+        },
+        {
+            "kind": "block",
+            "type": "mc_item_picker_trims"
+        }
+    ]
+}

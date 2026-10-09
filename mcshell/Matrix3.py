@@ -84,3 +84,46 @@ class Matrix3:
         rotated_offset = self @ local_offset
         # 3. Move it back to world space
         return pivot + rotated_offset
+
+
+    @staticmethod
+    def from_angle_and_direction(angle_degrees, axis:Vec3):
+        """
+        Creates a rotation matrix from a net angle and a directional axis
+        using Rodrigues' rotation formula.
+
+        Args:
+            angle_degrees (float): The net rotation angle in degrees.
+            axis (tuple/list/np.ndarray): The 3D directional vector (n_x, n_y, n_z).
+                                          It will be normalized automatically.
+
+        Returns:
+            Matrix3: The resulting 3x3 rotation matrix.
+        """
+        theta = math.radians(angle_degrees)
+        
+        # Ensure the axis is a numpy array and normalize it to get a unit vector (n-hat)
+        axis = np.array(axis.to_tuple(), dtype=float)
+        norm = np.linalg.norm(axis)
+        
+        if norm < 1e-8:
+            # If the axis is a zero vector, return the Identity matrix (no rotation)
+            return Matrix3(np.eye(3))
+            
+        n = axis / norm
+        nx, ny, nz = n
+
+        # Construct the skew-symmetric matrix [n]_x (the "Hat" map)
+        n_hat = np.array([
+            [  0, -nz,  ny],
+            [ nz,   0, -nx],
+            [-ny,  nx,   0]
+        ])
+
+        # Apply Rodrigues' Rotation Formula: R = I + sin(theta)*[n]_x + (1-cos(theta))*[n]_x^2
+        I = np.eye(3)
+        n_hat_squared = n_hat @ n_hat
+        
+        R = I + (math.sin(theta) * n_hat) + ((1 - math.cos(theta)) * n_hat_squared)
+
+        return Matrix3(R)

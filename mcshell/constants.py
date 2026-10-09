@@ -1,10 +1,38 @@
 from mctools import RCONClient, AsyncRCONClient
 from mctools.errors import RCONAuthenticationError
 
+from pprint import pprint
+from threading import Thread,Event
+from typing import List,Optional,Dict,Any,Union
+
+from pathlib import Path # this needs better consistency
+import pathlib
+
+import atexit
+import socket
+import time
+import string
+import random
+import requests
+import json
+import uuid
+import os
+import shutil
+import pickle
+import shlex
+import asyncio
+import time
+import re # Added for VPN IP Regex matching
+
+
+import atexit
+import stat
+import tempfile
+import getpass
+
+
 import sys
 import yaml
-import pathlib
-from pathlib import Path # this needs better consistency
 import re
 import json
 import os
@@ -27,27 +55,30 @@ import pickle
 import time
 import sys
 import uuid
-from typing import List,Optional,Dict,Any,Union
 import threading
 import random
+import psutil
+
+from blockapily import BlocklyGenerator
 
 import xml.etree.ElementTree as ET
 import numpy as np
 
+from ruamel.yaml import YAML 
 from rich import print
 from rich.pretty import pprint
+from rich.prompt import Prompt
 
 from mcshell.Matrix3 import Matrix3
 from mcshell.Vec3 import Vec3
 
-from blockapily import BlocklyGenerator
 
 class PowerCancelledException(Exception):
     pass
 
 try:
     from icecream import ic
-    ic.configureOutput(includeContext=False)
+    ic.configureOutput(includeContext=True)
 except ImportError:  # Graceful fallback if IceCream isn't installed.
     ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
@@ -64,8 +95,19 @@ MC_VERSION = '26.1.2'
 MC_SERVER_HOST = 'localhost'
 MC_RCON_PORT = 25576
 MC_SERVER_PORT = 25566
-MJ_PLUGIN_PORT = 4721
+MJ_PLUGIN_PORT = 27566
 MC_APP_PORT = 5001
+
+# Determine the binary name based on the OS
+JRE_BINARY = "java.exe" if os.name == "nt" else "bin/java"
+
+MC_WORLDS_BASE_DIR = pathlib.Path('~').expanduser().joinpath('mc-worlds')
+
+# this is the default
+MC_DEFAULT_JRE_VERSION = '25'
+MC_DEFAULT_JRE_DIR = MC_WORLDS_BASE_DIR / f'jre-{MC_DEFAULT_JRE_VERSION}'
+MC_DEFAULT_JRE_PATH = MC_DEFAULT_JRE_DIR / JRE_BINARY
+
 
 MC_SERVER_DATA = {
     'host':MC_SERVER_HOST,
@@ -75,6 +117,8 @@ MC_SERVER_DATA = {
     'app_port': MC_APP_PORT,
     'password': None,
     'mc_version': MC_VERSION,
+    'rh_host': None,
+    'jre_path': str(MC_DEFAULT_JRE_PATH),
 }
 
 MC_SHELL_DIR = pathlib.Path(__file__).parent
@@ -93,7 +137,11 @@ MC_APP_SRC_DIR = pathlib.Path(__file__).parent.parent.joinpath('mced/src')
 MC_USER_DIR = pathlib.Path('~/.mc-shell').expanduser()
 MC_POWER_LIBRARY_DIR = MC_USER_DIR.joinpath('powers')
 
-MC_WORLDS_BASE_DIR = pathlib.Path('~').expanduser().joinpath('mc-worlds')
+MC_TOOLBOX_DIR = MC_DATA_DIR.joinpath('toolbox')
+MC_TOOLBOX_SPECS_DIR = MC_TOOLBOX_DIR / "specs" 
+MC_TOOLBOX_SNIPPETS_DIR = MC_TOOLBOX_DIR / "snippets"
+MC_TOOLBOX_SHADOWS = MC_SHELL_DIR/ "shadows" / "factories.py" # the specs need to import the shadow helpers
+
 MC_CENTRAL_CONFIG_FILE = pathlib.Path("/etc/mc-shell/user_map.json")
 
 MC_INTERNAL_DATAPACKS = MC_DATA_DIR / 'datapacks'
@@ -101,11 +149,6 @@ MC_DATAPACK_LIB_DIR = MC_WORLDS_BASE_DIR / 'datapacks-library'
 
 MC_JUICE_SRC_DIR = pathlib.Path(__file__).parent.parent / 'mcjuice' / 'src'
 
-MC_JRE_DIR = MC_WORLDS_BASE_DIR / 'jre'
-# Determine the binary name based on the OS
-JRE_BINARY = "java.exe" if os.name == "nt" else "bin/java"
-
-MC_JRE_PATH = MC_JRE_DIR / JRE_BINARY
 
 RE_NON_JSON_VALUE = r"(?<!\")\b(?:[0-9]+[a-zA-Z]+|[0-9]+(?:\.[0-9]+)?[a-zA-Z]+|true|false|null)\b(?!\")"
 RE_NON_JSON_ARRAY = r"\[[BISL];\s*[^\]]+\]"

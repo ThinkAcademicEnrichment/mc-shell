@@ -1,11 +1,12 @@
 from mcshell.mcactions_base import MCActionsBase
 from mcshell.constants import Vec3
-from blockapily import mced_block
+from blockapily import mced_block,mced_category
 import time
 import re
 import json
 from typing import Union
 
+@mced_category(name="Server",colour="#5C7457")
 class ServerActions(MCActionsBase):
     """
     Blocks for controlling server state, game rules, and mini-game management.
@@ -84,7 +85,16 @@ class ServerActions(MCActionsBase):
 
     @mced_block(
         label="Set Weather to [weather]",
-        weather={'label': 'Weather', 'shadow': '<shadow type="text"><field name="TEXT">clear</field></shadow>'}
+        weather={
+            'label': 'Weather', 
+            'shadow': {
+                'xml': '<shadow type="text"><field name="TEXT">clear</field></shadow>',
+                'json': {
+                    'type': 'text',
+                    'fields': {'TEXT': 'clear'}
+                }
+            }
+        }
     )
     def server_weather_set(self, weather: str):
         """Sets the server weather (clear, rain, thunder)."""
@@ -93,7 +103,16 @@ class ServerActions(MCActionsBase):
     @mced_block(
         label="Set Gamemode to [gamemode] for [target]",
         gamemode={'label': 'Game Mode'},
-        target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'}
+        target={
+            'label': 'Target Player', 
+            'shadow': {
+                'xml': '<shadow type="text"><field name="TEXT">SELF</field></shadow>',
+                'json': {
+                    'type': 'text',
+                    'fields': {'TEXT': 'SELF'}
+                }
+            }
+        }
     )
     def server_gamemode_set(self, gamemode: 'GameMode', target: str = "SELF"):
         """Changes a player's gamemode."""
@@ -154,7 +173,16 @@ class ServerActions(MCActionsBase):
 
     @mced_block(
         label="Clear Inventory of [target]",
-        target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'}
+        target={
+            'label': 'Target Player', 
+            'shadow': {
+                'xml': '<shadow type="text"><field name="TEXT">SELF</field></shadow>',
+                'json': {
+                    'type': 'text',
+                    'fields': {'TEXT': 'SELF'}
+                }
+            }
+        }
     )
     def server_clear_inventory(self, target: str = "SELF"):
         """Clears items from a player's inventory."""
@@ -163,9 +191,18 @@ class ServerActions(MCActionsBase):
 
     @mced_block(
         label="Give [count] [block|item|entity] to [target]",
-        material={'label': 'Block or Item or Entity', 'shadow': 'minecraft_picker_world'},
+        material={'label': 'Block or Item or Entity', 'shadow': 'Block'},
         count={'label': 'Count', 'shadow': 'math_number'},
-        target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'}
+        target={
+            'label': 'Target Player', 
+            'shadow': {
+                'xml': '<shadow type="text"><field name="TEXT">SELF</field></shadow>',
+                'json': {
+                    'type': 'text',
+                    'fields': {'TEXT': 'SELF'}
+                }
+            }
+        }
     )
     def server_give_block_item_projectile(self, material: Union['Block','Item','Entity'], count: int = 1, target: str = "SELF"):
         """Gives an item to a player."""
@@ -179,11 +216,20 @@ class ServerActions(MCActionsBase):
     )
     def server_summon(self, entity: 'Entity', pos: Vec3):
         """Summons an entity at a specific location."""
-        self._run_command(f"summon {entity} {pos.x} {pos.y} {pos.z}")
+        self._run_command(f"summon {entity.lower()} {pos.x} {pos.y} {pos.z}")
 
     @mced_block(
         label="Teleport [target] to [pos]",
-        target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'},
+        target={
+            'label': 'Target Player', 
+            'shadow': {
+                'xml': '<shadow type="text"><field name="TEXT">SELF</field></shadow>',
+                'json': {
+                    'type': 'text',
+                    'fields': {'TEXT': 'SELF'}
+                }
+            }
+        },
         pos={'label': 'Position'}
     )
     def server_teleport(self, target: str, pos: Vec3):
@@ -202,7 +248,16 @@ class ServerActions(MCActionsBase):
     @mced_block(
         label="Apply [effect] to [target] for [seconds]s (Level [amplifier])",
         effect={'label': 'Effect'},
-        target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'},
+        target={
+            'label': 'Target Player', 
+            'shadow': {
+                'xml': '<shadow type="text"><field name="TEXT">SELF</field></shadow>',
+                'json': {
+                    'type': 'text',
+                    'fields': {'TEXT': 'SELF'}
+                }
+            }
+        },
         seconds={'label': 'Duration', 'shadow': 'math_number'},
         amplifier={'label': 'Level', 'shadow': 'math_number'}
     )
@@ -215,7 +270,16 @@ class ServerActions(MCActionsBase):
         label="Show Title [text] as [action] for [target]",
         text={'label': 'Message', 'shadow': 'text'},
         action={'label': 'Title Action'},
-        target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">@a</field></shadow>'}
+        target={
+            'label': 'Target Player', 
+            'shadow': {
+                'xml': '<shadow type="text"><field name="TEXT">@a</field></shadow>',
+                'json': {
+                    'type': 'text',
+                    'fields': {'TEXT': '@a'}
+                }
+            }
+        }
     )
     def server_show_title(self, text: str, action: 'TitleAction', target: str = "@a"):
         """Displays large text on the player's screen."""
@@ -225,7 +289,16 @@ class ServerActions(MCActionsBase):
 
     @mced_block(
         label="Damage [target] by [amount]",
-        target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'},
+        target={
+            'label': 'Target Player', 
+            'shadow': {
+                'xml': '<shadow type="text"><field name="TEXT">SELF</field></shadow>',
+                'json': {
+                    'type': 'text',
+                    'fields': {'TEXT': 'SELF'}
+                }
+            }
+        },
         amount={'label': 'Amount'}
     )
     def server_damage(self, amount: float, target: str = "SELF"):
@@ -266,9 +339,56 @@ class ServerActions(MCActionsBase):
     @mced_block(
         label="Set the spawnpoint for [target] at [position]",
         position={'label':'Position'},
-        target={'label': 'Target Player', 'shadow': '<shadow type="text"><field name="TEXT">SELF</field></shadow>'},
+        target={
+            'label': 'Target Player', 
+            'shadow': {
+                'xml': '<shadow type="text"><field name="TEXT">SELF</field></shadow>',
+                'json': {
+                    'type': 'text',
+                    'fields': {'TEXT': 'SELF'}
+                }
+            }
+        },
     )
     def server_spawnpoint(self,position: Vec3,target: str = "@a"):
         """Sets the spawn point for a player."""
         self._run_command(f"spawnpoint {target} {int(position.x)} {int(position.y)} {int(position.z)}")
 
+    @mced_block(
+        label="Build Physical [color] Bed at [pos] facing [direction]",
+        color={'label': 'Color'},
+        pos={'label': 'Head Position'},
+        direction={'label': 'Facing (north/south/east/west)'}
+    )
+    def build_physical_bed(self, color: 'Color', pos: 'Vec3', direction: 'QCompass'):
+        """Places a complete two-block bed in the world safely."""
+        
+        # 1. Snap coordinates to integers (Minecraft blocks are on a grid)
+        head_x, head_y, head_z = int(pos.x), int(pos.y), int(pos.z)
+        foot_x, foot_y, foot_z = head_x, head_y, head_z
+
+        # 2. Calculate where the foot goes based on the facing direction
+        # If the bed is facing North (-Z), the foot must be placed 1 block South (+Z)
+        direction = direction.lower()
+        if direction == "north":
+            foot_z += 1
+        elif direction == "south":
+            foot_z -= 1
+        elif direction == "east":
+            foot_x -= 1
+        elif direction == "west":
+            foot_x += 1
+        else:
+            print(f"Warning: Invalid bed direction '{direction}'. Defaulting to north.")
+            direction = "north"
+            foot_z += 1
+
+        bed_block = f"{color.lower()}_bed"
+
+        # 3. Construct the exact block states for Java Edition
+        cmd_foot = f"setblock {foot_x} {foot_y} {foot_z} {bed_block}[part=foot,facing={direction}] replace"
+        cmd_head = f"setblock {head_x} {head_y} {head_z} {bed_block}[part=head,facing={direction}] replace"
+
+        # 4. Execute the commands (inheriting your existing RCON helper)
+        self._run_command(cmd_foot)
+        self._run_command(cmd_head)

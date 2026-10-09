@@ -185,6 +185,10 @@
           "value": "WET_SPONGE"
         },
         {
+          "name": "Glass",
+          "value": "GLASS"
+        },
+        {
           "name": "Lapis Block",
           "value": "LAPIS_BLOCK"
         },
@@ -435,6 +439,10 @@
         {
           "name": "Mushroom Stem",
           "value": "MUSHROOM_STEM"
+        },
+        {
+          "name": "Glass Pane",
+          "value": "GLASS_PANE"
         },
         {
           "name": "Pumpkin",
@@ -1605,6 +1613,10 @@
           "value": "CHISELED_TUFF_BRICKS"
         },
         {
+          "name": "Tinted Glass",
+          "value": "TINTED_GLASS"
+        },
+        {
           "name": "Powder Snow",
           "value": "POWDER_SNOW"
         },
@@ -2024,23 +2036,6 @@
         {
           "name": "Deepslate Copper Ore",
           "value": "DEEPSLATE_COPPER_ORE"
-        }
-      ]
-    },
-    {
-      "name": "Glass",
-      "items": [
-        {
-          "name": "Glass",
-          "value": "GLASS"
-        },
-        {
-          "name": "Glass Pane",
-          "value": "GLASS_PANE"
-        },
-        {
-          "name": "Tinted Glass",
-          "value": "TINTED_GLASS"
         }
       ]
     },
@@ -3705,6 +3700,10 @@
           "value": "WET_SPONGE"
         },
         {
+          "name": "Glass",
+          "value": "GLASS"
+        },
+        {
           "name": "Lapis Block",
           "value": "LAPIS_BLOCK"
         },
@@ -3919,6 +3918,10 @@
         {
           "name": "Mushroom Stem",
           "value": "MUSHROOM_STEM"
+        },
+        {
+          "name": "Glass Pane",
+          "value": "GLASS_PANE"
         },
         {
           "name": "Pumpkin",
@@ -4837,6 +4840,10 @@
           "value": "CHISELED_TUFF_BRICKS"
         },
         {
+          "name": "Tinted Glass",
+          "value": "TINTED_GLASS"
+        },
+        {
           "name": "Sculk Sensor",
           "value": "SCULK_SENSOR"
         },
@@ -5381,6 +5388,10 @@
           "value": "CLOCK"
         },
         {
+          "name": "Spyglass",
+          "value": "SPYGLASS"
+        },
+        {
           "name": "Glowstone Dust",
           "value": "GLOWSTONE_DUST"
         },
@@ -5431,6 +5442,10 @@
         {
           "name": "Gold Nugget",
           "value": "GOLD_NUGGET"
+        },
+        {
+          "name": "Glass Bottle",
+          "value": "GLASS_BOTTLE"
         },
         {
           "name": "Potion",
@@ -5856,31 +5871,6 @@
         {
           "name": "Deepslate Copper Ore",
           "value": "DEEPSLATE_COPPER_ORE"
-        }
-      ]
-    },
-    {
-      "name": "Glass",
-      "items": [
-        {
-          "name": "Glass",
-          "value": "GLASS"
-        },
-        {
-          "name": "Glass Pane",
-          "value": "GLASS_PANE"
-        },
-        {
-          "name": "Tinted Glass",
-          "value": "TINTED_GLASS"
-        },
-        {
-          "name": "Spyglass",
-          "value": "SPYGLASS"
-        },
-        {
-          "name": "Glass Bottle",
-          "value": "GLASS_BOTTLE"
         }
       ]
     },

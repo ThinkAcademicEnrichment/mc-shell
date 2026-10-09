@@ -1,3 +1,4 @@
+from mcshell import MC_SHELL_DIR
 from mcshell.constants import *
 
 # --- EXTRACTED CONFIGURATION IMPORT ---
@@ -59,12 +60,15 @@ class RegistryBuilder:
     # def __init__(self, toolbox_path: pathlib.Path, blocks_dir: pathlib.Path, gens_dir: pathlib.Path, materials_path: pathlib.Path, entity_id_map_path: pathlib.Path):
     def __init__(self, toolbox_path: pathlib.Path, blocks_dir: pathlib.Path, gens_dir: pathlib.Path):
         self.toolbox_path = toolbox_path
+        self.toolbox_snippet_dir= self.toolbox_path.parent.joinpath('snippets')
+
         self.blocks_dir = blocks_dir
         self.gens_dir = gens_dir
         self.generated_block_pickers = [] # <--- NEW: Tracks exactly what pickers get generated
 
         self.GENERATED_ACTION_CLASSES = []
         self.ACTION_CLASSES = []
+        self.SHAPE_CLASSES = []
         if BlocklyGenerator is not None:
             classes = []
             yaml_path = MC_DATA_DIR / "mcjuice_api.yaml"
@@ -88,22 +92,25 @@ class RegistryBuilder:
                 except Exception as e:
                     print(f"Warning: Failed to auto-discover generated classes: {e}")
 
-            # if self.GENERATED_ACTIONS_BLACKLIST:
-            #     print(f"Skipping {','.join(self.GENERATED_ACTIONS_BLACKLIST)} block generation")
 
             self.GENERATED_ACTION_CLASSES.extend([(c, n, col) for c, n, col in classes if c is not None and not c.__name__ in self.GENERATED_ACTIONS_BLACKLIST])
 
-            classes = [
-                (get_class("actions","qactions", "QActions"), "Q-Stuff", self.COLORS["Turtle"]),
-                (get_class("actions","qturtleactions", "QTurtleActions"), "Q-Turtle", self.COLORS["Turtle"]),
-                (get_class("shapes","qturtleshapes", "QTurtleShapes"), "Q-Turtle Sets", self.COLORS["Turtle"]),
-                (get_class("shapes","lsystemshapes", "LSystemShapes"), "LSystem Sets", self.COLORS["LSystem"]),
-                (get_class("actions","digitalsetactions", "DigitalSetActions"), "Digital Set Ops", self.COLORS["Digital Set"]),
-                (get_class("actions","digitalgeometryactions", "DigitalGeometryActions"), "Digital Geometry", self.COLORS["Geometry"]),
-                (get_class("actions","serveractions", "ServerActions"), "Server", self.COLORS["Server"]),
+            self.ACTION_CLASSES= [
+                (get_class("actions","qactions", "QActions"),None,None),
+                (get_class("actions","qturtleactions", "QTurtleActions"),None,None),
+                (get_class("actions","digitalsetactions", "DigitalSetActions"),None,None),
+                (get_class("actions","setactions", "SetActions"),None,None),
+                (get_class("actions","digitalgeometryactions", "DigitalGeometryActions"),None,None),
+                (get_class("actions","selectionactions", "SelectionActions"),None,None),
+                (get_class("actions","serveractions", "ServerActions"),None,None),
+                (get_class("actions","bedwarsactions", "BedWarsActions"),None,None),
             ]
 
-            self.ACTION_CLASSES.extend([(c, n, col) for c, n, col in classes if c is not None])
+            self.SHAPE_CLASSES = [
+                (get_class("shapes","qturtleshapes", "QTurtleShapes"),None,None),
+                (get_class("shapes","lsystemshapes", "LSystemShapes"),None,None),
+            ]
+
 
     def _normalize_name(self, name: str) -> str:
         return name.replace('_', ' ').title()
@@ -118,13 +125,18 @@ class RegistryBuilder:
         self.build_entities()
 
         self.build_actions()
+        self.build_shapes()
+
+        self.build_pickers()
 
         self.build_pickers_category()
+        self.build_pickers_module()
+
         self.build_action_classes_export()
         self.export_taxonomy()
         
     def build_action_classes_export(self):
-        class_names = [cls.__name__ for cls, _, _ in self.ACTION_CLASSES + self.GENERATED_ACTION_CLASSES]
+        class_names = [cls.__name__ for cls,_,_ in self.ACTION_CLASSES + self.GENERATED_ACTION_CLASSES + self.SHAPE_CLASSES]
         js_content = f"export const ACTION_CLASSES = {class_names!r};\n"
         out_path = self.gens_dir / "action_classes.mjs"
         out_path.write_text(js_content, encoding='utf-8')
@@ -142,7 +154,7 @@ class RegistryBuilder:
         if clean_toolbox:
             self.toolbox_path.unlink(missing_ok=True)
         if not self.toolbox_path.exists():
-            template = MC_DATA_DIR / 'toolbox_template.xml'
+            template = self.toolbox_path.parent / 'toolbox_template.xml'
             if template.exists():
                 self.toolbox_path.write_text(template.read_text())
 
@@ -193,9 +205,14 @@ class RegistryBuilder:
 
         return parameterized, consumed, suffix_map
 
-    def build_blocks(self,write_static_files=True):
+    def build_blocks(self, write_static_files=True):
         self.generated_block_pickers = [] # Reset block picker tracking
         js, py, xml = [], [], []
+        
+        # NEW: Track JSON outputs for the snippet and the Enum class
+        json_blocks = []
+        block_enums = {}
+        
         base = self._generate_base_pickers()
         js.append(base['js']); py.append(base['py'])
 
@@ -210,6 +227,10 @@ class RegistryBuilder:
                 self.COLORS["Block"], info["template"], info["shadow"]
             )
             js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
+            
+            # Track JSON representations
+            json_blocks.append(res['json'])
+            block_enums[b_type.upper()] = res['json']
 
         for group_name, members in self.MATERIAL_PICKER_GROUPS.items():
             valid_members = []
@@ -232,6 +253,11 @@ class RegistryBuilder:
 
             res = BlocklyGenerator.generate_picker(b_type, self._normalize_name(group_name), [(self._normalize_name(m), m) for m in valid_members], "Block", self.COLORS["Picker"])
             js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
+            
+            # Track JSON representations
+            json_blocks.append(res['json'])
+            block_enums[b_type.upper()] = res['json']
+            
             consumed.update(valid_members)
 
         rem = sorted(list(set(blocks) - consumed))
@@ -240,15 +266,53 @@ class RegistryBuilder:
             self.generated_block_pickers.append(b_type) # Track fallback picker
             res = BlocklyGenerator.generate_picker(b_type, "Other Blocks", [(self._normalize_name(m), m) for m in rem], "Block", self.COLORS["Picker"])
             js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
+            
+            # Track JSON representations
+            json_blocks.append(res['json'])
+            block_enums[b_type.upper()] = res['json']
 
         if write_static_files:
             self._write_output("blocks", "Blocks", js, py)
 
         BlocklyGenerator.update_toolbox(f'<category name="Blocks" colour="{self.COLORS["Block"]}">{"".join(xml)}</category>', self.toolbox_path)
-        return js, py
+        
+        # --- NEW: JSON Category Snippet & Enum Class Generation ---
+        # 1. Save the Blocks category JSON snippet
+        json_category = {
+            "kind": "category",
+            "name": "Blocks",
+            "colour": self.COLORS.get("Block", "#000000"),
+            "contents": json_blocks
+        }
 
-    def build_items(self,write_static_files=True):
+        self._export_toolbox_json_snippet('Blocks',json_category,'blocks')       
+
+           
+        # 2. Build and save the Python Enum-like class
+        py_lines = [
+            "# AUTO-GENERATED FILE - DO NOT EDIT",
+            "class Blocks:",
+            '    """Available parameterized blocks and pickers for custom toolboxes."""'
+        ]
+        
+        for attr_name, block_dict in block_enums.items():
+            safe_attr = re.sub(r'[^A-Za-z0-9_]', '_', attr_name)
+            py_lines.append(f"    {safe_attr} = {block_dict}")
+
+        blocks_py_path = MC_SHELL_DIR / 'blockly' / 'blocks.py'
+        blocks_py_path.parent.mkdir(parents=True, exist_ok=True)
+        blocks_py_path.write_text("\n".join(py_lines), encoding='utf-8')
+
+        return js, py 
+
+
+    def build_items(self, write_static_files=True):
         js, py, xml = [], [], []
+        
+        # NEW: Track JSON outputs for the snippet and the Enum class
+        json_items = []
+        item_enums = {}
+        
         items = [k for k, v in self.materials_data.items() if v.get('is_item') and not v.get('is_block')]
         templates, consumed, suffix_map = self._classify_variants(items)
 
@@ -259,6 +323,10 @@ class RegistryBuilder:
                 self.COLORS["Item"], info["template"], info["shadow"]
             )
             js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
+            
+            # Track JSON representations
+            json_items.append(res['json'])
+            item_enums[b_type.upper()] = res['json']
 
         for group_name, members in self.MATERIAL_PICKER_GROUPS.items():
             valid_members = []
@@ -277,91 +345,230 @@ class RegistryBuilder:
             b_type = f"mc_item_picker_{group_name.lower()}"
             res = BlocklyGenerator.generate_picker(b_type, self._normalize_name(group_name), [(self._normalize_name(m), m) for m in valid_members], "Item", self.COLORS["Picker"])
             js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
+            
+            # Track JSON representations
+            json_items.append(res['json'])
+            item_enums[b_type.upper()] = res['json']
+            
             consumed.update(valid_members)
 
         rem = sorted(list(set(items) - consumed))
         if rem:
-            res = BlocklyGenerator.generate_picker("mc_item_picker_general", "Other Items", [(self._normalize_name(m), m) for m in rem], "Item", self.COLORS["Picker"])
+            b_type = "mc_item_picker_general"
+            res = BlocklyGenerator.generate_picker(b_type, "Other Items", [(self._normalize_name(m), m) for m in rem], "Item", self.COLORS["Picker"])
             js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
+            
+            # Track JSON representations
+            json_items.append(res['json'])
+            item_enums[b_type.upper()] = res['json']
 
         if write_static_files:
             self._write_output("items", "Items", js, py)
+            
         BlocklyGenerator.update_toolbox(f'<category name="Items" colour="{self.COLORS["Item"]}">{"".join(xml)}</category>', self.toolbox_path)
+        
+        # --- NEW: JSON Category Snippet & Enum Class Generation ---
+        import json
+        import re
+        
+        # 1. Save the Items category JSON snippet
+        json_category = {
+            "kind": "category",
+            "name": "Items",
+            "colour": self.COLORS.get("Item", "#000000"),
+            "contents": json_items
+        }
+        
+        self._export_toolbox_json_snippet('Items',json_category,'items')       
+
+                    
+        # 2. Build and save the Python Enum-like class
+        py_lines = [
+            "# AUTO-GENERATED FILE - DO NOT EDIT",
+            "class Items:",
+            '    """Available parameterized blocks and pickers for custom toolboxes."""'
+        ]
+        
+        for attr_name, block_dict in item_enums.items():
+            safe_attr = re.sub(r'[^A-Za-z0-9_]', '_', attr_name)
+            py_lines.append(f"    {safe_attr} = {block_dict}")
+
+        items_py_path = MC_SHELL_DIR / 'blockly' / 'items.py'
+        items_py_path.parent.mkdir(parents=True, exist_ok=True)
+        items_py_path.write_text("\n".join(py_lines), encoding='utf-8')
+
         return js, py
 
-    def build_entities(self,write_static_files=True):
+    def build_entities(self, write_static_files=True):
         js, py, xml = [], [], []
+        
+        # NEW: Track JSON outputs for the snippet and the Enum class
+        json_entities = []
+        entity_enums = {}
+        
         for group, members in self.ENTITY_GROUPS.items():
             opts = [(self._normalize_name(e), e) for e in sorted(members) if e in self.entity_data]
             if not opts: continue
-            res = BlocklyGenerator.generate_picker(f"mc_entity_picker_{group}", self._normalize_name(group), opts, "Entity", self.COLORS["Entity"])
+            
+            b_type = f"mc_entity_picker_{group}"
+            res = BlocklyGenerator.generate_picker(b_type, self._normalize_name(group), opts, "Entity", self.COLORS["Entity"])
             js.append(res['js']); py.append(res['py']); xml.append(res['xml'])
+            
+            # Track JSON representations
+            json_entities.append(res['json'])
+            entity_enums[b_type.upper()] = res['json']
 
         if write_static_files:
             self._write_output("entities", "Entities", js, py)
 
         BlocklyGenerator.update_toolbox(f'<category name="Entities" colour="{self.COLORS["Entity"]}">{"".join(xml)}</category>', self.toolbox_path, append_separator=False)
+        
+        # --- NEW: JSON Category Snippet & Enum Class Generation ---
+        import json
+        import re
+        
+        # 1. Save the Entities category JSON snippet
+        json_category = {
+            "kind": "category",
+            "name": "Entities",
+            "colour": self.COLORS.get("Entity", "#000000"),
+            "contents": json_entities
+        }
+        self._export_toolbox_json_snippet("Entities",json_category,"entities") 
+                   
+        # 2. Build and save the Python Enum-like class
+        py_lines = [
+            "# AUTO-GENERATED FILE - DO NOT EDIT",
+            "class Entities:",
+            '    """Available entity pickers for custom toolboxes."""'
+        ]
+        
+        for attr_name, block_dict in entity_enums.items():
+            safe_attr = re.sub(r'[^A-Za-z0-9_]', '_', attr_name)
+            py_lines.append(f"    {safe_attr} = {block_dict}")
+
+        entities_py_path = MC_SHELL_DIR / 'blockly' / 'entities.py'
+        entities_py_path.parent.mkdir(parents=True, exist_ok=True)
+        entities_py_path.write_text("\n".join(py_lines), encoding='utf-8')
+
         return js, py
 
+    def _export_toolbox_json_snippet(self,cls_name,json_string,snippets_dir='actions'):
+        json_snippet_path = self.toolbox_snippet_dir.joinpath(f'{snippets_dir}/{cls_name}.json')
+        json_snippet_path.parent.mkdir(exist_ok=True)
+        json.dump(json_string, json_snippet_path.open('w'), indent=4)
+
+    def _export_toolbox_xml_snippet(self,cls_name, xml_string):
+        import xml.etree.ElementTree as ET
+
+        # Parse the string into an Element object
+        root = ET.fromstring(xml_string)
+
+        # Indent the tree in-place (default is 2 spaces)
+        ET.indent(root, space="    ")
+
+        # Convert back to a pretty-printed string
+        pretty_xml = ET.tostring(root, encoding="utf-8").decode("utf-8")
+        xml_snippet_path = self.toolbox_snippet_dir.joinpath(f'{cls_name}.xml')
+        xml_snippet_path.parent.mkdir(exist_ok=True)
+        xml_snippet_path.write_text(pretty_xml)
+
+    def build_pickers(self):
+        pick_js, pick_py = [], []
+        for p in self.GENERATED_ACTION_PICKERS + self.ACTION_PICKERS:
+            res = BlocklyGenerator.generate_picker(p['id'], p['label'], p['options'], p['input_type'], self.COLORS["Picker"])
+            pick_js.append(res['js']); pick_py.append(res['py'])
+
+        self._write_output('pickers', 'Picker', pick_js, pick_py)
+
+    def _build_helper(self,classes_to_build,snippets_dir):
+        for cls, name, color in classes_to_build:
+            gen = BlocklyGenerator(cls, self.TYPE_MAP, self.SHADOW_MAP, color, name)
+            b_js, p_py, c_xml, c_json = gen.generate()
+            self._write_output(cls.__name__, cls.__name__, [b_js], [p_py])
+
+            BlocklyGenerator.update_toolbox(c_xml, self.toolbox_path,append_separator=True)
+
+            self._export_toolbox_json_snippet(cls.__name__, c_json, snippets_dir)
+
     def build_actions(self):
-        pick_js, pick_py = [], []
-        for p in self.GENERATED_ACTION_PICKERS:
-            res = BlocklyGenerator.generate_picker(p['id'], p['label'], p['options'], p['input_type'], self.COLORS["Picker"])
-            pick_js.append(res['js']); pick_py.append(res['py'])
+        self._build_helper(self.GENERATED_ACTION_CLASSES,'actions')
+        self._build_helper(self.ACTION_CLASSES,'actions')
 
-        for i, (cls, name, color) in enumerate(self.GENERATED_ACTION_CLASSES):
-            gen = BlocklyGenerator(cls, self.TYPE_MAP, self.SHADOW_MAP, color, name)
-            b_js, p_py, c_xml = gen.generate()
-            js_out = pick_js + [b_js] if i == 0 else [b_js]
-            py_out = pick_py + [p_py] if i == 0 else [p_py]
-            self._write_output(cls.__name__, cls.__name__, js_out, py_out)
-
-            # fragile
-            append_separator = False
-            if i == len(self.GENERATED_ACTION_CLASSES) -1:
-                append_separator = True
-
-            BlocklyGenerator.update_toolbox(c_xml, self.toolbox_path,append_separator=append_separator)
-
-
-        pick_js, pick_py = [], []
-        for p in self.ACTION_PICKERS:
-            res = BlocklyGenerator.generate_picker(p['id'], p['label'], p['options'], p['input_type'], self.COLORS["Picker"])
-            pick_js.append(res['js']); pick_py.append(res['py'])
-
-        for i, (cls, name, color) in enumerate(self.ACTION_CLASSES):
-            gen = BlocklyGenerator(cls, self.TYPE_MAP, self.SHADOW_MAP, color, name)
-            b_js, p_py, c_xml = gen.generate()
-            js_out = pick_js + [b_js] if i == 0 else [b_js]
-            py_out = pick_py + [p_py] if i == 0 else [p_py]
-            self._write_output(cls.__name__, cls.__name__, js_out, py_out)
-
-            # this is so fragile
-            separated_action_classes = ['ServerActions','DigitalGeometryActions']
-            append_separator = False
-            if i < len(self.ACTION_CLASSES) - 1 and self.ACTION_CLASSES[i+1][0].__name__ in separated_action_classes:
-                append_separator = True
-            elif i == len(self.ACTION_CLASSES) - 1:
-                append_separator = True
-
-
-            BlocklyGenerator.update_toolbox(c_xml, self.toolbox_path,append_separator=append_separator)
-            # return js_out, py_out
+    def build_shapes(self):
+        self._build_helper(self.SHAPE_CLASSES,'shapes')
 
     def build_pickers_category(self):
         """
-        NEW: Safely builds the Pickers category in the toolbox by *only* inserting
-        blocks that were successfully generated and tracked in the previous steps.
+        Safely builds the Pickers category in both XML and JSON formats.
         """
-        xml = [f'<block type="{info["id"]}"></block>' for info in self.VARIANT_CONFIG.values()]
-        xml += [f'<block type="{p["id"]}"></block>' for p in self.ACTION_PICKERS]
-        xml += [f'<block type="{p["id"]}"></block>' for p in self.GENERATED_ACTION_PICKERS]
+        # 1. Gather all dynamic picker types
+        picker_types = [info["id"] for info in self.VARIANT_CONFIG.values()]
+        picker_types += [p["id"] for p in self.ACTION_PICKERS]
+        picker_types += [p["id"] for p in self.GENERATED_ACTION_PICKERS]
+        picker_types += getattr(self, 'generated_block_pickers', [])
 
-        # Pull exactly what was verified and built in build_blocks()
-        for b_type in getattr(self, 'generated_block_pickers', []):
-            xml.append(f'<block type="{b_type}"></block>')
+        # 2. Legacy XML generation
+        xml_blocks = [f'<block type="{b_type}"></block>' for b_type in picker_types]
+        BlocklyGenerator.update_toolbox(
+            f'<category name="Pickers" colour="{self.COLORS["Picker"]}">{"".join(xml_blocks)}</category>', 
+            self.toolbox_path
+        )
 
-        BlocklyGenerator.update_toolbox(f'<category name="Pickers" colour="{self.COLORS["Picker"]}">{"".join(xml)}</category>', self.toolbox_path)
+        # 3. New JSON Snippet Generation
+        json_category = {
+            "kind": "category",
+            "name": "Pickers",
+            "colour": self.COLORS.get("Picker", "#000000"),
+            "contents": [{"kind": "block", "type": b_type} for b_type in picker_types]
+        }
+        
+        self._export_toolbox_json_snippet("Pickers", json_category,'pickers')
+
+        
+    def build_pickers_module(self):
+        """
+        Builds the legacy XML Pickers category and auto-generates a Python class 
+        for granular JSON toolbox picker selection.
+        """
+        # 1. Gather all dynamic picker types
+        picker_types = [info["id"] for info in self.VARIANT_CONFIG.values()]
+        picker_types += [p["id"] for p in self.ACTION_PICKERS]
+        picker_types += [p["id"] for p in self.GENERATED_ACTION_PICKERS]
+        picker_types += getattr(self, 'generated_block_pickers', [])
+        
+        # Deduplicate and sort for clean output
+        picker_types = sorted(list(set(picker_types)))
+
+        # 2. Legacy XML generation
+        xml_blocks = [f'<block type="{b_type}"></block>' for b_type in picker_types]
+        BlocklyGenerator.update_toolbox(
+            f'<category name="Pickers" colour="{self.COLORS["Picker"]}">{"".join(xml_blocks)}</category>', 
+            self.toolbox_path
+        )
+
+        # 3. Generate the Python Enum-like class
+        import re
+        py_lines = [
+            "# AUTO-GENERATED FILE - DO NOT EDIT",
+            "class Pickers:",
+            '    """Available picker blocks for custom toolbox configurations."""'
+        ]
+        
+        for p_type in picker_types:
+            # Clean the ID to create a valid, uppercase Python attribute name
+            attr_name = re.sub(r'[^A-Za-z0-9_]', '_', p_type).upper()
+            
+            # The attribute holds the literal JSON block dictionary
+            block_dict = {"kind": "block", "type": p_type}
+            py_lines.append(f"    {attr_name} = {block_dict}")
+
+        # 4. Write the Python file to the blockly namespace
+        # (Assuming you have access to your project's root or MC_TOOLBOX_DIR parent)
+        pickers_py_path = MC_SHELL_DIR / 'blockly' / 'pickers.py'
+        pickers_py_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        pickers_py_path.write_text("\n".join(py_lines), encoding='utf-8')
 
     def export_taxonomy(self):
         taxonomy = {"Block": [], "Item": [], "Entity": []}
@@ -442,442 +649,6 @@ class RegistryBuilder:
         self.gens_dir.mkdir(parents=True, exist_ok=True)
         (self.blocks_dir / f"{file_name}.mjs").write_text(js_c, encoding='utf-8')
         (self.gens_dir / f"{file_name}.mjs").write_text(py_c, encoding='utf-8')
-
-class ApiGenerator:
-    """
-    Generates the Java Registry, Event Listener, and Python Client.
-    Includes the robust Java compilation fix and the Push Architecture.
-    """
-    def __init__(self, schema_path, java_out, java_listener_out, python_out, python_actions_out=None):
-        try:
-            with open(schema_path, 'r') as f:
-                self.schema = yaml.safe_load(f)
-        except Exception as e:
-            print(f"Error loading YAML schema: {e}")
-            self.schema = {}
-        self.java_out = Path(java_out)
-        self.listener_output_path = Path(java_listener_out)
-        self.python_out = Path(python_out)
-        self.python_actions_out = Path(python_actions_out) if python_actions_out else None
-
-    def run(self):
-        self.generate_java_registry()
-        self.generate_java_listener()
-        self.generate_python_client()
-        if self.python_actions_out:
-            self.generate_action_classes()
-
-    def generate_java_registry(self):
-        code = [
-            "package org.mcshell.mcjuice;",
-            "",
-            "import org.bukkit.Bukkit;",
-            "import org.bukkit.World;",
-            "import org.bukkit.entity.Player;",
-            "import org.bukkit.entity.EntityType;", # Add this import
-            "import org.bukkit.Location;",
-            "import org.bukkit.util.Vector;",
-            "import org.bukkit.Material;",
-            "import java.util.HashMap;",
-            "import java.util.Map;",
-            "",
-            "@SuppressWarnings(\"deprecation\")", # Good to add for those earlier warnings
-            "public class GeneratedCommandRegistry {",
-            "    private final Map<String, CommandExecutor> registry = new HashMap<>();",
-            "",
-            "    public GeneratedCommandRegistry() {",
-            "        // Root level helper",
-            "        registry.put(\"ping\", (args, session) -> session.send(\"pong\"));",
-            "        // --- PUSH ARCHITECTURE: Register event subscription ---",
-            "        registry.put(\"events.subscribe\", (args, session) -> { McJuicePlugin.getInstance().addEventSubscriber(session); session.send(\"OK\"); });",
-            ""
-        ]
-
-        for ns, data in self.schema.get('namespaces', {}).items():
-            target = data.get('target', 'Player')
-            for cmd in data.get('commands', []):
-                code.append(self._build_java_lambda(f"{ns}.{cmd['name']}", cmd, target))
-
-        # Append the new method at the end of the class
-        code.extend([
-            "    }",
-            "",
-            "    public CommandExecutor getExecutor(String name) { return registry.get(name); }",
-            "",
-            "    public static EntityType matchEntityRobustly(String type) {",
-            "        try {",
-            "            Class<?> registryClass = Class.forName(\"org.bukkit.Registry\");",
-            "            Object entityTypeRegistry = registryClass.getField(\"ENTITY_TYPE\").get(null);",
-            "            ",
-            "            Class<?> namespacedKeyClass = Class.forName(\"org.bukkit.NamespacedKey\");",
-            "            Object key = namespacedKeyClass.getMethod(\"fromString\", String.class).invoke(null, type.toLowerCase(java.util.Locale.ROOT));",
-            "            ",
-            "            if (key != null) {",
-            "                return (EntityType) registryClass.getMethod(\"get\", namespacedKeyClass).invoke(entityTypeRegistry, key);",
-            "            }",
-            "        } catch (Exception e) {",
-            "            try {",
-            "                return EntityType.valueOf(type.toUpperCase(java.util.Locale.ROOT));",
-            "            } catch (IllegalArgumentException ex) {",
-            "                return null;",
-            "            }",
-            "        }",
-            "        return null;",
-            "    }",
-            "}"
-        ])
-
-        self.java_out.parent.mkdir(parents=True, exist_ok=True)
-        self.java_out.write_text("\n".join(code))
-
-    def generate_java_listener(self):
-        """Generates the Bukkit Listener from the events schema section."""
-        code = [
-            "package org.mcshell.mcjuice;",
-            "import org.bukkit.event.Listener;",
-            "import org.bukkit.event.EventHandler;",
-            "import org.bukkit.event.EventPriority;",
-            "",
-            "public class GeneratedEventListener implements Listener {"
-        ]
-
-        for event in self.schema.get('events', []):
-            code.append(f"\n    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)")
-            code.append(f"    public void on{event['name'].capitalize()}({event['bukkit_event']} event) {{")
-            if 'condition' in event:
-                code.append(f"        if (!({event['condition']})) return;")
-            code.append(f"        String data = {event['data']};")
-            code.append(f"        McJuicePlugin.getInstance().recordEvent(\"{event['name']}\", data);")
-            code.append("    }")
-
-        code.append("}")
-        self.listener_output_path.parent.mkdir(parents=True, exist_ok=True)
-        self.listener_output_path.write_text("\n".join(code))
-
-    def _build_java_lambda(self, name, cmd, target_type):
-        """Creates the Java registry lambda, ensuring variable names are unique and scoped correctly."""
-        lines = [f'        registry.put("{name}", (args, session) -> {{']
-
-        offset = 1 if target_type == "Player" else 0
-        bukkit_call = cmd["bukkit"]
-
-        if isinstance(bukkit_call, dict):
-            bukkit_call = "{" + list(bukkit_call.keys())[0] + "}"
-
-        yaml_args = cmd.get("args", [])
-        for i, arg in enumerate(yaml_args):
-            t, n, idx = arg["type"], arg["name"], i + offset
-            arg_var = f"_arg_{n}"
-
-            if t == "double": lines.append(f'            final double {arg_var} = Double.parseDouble(args[{idx}]);')
-            elif t == "int": lines.append(f'            final int {arg_var} = Integer.parseInt(args[{idx}]);')
-            elif t == "String": lines.append(f'            final String {arg_var} = args[{idx}];')
-
-            bukkit_call = bukkit_call.replace(f"{{{n}}}", arg_var)
-
-        lines.append('            Bukkit.getScheduler().runTask(McJuicePlugin.getInstance(), () -> {')
-        
-        # INJECT TRY BLOCK HERE
-        lines.append('                try {')
-
-        if target_type == "Player":
-            lines.append('                    int eid = Integer.parseInt(args[0]);')
-            lines.append('                    Player player = session.getPlayerById(eid);')
-            lines.append('                    if (player == null) { session.send("Fail,No Player"); return; }')
-            exec_on = "player"
-        elif target_type == "World":
-            lines.append('                    World world = Bukkit.getWorlds().get(0);')
-            exec_on = "world"
-        else:
-            exec_on = "Bukkit"
-
-        is_block = bukkit_call.strip().startswith("{")
-        is_static = re.match(r'^(Bukkit|McJuicePlugin|org\.bukkit|[A-Z])', bukkit_call.strip())
-        full_expr = bukkit_call if (is_block or is_static) else f"{exec_on}.{bukkit_call}"
-
-        ret_type = cmd.get('returns', 'void')
-
-        if is_block:
-            lines.append(f'                    {full_expr}')
-        else:
-            if ret_type == 'void':
-                lines.append(f'                    {full_expr};')
-            else:
-                lines.append(f'                    Object res = {full_expr};')
-                lines.append('                    if (res == null) { session.send("null"); }')
-                if ret_type == 'TileLocation':
-                    lines.append('                    else if (res instanceof Location) { Location l = (Location)res; session.send(l.getBlockX()+","+l.getBlockY()+","+l.getBlockZ()); }')
-                else:
-                    lines.append('                    else if (res instanceof Location) { Location l = (Location)res; session.send(l.getX()+","+l.getY()+","+l.getZ()); }')
-                    lines.append('                    else if (res instanceof Vector) { Vector v = (Vector)res; session.send(v.getX()+","+v.getY()+","+v.getZ()); }')
-                    lines.append('                    else { session.send(String.valueOf(res)); }')
-
-        # INJECT CATCH BLOCK HERE
-        lines.append('                } catch (Exception e) {')
-        lines.append('                    session.send("Fail," + e.getMessage());')
-        lines.append('                }')
-
-        lines.append('            });')
-        lines.append('        });')
-        return "\n".join(lines)
-
-    def generate_python_client(self):
-        """Generates the dual-socket Python Client for the Push architecture."""
-        code = [
-            "import threading",
-            "import queue",
-            "import socket",
-            "from mcshell.mcjuiceconn import MCJuiceConnection",
-            "from mcshell.Vec3 import Vec3",
-            "",
-            "# --- THIS FILE IS AUTOMATICALLY GENERATED FROM mcjuice_api.yaml ---",
-            "# --- Do not edit directly! Inherit from these classes instead. ---",
-            "",
-            "class MCJuiceClient:",
-            "    def __init__(self, conn, event_conn, entity_id=None):",
-            "        self.conn = conn",
-            "        self.event_conn = event_conn",
-            "        self.entity_id = entity_id",
-            "        self.event_queues = {} # event_name -> list of queues",
-            "",
-            "        # --- PUSH ARCHITECTURE: Dedicated Event Router ---",
-            "        self.event_conn.socket.settimeout(None)",
-            "        self.event_conn.send('events.subscribe')",
-            "        self.reader_thread = threading.Thread(target=self._event_reader_loop, daemon=True)",
-            "        self.reader_thread.start()"
-        ]
-
-        namespaces = dict(self.schema.get('namespaces', {}))
-        for ns in namespaces.keys():
-            if ns != 'events':
-                code.append(f"        self.{ns} = {ns.capitalize()}Namespace(self.conn, self.entity_id)")
-
-        if 'events' in self.schema:
-            code.append("        self.events = EventsNamespace(self)")
-
-        code.extend([
-            "",
-            "    def _event_reader_loop(self):",
-            "        from mcshell.mcevent import EventFactory",
-            "        while True:",
-            "            try:",
-            "                line = self.event_conn.receive()",
-            "                if not line: break",
-            "                if line == 'OK': continue",
-            "                ",
-            "                parts = line.split(',', 1)",
-            "                if len(parts) < 2: continue",
-            "                event_name, raw_data = parts[0], parts[1]",
-            "                ",
-            "                event_obj = EventFactory.create(event_name, raw_data)",
-            "                if not event_obj: continue",
-            "                ",
-            "                if event_name in self.event_queues:",
-            "                    for q in self.event_queues[event_name]:",
-            "                        q.put(event_obj)",
-            "            except (socket.timeout, TimeoutError):",
-            "                continue",
-            "            except Exception as e:",
-            "                break",
-            "",
-            "    @staticmethod",
-            "    def create(address='localhost', port=4721, playerName=''):",
-            "        conn = MCJuiceConnection(address, port)",
-            "        event_conn = MCJuiceConnection(address, port)",
-            "        eid = None",
-            "        if playerName:",
-            "            eid = int(conn.sendReceive('world.getPlayerId', playerName))",
-            "        return MCJuiceClient(conn, event_conn, eid)"
-        ])
-
-        for ns, data in namespaces.items():
-            if ns == 'events': continue
-            target = data.get('target', 'Player')
-            code.append(f"\nclass {ns.capitalize()}Namespace:")
-            code.append("    def __init__(self, conn, entity_id): self.conn = conn; self.entity_id = entity_id")
-            for cmd in data.get('commands', []):
-                args = [a["name"] for a in cmd.get("args", [])]
-                sig = ", ".join(["self"] + args + (["entity_id=None"] if target == "Player" else []))
-                code.append(f"    def {cmd['name']}({sig}):")
-                payload_parts = []
-                if target == "Player":
-                    code.append("        eid = entity_id if entity_id is not None else self.entity_id")
-                    code.append("        if eid is None: raise ValueError('No entity_id')")
-                    payload_parts.append("eid")
-                payload_parts.extend(args)
-                payload = ", ".join(payload_parts)
-
-                r = cmd.get('returns', 'void')
-                if r == 'void':
-                    code.append(f"        self.conn.send('{ns}.{cmd['name']}', {payload})")
-                    code.append("        return 'OK'")
-                else:
-                    code.append(f"        res = self.conn.sendReceive('{ns}.{cmd['name']}', {payload})")
-                    if r in ('Location', 'Vector'): code.append("        return Vec3(*list(map(float, res.split(','))))")
-                    elif r == 'TileLocation': code.append("        return Vec3(*list(map(int, res.split(','))))")
-                    elif r == 'string_list': code.append("        return res.split(',')")
-                    elif r == 'double': code.append("        return float(res)")
-                    elif r == 'int': code.append("        return int(res)")
-                    else: code.append("        return res")
-
-        if 'events' in self.schema:
-            code.extend([
-                "\nclass EventsNamespace:",
-                "    def __init__(self, client):",
-                "        self.client = client",
-                "",
-                "    def subscribe_local(self, event_name: str, target_queue: 'queue.Queue'):",
-                "        if event_name not in self.client.event_queues:",
-                "            self.client.event_queues[event_name] = []",
-                "        self.client.event_queues[event_name].append(target_queue)",
-                "",
-                "    def unsubscribe_local(self, event_name: str, target_queue: 'queue.Queue'):",
-                "        if event_name in self.client.event_queues:",
-                "            try:",
-                "                self.client.event_queues[event_name].remove(target_queue)",
-                "            except ValueError:",
-                "                pass"
-            ])
-
-        self.python_out.parent.mkdir(parents=True, exist_ok=True)
-        self.python_out.write_text("\n".join(code))
-
-    def _camel_to_snake(self, name):
-        s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-        return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
-
-    def generate_action_classes(self):
-        # 1. MODIFIED: Added specific imports required for the events generation loops.
-        code = [
-            "from mcshell.mcactions_base import MCActionsBase",
-            "from blockapily import mced_block",
-            "from mcshell.Vec3 import Vec3",
-            "from typing import Optional, Any",
-            "import queue",
-            "from mcshell.constants import PowerCancelledException",
-            "",
-            "# --- THIS FILE IS AUTOMATICALLY GENERATED FROM mcjuice_api.yaml ---",
-            "# --- Do not edit directly! Inherit from these classes instead. ---",
-            ""
-        ]
-
-        namespaces = self.schema.get('namespaces', {})
-        for ns_name, ns_data in namespaces.items():
-            has_blockly = any('blockly' in cmd for cmd in ns_data.get('commands', []))
-            if not has_blockly:
-                continue
-
-            class_name = f"{ns_name.capitalize()}Actions"
-            code.append(f"\nclass {class_name}(MCActionsBase):")
-            code.append(f"    def __init__(self, mc_player_instance, delay_between_blocks=0):")
-            code.append(f"        super().__init__(mc_player_instance, delay_between_blocks)")
-
-            for cmd in ns_data.get('commands', []):
-                blockly = cmd.get('blockly')
-                if not blockly:
-                    continue
-
-                label_val = blockly.get('label', cmd['name'])
-                dec_parts = [f"        label=\"{label_val}\""]
-
-                b_args = blockly.get('args', {})
-                for k, v in b_args.items():
-                    l_val = v.get('label', k)
-                    s_val = v.get('shadow')
-                    if s_val:
-                        dec_parts.append(f"        {k}={{'label': '{l_val}', 'shadow': '{s_val}'}}")
-                    else:
-                        dec_parts.append(f"        {k}={{'label': '{l_val}'}}")
-
-                args_dec = ",\n".join(dec_parts)
-                code.append(f"\n    @mced_block(\n{args_dec}\n    )")
-
-                sig_parts = ["self"]
-                for arg_name, arg_data in b_args.items():
-                    sig_parts.append(f"{arg_name}: '{arg_data.get('type', 'Any')}'")
-
-                sig_str = ", ".join(sig_parts)
-
-                ret_type = blockly.get('returns')
-                if not ret_type:
-                    bukkit_r = cmd.get('returns', 'void')
-                    if bukkit_r in ('Location', 'Vector', 'TileLocation'): ret_type = 'Vec3'
-                    elif bukkit_r == 'double': ret_type = 'float'
-                    elif bukkit_r == 'int': ret_type = 'int'
-                    elif bukkit_r == 'string_list': ret_type = 'list'
-                    elif bukkit_r == 'string': ret_type = 'str'
-                    elif bukkit_r != 'void': ret_type = bukkit_r
-
-                ret_str = f" -> '{ret_type}'" if ret_type else ""
-                method_name = self._camel_to_snake(cmd['name'])
-                code.append(f"    def {method_name}({sig_str}){ret_str}:")
-
-                tooltip = blockly.get('tooltip', '')
-                if tooltip: code.append(f"        \"\"\"{tooltip}\"\"\"")
-
-                call_args = blockly.get('call_args', [])
-                call_args_str = ", ".join(call_args)
-
-                call_stmt = f"self.mcplayer.mj.{ns_name}.{cmd['name']}({call_args_str})"
-                if ret_type: code.append(f"        return {call_stmt}")
-                else: code.append(f"        {call_stmt}")
-
-        # 2. MODIFIED: Added the auto-generation block that interprets the `events` yaml blockly metadata
-        # to construct the EventActions class dynamically.
-        events = self.schema.get('events', [])
-        if events and any('blockly' in e for e in events):
-            code.append(f"\nclass EventActions(MCActionsBase):")
-            code.append(f"    def __init__(self, mc_player_instance, delay_between_blocks=0):")
-            code.append(f"        super().__init__(mc_player_instance, delay_between_blocks)")
-
-            for event in events:
-                blockly = event.get('blockly')
-                if not blockly:
-                    continue
-
-                label_val = blockly.get('label', f"Wait for {event['name']}")
-                dec_parts = [f"        label=\"{label_val}\""]
-
-                player_filter = blockly.get('player_filter', False)
-                if player_filter:
-                    dec_parts.append("        player_name={'label': 'Player name', 'shadow': '<shadow type=\"text\"><field name=\"TEXT\">SELF</field></shadow>'}")
-
-                args_dec = ",\n".join(dec_parts)
-                code.append(f"\n    @mced_block(\n{args_dec}\n    )")
-
-                sig_str = "self, player_name: 'str'" if player_filter else "self"
-                ret_type = blockly.get('returns', 'Any')
-                method_name = f"wait_for_{self._camel_to_snake(event['name'])}"
-
-                code.append(f"    def {method_name}({sig_str}) -> '{ret_type}':")
-                if player_filter:
-                    code.append("        target_name = self.mcplayer.name if (not player_name or player_name == 'SELF') else player_name")
-
-                code.append("        q = queue.Queue()")
-                code.append(f"        self.mcplayer.mj.events.subscribe_local('{event['name']}', q)")
-                code.append("        try:")
-                code.append("            while True:")
-                code.append("                if self.mcplayer.cancel_event and self.mcplayer.cancel_event.is_set():")
-                code.append("                    raise PowerCancelledException")
-                code.append("                try:")
-                code.append("                    event_obj = q.get(timeout=0.1)")
-
-                yields_val = blockly.get('yields', 'event_obj').replace('event.', 'event_obj.')
-                if player_filter:
-                    player_attr = blockly.get('player_attr', 'name')
-                    code.append(f"                    if target_name == 'ALL' or getattr(event_obj, '{player_attr}', None) == target_name:")
-                    code.append(f"                        return {yields_val}")
-                else:
-                    code.append(f"                    return {yields_val}")
-
-                code.append("                except queue.Empty:")
-                code.append("                    continue")
-                code.append("        finally:")
-                code.append(f"            self.mcplayer.mj.events.unsubscribe_local('{event['name']}', q)")
-
-        self.python_actions_out.parent.mkdir(parents=True, exist_ok=True)
-        self.python_actions_out.write_text("\n".join(code))
-
 
 class TaxonomyEngine:
     def __init__(self, taxonomy_rules, entity_rules, prismarine_blocks, prismarine_items, prismarine_entities, verbose=False):
@@ -1095,7 +866,7 @@ class RegistryEngine:
                     "file": f.name,
                     "func": func_name
                 })
-                print(f"  Found {func_name} in {f.name}")
+                # print(f"  Found {func_name} in {f.name}")
 
         # Generate the JS content
         lines = ["// Auto-generated registry. Do not edit manually."]
@@ -1117,3 +888,4 @@ class RegistryEngine:
         registry_path = target_dir / "registry.mjs"
         registry_path.write_text("\n".join(lines), encoding='utf-8')
         print(f"✅ Generated {registry_path} with {len(definitions)} modules.")
+

@@ -47,12 +47,20 @@ def execute_ipython_magic():
 @ipython_bp.route('/lobby_data', methods=['GET'])
 def get_lobby_data():
     """Returns the current server status, connection hub info, and privilege level."""
+    import os
+    is_appliance = os.environ.get('MCSHELL_APPLIANCE_MODE') == '1'
+
     shell = current_app.config.get('IPYTHON_SHELL')
     mc_name = current_app.config.get('MINECRAFT_PLAYER_NAME')
+    default_lobby_name = current_app.config.get('DEFAULT_LOBBY_NAME')
 
     # If there is no active player context, the server is in Standby Mode
     if not shell or not mc_name:
-        return jsonify({"status": "standby"})
+        return jsonify({
+            "status": "standby", 
+            "appliance_mode": is_appliance,
+            "player": default_lobby_name  # Send the default safely
+        }) 
 
     # Security Check: Ensure the user actually holds the token.
     from mcshell.mcserver import GUI_AUTH_TOKEN
@@ -62,13 +70,13 @@ def get_lobby_data():
         token = auth_header.split(" ")[1]
 
     if token != GUI_AUTH_TOKEN:
-        return jsonify({"status": "unauthorized"})
+        return jsonify({"status": "unauthorized", "appliance_mode": is_appliance})
 
     try:
         # Extract the active MCShell magic instance from IPython's registry
         mcshell_instance = shell.magics_manager.registry.get('MCShell')
         if mcshell_instance:
-            is_host = bool(mcshell_instance.active_paper_server and mcshell_instance.active_paper_server.is_alive())
+            is_host = bool(mcshell_instance.local_server.process and mcshell_instance.local_server.process.is_alive())
 
             # --- NEW: Check if the user holds OP privileges ---
             is_admin = bool(mcshell_instance.server_data.get('password'))
@@ -85,12 +93,14 @@ def get_lobby_data():
                 "player": mc_name,
                 "is_host": is_host,
                 "is_admin": is_admin,
-                "hub": hub_data
+                "hub": hub_data,
+                "appliance_mode": is_appliance,
             })
+
     except Exception as e:
         print(f"Error fetching connection hub data: {e}")
 
-    return jsonify({"status": "active", "player": mc_name, "is_host": False, "is_admin": False, "hub": None})
+    return jsonify({"status": "active", "player": mc_name, "is_host": False, "is_admin": False, "hub": None,"appliance_mode": is_appliance })
 
 
 @ipython_bp.route('/join_world', methods=['POST'])
@@ -118,8 +128,8 @@ def join_world():
     shell = current_app.config.get('IPYTHON_SHELL')
     if shell:
         try:
-            # Append --guest flag and the newly validated --mc_name
-            shell.run_line_magic('pp_join_world', f"{token} --guest --mc_name {minecraft_name}")
+            # Append the newly validated --mc_name
+            shell.run_line_magic('pp_join_world', f"{token} --mc_name {minecraft_name}")
 
             # Fetch the GUI token to return to the newly authenticated web client
             from mcshell.mcserver import GUI_AUTH_TOKEN

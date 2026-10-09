@@ -10,37 +10,6 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-def get_vpn_ip() -> str | None:
-    """
-    Scans the host's network interfaces for a VPN IP address.
-    Specifically targets Tailscale while avoiding ChromeOS Crostini subnet collisions.
-    """
-    if not psutil:
-        logger.warning("psutil module missing. VPN detection disabled.")
-        return None
-
-    try:
-        # Iterate over all active network interfaces
-        for interface, addrs in psutil.net_if_addrs().items():
-            for addr in addrs:
-                # We only care about IPv4 addresses
-                if addr.family == socket.AF_INET:
-                    ip = addr.address
-                    
-                    # Target the Tailscale interface directly
-                    if interface.startswith('tailscale'):
-                        logger.info(f"Detected Tailscale interface '{interface}' with IP: {ip}")
-                        return ip
-                        
-                    # Fallback for standard CGNAT, explicitly rejecting Crostini's eth0 subnet
-                    elif ip.startswith('100.') and not ip.startswith('100.115.92.'):
-                        logger.info(f"Detected VPN interface '{interface}' with IP: {ip}")
-                        return ip
-                        
-    except Exception as e:
-        logger.warning(f"Failed to scan network interfaces for VPN: {e}")
-
-    return None
 
 class MCTunnelServer(asyncssh.SSHServer):
     """
@@ -100,14 +69,6 @@ class MCTunnelServer(asyncssh.SSHServer):
         Security Gate: Absolutely no shell/terminal access allowed.
         """
         return False
-
-def _get_local_ip():
-    try:
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-            s.connect(("8.8.8.8", 80))
-            return s.getsockname()[0]
-    except Exception:
-        return "127.0.0.1"
 
 async def start_host_gateway(pin: str, bind_ip='0.0.0.0', bind_port=0, mc_port=25565, rcon_port=25575, mj_port=4721):
     # Generate an ephemeral host key so the SSH server can handshake (required by protocol)

@@ -1,3 +1,5 @@
+from mcshell import JRE_BINARY
+from mcshell import MC_WORLDS_BASE_DIR
 import requests
 import os
 import platform
@@ -22,15 +24,19 @@ class PaperDownloader:
 
     def ensure_jre(self, version: str = "25") -> bool:
         """Ensures a local JRE is present in the specified jre directory."""
-        if MC_JRE_PATH.exists():
-            return True
+        jre_dir= MC_WORLDS_BASE_DIR.joinpath(f'jre-{version}')
+        jre_path = jre_dir.joinpath(JRE_BINARY)
 
-        print(f"JRE not found at {MC_JRE_PATH}. Downloading JRE {version}...")
+        if jre_path.exists():
+            print(f"JRE found at {jre_path}...")
+            return jre_path
+
+        print(f"JRE not found at {jre_path}. Downloading JRE {version}...")
 
         url = self._get_jre_download_url(version)
         if not url:
             print(f"Error: Could not determine JRE URL for {platform.system()} {platform.machine()}.")
-            return False
+            return None 
 
         try:
             temp_archive = self.download_dir / "jre_archive.tmp"
@@ -40,8 +46,8 @@ class PaperDownloader:
                     for chunk in r.iter_content(chunk_size=8192):
                         f.write(chunk)
 
-            MC_JRE_DIR.mkdir(parents=True, exist_ok=True)
-            temp_extract_path = MC_JRE_DIR / "tmp_extraction"
+            jre_dir.mkdir(exist_ok=True)
+            temp_extract_path = jre_dir / "tmp_extraction"
             temp_extract_path.mkdir(exist_ok=True)
 
             if url.endswith('.zip') or platform.system().lower() == 'windows':
@@ -53,23 +59,23 @@ class PaperDownloader:
 
             inner_dir = next(temp_extract_path.iterdir())
             for item in inner_dir.iterdir():
-                dest = MC_JRE_DIR / item.name
+                dest = jre_dir / item.name
                 if dest.exists():
                     if dest.is_dir(): shutil.rmtree(dest)
                     else: dest.unlink()
-                shutil.move(str(item), str(MC_JRE_DIR))
+                shutil.move(str(item), str(jre_dir))
 
             shutil.rmtree(temp_extract_path)
             temp_archive.unlink()
 
-            if os.name != 'nt' and MC_JRE_PATH.exists():
-                MC_JRE_PATH.chmod(MC_JRE_PATH.stat().st_mode | 0o111)
+            if os.name != 'nt' and jre_path.exists():
+                jre_path.chmod(jre_path.stat().st_mode | 0o111)
+            return jre_path 
 
-            return True
         except Exception as e:
             print(f"Error: JRE install failed: {e}")
-            if MC_JRE_DIR.exists(): shutil.rmtree(MC_JRE_DIR)
-            return False
+            if jre_dir.exists(): shutil.rmtree(jre_dir)
+            return None 
 
     def _get_jre_download_url(self, version: str) -> Optional[str]:
         """Maps system platform and architecture to an Adoptium API download URL."""
@@ -129,26 +135,41 @@ class PaperDownloader:
             print(f"Error: Could not fetch build info for version {mc_version}: {e}")
             return None
 
+    def extract_and_patch_jar_config(self,plugins_dir,jar_name, plugin_folder_name, patch_logic):
+        """Extracts config.yml from a jar, applies modifications, and writes it to the plugin folder."""
+        # Initialize ruamel.yaml parser to preserve comments and structure
+        yaml = YAML()
+        yaml.preserve_quotes = True
+ 
+        jar_path = plugins_dir / jar_name
+        output_dir = plugins_dir / plugin_folder_name
+        output_dir.mkdir(exist_ok=True)
+        output_file = output_dir / "config.yml"
+        
+        try:
+            # Open JAR and read the default config into ruamel.yaml
+            with zipfile.ZipFile(jar_path, 'r') as jar:
+                with jar.open('config.yml') as default_config:
+                    data = yaml.load(default_config)
+            
+            # Apply specific overrides via the passed function
+            patch_logic(data)
+            
+            # Write the patched config with comments intact
+            with open(output_file, 'w') as f:
+                yaml.dump(data, f)
+            print(f"Successfully patched {plugin_folder_name} configuration.")
+            
+        except Exception as e:
+            print(f"Error patching {plugin_folder_name} config: {e}")
+
+
     def install_plugins(self, plugin_urls: list[str], world_plugins_dir: Path) -> list[str]:
         """Downloads and installs a list of plugins."""
         if not plugin_urls: return []
         world_plugins_dir.mkdir(exist_ok=True)
         successful_installs = []
-        for url in plugin_urls:
-            # Strip query parameters if any exist before grabbing the filename chunk
-            clean_url = url.split('?')[0]
-            filename = clean_url.split('/')[-1]
-
-            # API endpoints (like Geyser's /spigot) often don't have .jar in the URL.
-            # We need to assign a proper name and ensure it gets processed as a JAR.
-            if not filename.endswith(".jar") and not filename.endswith(".zip"):
-                if "floodgate" in url.lower():
-                    filename = "Floodgate.jar"
-                elif "geyser" in url.lower():
-                    filename = "Geyser-Spigot.jar"
-                else:
-                    filename += ".jar"
-
+        for filename,url in plugin_urls.items():
             dest = world_plugins_dir / filename
 
             if filename.endswith(".jar") and self._download_file(url, dest):

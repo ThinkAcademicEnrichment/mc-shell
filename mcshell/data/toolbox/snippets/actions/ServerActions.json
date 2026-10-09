@@ -1,0 +1,497 @@
+{
+    "kind": "category",
+    "name": "Server",
+    "colour": "#5C7457",
+    "contents": [
+        {
+            "kind": "block",
+            "type": "serveractions_server_time_query",
+            "inputs": {
+                "time_type": {
+                    "shadow": {
+                        "type": "picker_timetype",
+                        "fields": {
+                            "VALUE": "gametime"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "serveractions_server_time_set",
+            "inputs": {
+                "time_of_day": {
+                    "shadow": {
+                        "type": "picker_time",
+                        "fields": {
+                            "VALUE": "day"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "serveractions_server_set_time",
+            "inputs": {
+                "time": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "serveractions_server_weather_set",
+            "inputs": {
+                "weather": {
+                    "shadow": {
+                        "type": "text",
+                        "fields": {
+                            "TEXT": "clear"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "serveractions_server_gamemode_set",
+            "inputs": {
+                "gamemode": {
+                    "shadow": {
+                        "type": "picker_gamemode",
+                        "fields": {
+                            "VALUE": "creative"
+                        }
+                    }
+                },
+                "target": {
+                    "shadow": {
+                        "type": "text",
+                        "fields": {
+                            "TEXT": "SELF"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "serveractions_server_gamerule_set",
+            "inputs": {
+                "rule": {
+                    "shadow": {
+                        "type": "picker_gamerule",
+                        "fields": {
+                            "VALUE": "advance_time"
+                        }
+                    }
+                },
+                "value": {
+                    "shadow": {
+                        "type": "logic_boolean",
+                        "fields": {
+                            "BOOL": "TRUE"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "serveractions_server_gamerule_integer_set",
+            "inputs": {
+                "rule": {
+                    "shadow": {
+                        "type": "picker_integergamerule",
+                        "fields": {
+                            "VALUE": "respawn_radius"
+                        }
+                    }
+                },
+                "value": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "serveractions_server_locate_structure",
+            "inputs": {
+                "structure": {
+                    "shadow": {
+                        "type": "picker_structure",
+                        "fields": {
+                            "VALUE": "ancient_city"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "serveractions_server_execute_command",
+            "inputs": {
+                "command": {
+                    "shadow": {
+                        "type": "text",
+                        "fields": {
+                            "TEXT": ""
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "serveractions_server_clear_inventory",
+            "inputs": {
+                "target": {
+                    "shadow": {
+                        "type": "text",
+                        "fields": {
+                            "TEXT": "SELF"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "serveractions_server_give_block_item_projectile",
+            "inputs": {
+                "material": {
+                    "shadow": {
+                        "type": "mc_block_picker_world",
+                        "fields": {
+                            "VALUE": "STONE"
+                        }
+                    }
+                },
+                "count": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                },
+                "target": {
+                    "shadow": {
+                        "type": "text",
+                        "fields": {
+                            "TEXT": "SELF"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "serveractions_server_summon",
+            "inputs": {
+                "entity": {
+                    "shadow": {
+                        "type": "mc_entity_picker_passive_mobs",
+                        "fields": {
+                            "VALUE": "PIG"
+                        }
+                    }
+                },
+                "pos": {
+                    "shadow": {
+                        "type": "minecraft_vector_3d",
+                        "inputs": {
+                            "X": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Y": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Z": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "serveractions_server_teleport",
+            "inputs": {
+                "target": {
+                    "shadow": {
+                        "type": "text",
+                        "fields": {
+                            "TEXT": "SELF"
+                        }
+                    }
+                },
+                "pos": {
+                    "shadow": {
+                        "type": "minecraft_vector_3d",
+                        "inputs": {
+                            "X": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Y": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Z": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "serveractions_server_player_data_get_pos",
+            "inputs": {
+                "player_name": {
+                    "shadow": {
+                        "type": "text",
+                        "fields": {
+                            "TEXT": ""
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "serveractions_server_apply_effect",
+            "inputs": {
+                "effect": {
+                    "shadow": {
+                        "type": "picker_effect",
+                        "fields": {
+                            "VALUE": "speed"
+                        }
+                    }
+                },
+                "target": {
+                    "shadow": {
+                        "type": "text",
+                        "fields": {
+                            "TEXT": "SELF"
+                        }
+                    }
+                },
+                "seconds": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                },
+                "amplifier": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "serveractions_server_show_title",
+            "inputs": {
+                "text": {
+                    "shadow": {
+                        "type": "text",
+                        "fields": {
+                            "TEXT": ""
+                        }
+                    }
+                },
+                "action": {
+                    "shadow": {
+                        "type": "picker_titleaction",
+                        "fields": {
+                            "VALUE": "reset"
+                        }
+                    }
+                },
+                "target": {
+                    "shadow": {
+                        "type": "text",
+                        "fields": {
+                            "TEXT": "@a"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "serveractions_server_damage",
+            "inputs": {
+                "target": {
+                    "shadow": {
+                        "type": "text",
+                        "fields": {
+                            "TEXT": "SELF"
+                        }
+                    }
+                },
+                "amount": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1.0
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "serveractions_server_list"
+        },
+        {
+            "kind": "block",
+            "type": "serveractions_server_spawnpoint",
+            "inputs": {
+                "position": {
+                    "shadow": {
+                        "type": "minecraft_vector_3d",
+                        "inputs": {
+                            "X": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Y": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Z": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "target": {
+                    "shadow": {
+                        "type": "text",
+                        "fields": {
+                            "TEXT": "SELF"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "serveractions_build_physical_bed",
+            "inputs": {
+                "color": {
+                    "shadow": {
+                        "type": "picker_color_types",
+                        "fields": {
+                            "VALUE": "WHITE"
+                        }
+                    }
+                },
+                "pos": {
+                    "shadow": {
+                        "type": "minecraft_vector_3d",
+                        "inputs": {
+                            "X": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Y": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            },
+                            "Z": {
+                                "shadow": {
+                                    "type": "math_number",
+                                    "fields": {
+                                        "NUM": 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "direction": {
+                    "shadow": {
+                        "type": "picker_qcompass",
+                        "fields": {
+                            "VALUE": "N"
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

@@ -5,7 +5,7 @@ import time
 import uuid
 from threading import Thread, Event
 
-from flask import Flask, current_app,request, jsonify, send_from_directory
+from flask import Flask, cli, current_app,request, jsonify, send_from_directory
 from flask_socketio import SocketIO
 
 
@@ -26,6 +26,13 @@ app_server_thread = None
 
 # --- Server Setup ---
 app = Flask(__name__, static_folder=str(MC_APP_DIR)) # Serve files from Parcel's build output
+
+# Mute the "* Serving Flask app..." and debug mode startup banner
+cli.show_server_banner = lambda *args: None
+
+# Mute the ongoing Werkzeug HTTP request logs (e.g., GET /api/lobby_data 200 OK)
+logging.getLogger('werkzeug').setLevel(logging.ERROR)
+
 app.secret_key = str(uuid.uuid4())
 
 GUI_AUTH_TOKEN = uuid.uuid4().hex
@@ -57,8 +64,17 @@ def check_auth_token():
             token = auth_header.split(" ")[1]
 
         if token != GUI_AUTH_TOKEN:
-            print(f"\n[SECURITY BLOCK] Unauthorized API access attempt to {request.path} blocked!")
+            # UX noise
+            # print(f"\n[SECURITY BLOCK] Unauthorized API access attempt to {request.path} blocked!")
             return jsonify({"error": "Unauthorized access. Invalid or missing GUI token."}), 401
+
+@app.after_request
+def add_header(response):
+    """Prevent aggressive browser caching during frontend development."""
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '-1'
+    return response
 
 # --- Suppress Flask's Default Console Logging ---
 flask_logger = logging.getLogger('werkzeug')
@@ -72,13 +88,54 @@ socketio = SocketIO(
 RUNNING_POWERS = {}
 
 # --- Server Control ---
+
+import socket
+import time
+
+def restart_app_server():
+    """Gracefully restarts the server while maintaining the global Flask config."""
+    print("Initiating graceful restart of the application server...")
+       
+    # Read directly from the global app instance
+    # server_data = app.config.get('MCSHELL_SERVER_DATA')
+    minecraft_version = app.config.get('MINECRAFT_VERSION')
+    minecraft_name = app.config.get('MINECRAFT_PLAYER_NAME')
+    shell = app.config.get('IPYTHON_SHELL')
+    power_repo = app.config.get('POWER_REPO')
+    connected_world_name = app.config.get('CONNECTED_WORLD_NAME')
+
+    global app_server_thread
+    port = getattr(app_server_thread, 'port', 5001) if app_server_thread else 5001
+        
+    stop_app_server()
+    
+    # Actively poll until the OS actually releases the port
+    print(f"Waiting for OS to release port {port}...")
+    for _ in range(10):  # Poll for up to 5 seconds
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            if s.connect_ex(('127.0.0.1', port)) != 0:
+                break  # Connection failed, meaning the port is finally free!
+        time.sleep(0.5)
+    else:
+        print("Warning: Port release timeout. Server start may fail silently.")
+        
+    return start_app_server(
+        minecraft_version=minecraft_version,
+        minecraft_name=minecraft_name, 
+        shell=shell, 
+        power_repo=power_repo,
+        port=port,
+        connected_world_name=connected_world_name,
+    )
+
+
 def reset_app_server_context():
     """Clears the Minecraft context from the Flask app but leaves the server running."""
-    with app.app_context():
-        current_app.config['MCSHELL_SERVER_DATA'] = None
-        current_app.config['MINECRAFT_PLAYER_NAME'] = None
-        current_app.config['POWER_REPO'] = None
-        socketio.emit('state_changed', {'status': 'standby'})
+    app.config['MCSHELL_SERVER_DATA'] = None
+    app.config['MINECRAFT_PLAYER_NAME'] = None 
+    app.config['POWER_REPO'] = None
+    app.config['CONNECTED_WORLD_NAME'] = None
+    socketio.emit('state_changed', {'status': 'standby'})
 
 def throw_app_server_error(error):
     """
@@ -99,18 +156,44 @@ def throw_app_server_error(error):
             'message': error_message
         })
 
-def start_app_server(server_data=None, minecraft_name=None, shell=None, power_repo=None, port=5001):
+def start_app_server(minecraft_version=None,minecraft_name=None,shell=None, power_repo=None, port=5001,connected_world_name=None,default_lobby_name=None):
     """Starts or updates the main Flask-SocketIO application server in a separate thread."""
 
-    # Safely inject the new Minecraft parameters into the active Flask Application Context
-    with app.app_context():
-        if server_data is not None: app.config['MCSHELL_SERVER_DATA'] = server_data
-        if minecraft_name is not None: app.config['MINECRAFT_PLAYER_NAME'] = minecraft_name
-        if shell is not None: app.config['IPYTHON_SHELL'] = shell
-        if power_repo is not None: app.config['POWER_REPO'] = power_repo
+    is_appliance = os.environ.get('MCSHELL_APPLIANCE_MODE') == '1'
 
-        # Ping the frontend via WebSocket to drop the 401 error and reload the editor
-        socketio.emit('state_changed', {'status': 'active'})
+   # Safely inject the new Minecraft parameters directly into the configuration
+    if minecraft_version is not None: 
+        app.config['MINECRAFT_VERSION'] = minecraft_version
+    
+    if minecraft_name is not None:
+        app.config['MINECRAFT_PLAYER_NAME'] = minecraft_name 
+        
+    if shell is not None: 
+        app.config['IPYTHON_SHELL'] = shell
+        
+    if power_repo is not None: 
+        app.config['POWER_REPO'] = power_repo
+        
+    if connected_world_name is not None: 
+        app.config['CONNECTED_WORLD_NAME'] = connected_world_name
+
+    if default_lobby_name is not None:
+        app.config['DEFAULT_LOBBY_NAME'] = default_lobby_name 
+
+    # Evaluate the true UI state based on the presence of an active player
+    is_active = bool(app.config.get('MINECRAFT_PLAYER_NAME'))
+    current_status = 'active' if is_active else 'standby'
+
+    # is_active = False
+    # current_status = 'standby'
+
+    # Ping the frontend with the ACCURATE state
+    socketio.emit('state_changed', {
+        'status': current_status, 
+        'appliance_mode': is_appliance, 
+        'gui_token': GUI_AUTH_TOKEN
+    })
+
 
     use_port = port
     if app.config.get('MCSHELL_SERVER_DATA') and 'app_port' in app.config['MCSHELL_SERVER_DATA']:
@@ -156,6 +239,8 @@ def start_app_server(server_data=None, minecraft_name=None, shell=None, power_re
     )
     app_server_thread.port = use_port
     app_server_thread.start()
+
+    time.sleep(1)
 
     return app_server_thread
 

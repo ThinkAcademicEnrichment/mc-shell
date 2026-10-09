@@ -5,10 +5,11 @@ from mcshell.constants import *
 DEFAULT_TOLERANCE = 1e-9
 
 class MCPlayer(MCClient):
-    def __init__(self, name, host=MC_SERVER_HOST, port=MC_SERVER_PORT, rcon_port=MC_RCON_PORT, mj_port=MJ_PLUGIN_PORT, app_port=MC_APP_PORT, password=None, cancel_event=None, **kwargs):
+    def __init__(self, name, host=MC_SERVER_HOST, port=MC_SERVER_PORT, rcon_port=MC_RCON_PORT, mj_port=MJ_PLUGIN_PORT, app_port=MC_APP_PORT, world_name=None, password=None, cancel_event=None, **kwargs):
         super().__init__(host=host, port=port, rcon_port=rcon_port, mj_port=mj_port, app_port=app_port, password=password, **kwargs)
         self.name = name
         self.cancel_event = cancel_event
+        self.world_name = world_name
 
         self.state = {}
 
@@ -109,6 +110,11 @@ class MCPlayer(MCClient):
 
     def set_q_compass_direction(self, dir: str):
         return self.mj.player.setDirection(*self._get_q_direction_vector(dir).to_tuple())
+
+    @property
+    def compass_direction(self):
+        return self._get_compass_direction(self.direction)
+
 
     def clear_events(self):
         """Clears all queued events on the server for this client."""

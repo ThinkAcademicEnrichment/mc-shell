@@ -1,0 +1,121 @@
+{
+    "kind": "category",
+    "name": "Q-Turtle",
+    "colour": "#C9A65B",
+    "contents": [
+        {
+            "kind": "block",
+            "type": "qturtleactions_reset",
+            "inputs": {
+                "position": {
+                    "shadow": {
+                        "type": "playeractions_get_tile_pos"
+                    }
+                },
+                "heading_q_str": {
+                    "shadow": {
+                        "type": "qactions_get_compass_direction"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "qturtleactions_turtle_move",
+            "inputs": {
+                "direction": {
+                    "shadow": {
+                        "type": "picker_qheading",
+                        "fields": {
+                            "VALUE": "F"
+                        }
+                    }
+                },
+                "distance": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "qturtleactions_turtle_position"
+        },
+        {
+            "kind": "block",
+            "type": "qturtleactions_turtle_rotate",
+            "inputs": {
+                "axis": {
+                    "shadow": {
+                        "type": "picker_axis",
+                        "fields": {
+                            "VALUE": "y"
+                        }
+                    }
+                },
+                "steps": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "qturtleactions_turtle_set_brush"
+        },
+        {
+            "kind": "block",
+            "type": "qturtleactions_turtle_stamp"
+        },
+        {
+            "kind": "block",
+            "type": "qturtleactions_turtle_place"
+        },
+        {
+            "kind": "block",
+            "type": "qturtleactions_turtle_extrude",
+            "inputs": {
+                "length": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                },
+                "direction": {
+                    "shadow": {
+                        "type": "picker_qheading",
+                        "fields": {
+                            "VALUE": "F"
+                        }
+                    }
+                },
+                "block_type": {
+                    "shadow": {
+                        "type": "mc_block_picker_world",
+                        "fields": {
+                            "VALUE": "STONE"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "qturtleactions_turtle_push"
+        },
+        {
+            "kind": "block",
+            "type": "qturtleactions_turtle_pop"
+        }
+    ]
+}

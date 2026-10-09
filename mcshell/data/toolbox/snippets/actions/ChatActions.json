@@ -1,0 +1,21 @@
+{
+    "kind": "category",
+    "name": "Chat",
+    "colour": "#D68C45",
+    "contents": [
+        {
+            "kind": "block",
+            "type": "chatactions_post",
+            "inputs": {
+                "message": {
+                    "shadow": {
+                        "type": "text",
+                        "fields": {
+                            "TEXT": ""
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

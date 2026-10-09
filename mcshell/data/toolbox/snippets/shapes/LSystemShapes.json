@@ -1,0 +1,75 @@
+{
+    "kind": "category",
+    "name": "L-System Shapes",
+    "colour": "#7A9473",
+    "contents": [
+        {
+            "kind": "block",
+            "type": "lsystemshapes_define_rule",
+            "inputs": {
+                "predecessor": {
+                    "shadow": {
+                        "type": "text",
+                        "fields": {
+                            "TEXT": ""
+                        }
+                    }
+                },
+                "successor": {
+                    "shadow": {
+                        "type": "text",
+                        "fields": {
+                            "TEXT": ""
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "kind": "block",
+            "type": "lsystemshapes_get_lsystem_shape",
+            "inputs": {
+                "axiom": {
+                    "shadow": {
+                        "type": "text",
+                        "fields": {
+                            "TEXT": ""
+                        }
+                    }
+                },
+                "iterations": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                },
+                "step_length": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                },
+                "scale_factor": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1.0
+                        }
+                    }
+                },
+                "scale": {
+                    "shadow": {
+                        "type": "math_number",
+                        "fields": {
+                            "NUM": 1
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

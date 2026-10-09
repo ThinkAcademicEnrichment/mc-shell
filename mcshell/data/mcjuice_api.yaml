@@ -157,13 +157,35 @@ namespaces:
           args:
             title: { type: str, label: "Title" }
             subtitle: { type: str, label: "Subtitle" }
-            stay: { type: int, label: "Stay (Ticks)", shadow: '<shadow type="math_number"><field name="NUM">70</field></shadow>' }
+            stay: { type: int, label: "Stay (Ticks)" }
           call_args: [str(title), str(subtitle), int(stay)]
+
+      - name: getTargetBlock
+        bukkit: |
+          {
+            org.bukkit.block.Block target = player.getTargetBlockExact(50); // 50 block range
+            if (target != null) {
+                session.send(target.getX() + "," + target.getY() + "," + target.getZ());
+            } else {
+                // Fallback to player's feet if looking at the sky
+                org.bukkit.Location loc = player.getLocation();
+                session.send(loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ());
+            }
+          }
+        args: []
+        returns: TileLocation
+        blockly:
+          label: "Get Target Block Position"
+          tooltip: "Gets the integer position of the block targeted by the player."
+          call_args: []
+
+
 
   world:
     target: World
     commands:
       # --- Block Management ---
+
       - name: getBlock
         bukkit: getBlockAt({x}, {y}, {z}).getType().name()
         args: [{ name: x, type: int }, { name: y, type: int }, { name: z, type: int }]
@@ -355,7 +377,7 @@ namespaces:
             line2: { type: str, label: "Line 2" }
             line3: { type: str, label: "Line 3" }
             line4: { type: str, label: "Line 4" }
-            sign_type: { type: Block, label: "Sign Material", shadow: "minecraft_log_picker" }
+            sign_type: { type: Block, label: "Sign Material"}
             direction: { type: int, label: "Direction (0-15)" }
           call_args: [int(position.x), int(position.y), int(position.z), str(sign_type), int(direction), str(line1), str(line2), str(line3), str(line4)]
 
@@ -449,6 +471,7 @@ namespaces:
             id: { type: int, label: "Entity ID" }
           call_args: [int(id)]
 
+
   chat:
     target: Server
     commands:
@@ -541,7 +564,378 @@ namespaces:
           args:
             material: { type: str, label: "Material Name (e.g. ACACIA_BOAT)" }
           call_args: [str(material)]
+      - name: isAssumedIpCorrect
+        bukkit: |
+          {
+             String actualIp = session.getRemoteIp();
+             if (actualIp != null && !actualIp.equals("null")) {
+                 session.send(String.valueOf(actualIp.equals({assumedIp})));
+             } else {
+                 session.send("false");
+             }
+          }
+        args: 
+          - {name: assumedIp, type: String}
+        returns: string
+      - name: getIpAddr 
+        bukkit: |
+          {
+             String actualIp = session.getRemoteIp();
+             if (actualIp != null && !actualIp.equals("null")) {
+                 session.send(String.valueOf(actualIp));
+             } else {
+                 session.send("null");
+             }
+          }
+        returns: string
 
+
+  select:
+    target: Select
+    commands:
+      - name: highlightStructure
+        bukkit: |
+          {
+            try {
+            String payload = {jsonCoords};
+            org.bukkit.World w = world;    if (payload != null && !payload.isEmpty()) {
+                    // Split the blocks by the pipe character
+                    String[] blocks = payload.split("\\|");
+                    
+                    for (String b : blocks) {
+                        if (b.isEmpty()) continue;
+                        
+                        // Split the coordinates by the underscore
+                        String[] parts = b.split("_");
+                        if (parts.length == 3) {
+                            int cx = Integer.parseInt(parts[0]);
+                            int cy = Integer.parseInt(parts[1]);
+                            int cz = Integer.parseInt(parts[2]);
+                            
+                            try {
+                                w.spawnParticle(org.bukkit.Particle.valueOf("VILLAGER_HAPPY"), cx + 0.5, cy + 0.5, cz + 0.5, 1, 0.6, 0.6, 0.6, 0);
+                            } catch (Exception e2) {
+                                w.spawnParticle(org.bukkit.Particle.FLAME, cx + 0.5, cy + 0.5, cz + 0.5, 1, 0.6, 0.6, 0.6, 0);
+                            }
+                        }
+                    }
+                }
+                session.send("true");
+            } catch (Exception e) {
+                org.bukkit.Bukkit.getLogger().warning("[McJuice] Error highlighting structure: " + e.getMessage());
+                session.send("false");
+            }
+          }
+        args: [
+          {name: jsonCoords, type: String}
+        ]
+        returns: boolean
+
+
+      - name: getContiguousStructure
+        bukkit: |
+          {
+            int startX = {x}, startY = {y}, startZ = {z};
+            int maxRadius = 64;   // Safety: Don't search further than 64 blocks away
+            int maxBlocks = 50000; // Safety: Abort if the structure is too massive
+
+            org.bukkit.block.Block startBlock = world.getBlockAt(startX, startY, startZ);
+            java.util.Map<String, String> blockMap = new java.util.HashMap<>();
+            
+            // If they clicked air, return an empty structure
+            if (startBlock.getType().isAir()) {
+                session.send("{}");
+            } else {
+                java.util.Queue<org.bukkit.block.Block> queue = new java.util.LinkedList<>();
+                java.util.Set<org.bukkit.Location> visited = new java.util.HashSet<>();
+                
+                queue.add(startBlock);
+                visited.add(startBlock.getLocation());
+                
+                while (!queue.isEmpty() && blockMap.size() < maxBlocks) {
+                    org.bukkit.block.Block curr = queue.poll();
+                    blockMap.put(curr.getX() + "," + curr.getY() + "," + curr.getZ(), curr.getType().name());
+                    
+                    // Loop through all 26 spatial neighbors (Faces, Edges, AND Vertices)
+                    for (int dx = -1; dx <= 1; dx++) {
+                        for (int dy = -1; dy <= 1; dy++) {
+                            for (int dz = -1; dz <= 1; dz++) {
+                                // Skip the center block itself
+                                if (dx == 0 && dy == 0 && dz == 0) continue;
+                                
+                                int nx = curr.getX() + dx;
+                                int ny = curr.getY() + dy;
+                                int nz = curr.getZ() + dz;
+                                
+                                // Enforce bounding box safety limit
+                                if (Math.abs(nx - startX) > maxRadius || Math.abs(ny - startY) > maxRadius || Math.abs(nz - startZ) > maxRadius) {
+                                    continue;
+                                }
+                                
+                                org.bukkit.Location nLoc = new org.bukkit.Location(world, nx, ny, nz);
+                                if (!visited.contains(nLoc)) {
+                                    visited.add(nLoc);
+                                    org.bukkit.block.Block nBlock = world.getBlockAt(nx, ny, nz);
+                                    
+                                    // Only continue the flood fill through solid blocks
+                                    if (!nBlock.getType().isAir()) {
+                                        queue.add(nBlock);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } 
+                
+                com.google.gson.Gson gson = new com.google.gson.Gson();
+                session.send(gson.toJson(blockMap));
+            }
+          }
+        args: [{ name: x, type: int }, { name: y, type: int }, { name: z, type: int }]
+        returns: MCStructure
+        blockly:
+          label: "Get Contiguous Structure at [pos]"
+          tooltip: "Flood-fills outward from the target block, capturing all connected non-air blocks."
+          args:
+            pos: { type: Vec3, label: "Start Position" }
+          call_args: [int(pos.x), int(pos.y), int(pos.z)]
+
+
+      - name: getStructure
+        bukkit: |
+          {
+            int x1 = {x1}, y1 = {y1}, z1 = {z1}, x2 = {x2}, y2 = {y2}, z2 = {z2};
+            int xMin = Math.min(x1, x2), xMax = Math.max(x1, x2);
+            int yMin = Math.min(y1, y2), yMax = Math.max(y1, y2);
+            int zMin = Math.min(z1, z2), zMax = Math.max(z1, z2);
+            
+            java.util.Map<String, String> blockMap = new java.util.HashMap<>();
+            
+            for (int z = zMin; z <= zMax; z++) {
+              for (int y = yMin; y <= yMax; y++) {
+                for (int x = xMin; x <= xMax; x++) {
+                  org.bukkit.block.Block b = world.getBlockAt(x, y, z);
+                  
+                  // Optimization: Only transmit structural blocks, skipping air
+                  if (!b.getType().isAir()) {
+                      blockMap.put(x + "," + y + "," + z, b.getType().name());
+                  }
+                }
+              }
+            }
+            
+            // Convert the HashMap to a valid JSON string using GSON
+            com.google.gson.Gson gson = new com.google.gson.Gson();
+            String jsonOutput = gson.toJson(blockMap);
+            
+            session.send(jsonOutput);
+          }
+        args: [{ name: x1, type: int }, { name: y1, type: int }, { name: z1, type: int }, { name: x2, type: int }, { name: y2, type: int }, { name: z2, type: int }]
+        returns: MCStructure 
+        blockly:
+          label: "Get Structure from [pos1] to [pos2]"
+          tooltip: "Returns a MCStructure object in the specified area."
+          args:
+            pos1: { type: Vec3, label: "From Position" }
+            pos2: { type: Vec3, label: "To Position" }
+          call_args: [int(pos1.x), int(pos1.y), int(pos1.z), int(pos2.x), int(pos2.y), int(pos2.z)]
+
+      - name: drawMarquee
+        bukkit: |
+          {
+            int x1 = {x1}, y1 = {y1}, z1 = {z1}, x2 = {x2}, y2 = {y2}, z2 = {z2};
+            
+            // Add a tiny 0.05 offset so particles hover OUTSIDE the blocks!
+            double minX = Math.min(x1, x2) - 0.05;
+            double minY = Math.min(y1, y2) - 0.05;
+            double minZ = Math.min(z1, z2) - 0.05;
+            double maxX = Math.max(x1, x2) + 1.05; 
+            double maxY = Math.max(y1, y2) + 1.05;
+            double maxZ = Math.max(z1, z2) + 1.05;
+            
+            double step = 0.25; // Denser particles for a solid line
+
+            org.bukkit.World w = world;
+
+            try {
+                // Using FLAME is universally safe across all Minecraft versions.
+                // The trailing 0s ensure the flames do not move/drift.
+                for (double x = minX; x <= maxX; x += step) {
+                    w.spawnParticle(org.bukkit.Particle.FLAME, x, minY, minZ, 1, 0,0,0, 0);
+                    w.spawnParticle(org.bukkit.Particle.FLAME, x, maxY, minZ, 1, 0,0,0, 0);
+                    w.spawnParticle(org.bukkit.Particle.FLAME, x, minY, maxZ, 1, 0,0,0, 0);
+                    w.spawnParticle(org.bukkit.Particle.FLAME, x, maxY, maxZ, 1, 0,0,0, 0);
+                }
+                for (double y = minY; y <= maxY; y += step) {
+                    w.spawnParticle(org.bukkit.Particle.FLAME, minX, y, minZ, 1, 0,0,0, 0);
+                    w.spawnParticle(org.bukkit.Particle.FLAME, maxX, y, minZ, 1, 0,0,0, 0);
+                    w.spawnParticle(org.bukkit.Particle.FLAME, minX, y, maxZ, 1, 0,0,0, 0);
+                    w.spawnParticle(org.bukkit.Particle.FLAME, maxX, y, maxZ, 1, 0,0,0, 0);
+                }
+                for (double z = minZ; z <= maxZ; z += step) {
+                    w.spawnParticle(org.bukkit.Particle.FLAME, minX, minY, z, 1, 0,0,0, 0);
+                    w.spawnParticle(org.bukkit.Particle.FLAME, maxX, minY, z, 1, 0,0,0, 0);
+                    w.spawnParticle(org.bukkit.Particle.FLAME, minX, maxY, z, 1, 0,0,0, 0);
+                    w.spawnParticle(org.bukkit.Particle.FLAME, maxX, maxY, z, 1, 0,0,0, 0);
+                }
+                session.send("true");
+            } catch (Exception e) {
+                session.send("false");
+            }
+          }
+        args: [
+            { name: x1, type: int }, { name: y1, type: int }, { name: z1, type: int }, 
+            { name: x2, type: int }, { name: y2, type: int }, { name: z2, type: int }
+        ]
+        returns: boolean
+
+      - name: drawWandMarquee
+        bukkit: |
+          {
+            int x1 = {x1}, y1 = {y1}, z1 = {z1}, x2 = {x2}, y2 = {y2}, z2 = {z2};
+            // 1. Calculate Cubic Radius
+            int dx = Math.abs(x2 - x1);
+            int dy = Math.abs(y2 - y1);
+            int dz = Math.abs(z2 - z1);
+            int radius = Math.max(dx, Math.max(dy, dz));
+            if (radius < 1) radius = 1;
+
+            int minX = x1 - radius, maxX = x1 + radius;
+            int minY = y1 - radius, maxY = y1 + radius;
+            int minZ = z1 - radius, maxZ = z1 + radius;
+
+            org.bukkit.World w = world;
+
+            // 2. Draw the 3D bounding box
+            double bMinX = minX - 0.05, bMinY = minY - 0.05, bMinZ = minZ - 0.05;
+            double bMaxX = maxX + 1.05, bMaxY = maxY + 1.05, bMaxZ = maxZ + 1.05;
+            double step = 0.5;
+
+            for (double x = bMinX; x <= bMaxX; x += step) {
+                w.spawnParticle(org.bukkit.Particle.FLAME, x, bMinY, bMinZ, 1, 0,0,0, 0);
+                w.spawnParticle(org.bukkit.Particle.FLAME, x, bMaxY, bMinZ, 1, 0,0,0, 0);
+                w.spawnParticle(org.bukkit.Particle.FLAME, x, bMinY, bMaxZ, 1, 0,0,0, 0);
+                w.spawnParticle(org.bukkit.Particle.FLAME, x, bMaxY, bMaxZ, 1, 0,0,0, 0);
+            }
+            for (double y = bMinY; y <= bMaxY; y += step) {
+                w.spawnParticle(org.bukkit.Particle.FLAME, bMinX, y, bMinZ, 1, 0,0,0, 0);
+                w.spawnParticle(org.bukkit.Particle.FLAME, bMaxX, y, bMinZ, 1, 0,0,0, 0);
+                w.spawnParticle(org.bukkit.Particle.FLAME, bMinX, y, bMaxZ, 1, 0,0,0, 0);
+                w.spawnParticle(org.bukkit.Particle.FLAME, bMaxX, y, bMaxZ, 1, 0,0,0, 0);
+            }
+            for (double z = bMinZ; z <= bMaxZ; z += step) {
+                w.spawnParticle(org.bukkit.Particle.FLAME, bMinX, bMinY, z, 1, 0,0,0, 0);
+                w.spawnParticle(org.bukkit.Particle.FLAME, bMaxX, bMinY, z, 1, 0,0,0, 0);
+                w.spawnParticle(org.bukkit.Particle.FLAME, bMinX, bMaxY, z, 1, 0,0,0, 0);
+                w.spawnParticle(org.bukkit.Particle.FLAME, bMaxX, bMaxY, z, 1, 0,0,0, 0);
+            }
+
+            if (w.getBlockAt(x1, y1, z1).getType().isAir()) { session.send("false"); return; }
+
+            java.util.Set<String> visited = new java.util.HashSet<>();
+            java.util.Queue<org.bukkit.util.Vector> queue = new java.util.LinkedList<>();
+            queue.add(new org.bukkit.util.Vector(x1, y1, z1));
+
+            int count = 0;
+            while (!queue.isEmpty() && count < 4000) {
+                org.bukkit.util.Vector v = queue.poll();
+                int vx = v.getBlockX(), vy = v.getBlockY(), vz = v.getBlockZ();
+                String key = vx + "," + vy + "," + vz;
+
+                if (visited.contains(key)) continue;
+                visited.add(key); 
+
+                if (vx < minX || vx > maxX || vy < minY || vy > maxY || vz < minZ || vz > maxZ) continue;
+
+                if (!w.getBlockAt(vx, vy, vz).getType().isAir()) {
+                    count++;
+
+                    try {
+                        w.spawnParticle(org.bukkit.Particle.valueOf("VILLAGER_HAPPY"), vx + 0.5, vy + 0.5, vz + 0.5, 1, 0,0,0, 0);
+                    } catch (Exception e) {
+                        w.spawnParticle(org.bukkit.Particle.FLAME, vx + 0.5, vy + 0.5, vz + 0.5, 1, 0,0,0, 0);
+                    }
+
+                    queue.add(new org.bukkit.util.Vector(vx + 1, vy, vz));
+                    queue.add(new org.bukkit.util.Vector(vx - 1, vy, vz));
+                    queue.add(new org.bukkit.util.Vector(vx, vy + 1, vz));
+                    queue.add(new org.bukkit.util.Vector(vx, vy - 1, vz));
+                    queue.add(new org.bukkit.util.Vector(vx, vy, vz + 1));
+                    queue.add(new org.bukkit.util.Vector(vx, vy, vz - 1));
+                }
+            }
+
+            session.send("true");
+            }
+        args: [
+          { name: x1, type: int }, { name: y1, type: int }, { name: z1, type: int },
+          { name: x2, type: int }, { name: y2, type: int }, { name: z2, type: int }
+        ]
+        returns: boolean
+
+      # - name: getWandMCStructure
+      #   bukkit: |
+      #     {
+      #       int x1 = {x1}, y1 = {y1}, z1 = {z1}, x2 = {x2}, y2 = {y2}, z2 = {z2};
+      #       // 1. Calculate Cubic Radius matching the marquee
+      #       int dx = Math.abs(x2 - x1);
+      #       int dy = Math.abs(y2 - y1);
+      #       int dz = Math.abs(z2 - z1);
+      #       int radius = Math.max(dx, Math.max(dy, dz));
+      #       if (radius < 1) radius = 1;
+
+      #       int minX = x1 - radius, maxX = x1 + radius;
+      #       int minY = y1 - radius, maxY = y1 + radius;
+      #       int minZ = z1 - radius, maxZ = z1 + radius;
+
+      #       org.bukkit.World w = world;
+      #       java.util.Map<String, String> blockMap = new java.util.HashMap<>();
+
+      #       if (w.getBlockAt(x1, y1, z1).getType().isAir()) { 
+      #           session.send("{}"); 
+      #           return; 
+      #       }
+
+      #       java.util.Set<String> visited = new java.util.HashSet<>();
+      #       java.util.Queue<org.bukkit.util.Vector> queue = new java.util.LinkedList<>();
+      #       queue.add(new org.bukkit.util.Vector(x1, y1, z1));
+
+      #       int count = 0;
+      #       // Limit to 8000 blocks to prevent massive lag spikes on huge structures
+      #       while (!queue.isEmpty() && count < 8000) {
+      #           org.bukkit.util.Vector v = queue.poll();
+      #           int vx = v.getBlockX(), vy = v.getBlockY(), vz = v.getBlockZ();
+      #           String key = vx + "," + vy + "," + vz;
+
+      #           // Mark as visited BEFORE checking air or boundaries to prevent loops
+      #           if (visited.contains(key)) continue;
+      #           visited.add(key);
+
+      #           // Enforce the 3D bounding box
+      #           if (vx < minX || vx > maxX || vy < minY || vy > maxY || vz < minZ || vz > maxZ) continue;
+
+      #           org.bukkit.block.Block b = w.getBlockAt(vx, vy, vz);
+      #           if (!b.getType().isAir()) {
+      #               blockMap.put(key, b.getType().toString());
+      #               count++;
+
+      #               queue.add(new org.bukkit.util.Vector(vx + 1, vy, vz));
+      #               queue.add(new org.bukkit.util.Vector(vx - 1, vy, vz));
+      #               queue.add(new org.bukkit.util.Vector(vx, vy + 1, vz));
+      #               queue.add(new org.bukkit.util.Vector(vx, vy - 1, vz));
+      #               queue.add(new org.bukkit.util.Vector(vx, vy, vz + 1));
+      #               queue.add(new org.bukkit.util.Vector(vx, vy, vz - 1));
+      #           }
+      #       }
+
+      #       com.google.gson.Gson gson = new com.google.gson.Gson();
+      #       session.send(gson.toJson(blockMap));     
+      #       }
+      #   args: [
+      #     { name: x1, type: int }, { name: y1, type: int }, { name: z1, type: int },
+      #     { name: x2, type: int }, { name: y2, type: int }, { name: z2, type: int }
+      #   ]
+      #   returns: MCStructure
 
 
 
@@ -654,3 +1048,4 @@ events:
       returns: "Vec3"
       yields: "event.pos.clone()"
       player_filter: True
+

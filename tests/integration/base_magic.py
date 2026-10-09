@@ -54,11 +54,11 @@ class BaseMagicTest(unittest.TestCase):
             cls.ip.user_ns[cls.player_name] = cls.player
 
             while time.time() - start_time < timeout:
-                if cls.mcshell.active_paper_server and cls.mcshell.active_paper_server.is_alive():
+                if cls.mcshell.local_server.process and cls.mcshell.local_server.process.is_alive():
                     try:
                         # Ping server via RCON. '/help' is a safe check.
-                        resp = cls.player.run("help")
-                        if resp and "Unknown command" not in resp:
+                        world_name = cls.mcshell._fetch_remote_world_name(cls.mcshell.local_server.local_ip,cls.mcshell.local_server.mc_port)
+                        if world_name and world_name == cls.mcshell.local_server.world_name:
                             success = True
                             break
                     except Exception:
@@ -81,7 +81,7 @@ class BaseMagicTest(unittest.TestCase):
     @staticmethod
     def cleanup_static(mcshell_instance, world_name, ip_instance):
         """Standard cleanup logic to stop server and remove directory."""
-        if mcshell_instance.active_paper_server and mcshell_instance.active_paper_server.is_alive():
+        if mcshell_instance.local_server.process and mcshell_instance.local_server.process.is_alive():
              ip_instance.run_line_magic('pp_stop_world', '')
              time.sleep(2)
 
