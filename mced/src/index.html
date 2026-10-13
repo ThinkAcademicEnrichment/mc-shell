@@ -541,8 +541,11 @@
                     </div>
                 </div>
                 <!-- iframe -->
-                <template x-if="isAppliance">
+                <!-- <template x-if="isAppliance">
                     <iframe src="http://127.0.0.1:7681" style="flex: 1; border: none; width: 100%;"></iframe>
+                </template> -->
+                <template x-if="isAppliance">
+                    <iframe :src="`http://${window.location.hostname}:7681`" style="flex: 1; border: none; width: 100%;"></iframe>
                 </template>
             </div>
         </div>
