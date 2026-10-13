@@ -1,8 +1,6 @@
 
 from mcshell.mcclient import MCClient
-from mcshell import mcjuice
 from mcshell.mcactions import MCActions
-from IPython.utils.capture import capture_output
 import IPython
 from IPython.core.magic import Magics, magics_class, line_magic,needs_local_scope
 
