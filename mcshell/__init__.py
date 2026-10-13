@@ -1277,7 +1277,6 @@ class MCShell(Magics):
         self.local_server.mj_port = ports['mj_port']
         self.local_server.process = process
         self.local_server.mc_version = world_manifest['paper_version']
-        self.local_server.player_name = self._get_mc_name()
         self.local_server.rh_host = relay_server_address
 
         yaml = YAML()
@@ -1330,6 +1329,7 @@ class MCShell(Magics):
 
         # 5. The Simplified Join Handoff
         if not parsed_args.do_not_join:
+            self.local_server.player_name = self._get_mc_name()
             self.local_server.process.suspend_logs = True
             # We now pass a simple flag instead of a massive string of ports
             self.ip.run_line_magic('pp_join_world', '--local')
