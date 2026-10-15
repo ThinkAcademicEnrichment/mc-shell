@@ -255,7 +255,7 @@ def _resolve_modrinth_plugin(project_id, mc_version):
 
     params = {
         "game_versions": f'["{mc_version}"]',
-        "loaders": '["paper", "spigot"]'
+        "loaders": '["paper", "spigot", "geyser"]'
     }
 
     headers = {
@@ -1023,7 +1023,11 @@ class MCShell(Magics):
         plugin_urls= {
             "Geyser.jar": _resolve_geysermc_plugin('geyser'),
             "Floodgate.jar": _resolve_geysermc_plugin('floodgate'),
-            "ViaVersion.jar": _resolve_modrinth_plugin('viaversion', mc_version)
+            "ViaVersion.jar": _resolve_modrinth_plugin('viaversion', mc_version),
+        }
+
+        geyser_extension_urls = {
+            "MCXboxBroadcast.jar": _resolve_modrinth_plugin('mcxboxbroadcast', mc_version),
         }
 
         for plugin_to_install in plugins_to_install:
@@ -1069,6 +1073,10 @@ class MCShell(Magics):
         # Install the plugins listed in the manifest (Downloads Geyser & Floodgate automatically)
         downloader.install_plugins(plugin_urls, plugins_dir)
 
+        # NEW: install extensions like MCXboxBroadcast here
+        geyser_extensions_directory = world_dir / "plugins" / "Geyser-Spigot" / "extensions"
+        downloader.install_extensions(geyser_extension_urls, geyser_extensions_directory)
+
         # Create the world_manifest.json file with required Geyser/Floodgate/ViaVersion plugins
         manifest = {
             "world_name": world_name,
@@ -1078,6 +1086,7 @@ class MCShell(Magics):
             "server_jar_path": str(jar_path.relative_to(world_dir.parent)), # Store a path relative to the world_dir
             "world_data_path": str((world_dir / "world").relative_to(world_dir)),
             "plugins": plugin_urls,
+            "geyser_extensions": geyser_extension_urls,
             "server_properties": {
                 "gamemode": "creative",
                 "motd": f"MC-ED World: {world_name}",
