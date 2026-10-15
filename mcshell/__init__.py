@@ -396,13 +396,16 @@ class ConnectionContext:
     mc_version: Optional[str] = None
     rh_host: Optional[str] = None
 
-    # --- New Auth Tracking ---
+    # --- Auth Tracking ---
     password: Optional[str] = None
     is_admin: bool = False
 
     # --- Local Proxy Tracking ---
     local_proxy_mc_port: Optional[int] = None
     local_proxy_bedrock_port: Optional[int] = None
+
+    # -- Xbox ---
+    xbox_tag: Optional[str] = None
     
     @property
     def is_joined(self) -> bool:
@@ -423,6 +426,7 @@ class ConnectionContext:
         self.is_admin: bool = False
         self.local_proxy_mc_port: Optional[int] = None
         self.local_proxy_bedrock_port: Optional[int] = None
+        self.xbox_tag = None
          
 @dataclass
 class LocalHostingContext:
@@ -440,7 +444,10 @@ class LocalHostingContext:
 
     # You can store the actual process reference here instead of directly on self
     process: Optional[object] = None 
-    
+
+    # for sharing over Xbox network
+    xbox_auth: Optional[str] = None
+
     @property
     def is_running(self) -> bool:
         return self.process is not None and self.process.is_alive()
@@ -623,6 +630,35 @@ class MCShell(Magics):
 
         return data
 
+    def _get_auth_status(self,cache_path):
+        try:
+            with open(cache_path, 'r') as f:
+                cache_data = json.load(f)
+                
+            # Extract the expiration timestamp in milliseconds
+            expire_time_ms = cache_data.get("msaToken", {}).get("expireTimeMs", 0)
+            current_time_ms = int(time.time() * 1000)
+            
+            if expire_time_ms == 0:
+                return "No Token Found"
+            elif current_time_ms >= expire_time_ms:
+                return "Expired (Requires Reauth)"
+            else:
+                # Calculate remaining days
+                time_left_ms = expire_time_ms - current_time_ms
+                days_left = time_left_ms / (1000 * 60 * 60 * 24)
+                return f"Valid ({days_left:.1f} days remaining)"
+                
+        except FileNotFoundError:
+            return "Not Authenticated (cache.json missing)"
+
+    def _extract_gamertag_from_log(self,log_line):
+        # Matches: [12:31:25 INFO]: [Geyser-Spigot] [mcxboxbroadcast] [Primary Session] Successfully authenticated as aphid18 (2535442447187961)
+        match = re.search(r"Successfully authenticated as (\w+) \(", log_line)
+        if match:
+            return match.group(1) # Returns 'aphid18'
+        return None 
+
     def _print_connection_hub(self):
         """Helper method to cleanly print the connection hub using FSM states."""
         from mcshell.mcserver import GUI_AUTH_TOKEN
@@ -678,7 +714,14 @@ class MCShell(Magics):
             print("="*60)
             print(f"Please open Minecraft and connect to this computer's IP:\n{' '*4}{self.local_server.local_ip}:{self.local_server.mc_port}")
             
-            print(f"\n" + "="*60)
+        if ui_state in ['JOINED_LOCAL','JOINED_REMOTE']:
+            if getattr(self.connection, 'xbox_tag', None):
+                print("\n" + "="*60)
+                print("🎮 XBOX / SWITCH / PSX PLAYERS:")
+                print("="*60)
+                print(f"To join from a console, send a friend request to: {self.connection.xbox_tag}")
+                print("Then open Minecraft and connect via the 'Friends' tab.")
+                print("="*60)
 
         # --- 2. Multiplayer Networking (Driven exclusively by host_state) ---
         if host_state == 'HOSTING':
@@ -690,6 +733,20 @@ class MCShell(Magics):
             
             # The exact ephemeral port currently occupied by Java
             mc_port = self.local_server.mc_port
+
+            # Extract Xbox Tag
+            xbox_tag = None
+            # refresh the auth state
+            self.local_server.xbox_auth = self._get_auth_status()
+            self.local_server.xbox_auth = self._get_auth_status(self.local_server.world_name / "plugins" / "Geyser-Spigot" / "extensions" / "mcxboxbroadcast" / "cache.json")
+            if hasattr(self.local_server, 'xbox_auth') and 'Valid' in self.local_server.xbox_auth:
+                # Assuming MC_WORLDS_BASE_DIR is in scope
+                papermc_log_path = MC_WORLDS_BASE_DIR / self.local_server.world_name / "logs" / "latest.log"
+                if papermc_log_path.exists():
+                    for log_line in reversed(papermc_log_path.read_text().splitlines()):
+                        xbox_tag = self._extract_gamertag_from_log(log_line)
+                        if xbox_tag:
+                            break
             
             def _make_token(ip):
                 """Inline helper to generate tokens dynamically based on active ports."""
@@ -700,6 +757,16 @@ class MCShell(Magics):
                 # Otherwise, append the custom ephemeral port routing block
                 return f"{base}@{mc_port}-{self.local_server.rcon_port}-{self.local_server.mj_port}-{self.local_server.mc_version}"
 
+
+            def _finalize_token(ip, use_auth=False):
+                """Appends Tailscale and Xbox extensions sequentially to maintain parse order."""
+                tok = _make_token(ip)
+                if use_auth and authkey:
+                    tok = f"{tok}^{authkey}"
+                if xbox_tag:
+                    tok = f"{tok}~{xbox_tag}"
+                return tok
+
             print("🌍 CONNECTION HUB: Share these tokens with your friends!")
             print("="*60)
 
@@ -707,20 +774,21 @@ class MCShell(Magics):
             if authkey:
                 if vpn_ip:
                     print("\n[ VPN CONNECTION (Automated Tailscale Mesh) ]")
-                    print(f"Token :\n{' '*4}{_make_token(vpn_ip)}^{authkey}")
+                    print(f"Token :\n{' '*4}{_finalize_token(vpn_ip)}^{authkey}")
                 else:
                     print("\n[ VPN CONNECTION ]")
                     print("⚠️  ERROR: Tailscale failed to acquire a VPN IP.")
                     print("⚠️  Cannot generate an automated remote token. Check your Tailscale installation.")
             elif vpn_ip:
                 print("\n[ TAILSCALE CONNECTION (Manual Mesh) ]")
-                print(f"Token :\n{' '*4}{_make_token(vpn_ip)}")
+                print(f"Token :\n{' '*4}{_finalize_token(vpn_ip)}")
+
 
             # Standard Direct Tokens
             print("\n[ DIRECT CONNECTION (Local LAN) ]")
-            print(f"Local LAN Token :\n{' '*4}{_make_token(local_ip)}")
+            print(f"Local LAN Token :\n{' '*4}{_finalize_token(local_ip)}")
             
-        print(f"="*55)
+            print(f"="*60)
 
     def _complete_world_command(self, ipyshell, event):
         ipyshell.user_ns.update(dict(rcon_event=event))
@@ -855,6 +923,8 @@ class MCShell(Magics):
         host_table.add_row("Local IP",str(self.local_server.local_ip))
         host_table.add_row("VPN IP",str(self.local_server.vpn_ip))
 
+        host_table.add_row("Xbox Login",str(self.local_server.xbox_auth))
+
         # 3. Connection Context
         conn_table = Table(show_header=True, header_style="bold magenta", title="\n[Connection Context]")
         conn_table.add_column("Property", style="cyan", width=20)
@@ -874,6 +944,7 @@ class MCShell(Magics):
         conn_table.add_row("MC Port", str(self.connection.mc_port))
         conn_table.add_row("RCON Port", str(self.connection.rcon_port))
         conn_table.add_row("McJuice Port", str(self.connection.mj_port))
+        conn_table.add_row("Xbox tag", str(self.connection.xbox_tag))
 
         console.print(host_table)
         console.print(conn_table)
@@ -1287,6 +1358,7 @@ class MCShell(Magics):
         self.local_server.process = process
         self.local_server.mc_version = world_manifest['paper_version']
         self.local_server.rh_host = relay_server_address
+        self.local_server.xbox_auth = self._get_auth_status(world_directory / "plugins" / "Geyser-Spigot" / "extensions" / "mcxboxbroadcast" / "cache.json")
 
         yaml = YAML()
         yaml.preserve_quotes = True
@@ -1461,7 +1533,14 @@ class MCShell(Magics):
             
         elif parsed_args.connection_target:
             token = parsed_args.connection_target
-            
+
+            # Extract Xbox Tag FIRST (Guarantees backward compatibility)
+            if '~' in token:
+                token, extracted_xbox = token.split('~', 1)
+                self.connection.xbox_tag = extracted_xbox
+            else:
+                self.connection.xbox_tag = None 
+
             # Extract Tailscale authkey from token if present
             if '^' in token:
                 token, extracted_key = token.split('^', 1)
