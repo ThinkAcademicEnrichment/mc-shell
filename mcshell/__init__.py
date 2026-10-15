@@ -662,10 +662,8 @@ class MCShell(Magics):
     def _print_connection_hub(self):
         """Helper method to cleanly print the connection hub using FSM states."""
         from mcshell.mcserver import GUI_AUTH_TOKEN
-        
+         
         host_state, ui_state = self._get_fsm_state()
-        ic(host_state)
-        ic(ui_state)
         app_port = self.server_data.get('app_port', 5001)
 
         print(f"\n" + "="*55)
@@ -700,6 +698,7 @@ class MCShell(Magics):
             print("💻 JAVA PLAYERS:")
             print("="*60)
             print(f"Please open Minecraft and connect to this computer's IP:\n{' '*4}{self.local_server.local_ip}:{self.connection.local_proxy_mc_port}")
+
         elif ui_state == 'JOINED_LOCAL':
             print("\n" + "="*60)
             print("🎮 BEDROCK PLAYERS:")
@@ -757,7 +756,6 @@ class MCShell(Magics):
                 # Otherwise, append the custom ephemeral port routing block
                 return f"{base}@{mc_port}-{self.local_server.rcon_port}-{self.local_server.mj_port}-{self.local_server.mc_version}"
 
-
             def _finalize_token(ip, use_auth=False):
                 """Appends Tailscale and Xbox extensions sequentially to maintain parse order."""
                 tok = _make_token(ip)
@@ -782,7 +780,6 @@ class MCShell(Magics):
             elif vpn_ip:
                 print("\n[ TAILSCALE CONNECTION (Manual Mesh) ]")
                 print(f"Token :\n{' '*4}{_finalize_token(vpn_ip)}")
-
 
             # Standard Direct Tokens
             print("\n[ DIRECT CONNECTION (Local LAN) ]")
@@ -1248,6 +1245,7 @@ class MCShell(Magics):
         print(f"To start it, run: %pp_start_world {world_name}")
 
 
+
     @line_magic
     def pp_start_world(self, line):
         """
@@ -1402,19 +1400,11 @@ class MCShell(Magics):
         self.local_server.local_ip = local_ip
         self.local_server.vpn_ip = vpn_ip
         self.local_server.last_wifi_ip = last_wifi_ip
-        # self.server_data['local_ip'] = local_ip
-        # self.server_data['vpn_ip'] = vpn_ip
-        # self.server_data['last_wifi_ip'] = last_wifi_ip
-        # ---------------------------------------------
-
 
         # 5. The Simplified Join Handoff
         if not parsed_args.do_not_join:
-            self.local_server.player_name = self._get_mc_name()
-            self.local_server.process.suspend_logs = True
             # We now pass a simple flag instead of a massive string of ports
             self.ip.run_line_magic('pp_join_world', '--local')
-            self.local_server.process.suspend_logs = False 
         else:
             self.ip.run_line_magic('mc_server_info', '')
 
