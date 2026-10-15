@@ -1339,6 +1339,10 @@ class MCShell(Magics):
             'mcjuice-port': str(ports['mj_port'])
         }
 
+        # get this out of the way
+        if not parsed_args.do_not_join:
+            self.local_server.player_name = self._get_mc_name()
+
         # 3. Process Execution
         process = PaperServerManager(world_name, world_directory)
         process.update_jar_path()
