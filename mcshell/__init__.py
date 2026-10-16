@@ -476,6 +476,8 @@ class MCShell(Magics):
             from mcshell.mcscraper import make_docs
             _mc_cmd_docs = make_docs()
 
+        self.appliance_mode = os.environ.get('MCSHELL_APPLIANCE_MODE') == '1'
+
         # bind the instance to ONE name
         self.mc_name = mc_name 
 
@@ -662,7 +664,12 @@ class MCShell(Magics):
     def _print_connection_hub(self):
         """Helper method to cleanly print the connection hub using FSM states."""
         from mcshell.mcserver import GUI_AUTH_TOKEN
-         
+
+        if self.appliance_mode:
+            local_host = self.local_server.local_ip     
+        else:
+            local_host = 'localhost'
+
         host_state, ui_state = self._get_fsm_state()
         app_port = self.server_data.get('app_port', 5001)
 
@@ -674,7 +681,7 @@ class MCShell(Magics):
             
         elif ui_state == 'UNJOINED':
             print(f"🟡 MCED App Server  : STANDBY")
-            print(f"   Lobby URL        : http://localhost:{app_port}/lobby?auth={GUI_AUTH_TOKEN}")
+            print(f"   Lobby URL        : http://{local_host}:{app_port}/lobby?auth={GUI_AUTH_TOKEN}")
             
         elif ui_state in ['JOINED_LOCAL', 'JOINED_REMOTE']:
             mc_name = self.connection.player_name
@@ -682,8 +689,8 @@ class MCShell(Magics):
             
             print(f"🟢 MCED App Server  : RUNNING (Active Player: {mc_name})")
             print(f"   Connected World  : {target_world}")
-            print(f"   Editor URL       : http://localhost:{app_port}/?auth={GUI_AUTH_TOKEN}")
-            print(f"   Control URL      : http://localhost:{app_port}/control?auth={GUI_AUTH_TOKEN}")
+            print(f"   Editor URL       : http://{local_host}:{app_port}/?auth={GUI_AUTH_TOKEN}")
+            print(f"   Control URL      : http://{local_host}:{app_port}/control?auth={GUI_AUTH_TOKEN}")
 
         if ui_state == 'JOINED_REMOTE':
             print("\n" + "="*60)
