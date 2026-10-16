@@ -140,16 +140,14 @@
                         <button class="btn-block" id="cancelPowerButton">Cancel Power</button>
                         <button class="btn-digital-set" @click="window.prepareAndOpenSaveModal()">Save Workspace</button>
                         <button class="btn-entity" id="clearWorkspaceButton">Clear Workspace</button>
-                        <!-- <button class="btn-item" @click="keyboardVisible = !keyboardVisible">Keyboard</button> -->
                         <button class="btn-item" @click="toggleKeyboard()">Keyboard</button>
-                        <!-- <button class="btn-geometry" @click="toggleTerminal()">Terminal</button> -->
                         <button class="btn-geometry" x-show="isAppliance" x-cloak @click="toggleTerminal()">Terminal</button>
                         <button class="btn-geometry" @click="isCodeCollapsed = !isCodeCollapsed">Toggle Python</button>
                         <button class="btn-picker" @click="openControlDeck()">Control</button>
 
                         <div style="margin-left: auto; display: flex; align-items: center; gap: 10px;">
                             <!-- The State Awareness Badge -->
-                            <div x-cloak x-show="uiState=== 'active'" style="padding: 6px 12px; border-radius: 8px; background: rgba(0,0,0,0.4); color: white; font-size: 0.9rem; border: 1px solid #444; cursor: help;" :title="lobbyData?.is_admin ? 'You have Server OP privileges.' : 'Guest Mode. Run %mc_login in the terminal to elevate privileges.'">
+                            <div x-cloak x-show="uiState=== UI_STATES.EDITOR" style="padding: 6px 12px; border-radius: 8px; background: rgba(0,0,0,0.4); color: white; font-size: 0.9rem; border: 1px solid #444; cursor: help;" :title="lobbyData?.is_admin ? 'You have Server OP privileges.' : 'Guest Mode. Run %mc_login in the terminal to elevate privileges.'">
                                 <span x-text="lobbyData?.is_admin ? '👑 Admin' : '👤 Guest'"></span>
                             </div>
                             <button class="btn-picker" id="leaveWorldButton" style="background-color: #ff3b30; color: white; border: none;">Leave World</button>
