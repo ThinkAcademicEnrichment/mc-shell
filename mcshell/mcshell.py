@@ -45,7 +45,7 @@ from traitlets.config import Config
 def initialize_config() -> Config:
     c = Config()
     
-    # Vi editing mode
+    # editing mode; use %toggle_vi to switch
     c.TerminalInteractiveShell.editing_mode = 'emacs'
     
     # UI & Shell behaviors
@@ -64,13 +64,14 @@ def initialize_config() -> Config:
         '%autoreload 2',
         '%gui asyncio',
         '%store -r',
-        'pdb',
+        # 'pdb',
         # a terrible 3.10 hack to make pdb work
         '''
         import sys
         if not hasattr(sys, 'last_value'):
             sys.last_value = None
         ''',
+
     ]
 
     return c
