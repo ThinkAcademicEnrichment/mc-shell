@@ -1,8 +1,9 @@
+import re
 import sys
-from io import StringIO
+import os
 from flask import Blueprint, jsonify, current_app, request
 from IPython.utils.capture import capture_output
-import re
+
 ipython_bp = Blueprint('ipython_api',__name__,url_prefix='/api')
 
 @ipython_bp.route('/ipython_magic', methods=['POST'])
@@ -47,9 +48,8 @@ def execute_ipython_magic():
 @ipython_bp.route('/lobby_data', methods=['GET'])
 def get_lobby_data():
     """Returns the current server status, connection hub info, and privilege level."""
-    import os
-    is_appliance = os.environ.get('MCSHELL_APPLIANCE_MODE') == '1'
 
+    is_appliance = os.environ.get('MCSHELL_APPLIANCE_MODE') == '1'
     shell = current_app.config.get('IPYTHON_SHELL')
     mc_name = current_app.config.get('MINECRAFT_PLAYER_NAME')
     default_lobby_name = current_app.config.get('DEFAULT_LOBBY_NAME')
@@ -78,8 +78,8 @@ def get_lobby_data():
         if mcshell_instance:
             is_host = bool(mcshell_instance.local_server.process and mcshell_instance.local_server.process.is_alive())
 
-            # --- NEW: Check if the user holds OP privileges ---
-            is_admin = bool(mcshell_instance.server_data.get('password'))
+            # Check if the user holds OP privileges ---
+            is_admin = bool(mcshell_instance.connection.is_admin)
 
             # ALWAYS fetch hub_data so the frontend knows the local_ip for the QR code
             hub_data = mcshell_instance._get_connection_hub_data()
