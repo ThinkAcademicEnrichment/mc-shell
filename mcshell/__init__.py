@@ -176,7 +176,7 @@ def _get_user_bound_minecraft_name():
                 print(f"Error: Your Linux user '{linux_user}' is not registered. Please contact your administrator.")
                 return None
 
-            print(f"Authenticated as Minecraft user: {name_from_map}")
+            print(f"[bold green]✓[/bold green] Authenticated as Minecraft user: {name_from_map}")
             return name_from_map
 
         except (IOError, json.JSONDecodeError) as e:
@@ -653,16 +653,177 @@ class MCShell(Magics):
                 return f"Valid ({days_left:.1f} days remaining)"
                 
         except FileNotFoundError:
-            return "Not Authenticated (cache.json missing)"
+            return _extract_auth_instructions() or "Not Authenticated (cache.json missing)"
+    # def _get_auth_status(self, cache_path):
+    #     try:
+    #         with open(cache_path, 'r') as f:
+    #             cache_data = json.load(f)
+                
+    #         # Extract the expiration timestamp of the Minecraft Session instead of msaToken
+    #         expire_time_ms = cache_data.get("minecraftSession", {}).get("expireTimeMs", 0)
+    #         current_time_ms = int(time.time() * 1000)
+            
+    #         if expire_time_ms == 0:
+    #             return "No Token Found"
+    #         elif current_time_ms >= expire_time_ms:
+    #             return "Expired (Requires Reauth)"
+    #         else:
+    #             # Calculate remaining days
+    #             time_left_ms = expire_time_ms - current_time_ms
+    #             days_left = time_left_ms / (1000 * 60 * 60 * 24)
+    #             return f"Valid ({days_left:.1f} days remaining)"
+                
+    #     except FileNotFoundError:
+    #         return "Not Authenticated (cache.json missing)"
 
-    def _extract_gamertag_from_log(self,log_line):
-        # Matches: [12:31:25 INFO]: [Geyser-Spigot] [mcxboxbroadcast] [Primary Session] Successfully authenticated as aphid18 (2535442447187961)
-        match = re.search(r"Successfully authenticated as (\w+) \(", log_line)
+    def _extract_and_cache_gamertag(self, log_line, cache_dir: Path):
+        # (.*?) captures all characters including spaces, up until the (XUID)
+        match = re.search(r"Successfully authenticated as (.*?) \(\d+\)", log_line)
         if match:
-            return match.group(1) # Returns 'aphid18'
-        return None 
+            gamertag = match.group(1).strip()
+            
+            # Save it permanently so it survives server restarts and log rotations
+            tag_file = cache_dir / "gamertag.txt"
+            tag_file.write_text(gamertag)
+            
+            return gamertag
+        return None
 
     def _print_connection_hub(self):
+        """Cleanly prints the connection hub using the rich library and URI tokens."""
+        from urllib.parse import urlencode
+        from rich.console import Console
+        from rich.panel import Panel
+        from rich.table import Table
+        from mcshell.mcserver import GUI_AUTH_TOKEN
+
+        console = Console()
+
+        if self.appliance_mode:
+            local_host = self.local_server.local_ip     
+        else:
+            local_host = 'localhost'
+
+        host_state, ui_state = self._get_fsm_state()
+        app_port = self.server_data.get('app_port', 5001)
+        
+        # --- 1. UI & Editor Routing ---
+        if ui_state == 'STOPPED':
+            console.print(Panel("🔴 [bold red]Editor App Server : STOPPED[/bold red]", expand=False))
+            
+        elif ui_state == 'UNJOINED':
+            grid = Table.grid(padding=(0, 2))
+            grid.add_column(style="cyan bold", justify="right")
+            grid.add_column(style="white")
+            grid.add_row("Lobby URL:", f"http://{local_host}:{app_port}/lobby?auth={GUI_AUTH_TOKEN}")
+            
+            console.print(Panel(grid, title="🟡 [bold yellow]MCED App Server : STANDBY[/bold yellow]", expand=False))
+            
+        elif ui_state in ['JOINED_LOCAL', 'JOINED_REMOTE']:
+            mc_name = self.connection.player_name
+            target_world = self.connection.world_name
+            
+            # App Server Grid
+            app_grid = Table.grid(padding=(0, 2))
+            app_grid.add_column(style="cyan bold", justify="right")
+            app_grid.add_column(style="white")
+            app_grid.add_row("Active Player:", f"[green]{mc_name}[/green]")
+            app_grid.add_row("Connected World:", target_world)
+            app_grid.add_row("Editor URL:", f"http://{local_host}:{app_port}/?auth={GUI_AUTH_TOKEN}")
+            app_grid.add_row("Control URL:", f"http://{local_host}:{app_port}/control?auth={GUI_AUTH_TOKEN}")
+            
+            console.print(Panel(app_grid, title="🟢 [bold green]MCED App Server : RUNNING[/bold green]", expand=False))
+
+            # Player Connection Grid
+            conn_grid = Table(show_header=False, box=None, padding=(0, 2))
+            conn_grid.add_column(style="magenta bold")
+            conn_grid.add_column(style="white")
+
+            if ui_state == 'JOINED_REMOTE':
+                conn_grid.add_row("🎮 Bedrock", f"{self.local_server.local_ip}:{self.connection.local_proxy_bedrock_port}")
+                conn_grid.add_row("💻 Java", f"{self.local_server.local_ip}:{self.connection.local_proxy_mc_port}")
+            elif ui_state == 'JOINED_LOCAL':
+                conn_grid.add_row("🎮 Bedrock", f"{self.local_server.local_ip}:19132")
+                conn_grid.add_row("💻 Java", f"{self.local_server.local_ip}:{self.local_server.mc_port}")
+                
+
+            console.print(Panel(conn_grid, title="[bold blue]Direct Player Connections[/bold blue]", expand=False))
+
+        # --- 2. Multiplayer Networking Tokens ---
+        if host_state == 'HOSTING':
+            authkey = self.creds.get('tailscale_authkey', None)
+            rh_host = self.local_server.rh_host
+            local_ip = self.local_server.local_ip
+            vpn_ip = self.local_server.vpn_ip
+            mc_port = self.local_server.mc_port
+
+            # Extract Xbox Tag or Auth Status
+            xbox_tag = None
+            cache_path = MC_WORLDS_BASE_DIR / self.local_server.world_name / "plugins" / "Geyser-Spigot" / "extensions" / "mcxboxbroadcast" / "cache.json"
+            log_path = MC_WORLDS_BASE_DIR / self.local_server.world_name / "logs" / "latest.log" 
+            self.local_server.xbox_auth = self._get_auth_status(cache_path, log_path)
+            
+            if hasattr(self.local_server, 'xbox_auth'):
+                if 'Valid' in self.local_server.xbox_auth:
+                    mcxbox_dir = MC_WORLDS_BASE_DIR / self.local_server.world_name / "plugins" / "Geyser-Spigot" / "extensions" / "mcxboxbroadcast"
+                    tag_file = mcxbox_dir / "gamertag.txt"
+
+                    # 1. Try to read the persistently saved gamertag first
+                    if tag_file.exists():
+                        xbox_tag = tag_file.read_text().strip()
+                    
+                    # 2. Fallback: scan the log if it hasn't been cached yet
+                    else:
+                        papermc_log_path = MC_WORLDS_BASE_DIR / self.local_server.world_name / "logs" / "latest.log"
+                        if papermc_log_path.exists():
+                            for log_line in reversed(papermc_log_path.read_text().splitlines()):
+                                xbox_tag = self._extract_and_cache_gamertag(log_line, mcxbox_dir)
+                                if xbox_tag:
+                                    break
+                        
+            # Token Generator using standard URI encoding
+            def _generate_uri(ip, include_auth=False):
+                params = {
+                    "rcon": self.local_server.rcon_port,
+                    "mj": self.local_server.mj_port,
+                    "ver": self.local_server.mc_version
+                }
+                if rh_host: params["rh"] = rh_host
+                if include_auth and authkey: params["ts"] = authkey
+                if xbox_tag: params["xbox"] = xbox_tag
+                
+                # Double-click selects the full cyan string seamlessly
+                return f"[bold cyan]mcshell://{ip}:{mc_port}?{urlencode(params)}[/bold cyan]"
+
+            # Token Grid Display
+            token_grid = Table.grid(padding=(1, 2))
+            token_grid.add_column(style="bold yellow", justify="right")
+            # token_grid.add_column()
+
+            if authkey:
+                if vpn_ip:
+                    token_grid.add_row("🌐 VPN Mesh:", _generate_uri(vpn_ip, True))
+                else:
+                    token_grid.add_row("🌐 VPN Mesh:", "[red]Error: Tailscale failed to acquire a VPN IP.[/red]")
+            elif vpn_ip:
+                token_grid.add_row("🌐 Tailscale:", _generate_uri(vpn_ip))
+
+            token_grid.add_row("🏠 Local LAN:", _generate_uri(local_ip))
+
+            # Display Xbox Tag, or prompt for Auth, or show error
+            if xbox_tag:
+                token_grid.add_row("🎮 Xbox/PSX/Switch:", f"Send a friend request to: [bold yellow]{xbox_tag}[/bold yellow]")
+            elif hasattr(self.local_server, 'xbox_auth'):
+                if 'Sign in to' in self.local_server.xbox_auth:
+                    # Highlights the link and code in red to grab the host's attention
+                    token_grid.add_row("⚠️ Xbox Auth Needed:", f"[bold red]{self.local_server.xbox_auth}[/bold red]")
+                elif 'Valid' not in self.local_server.xbox_auth:
+                    # Catches "No Token Found" or missing cache errors
+                    token_grid.add_row("⚠️ Xbox/Console:", f"[yellow]Broadcast offline: {self.local_server.xbox_auth}[/yellow]")
+
+            console.print(Panel(token_grid, title="[bold green]🌍 CONNECTION HUB : Share Tokens[/bold green]", expand=False, border_style="green"))
+
+    def _print_connection_hub_legacy(self):
         """Helper method to cleanly print the connection hub using FSM states."""
         from mcshell.mcserver import GUI_AUTH_TOKEN
 
@@ -2968,6 +3129,9 @@ def load_ipython_extension(ip):
     time.sleep(1)
 
     ip.run_line_magic('mc_server_info','')
+
+    # This runs when IPython loads the extension
+    print("\n[bold green]✓[/bold green] MCShell extension initialized.")
 
     def shutdown_hook():
         print("\nIPython is shutting down. Stopping active mc-shell session...")
