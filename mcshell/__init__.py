@@ -633,19 +633,30 @@ class MCShell(Magics):
 
         return data
 
-    def _get_auth_status(self,cache_path):
+    def _get_auth_status(self, cache_path, log_path):
+        def _extract_auth_instructions():
+            """Helper to scan the log file in reverse for the latest auth code."""
+            if log_path and log_path.exists():
+                for line in reversed(log_path.read_text().splitlines()):
+                    # Matches: open the page https://www.microsoft.com/link and enter the code YVTM6N3E
+                    match = re.search(r"open the page (https?://\S+) and enter the code ([A-Z0-9]+)", line)
+                    if match:
+                        link, code = match.groups()
+                        return f"Sign in to {link} with code {code}"
+            return None
+
         try:
             with open(cache_path, 'r') as f:
                 cache_data = json.load(f)
                 
-            # Extract the expiration timestamp in milliseconds
-            expire_time_ms = cache_data.get("msaToken", {}).get("expireTimeMs", 0)
+            # Extract the expiration timestamp of the Minecraft Session
+            expire_time_ms = cache_data.get("minecraftSession", {}).get("expireTimeMs", 0)
             current_time_ms = int(time.time() * 1000)
             
             if expire_time_ms == 0:
-                return "No Token Found"
+                return _extract_auth_instructions() or "No Token Found (Code missing from log)"
             elif current_time_ms >= expire_time_ms:
-                return "Expired (Requires Reauth)"
+                return _extract_auth_instructions() or "Expired (Requires Reauth - Code missing from log)"
             else:
                 # Calculate remaining days
                 time_left_ms = expire_time_ms - current_time_ms
@@ -905,8 +916,10 @@ class MCShell(Magics):
             # Extract Xbox Tag
             xbox_tag = None
             # refresh the auth state
-            self.local_server.xbox_auth = self._get_auth_status()
-            self.local_server.xbox_auth = self._get_auth_status(self.local_server.world_name / "plugins" / "Geyser-Spigot" / "extensions" / "mcxboxbroadcast" / "cache.json")
+            cache_path = MC_WORLDS_BASE_DIR / self.local_server.world_name / "plugins" / "Geyser-Spigot" / "extensions" / "mcxboxbroadcast" / "cache.json"
+            log_path = MC_WORLDS_BASE_DIR / self.local_server.world_name / "logs" / "latest.log" 
+            self.local_server.xbox_auth = self._get_auth_status(cache_path,log_path)
+
             if hasattr(self.local_server, 'xbox_auth') and 'Valid' in self.local_server.xbox_auth:
                 # Assuming MC_WORLDS_BASE_DIR is in scope
                 papermc_log_path = MC_WORLDS_BASE_DIR / self.local_server.world_name / "logs" / "latest.log"
@@ -1529,7 +1542,11 @@ class MCShell(Magics):
         self.local_server.process = process
         self.local_server.mc_version = world_manifest['paper_version']
         self.local_server.rh_host = relay_server_address
-        self.local_server.xbox_auth = self._get_auth_status(world_directory / "plugins" / "Geyser-Spigot" / "extensions" / "mcxboxbroadcast" / "cache.json")
+
+        # it has not printed yet
+        # cache_path = MC_WORLDS_BASE_DIR / self.local_server.world_name / "plugins" / "Geyser-Spigot" / "extensions" / "mcxboxbroadcast" / "cache.json"
+        # log_path = MC_WORLDS_BASE_DIR / self.local_server.world_name / "logs" / "latest.log" 
+        # self.local_server.xbox_auth = self._get_auth_status(cache_path,log_path)
 
         yaml = YAML()
         yaml.preserve_quotes = True
