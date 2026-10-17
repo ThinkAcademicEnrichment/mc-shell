@@ -1,3 +1,4 @@
+from tests.config import TEST_PLAYER_NAME
 from tests.config import *
 
 class BaseMagicTest(unittest.TestCase):
@@ -19,8 +20,12 @@ class BaseMagicTest(unittest.TestCase):
 
         # 2. Determine Player Name and Environment
         # We trigger the internal name resolution to see if we are 'g33zba' or 'TestBot'
-        with patch('builtins.input', return_value=TEST_PLAYER_NAME):
-            cls.player_name = cls.mcshell._get_mc_name()
+        # with patch('builtins.input', return_value=TEST_PLAYER_NAME):
+        #     cls.player_name = cls.mcshell._get_mc_name()
+
+        # avoid triggering input patch with _get_mc_name
+        cls.player_name = TEST_PLAYER_NAME
+        cls.mcshell.local_server.player_name = TEST_PLAYER_NAME
 
         cls.world_name = "integration_test_world"
         print(f"\n[BASE] Automating setup for world '{cls.world_name}' (Player: {cls.player_name})...")

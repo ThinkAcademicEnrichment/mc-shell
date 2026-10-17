@@ -1692,7 +1692,7 @@ class MCShell(Magics):
             return
 
         # 1. Identify the Player
-        minecraft_name = parsed_args.mc_name or getattr(self.local_server,'player_name',None) or self._get_mc_name()
+        minecraft_name = parsed_args.mc_name or self._get_mc_name()
 
         # 2. Target Routing Resolution (No User Port Prompts Allowed)
         # Default fallback to standard remote Minecraft ports
