@@ -1002,24 +1002,21 @@ class MCShell(Magics):
 
     def _fetch_remote_world_name(self, host, port):
         from mctools import PINGClient
-        try:
-            ping = PINGClient(host, port=port)
-            stats = ping.get_stats()
-            
-            motd = stats.get('description', '')
-            if isinstance(motd, dict):
-                motd = motd.get('text', '')
 
-            # Regex to match and remove any ANSI escape sequence (e.g., \x1b[0m, \x1b[31m)
-            ansi_escape = re.compile(r'\x1b\[[0-9;]*m')
-            clean_motd = ansi_escape.sub('', motd)
-                
-            if "MC-ED World" in clean_motd:
-                return clean_motd.split(":")[-1].replace('\\', '').strip()
-                
-        except Exception as e:
-            print(f"Failed to query remote server MOTD: {e}")
+        ping = PINGClient(host, port=port)
+        stats = ping.get_stats()
+        
+        motd = stats.get('description', '')
+        if isinstance(motd, dict):
+            motd = motd.get('text', '')
+
+        # Regex to match and remove any ANSI escape sequence (e.g., \x1b[0m, \x1b[31m)
+        ansi_escape = re.compile(r'\x1b\[[0-9;]*m')
+        clean_motd = ansi_escape.sub('', motd)
             
+        if "MC-ED World" in clean_motd:
+            return clean_motd.split(":")[-1].replace('\\', '').strip()
+                
         return "unknown_world"
 
     def _get_fsm_state(self):
@@ -1738,8 +1735,13 @@ class MCShell(Magics):
             self.server_data['password'] = Prompt.ask('Server Password:', password=True)
 
         # 4. Extract Remote World Identity
-        connected_world_name = self._fetch_remote_world_name(target_host, mc_port)
-        
+        try:
+            connected_world_name = self._fetch_remote_world_name(target_host, mc_port)
+        except Exception as e:
+            print(f"[Server Error] {e}")
+            self.connection.clear()
+            return
+
        # 5. Populate the Connection Context Object
         self.connection.target_host = target_host
         self.connection.player_name = minecraft_name
