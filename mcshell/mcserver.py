@@ -49,7 +49,7 @@ def check_auth_token():
     """Enforce strict security on all API endpoints (Hard Mode)"""
 
     # Allow peer-to-peer server invitations and unauthenticated lobby access
-    if request.path in ('/api/receive_invite', '/api/lobby_data', '/api/join_world'):
+    if request.path in ('/api/receive_invite', '/api/lobby_data', '/api/join_world','/api/session/player'):
         return
 
     if request.path.startswith('/api/'):
