@@ -2395,8 +2395,8 @@ class MCShell(Magics):
             The Minecraft username as a string, or None if an error occurs.
         """
         # --- Caching Check: Return the name if already determined ---
-        if self.local_server.player_name:
-            return self.local_server.player_name
+        if self.connection.player_name:
+            return self.connection.player_name
 
         minecraft_name = None
         # --- Lab Setup: Check for the central config file first ---
