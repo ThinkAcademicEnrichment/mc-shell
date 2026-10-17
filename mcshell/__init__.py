@@ -1579,7 +1579,6 @@ class MCShell(Magics):
         mcjuice_client = self._get_local_client().mj_client()
         #check the ip address
         last_wifi_ip = mcjuice_client.admin.getIpAddr()
-
         # networking data
         last_wifi_ip = local_ip = _get_local_ip(last_wifi_ip)  # Native Python socket check
         vpn_ip = _get_vpn_ip(last_wifi_ip)
@@ -3119,7 +3118,6 @@ def load_ipython_extension(ip):
     Called by IPython when the extension is loaded.
     This is where we register the magics and the shutdown hook.
     """
-
     # Secure the terminal if running in Appliance Mode
     if os.environ.get('MCSHELL_APPLIANCE_MODE') == '1':
         _disable_ipython_eof(ip)
