@@ -479,8 +479,8 @@ class MCShell(Magics):
 
         self.appliance_mode = os.environ.get('MCSHELL_APPLIANCE_MODE') == '1'
 
-        # bind the instance to ONE name
-        self.mc_name = mc_name 
+        # eventually this must be immutable and assigned
+        self.current_lobby_mc_name = mc_name 
 
         self.mc_cmd_docs = _mc_cmd_docs
         self.rcon_commands = {}
@@ -1514,7 +1514,7 @@ class MCShell(Magics):
             return
 
         # 1. Identify the Player
-        minecraft_name = parsed_args.mc_name or self._get_mc_name()
+        minecraft_name = parsed_args.mc_name or getattr(self.local_server,'player_name',None) or self._get_mc_name()
 
         # 2. Target Routing Resolution (No User Port Prompts Allowed)
         # Default fallback to standard remote Minecraft ports
@@ -1594,7 +1594,7 @@ class MCShell(Magics):
 
         self.app_server_thread = start_app_server(
             mc_version,
-            self._get_mc_name(),
+            minecraft_name,
             self.ip,
             power_repo,
             5001,
@@ -1649,7 +1649,6 @@ class MCShell(Magics):
 
         print("Returning application server to standby mode...")
 
-        self.mc_name = None
 
         print("Stopping Paper server (this may take a moment)...")
         self.local_server.process.stop()
@@ -2213,16 +2212,19 @@ class MCShell(Magics):
             The Minecraft username as a string, or None if an error occurs.
         """
         # --- Caching Check: Return the name if already determined ---
-        if self.mc_name:
-            return self.mc_name
+        if self.connection.player_name:
+            return self.connection.player_name
 
         minecraft_name = None
-
         # --- Lab Setup: Check for the central config file first ---
-    
-        # --- Personal Use: Fallback to prompting the user ---
         minecraft_name = _get_user_bound_minecraft_name()
 
+        # --- Appliance Mode: the app server has a player name
+        # app_server_config = get_app_config()
+        # minecraft_name = app_server_config.get('MINECRAFT_PLAYER_NAME',None)
+        minecraft_name = getattr(self,'current_lobby_mc_name',None)
+
+        # --- Personal Use: Fallback to prompting the user ---
         if minecraft_name is None:
             print("No system-wide configuration found. Running in personal use mode.")
             try:
@@ -2237,9 +2239,7 @@ class MCShell(Magics):
                 print("\nInput cancelled by user. Aborting.")
                 return None
 
-        # --- Cache the result before returning ---
-        self.mc_name = minecraft_name
-        return self.mc_name
+        return minecraft_name
 
     @needs_local_scope
     @line_magic
@@ -2527,7 +2527,7 @@ if __name__ == '__main__':
                 print("Usage: %mc_stdlib rename-category <old_name> <new_name>")
                 return
             old_name, new_name = args[1], args[2]
-            player = self.mc_name or self._get_mc_name()
+            player = self._get_mc_name()
             repo = SQLiteRepository(player)
 
             # Now correctly handles categories with spaces when quoted
@@ -2536,7 +2536,7 @@ if __name__ == '__main__':
             print("Refresh the editor to see changes.")
 
         elif command == "list":
-            target_player = args[1] if len(args) > 1 else (self.mc_name or self._get_mc_name())
+            target_player = args[1] if len(args) > 1 else self._get_mc_name()
             repo = SQLiteRepository(target_player)
             powers = repo.list_powers()
             if not powers:
@@ -2562,7 +2562,7 @@ if __name__ == '__main__':
                 print(f"Error reading stdlib: {e}")
 
         elif command == "export":
-            target_player = args[1] if len(args) > 1 else (self.mc_name or self._get_mc_name())
+            target_player = args[1] if len(args) > 1 else self._get_mc_name()
             repo = SQLiteRepository(target_player)
             powers = repo.list_full_powers()
             if not powers:
@@ -2665,7 +2665,7 @@ if __name__ == '__main__':
             print(f"Standard Library now contains {len(new_powers)} powers (v{new_version}).")
 
         elif command == "sync":
-            player = self.mc_name or self._get_mc_name()
+            player = self._get_mc_name()
             repo = SQLiteRepository(player)
 
             target_path = MC_DATA_DIR.joinpath('powers/stdlib.json')
@@ -2717,7 +2717,7 @@ if __name__ == '__main__':
             return
 
         command = args[0]
-        player = self.mc_name or self._get_mc_name()
+        player = self._get_mc_name()
         if not player:
             return
 
