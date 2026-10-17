@@ -1,3 +1,4 @@
+from mcshell import MCToken
 import re
 import sys
 import os
@@ -109,37 +110,45 @@ def join_world():
     if current_app.config.get('MINECRAFT_PLAYER_NAME'):
         return jsonify({"error": "Application is already active. Cannot join a new world."}), 403
 
-    data = request.get_json()
-    token = data.get('token') if data else None
-    minecraft_name = data.get('minecraft_name') if data else None
+    data = request.get_json() or {}
+    token = (data.get('token') or '').strip()
+    minecraft_name = (data.get('minecraft_name') or '').strip()
 
-    # Validate presence of inputs
     if not minecraft_name:
         return jsonify({"error": "Missing Minecraft username."}), 400
     if not token:
         return jsonify({"error": "Missing join token."}), 400
 
-    # Safety constraint: Validate Minecraft username format
-    # Standard Minecraft usernames are 3-16 characters, alphanumeric and underscores.
-    # This prevents shell injection into the IPython magic command parser.
     if not re.match(r"^[a-zA-Z0-9_]{3,16}$", minecraft_name):
-        return jsonify({"error": "Invalid Minecraft username format."}), 400
+        return jsonify({"error": "Invalid Minecraft username format (3-16 alphanumeric characters)."}), 400
+
+    # 1. Strictly validate the token structure before calling IPython
+    try:
+        MCToken.parse(token)
+    except ValueError as e:
+        return jsonify({"error": f"Invalid join token: {e}"}), 400
 
     shell = current_app.config.get('IPYTHON_SHELL')
     if shell:
         try:
-            # Append the newly validated --mc_name
-            shell.run_line_magic('pp_join_world', f"{token} --mc_name {minecraft_name}")
+            # Quote the token with shlex.quote to prevent flag injection
+            import shlex
+            safe_cmd = f"{shlex.quote(token)} --mc_name {shlex.quote(minecraft_name)}"
+            # safe_cmd = f"{token} --mc_name {minecraft_name}"
+            shell.run_line_magic('pp_join_world', safe_cmd)
 
-            # Fetch the GUI token to return to the newly authenticated web client
-            from mcshell.mcserver import GUI_AUTH_TOKEN
-
-            # Retrieve the final port the server bound to
             mcshell_instance = shell.magics_manager.registry.get('MCShell')
-            target_port = mcshell_instance.server_data.get('app_port', 5001) if mcshell_instance else 5001
+            
+            # 2. Verify the magic actually established a connection!
+            if not mcshell_instance or not getattr(mcshell_instance.connection, 'target_host', None):
+                return jsonify({"error": "Failed to connect to the target Minecraft server. Is it online?"}), 502
+
+            from mcshell.mcserver import GUI_AUTH_TOKEN
+            target_port = mcshell_instance.server_data.get('app_port', 5001)
 
             return jsonify({"success": True, "gui_token": GUI_AUTH_TOKEN, "app_port": target_port})
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
     return jsonify({"error": "Internal server error."}), 500
+
