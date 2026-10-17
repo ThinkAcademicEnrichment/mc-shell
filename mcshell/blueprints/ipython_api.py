@@ -103,6 +103,23 @@ def get_lobby_data():
 
     return jsonify({"status": "active", "player": mc_name, "is_host": False, "is_admin": False, "hub": None,"appliance_mode": is_appliance })
 
+@ipython_bp.route("/session/player",methods=['POST'])
+def set_active_player():
+    data = request.get_json() 
+    player_name = data.get('player_name','')
+    if player_name:
+        if current_app.config.get('MINECRAFT_PLAYER_NAME'):
+            return jsonify({"error": "Application is already active. Cannot join a new world."}), 403
+        current_app.config['DEFAULT_LOBBY_NAME'] = player_name
+        # Update the active instance or namespace directly
+        ip = current_app.config.get('IPYTHON_SHELL')
+        if ip:
+            # Inject directly into user namespace or target the magic extension
+            # ip.user_ns["CURRENT_PLAYER"] = player_name
+            # Or call a method on the magic instance directly:
+            ip.magics_manager.registry['MCShell'].current_lobby_mc_name = player_name
+    return {"status": "ok", "player": player_name}
+
 
 @ipython_bp.route('/join_world', methods=['POST'])
 def join_world():
