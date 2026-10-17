@@ -164,9 +164,7 @@ class PaperServerManager:
                         
                         # Filter noisy logs
                         # TODO: formalize this
-                        #if "Thread RCON Client" in line or "Geyser-Spigot" in line or "McJuice" in line or "floodgate" in line:
-                        #    continue
-                        if "Thread RCON Client" in line:
+                        if "Thread RCON Client" in line or "Geyser-Spigot" in line or "McJuice" in line or "floodgate" in line:
                            continue
 
 

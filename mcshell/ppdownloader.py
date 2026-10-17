@@ -179,6 +179,22 @@ class PaperDownloader:
                 if jar: successful_installs.append(jar)
         return successful_installs
 
+
+    def install_extensions(self, extension_urls: list[str], world_extensions_dir: Path) -> list[str]:
+        """Downloads and installs a list of extensions."""
+        if not extension_urls: return []
+        world_extensions_dir.mkdir(exist_ok=True,parents=True)
+        successful_installs = []
+        for filename,url in extension_urls.items():
+            dest = world_extensions_dir / filename
+
+            if filename.endswith(".jar") and self._download_file(url, dest):
+                successful_installs.append(filename)
+            elif filename.endswith(".zip"):
+                jar = self._download_and_extract_zip(url, world_extensions_dir)
+                if jar: successful_installs.append(jar)
+        return successful_installs
+
     def _download_jar(self, download_url: str, jar_path: Path) -> Optional[Path]:
         """Downloads the specified JAR file."""
         print(f"Downloading Paper JAR from: {download_url}")

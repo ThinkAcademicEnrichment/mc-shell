@@ -53,27 +53,54 @@
     <body x-data="EditorApp()">
 
             <!-- SUBSTAGE 2C: The Lobby Overlay -->
-            <!-- <div x-cloak x-show="(lobbyState === 'standby' && !uiBypass) || ['unauthorized', 'terminated', 'error'].includes(lobbyState)" class="lobby-overlay"> -->
             <div x-cloak x-show="[UI_STATES.LOBBY_CARD, UI_STATES.UNAUTHORIZED, UI_STATES.TERMINATED, UI_STATES.ERROR].includes(uiState)" class="lobby-overlay">
                 <div class="lobby-card">
                     <!-- Standby / Join Form -->
-                    <!-- <template x-if="lobbyState === 'standby'"> -->
                     <template x-if="uiState === UI_STATES.LOBBY_CARD">
                         <div>
                             <h2 style="margin-top: 0;">MC-ED Editor Lobby</h2>
-                            <p style="color: #aaa; margin-bottom: 20px;">Waiting for an active Minecraft session. Enter your username and token to join a world instantly.</p>
+                            <p style="color: #aaa; margin-bottom: 20px;">
+                                Enter your Minecraft username to connect or manage sessions.
+                            </p>
 
-                            <input type="text" x-model="minecraftName" placeholder="Minecraft Username" class="lobby-input" style="margin-bottom: 10px;" @keyup.enter="joinWorld()">
+                            <!-- Common Username Input -->
+                            <input 
+                                type="text" 
+                                x-model="minecraftName" 
+                                placeholder="Minecraft Username" 
+                                class="lobby-input" 
+                                style="margin-bottom: 10px;" 
+                                @keyup.enter="isAppliance && !joinToken ? openTerminal() : joinWorld()"
+                            >
 
-                            <input type="text" x-model="joinToken" placeholder="Paste Join Token..." class="lobby-input" @keyup.enter="joinWorld()">
+                            <!-- Remote World Join Section -->
+                            <input 
+                                type="text" 
+                                x-model="joinToken" 
+                                placeholder="Paste Join Token..." 
+                                class="lobby-input" 
+                                @keyup.enter="joinWorld()"
+                            >
 
                             <button @click="joinWorld()" class="lobby-btn">Join World</button>
+
+                            <!-- Appliance Terminal Entry -->
+                            <template x-if="isAppliance">
+                                <div style="margin-top: 15px; border-top: 1px solid #333; padding-top: 15px;">
+                                    <button 
+                                        @click="openTerminal()" 
+                                        class="lobby-btn" 
+                                        style="background: #2c3e50; border: 1px solid #34495e;"
+                                    >
+                                        Launch Appliance Console
+                                    </button>
+                                </div>
+                            </template>
+
                             <div x-show="joinError" x-text="joinError" style="color: #ff453a; margin-top: 10px; font-size: 0.9rem;"></div>
                         </div>
                     </template>
-
                     <!-- Unauthorized Viewer -->
-                    <!-- <template x-if="lobbyState === 'unauthorized'"> -->
                     <template x-if="uiState === UI_STATES.UNAUTHORIZED">
                         <div>
                             <h2 style="margin-top: 0; color: #ff453a;">Access Denied</h2>
@@ -83,7 +110,6 @@
                     </template>
 
                     <!-- Terminated Viewer -->
-                    <!-- <template x-if="lobbyState === 'terminated'"> -->
                     <template x-if="uiState === UI_STATES.TERMINATED">
                         <div>
                             <h2 style="margin-top: 0; color: #ff453a;">Session Ended</h2>
@@ -92,7 +118,6 @@
                         </div>
                     </template>
 
-                    <!-- <template x-if="lobbyState === 'error'"> -->
                     <template x-if="uiState === UI_STATES.ERROR">
                         <div>
                             <h2 style="margin-top: 0; color: #ff453a;">Application Error</h2>
@@ -109,7 +134,6 @@
 
             </div>
 
-            <!-- <div class="editor-layout" :class="{ 'library-collapsed': isLibraryCollapsed, 'code-collapsed': isCodeCollapsed }"> -->
             <div class="editor-layout" 
                 x-cloak 
                 x-show="uiState === UI_STATES.EDITOR" 
@@ -140,16 +164,14 @@
                         <button class="btn-block" id="cancelPowerButton">Cancel Power</button>
                         <button class="btn-digital-set" @click="window.prepareAndOpenSaveModal()">Save Workspace</button>
                         <button class="btn-entity" id="clearWorkspaceButton">Clear Workspace</button>
-                        <!-- <button class="btn-item" @click="keyboardVisible = !keyboardVisible">Keyboard</button> -->
                         <button class="btn-item" @click="toggleKeyboard()">Keyboard</button>
-                        <!-- <button class="btn-geometry" @click="toggleTerminal()">Terminal</button> -->
                         <button class="btn-geometry" x-show="isAppliance" x-cloak @click="toggleTerminal()">Terminal</button>
                         <button class="btn-geometry" @click="isCodeCollapsed = !isCodeCollapsed">Toggle Python</button>
                         <button class="btn-picker" @click="openControlDeck()">Control</button>
 
                         <div style="margin-left: auto; display: flex; align-items: center; gap: 10px;">
                             <!-- The State Awareness Badge -->
-                            <div x-cloak x-show="uiState=== 'active'" style="padding: 6px 12px; border-radius: 8px; background: rgba(0,0,0,0.4); color: white; font-size: 0.9rem; border: 1px solid #444; cursor: help;" :title="lobbyData?.is_admin ? 'You have Server OP privileges.' : 'Guest Mode. Run %mc_login in the terminal to elevate privileges.'">
+                            <div x-cloak x-show="uiState=== UI_STATES.EDITOR" style="padding: 6px 12px; border-radius: 8px; background: rgba(0,0,0,0.4); color: white; font-size: 0.9rem; border: 1px solid #444; cursor: help;" :title="lobbyData?.is_admin ? 'You have Server OP privileges.' : 'Guest Mode. Run %mc_login in the terminal to elevate privileges.'">
                                 <span x-text="lobbyData?.is_admin ? '👑 Admin' : '👤 Guest'"></span>
                             </div>
                             <button class="btn-picker" id="leaveWorldButton" style="background-color: #ff3b30; color: white; border: none;">Leave World</button>
@@ -452,9 +474,9 @@
                     }
                 },
 
+                // Strict join logic: requires both username and token
                 async joinWorld() {
                     this.joinError = '';
-
                     const username = this.minecraftName ? this.minecraftName.trim() : '';
                     const token = this.joinToken ? this.joinToken.trim() : '';
 
@@ -462,16 +484,9 @@
                         this.joinError = 'Please enter your Minecraft username.';
                         return;
                     }
-                    
-                    // Bypass to Editor mode directly via FSM transition in appliance mode
                     if (!token) {
-                        if (this.isAppliance) {
-                            this.transitionTo(UI_STATES.LOBBY_TERM);
-                            return;
-                        } else {
-                            this.joinError = 'Please enter a valid join token.';
-                            return;
-                        }
+                        this.joinError = 'Please enter a valid join token.';
+                        return;
                     }
 
                     this.isJoining = true;
@@ -479,10 +494,7 @@
                         const res = await fetch('/api/join_world', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                token: token,
-                                minecraft_name: username
-                            })
+                            body: JSON.stringify({ token: token, minecraft_name: username })
                         });
 
                         if (res.ok) {
@@ -500,11 +512,36 @@
                         }
                     } catch (e) {
                         if (this.isSwitchingPorts) return;
-
                         this.isJoining = false;
                         this.joinError = 'Network error while joining.';
                         console.error(e);
                     }
+                },
+
+                // Dedicated terminal launcher for appliance mode
+                async openTerminal() {
+                    this.joinError = '';
+                    const username = this.minecraftName ? this.minecraftName.trim() : '';
+
+                    // Cache the name locally for the frontend session
+                    if (username) {
+                        sessionStorage.setItem('DEFAULT_LOBBY_NAME', username);
+                    }
+
+                    // Inform the backend session/magic class of the selected player before entering
+                    if (username) {
+                        try {
+                            await fetch('/api/session/player', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ player_name: username })
+                            });
+                        } catch (err) {
+                            console.warn('Failed to seed backend player state:', err);
+                        }
+                    }
+
+                    this.transitionTo(UI_STATES.LOBBY_TERM);
                 },
 
                 openControlDeck() {
@@ -542,7 +579,7 @@
                 </div>
                 <!-- iframe -->
                 <template x-if="isAppliance">
-                    <iframe src="http://127.0.0.1:7681" style="flex: 1; border: none; width: 100%;"></iframe>
+                    <iframe :src="`http://${window.location.hostname}:7681`" style="flex: 1; border: none; width: 100%;"></iframe>
                 </template>
             </div>
         </div>

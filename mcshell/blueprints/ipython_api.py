@@ -1,8 +1,10 @@
+from mcshell import MCToken
+import re
 import sys
-from io import StringIO
+import os
 from flask import Blueprint, jsonify, current_app, request
 from IPython.utils.capture import capture_output
-import re
+
 ipython_bp = Blueprint('ipython_api',__name__,url_prefix='/api')
 
 @ipython_bp.route('/ipython_magic', methods=['POST'])
@@ -47,9 +49,8 @@ def execute_ipython_magic():
 @ipython_bp.route('/lobby_data', methods=['GET'])
 def get_lobby_data():
     """Returns the current server status, connection hub info, and privilege level."""
-    import os
-    is_appliance = os.environ.get('MCSHELL_APPLIANCE_MODE') == '1'
 
+    is_appliance = os.environ.get('MCSHELL_APPLIANCE_MODE') == '1'
     shell = current_app.config.get('IPYTHON_SHELL')
     mc_name = current_app.config.get('MINECRAFT_PLAYER_NAME')
     default_lobby_name = current_app.config.get('DEFAULT_LOBBY_NAME')
@@ -78,8 +79,8 @@ def get_lobby_data():
         if mcshell_instance:
             is_host = bool(mcshell_instance.local_server.process and mcshell_instance.local_server.process.is_alive())
 
-            # --- NEW: Check if the user holds OP privileges ---
-            is_admin = bool(mcshell_instance.server_data.get('password'))
+            # Check if the user holds OP privileges ---
+            is_admin = bool(mcshell_instance.connection.is_admin)
 
             # ALWAYS fetch hub_data so the frontend knows the local_ip for the QR code
             hub_data = mcshell_instance._get_connection_hub_data()
@@ -102,6 +103,23 @@ def get_lobby_data():
 
     return jsonify({"status": "active", "player": mc_name, "is_host": False, "is_admin": False, "hub": None,"appliance_mode": is_appliance })
 
+@ipython_bp.route("/session/player",methods=['POST'])
+def set_active_player():
+    data = request.get_json() 
+    player_name = data.get('player_name','')
+    if player_name:
+        if current_app.config.get('MINECRAFT_PLAYER_NAME'):
+            return jsonify({"error": "Application is already active. Cannot join a new world."}), 403
+        current_app.config['DEFAULT_LOBBY_NAME'] = player_name
+        # Update the active instance or namespace directly
+        ip = current_app.config.get('IPYTHON_SHELL')
+        if ip:
+            # Inject directly into user namespace or target the magic extension
+            # ip.user_ns["CURRENT_PLAYER"] = player_name
+            # Or call a method on the magic instance directly:
+            ip.magics_manager.registry['MCShell'].current_lobby_mc_name = player_name
+    return {"status": "ok", "player": player_name}
+
 
 @ipython_bp.route('/join_world', methods=['POST'])
 def join_world():
@@ -109,37 +127,45 @@ def join_world():
     if current_app.config.get('MINECRAFT_PLAYER_NAME'):
         return jsonify({"error": "Application is already active. Cannot join a new world."}), 403
 
-    data = request.get_json()
-    token = data.get('token') if data else None
-    minecraft_name = data.get('minecraft_name') if data else None
+    data = request.get_json() or {}
+    token = (data.get('token') or '').strip()
+    minecraft_name = (data.get('minecraft_name') or '').strip()
 
-    # Validate presence of inputs
     if not minecraft_name:
         return jsonify({"error": "Missing Minecraft username."}), 400
     if not token:
         return jsonify({"error": "Missing join token."}), 400
 
-    # Safety constraint: Validate Minecraft username format
-    # Standard Minecraft usernames are 3-16 characters, alphanumeric and underscores.
-    # This prevents shell injection into the IPython magic command parser.
     if not re.match(r"^[a-zA-Z0-9_]{3,16}$", minecraft_name):
-        return jsonify({"error": "Invalid Minecraft username format."}), 400
+        return jsonify({"error": "Invalid Minecraft username format (3-16 alphanumeric characters)."}), 400
+
+    # 1. Strictly validate the token structure before calling IPython
+    try:
+        MCToken.parse(token)
+    except ValueError as e:
+        return jsonify({"error": f"Invalid join token: {e}"}), 400
 
     shell = current_app.config.get('IPYTHON_SHELL')
     if shell:
         try:
-            # Append the newly validated --mc_name
-            shell.run_line_magic('pp_join_world', f"{token} --mc_name {minecraft_name}")
+            # Quote the token with shlex.quote to prevent flag injection
+            import shlex
+            safe_cmd = f"{shlex.quote(token)} --mc_name {shlex.quote(minecraft_name)}"
+            # safe_cmd = f"{token} --mc_name {minecraft_name}"
+            shell.run_line_magic('pp_join_world', safe_cmd)
 
-            # Fetch the GUI token to return to the newly authenticated web client
-            from mcshell.mcserver import GUI_AUTH_TOKEN
-
-            # Retrieve the final port the server bound to
             mcshell_instance = shell.magics_manager.registry.get('MCShell')
-            target_port = mcshell_instance.server_data.get('app_port', 5001) if mcshell_instance else 5001
+            
+            # 2. Verify the magic actually established a connection!
+            if not mcshell_instance or not getattr(mcshell_instance.connection, 'target_host', None):
+                return jsonify({"error": "Failed to connect to the target Minecraft server. Is it online?"}), 502
+
+            from mcshell.mcserver import GUI_AUTH_TOKEN
+            target_port = mcshell_instance.server_data.get('app_port', 5001)
 
             return jsonify({"success": True, "gui_token": GUI_AUTH_TOKEN, "app_port": target_port})
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
     return jsonify({"error": "Internal server error."}), 500
+
