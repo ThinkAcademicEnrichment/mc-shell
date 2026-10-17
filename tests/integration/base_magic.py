@@ -25,7 +25,7 @@ class BaseMagicTest(unittest.TestCase):
 
         # avoid triggering input patch with _get_mc_name
         cls.player_name = TEST_PLAYER_NAME
-        cls.mcshell.local_server.player_name = TEST_PLAYER_NAME
+        cls.mcshell.connection.player_name = TEST_PLAYER_NAME
 
         cls.world_name = "integration_test_world"
         print(f"\n[BASE] Automating setup for world '{cls.world_name}' (Player: {cls.player_name})...")
