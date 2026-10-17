@@ -21,6 +21,8 @@ from rich.console import Console
 from rich.theme import Theme
 from rich.panel import Panel
 from rich import print as rprint
+from rich.text import Text
+
 
 # Define semantic styles for mcshell 
 mc_theme = Theme({
@@ -792,7 +794,6 @@ class MCShell(Magics):
                                 if xbox_tag:
                                     break
                         
-            # Token Generator using standard URI encoding
             def _generate_uri(ip, include_auth=False):
                 params = {
                     "rcon": self.local_server.rcon_port,
@@ -803,8 +804,11 @@ class MCShell(Magics):
                 if include_auth and authkey: params["ts"] = authkey
                 if xbox_tag: params["xbox"] = xbox_tag
                 
-                # Double-click selects the full cyan string seamlessly
-                return f"[bold cyan]mcshell://{ip}:{mc_port}?{urlencode(params)}[/bold cyan]"
+                raw_uri = f"mcshell://{ip}:{mc_port}?{urlencode(params)}"
+                
+                # 'fold' ensures long tokens wrap cleanly at the terminal boundary 
+                # without hiding characters or inserting breaks at punctuation.
+                return Text(raw_uri, style="bold cyan", overflow="fold")
 
             # Token Grid Display
             token_grid = Table.grid(padding=(1, 2))
