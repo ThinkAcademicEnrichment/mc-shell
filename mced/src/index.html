@@ -580,7 +580,7 @@
                                     return;
                                 }
                                 this.transitionTo(UI_STATES.EDITOR);
-                                window.dispatchEvent(new Event('app-active'));
+                                window.dispatchEvent(new Event('active'));
                                 
                             } else if (data.status === 'standby') {
                                 if (previousState === UI_STATES.EDITOR) {
