@@ -1262,6 +1262,20 @@ class MCShell(Magics):
             print("\nWorld creation cancelled.")
             return
 
+        #  Download the Paper server JAR if needed
+        downloader = PaperDownloader(server_jars_dir)
+        jar_path = downloader.get_jar_path(mc_version)
+        if not jar_path:
+            print("\nWorld creation cancelled.")
+            return # Stop if download failed
+
+        # Do this when downloading jars is sucessful Create the world directory structure
+        world_dir.mkdir(parents=True)
+        plugins_dir = (world_dir / "plugins")
+        plugins_dir.mkdir(exist_ok=True)
+        server_jars_dir.mkdir(exist_ok=True)
+
+
         creds = {'password':password}
         creds_path = world_dir / '.mc_creds.json'
         with creds_path.open('w') as f:
@@ -1270,12 +1284,6 @@ class MCShell(Magics):
         # Set file permissions to be readable/writable by owner only
         creds_path.chmod(0o600)
 
-
-        #  Download the Paper server JAR if needed
-        downloader = PaperDownloader(server_jars_dir)
-        jar_path = downloader.get_jar_path(mc_version)
-        if not jar_path:
-            return # Stop if download failed
 
         # Create the eula.txt file and automatically agree to it
         try:
