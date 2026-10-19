@@ -72,6 +72,11 @@ html, body {
     pointer-events: none;
 }
 
+/* Automatically switch toolbar buttons to compact icon-only mode when both side panels are open */
+.editor-layout:not(.library-collapsed):not(.code-collapsed) #controls .btn-label {
+    display: none;
+}
+
 /* ==========================================================================
    4. PANEL HEADERS
    ========================================================================== */
