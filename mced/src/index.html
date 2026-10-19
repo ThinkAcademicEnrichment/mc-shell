@@ -155,26 +155,142 @@
                 </aside>
 
                 <main id="main-content-panel">
-                    <div id="controls" style="display: flex; width: 100%; align-items: center;">
-                        <select id="toolboxSelector" class="toolbox-select" title="Choose Toolbox">
-                            <option value="">Loading toolboxes...</option>
-                        </select>                        
-                        <button class="btn-picker" @click="isLibraryCollapsed = !isLibraryCollapsed">Toggle Library</button>
-                        <button class="btn-events" id="executePowerButton">Run Power</button>
-                        <button class="btn-block" id="cancelPowerButton">Cancel Power</button>
-                        <button class="btn-digital-set" @click="window.prepareAndOpenSaveModal()">Save Workspace</button>
-                        <button class="btn-entity" id="clearWorkspaceButton">Clear Workspace</button>
-                        <button class="btn-item" @click="toggleKeyboard()">Keyboard</button>
-                        <button class="btn-geometry" x-show="isAppliance" x-cloak @click="toggleTerminal()">Terminal</button>
-                        <button class="btn-geometry" @click="isCodeCollapsed = !isCodeCollapsed">Toggle Python</button>
-                        <button class="btn-picker" @click="openControlDeck()">Control</button>
+                    <div id="controls" 
+                         x-data="{ showToolsMenu: false, showConnHub: false, copiedKey: '' }"
+                         style="display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; box-sizing: border-box; flex-wrap: wrap; position: relative;">
 
-                        <div style="margin-left: auto; display: flex; align-items: center; gap: 10px;">
-                            <!-- The State Awareness Badge -->
-                            <div x-cloak x-show="uiState=== UI_STATES.EDITOR" style="padding: 6px 12px; border-radius: 8px; background: rgba(0,0,0,0.4); color: white; font-size: 0.9rem; border: 1px solid #444; cursor: help;" :title="lobbyData?.is_admin ? 'You have Server OP privileges.' : 'Guest Mode. Run %mc_login in the terminal to elevate privileges.'">
+                        <!-- ZONE 1: Library & Toolbox -->
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <button class="btn-picker" 
+                                    @click="isLibraryCollapsed = !isLibraryCollapsed" 
+                                    :style="!isLibraryCollapsed ? 'outline: 2px solid #fff;' : ''"
+                                    title="Show/Hide Power Library">
+                                📚 <span class="btn-label">Library</span>
+                            </button>
+                            <select id="toolboxSelector" class="toolbox-select" title="Choose Toolbox" style="max-width: 170px;">
+                                <option value="">Loading toolboxes...</option>
+                            </select>
+                        </div>
+
+                        <!-- ZONE 2: Primary Kid-Friendly Execution Controls -->
+                        <div style="display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.25); padding: 4px 8px; border-radius: 10px;">
+                            <button class="btn-events" id="executePowerButton" style="font-weight: bold; padding: 6px 14px;" title="Run your blocks!">
+                                ▶ Run
+                            </button>
+                            <button class="btn-block" id="cancelPowerButton" style="padding: 6px 12px;" title="Stop running power">
+                                ⏹ Stop
+                            </button>
+                        </div>
+
+                        <!-- ZONE 3: Workspace Actions & Modular Tools Menu -->
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <button class="btn-digital-set" @click="window.prepareAndOpenSaveModal()" title="Save Workspace">
+                                💾 <span class="btn-label">Save</span>
+                            </button>
+                            <button class="btn-entity" id="clearWorkspaceButton" title="Clear Workspace">
+                                🗑️ <span class="btn-label">Clear</span>
+                            </button>
+                            <button class="btn-geometry" 
+                                    @click="isCodeCollapsed = !isCodeCollapsed"
+                                    :style="!isCodeCollapsed ? 'outline: 2px solid #fff;' : ''"
+                                    title="Show/Hide Python Code">
+                                🐍 <span class="btn-label">Python</span>
+                            </button>
+
+                            <!-- Modular Utilities Dropdown (Expandable for future tools) -->
+                            <div style="position: relative;" @click.outside="showToolsMenu = false">
+                                <button class="btn-item" @click="showToolsMenu = !showToolsMenu" title="More Tools">
+                                    🧰 <span class="btn-label">Tools</span> ▾
+                                </button>
+                                <div x-cloak x-show="showToolsMenu"
+                                     style="position: absolute; top: calc(100% + 6px); left: 0; background: #2c2c2e; border: 1px solid #444; border-radius: 10px; padding: 6px; display: flex; flex-direction: column; gap: 4px; min-width: 170px; z-index: 45000; box-shadow: 0 8px 20px rgba(0,0,0,0.5);">
+                                    <button class="btn-item" style="width: 100%; text-align: left;" @click="toggleKeyboard(); showToolsMenu = false;">
+                                        ⌨️ On-Screen Keyboard
+                                    </button>
+                                    <button class="btn-geometry" x-show="isAppliance" style="width: 100%; text-align: left;" @click="toggleTerminal(); showToolsMenu = false;">
+                                        💻 Terminal Pane
+                                    </button>
+                                    <button class="btn-picker" style="width: 100%; text-align: left;" @click="openControlDeck(); showToolsMenu = false;">
+                                        🎛️ Control Deck
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ZONE 4: Connection Hub, Role Badge & Leave -->
+                        <div style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
+                            
+                            <!-- Connection Hub Trigger & Popover -->
+                            <div style="position: relative;" @click.outside="showConnHub = false">
+                                <button class="btn-picker" 
+                                        @click="showConnHub = !showConnHub"
+                                        style="background: #30d158; color: #000; font-weight: bold; border: none;"
+                                        title="View Server Info & Share Join Tokens">
+                                    🌍 <span class="btn-label">Invite</span>
+                                </button>
+
+                                <!-- Web Connection Hub Card -->
+                                <div x-cloak x-show="showConnHub"
+                                     style="position: absolute; top: calc(100% + 8px); right: 0; width: 340px; background: #2c2c2e; color: white; border: 1px solid #444; border-radius: 12px; padding: 14px; z-index: 46000; box-shadow: 0 10px 25px rgba(0,0,0,0.6); font-family: -apple-system, BlinkMacSystemFont, sans-serif;">
+                                    
+                                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 8px; margin-bottom: 10px;">
+                                        <strong style="font-size: 1rem;">🌍 World Connection Hub</strong>
+                                        <span style="font-size: 0.8rem; color: #30d158;" x-text="lobbyData?.world_name || 'Active World'"></span>
+                                    </div>
+
+                                    <!-- Game Client Addresses -->
+                                    <div style="font-size: 0.85rem; background: #1c1c1e; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+                                        <div style="color: #aaa; margin-bottom: 6px; font-weight: bold;">🎮 Connect in Minecraft</div>
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                            <span>💻 Java Address:</span>
+                                            <code style="color: #64d2ff;" x-text="lobbyData?.connection_hub?.java_addr || '127.0.0.1:25565'"></code>
+                                        </div>
+                                        <div style="display: flex; justify-content: space-between;">
+                                            <span>📱 Bedrock Address:</span>
+                                            <code style="color: #64d2ff;" x-text="lobbyData?.connection_hub?.bedrock_addr || '127.0.0.1:19132'"></code>
+                                        </div>
+                                        <template x-if="lobbyData?.connection_hub?.xbox_tag">
+                                            <div style="display: flex; justify-content: space-between; margin-top: 4px; padding-top: 4px; border-top: 1px solid #333;">
+                                                <span>🎯 Console Friend:</span>
+                                                <strong style="color: #ffd60a;" x-text="lobbyData.connection_hub.xbox_tag"></strong>
+                                            </div>
+                                        </template>
+                                    </div>
+
+                                    <!-- One-Click Token Copy Buttons -->
+                                    <template x-if="lobbyData?.connection_hub?.lan_token">
+                                        <div style="margin-bottom: 8px;">
+                                            <div style="font-size: 0.8rem; color: #aaa; margin-bottom: 4px;">🏠 Local Wi-Fi / LAN Token</div>
+                                            <button style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #444; background: #0a84ff; color: white; font-weight: bold; cursor: pointer;"
+                                                    @click="navigator.clipboard.writeText(lobbyData.connection_hub.lan_token); copiedKey = 'lan'; setTimeout(() => copiedKey = '', 2000)">
+                                                <span x-text="copiedKey === 'lan' ? '✅ Copied LAN Token!' : '📋 Copy Home Wi-Fi Token'"></span>
+                                            </button>
+                                        </div>
+                                    </template>
+
+                                    <template x-if="lobbyData?.connection_hub?.vpn_token">
+                                        <div>
+                                            <div style="font-size: 0.8rem; color: #aaa; margin-bottom: 4px;">🌐 Friends Over Internet (Tailscale)</div>
+                                            <button style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #444; background: #5e5ce6; color: white; font-weight: bold; cursor: pointer;"
+                                                    @click="navigator.clipboard.writeText(lobbyData.connection_hub.vpn_token); copiedKey = 'vpn'; setTimeout(() => copiedKey = '', 2000)">
+                                                <span x-text="copiedKey === 'vpn' ? '✅ Copied Internet Token!' : '📋 Copy Internet Token'"></span>
+                                            </button>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <!-- State Awareness Badge -->
+                            <div x-cloak x-show="uiState === UI_STATES.EDITOR" 
+                                 style="padding: 6px 10px; border-radius: 8px; background: rgba(0,0,0,0.4); color: white; font-size: 0.85rem; border: 1px solid #444; cursor: help; white-space: nowrap;" 
+                                 :title="lobbyData?.is_admin ? 'You have Server OP privileges.' : 'Guest Mode. Run %mc_login in the terminal to elevate privileges.'">
                                 <span x-text="lobbyData?.is_admin ? '👑 Admin' : '👤 Guest'"></span>
                             </div>
-                            <button class="btn-picker" id="leaveWorldButton" style="background-color: #ff3b30; color: white; border: none;">Leave World</button>
+
+                            <!-- Leave World Button -->
+                            <button class="btn-picker" id="leaveWorldButton" style="background-color: #ff3b30; color: white; border: none; white-space: nowrap;" title="Disconnect from World">
+                                🚪 <span class="btn-label">Leave</span>
+                            </button>
                         </div>
                     </div>
                     <div id="blocklyDiv"></div>
@@ -431,11 +547,20 @@
                             const data = await response.json();
                             const previousState = this.uiState;
 
+                            // Update local bindings
                             this.lobbyData = data;
                             this.isAppliance = data.appliance_mode === true;
 
                             if (data.player && !this.minecraftName) {
                                 this.minecraftName = data.player;
+                            }
+
+                            // Read invite links automatically if present in standby mode
+                            const urlParams = new URLSearchParams(window.location.search);
+                            const inviteToken = urlParams.get('join_token') || sessionStorage.getItem('PREFILL_TOKEN');
+                            if (inviteToken && !this.joinToken) {
+                                this.joinToken = inviteToken;
+                                sessionStorage.setItem('PREFILL_TOKEN', inviteToken); // Survive reloads
                             }
 
                             if (data.status === 'unauthorized') {
