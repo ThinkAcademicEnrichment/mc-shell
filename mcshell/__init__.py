@@ -1552,7 +1552,7 @@ class MCShell(Magics):
 
         # get this out of the way
         if not parsed_args.do_not_join:
-            self.local_server.player_name = self._get_mc_name()
+            self.connection.player_name = self._get_mc_name()
 
         # 3. Process Execution
         process = PaperServerManager(world_name, world_directory)
