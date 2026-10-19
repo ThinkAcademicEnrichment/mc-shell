@@ -89,7 +89,7 @@ def lists_remove_random_item(l):
     return random_item
 
 # the default version when using %pp_create_world
-MC_VERSION = '26.1.2' 
+MC_VERSION = '26.2' 
 
 # default server data; avoid common ports
 MC_SERVER_HOST = 'localhost'
