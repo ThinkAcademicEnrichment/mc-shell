@@ -78,30 +78,37 @@ def get_lobby_data():
         mcshell_instance = shell.magics_manager.registry.get('MCShell')
         if mcshell_instance:
             is_host = bool(mcshell_instance.local_server.process and mcshell_instance.local_server.process.is_alive())
-
-            # Check if the user holds OP privileges ---
             is_admin = bool(mcshell_instance.connection.is_admin)
 
-            # ALWAYS fetch hub_data so the frontend knows the local_ip for the QR code
+            # ALWAYS fetch hub_data so the frontend knows the local_ip and connection strings
             hub_data = mcshell_instance._get_connection_hub_data()
 
-            # If they aren't the host, wipe the join tokens so they can't be shared
+            # If they aren't the host, wipe the shareable join tokens
             if not is_host and hub_data:
-                hub_data['tokens'] = {}
+                hub_data['lan_token'] = None
+                hub_data['vpn_token'] = None
 
             return jsonify({
                 "status": "active",
                 "player": mc_name,
                 "is_host": is_host,
                 "is_admin": is_admin,
-                "hub": hub_data,
+                "world_name": mcshell_instance.connection.world_name,
+                "connection_hub": hub_data,  # Matches Alpine UI binding
                 "appliance_mode": is_appliance,
             })
 
     except Exception as e:
         print(f"Error fetching connection hub data: {e}")
 
-    return jsonify({"status": "active", "player": mc_name, "is_host": False, "is_admin": False, "hub": None,"appliance_mode": is_appliance })
+    return jsonify({
+        "status": "active", 
+        "player": mc_name, 
+        "is_host": False, 
+        "is_admin": False, 
+        "connection_hub": None, 
+        "appliance_mode": is_appliance 
+    })
 
 @ipython_bp.route("/session/player",methods=['POST'])
 def set_active_player():
