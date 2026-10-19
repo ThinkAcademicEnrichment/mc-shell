@@ -117,23 +117,38 @@ class PaperDownloader:
         headers = {
             "User-Agent": "MyPaperDownloader/1.0 (jeff@thinkae.org)"
         }
-        
         try:
             response = requests.get(builds_url, headers=headers)
             response.raise_for_status()
             
-            # API v3 Change: The endpoint returns a JSON array directly,
-            # so response.json() is a Python list, not a dict.
+            # Fill v3 returns a JSON array directly
             builds = response.json()
             
-            # Ensure it is a list and not empty before grabbing the first build
             if isinstance(builds, list) and builds:
-                return builds[0]
+                # Grab the latest build from the array
+                return builds[-1]
             return None
             
         except Exception as e:
             print(f"Error: Could not fetch build info for version {mc_version}: {e}")
-            return None
+            return None 
+
+        # try:
+        #     response = requests.get(builds_url, headers=headers)
+        #     response.raise_for_status()
+            
+        #     # API v2 returns a dict containing a 'builds' array
+        #     data = response.json()
+        #     builds = data.get("builds", [])
+            
+        #     # Ensure it is a list and not empty before grabbing the LAST build
+        #     if isinstance(builds, list) and builds:
+        #         return builds[-1]  # The highest/newest build is at the end of the array
+        #     return None
+            
+        # except Exception as e:
+        #     print(f"Error: Could not fetch build info for version {mc_version}: {e}")
+        #     return None
 
     def extract_and_patch_jar_config(self,plugins_dir,jar_name, plugin_folder_name, patch_logic):
         """Extracts config.yml from a jar, applies modifications, and writes it to the plugin folder."""
