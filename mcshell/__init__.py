@@ -644,6 +644,89 @@ class MCShell(Magics):
             return gamertag
         return None
 
+    def _get_connection_hub_data(self) -> dict:
+        """
+        Generates a dictionary of connection data for the web UI and API.
+        Returns an empty dict if the server is not currently joined to a world.
+        """
+        from urllib.parse import urlencode
+        
+        host_state, ui_state = self._get_fsm_state()
+
+        # If we aren't connected to a world, there's no hub data to share
+        if ui_state not in ['JOINED_LOCAL', 'JOINED_REMOTE']:
+            return {}
+
+        hub_data = {
+            "world_name": self.connection.world_name,
+            "java_addr": None,
+            "bedrock_addr": None,
+            "xbox_tag": getattr(self.connection, 'xbox_tag', None),
+            "lan_token": None,
+            "vpn_token": None
+        }
+
+        # 1. Determine Player Display Addresses
+        if ui_state == 'JOINED_REMOTE':
+            hub_data["java_addr"] = f"{self.local_server.local_ip}:{self.connection.local_proxy_mc_port}"
+            hub_data["bedrock_addr"] = f"{self.local_server.local_ip}:{self.connection.local_proxy_bedrock_port}"
+        elif ui_state == 'JOINED_LOCAL':
+            hub_data["java_addr"] = f"{self.local_server.local_ip}:{self.local_server.mc_port}"
+            hub_data["bedrock_addr"] = f"{self.local_server.local_ip}:19132"
+
+        # 2. If we are HOSTING the world, generate shareable tokens and extract dynamic Xbox tag
+        if host_state == 'HOSTING':
+            authkey = self.creds.get('tailscale_authkey', None)
+            rh_host = getattr(self.local_server, 'rh_host', None)
+            local_ip = self.local_server.local_ip
+            vpn_ip = getattr(self.local_server, 'vpn_ip', None)
+            mc_port = self.local_server.mc_port
+
+            # Dynamic Xbox Tag extraction from logs
+            xbox_tag = None
+            cache_path = MC_WORLDS_BASE_DIR / self.local_server.world_name / "plugins" / "Geyser-Spigot" / "extensions" / "mcxboxbroadcast" / "cache.json"
+            papermc_log_path = MC_WORLDS_BASE_DIR / self.local_server.world_name / "logs" / "latest.log"
+
+            # Pass the explicit path if the method signature expects it
+            self.local_server.xbox_auth = self._get_auth_status(cache_path,papermc_log_path)
+            
+            if hasattr(self.local_server, 'xbox_auth') and 'Valid' in self.local_server.xbox_auth:
+                # papermc_log_path = MC_WORLDS_BASE_DIR / self.local_server.world_name / "logs" / "latest.log"
+                if papermc_log_path.exists():
+                    for log_line in reversed(papermc_log_path.read_text().splitlines()):
+                        xbox_tag = self._extract_and_cache_gamertag(log_line,cache_path.parent)
+                        if xbox_tag:
+                            break
+            
+            if xbox_tag:
+                hub_data["xbox_tag"] = xbox_tag
+
+            # Helper to generate the raw mcshell:// URI
+            def _generate_uri(ip, include_auth=False):
+                if not ip: 
+                    return None
+                params = {
+                    "rcon": self.local_server.rcon_port,
+                    "mj": self.local_server.mj_port,
+                    "ver": self.local_server.mc_version
+                }
+                if rh_host: params["rh"] = rh_host
+                if include_auth and authkey: params["ts"] = authkey
+                if hub_data["xbox_tag"]: params["xbox"] = hub_data["xbox_tag"]
+                
+                return f"mcshell://{ip}:{mc_port}?{urlencode(params)}"
+
+            # Generate the tokens
+            hub_data["lan_token"] = _generate_uri(local_ip)
+            
+            if vpn_ip and authkey:
+                hub_data["vpn_token"] = _generate_uri(vpn_ip, include_auth=True)
+            elif vpn_ip:
+                # Tailscale manual mesh (No authkey)
+                hub_data["vpn_token"] = _generate_uri(vpn_ip)
+
+        return hub_data
+
     def _print_connection_hub(self):
         """Cleanly prints the connection hub using the rich library and URI tokens."""
         from urllib.parse import urlencode
