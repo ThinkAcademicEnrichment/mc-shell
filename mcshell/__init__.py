@@ -1372,6 +1372,7 @@ class MCShell(Magics):
                 "enable-query": "true",
                 "rcon.password": password,
                 "enable-command-block":'true',
+                "white-list":'false',
             },
             "paper": {
                 "packet-limiter": {
