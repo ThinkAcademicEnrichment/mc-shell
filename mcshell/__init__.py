@@ -598,43 +598,6 @@ class MCShell(Magics):
             except Exception as e:
                 print(f"[TAILSCALE WARNING] Could not disconnect automatically: {e}")
 
-    def _get_connection_hub_data(self):
-        """Returns the raw connection hub data in a structured, JSON-friendly dictionary."""
-        from rich.prompt import Prompt
-        import os
-
-        def _make_direct_token(ip, rh_host):
-            base_target = f"{ip},{rh_host}" if rh_host else str(ip)
-            mc_p = self.server_data.get('port', MC_SERVER_PORT)
-            rcon_p = self.server_data.get('rcon_port', MC_RCON_PORT)
-            mj_p = self.server_data.get('mj_port', MJ_PLUGIN_PORT)
-            mc_v = self.server_data.get('mc_version', MC_VERSION)
-            if mc_p == 25565 and rcon_p == 25575 and mj_p == 4721:
-                return base_target
-            return f"{base_target}@{mc_p}-{rcon_p}-{mj_p}-{mc_v}"
-
-        authkey = self.server_data.get('tailscale_authkey')
-        rh_host = self.server_data.get('rh_host')
-        local_ip = self.server_data.get('local_ip') 
-        vpn_ip = self.server_data.get('vpn_ip')
-
-        data = {
-            "local_ip": local_ip,
-            "vpn_ip": vpn_ip,
-            "authkey": authkey,
-            "rh_host": rh_host,
-            "tokens": {
-                "lan": _make_direct_token(local_ip, rh_host)
-            }
-        }
-
-        if authkey and vpn_ip:
-            data['tokens']['classroom_vpn'] = f"{_make_direct_token(vpn_ip, rh_host)}^{authkey}"
-        elif vpn_ip:
-            data['tokens']['tailscale'] = _make_direct_token(vpn_ip, rh_host)
-
-        return data
-
     def _get_auth_status(self, cache_path, log_path):
         def _extract_auth_instructions():
             """Helper to scan the log file in reverse for the latest auth code."""
@@ -667,27 +630,6 @@ class MCShell(Magics):
                 
         except FileNotFoundError:
             return _extract_auth_instructions() or "Not Authenticated (cache.json missing)"
-    # def _get_auth_status(self, cache_path):
-    #     try:
-    #         with open(cache_path, 'r') as f:
-    #             cache_data = json.load(f)
-                
-    #         # Extract the expiration timestamp of the Minecraft Session instead of msaToken
-    #         expire_time_ms = cache_data.get("minecraftSession", {}).get("expireTimeMs", 0)
-    #         current_time_ms = int(time.time() * 1000)
-            
-    #         if expire_time_ms == 0:
-    #             return "No Token Found"
-    #         elif current_time_ms >= expire_time_ms:
-    #             return "Expired (Requires Reauth)"
-    #         else:
-    #             # Calculate remaining days
-    #             time_left_ms = expire_time_ms - current_time_ms
-    #             days_left = time_left_ms / (1000 * 60 * 60 * 24)
-    #             return f"Valid ({days_left:.1f} days remaining)"
-                
-    #     except FileNotFoundError:
-    #         return "Not Authenticated (cache.json missing)"
 
     def _extract_and_cache_gamertag(self, log_line, cache_dir: Path):
         # (.*?) captures all characters including spaces, up until the (XUID)
@@ -1220,12 +1162,6 @@ class MCShell(Magics):
 
         print(f"Creating new world '{world_name}' for Minecraft {mc_version}...")
 
-        # Create the world directory structure
-        world_dir.mkdir(parents=True)
-        plugins_dir = (world_dir / "plugins")
-        plugins_dir.mkdir(exist_ok=True)
-        server_jars_dir.mkdir(exist_ok=True)
-
         # Prompt for a password
         try:
             password = getpass.getpass(prompt=f"Create a password for world '{world_name}' (leave empty for random): ")
@@ -1543,11 +1479,6 @@ class MCShell(Magics):
         self.local_server.process = process
         self.local_server.mc_version = world_manifest['paper_version']
         self.local_server.rh_host = relay_server_address
-
-        # it has not printed yet
-        # cache_path = MC_WORLDS_BASE_DIR / self.local_server.world_name / "plugins" / "Geyser-Spigot" / "extensions" / "mcxboxbroadcast" / "cache.json"
-        # log_path = MC_WORLDS_BASE_DIR / self.local_server.world_name / "logs" / "latest.log" 
-        # self.local_server.xbox_auth = self._get_auth_status(cache_path,log_path)
 
         yaml = YAML()
         yaml.preserve_quotes = True
