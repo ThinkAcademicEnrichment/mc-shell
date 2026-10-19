@@ -1581,12 +1581,22 @@ class MCShell(Magics):
         if geyser_config.is_file():
             geyser_data = yaml.load(geyser_config)
 
+            # Enable both RakNet (local Bedrock) and NetherNet (Xbox WebRTC) transports
+            geyser_data['bedrock']['transport'] = "both"
+            
+            # Ensure built-in signaling is enabled for NetherNet discovery
+            geyser_data['bedrock']['signaling']['mode'] = "builtin"
+
             # force fragmenting of the nasty RakNet handshake packet
             geyser_data['advanced']['bedrock']['mtu'] = "1200"
-            
+
+            # set server advertisement
+            geyser_data['motd']['primary-motd'] = world_name
+            geyser_data['motd']['secondary-motd'] = "For more fun, checkout your appliance at http://mcshell.local:5001"
+
             # ruamel.yaml can write directly to a pathlib.Path object
             yaml.dump(geyser_data, geyser_config)
-            print(f"Updated bedrock mtu in {geyser_config.name}")
+            print(f"Updated bedrock transport, signaling, and mtu in {geyser_config.name}")
 
         # McJuice needs dynamic port setting
         mcjuice_config = world_directory / "plugins" / "McJuice" / "config.yml"
