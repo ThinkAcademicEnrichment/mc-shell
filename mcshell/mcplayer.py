@@ -13,6 +13,10 @@ class MCPlayer(MCClient):
 
         self.state = {}
 
+    @property
+    def mj(self):
+        return self.mj_client(self.name)
+
     def run(self, *args, **kwargs):
         """Override to instantly cancel powers if an Admin RCON command is attempted without a password."""
         try:
@@ -68,10 +72,6 @@ class MCPlayer(MCClient):
     def build_async(self):
         asyncio.run(self.build_player_data_async())
         return self
-
-    @property
-    def mj(self):
-        return self.mj_client(self.name)
 
     @property
     def position(self):

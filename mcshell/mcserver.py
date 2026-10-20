@@ -156,7 +156,7 @@ def throw_app_server_error(error):
             'message': error_message
         })
 
-def start_app_server(minecraft_version=None,minecraft_name=None,shell=None, power_repo=None, port=5001,connected_world_name=None,default_lobby_name=None):
+def start_app_server(minecraft_version=None,minecraft_name=None,shell=None, power_repo=None, port=5001,connected_world_name=None,default_lobby_name=None,defer_auth=False):
     """Starts or updates the main Flask-SocketIO application server in a separate thread."""
 
     is_appliance = os.environ.get('MCSHELL_APPLIANCE_MODE') == '1'
@@ -182,7 +182,10 @@ def start_app_server(minecraft_version=None,minecraft_name=None,shell=None, powe
 
     # Evaluate the true UI state based on the presence of an active player
     is_active = bool(app.config.get('MINECRAFT_PLAYER_NAME'))
-    current_status = 'active' if is_active else 'standby'
+    if not defer_auth:
+        current_status = 'active' if is_active else 'standby'
+    else:
+        current_status = 'lobby_link' if is_active else 'standby'
 
     # is_active = False
     # current_status = 'standby'

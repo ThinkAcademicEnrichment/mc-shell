@@ -588,7 +588,68 @@ namespaces:
              }
           }
         returns: string
+      - name: getOnlinePlayers
+        bukkit: |
+          {
+              StringBuilder players = new StringBuilder();
+              for (org.bukkit.entity.Player player : org.bukkit.Bukkit.getOnlinePlayers()) {
+                  if (players.length() > 0) {
+                      players.append(",");
+                  }
+                  players.append(player.getName());
+              }
+              if (players.length() > 0) {
+                  session.send(players.toString());
+              } else {
+                  session.send("null");
+              }
+          }
+        returns: string
+        
+      - name: sendPlayerMessage
+        bukkit: |
+          {
+              org.bukkit.entity.Player player = org.bukkit.Bukkit.getPlayer({playerName});
+              if (player != null && player.isOnline()) {
+                  player.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&', {message}));
+                  session.send("true");
+              } else {
+                  session.send("false");
+              }
+          }
+        args: 
+          - {name: playerName, type: String}
+          - {name: message, type: String}
+        returns: string
 
+      - name: requestPin
+        bukkit: |
+          {
+              session.send(session.requestPin({playerName}));
+          }
+        args:
+          - {name: playerName, type: String}
+        returns: string
+
+      - name: verifyPin
+        bukkit: |
+          {
+              session.send(session.verifyPin({playerName}, {pin}));
+          }
+        args:
+          - {name: playerName, type: String}
+          - {name: pin, type: String}
+        returns: string
+
+      - name: resumeSession
+        bukkit: |
+          {
+              session.send(String.valueOf(session.resumeSession({playerName}, {token})));
+          }
+        args:
+          - {name: playerName, type: String}
+          - {name: token, type: String}
+        returns: int
 
   select:
     target: Select

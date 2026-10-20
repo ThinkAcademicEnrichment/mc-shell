@@ -647,30 +647,34 @@ class MCShell(Magics):
     def _get_connection_hub_data(self) -> dict:
         """
         Generates a dictionary of connection data for the web UI and API.
-        Returns an empty dict if the server is not currently joined to a world.
+        Returns an empty dict if the server is neither joined nor hosting.
         """
         from urllib.parse import urlencode
         
         host_state, ui_state = self._get_fsm_state()
 
-        # If we aren't connected to a world, there's no hub data to share
-        if ui_state not in ['JOINED_LOCAL', 'JOINED_REMOTE']:
+        # If we aren't connected to a world AND we aren't hosting one, nothing to share.
+        if ui_state not in ['JOINED_LOCAL', 'JOINED_REMOTE'] and host_state != 'HOSTING':
             return {}
 
+        # If hosting, the source of truth is the local server. Otherwise, it's the remote connection.
+        world_name = self.local_server.world_name if host_state == 'HOSTING' else self.connection.world_name
+
         hub_data = {
-            "world_name": self.connection.world_name,
+            "world_name": world_name,
             "java_addr": None,
             "bedrock_addr": None,
-            "xbox_tag": getattr(self.connection, 'xbox_tag', None),
+            "xbox_tag": getattr(self.connection, 'xbox_tag', None) if ui_state in ['JOINED_LOCAL', 'JOINED_REMOTE'] else None,
             "lan_token": None,
             "vpn_token": None
         }
 
         # 1. Determine Player Display Addresses
         if ui_state == 'JOINED_REMOTE':
-            hub_data["java_addr"] = f"{self.local_server.local_ip}:{self.connection.local_proxy_mc_port}"
-            hub_data["bedrock_addr"] = f"{self.local_server.local_ip}:{self.connection.local_proxy_bedrock_port}"
-        elif ui_state == 'JOINED_LOCAL':
+            hub_data["java_addr"] = f"{self.connection.target_host}:{self.connection.mc_port}"
+            hub_data["bedrock_addr"] = f"{self.connection.target_host}:19132"
+        elif host_state == 'HOSTING': 
+            # Covers both JOINED_LOCAL and UNJOINED + HOSTING (--do-not-join)
             hub_data["java_addr"] = f"{self.local_server.local_ip}:{self.local_server.mc_port}"
             hub_data["bedrock_addr"] = f"{self.local_server.local_ip}:19132"
 
@@ -682,21 +686,27 @@ class MCShell(Magics):
             vpn_ip = getattr(self.local_server, 'vpn_ip', None)
             mc_port = self.local_server.mc_port
 
-            # Dynamic Xbox Tag extraction from logs
+            # Extract Xbox Tag or Auth Status
             xbox_tag = None
             cache_path = MC_WORLDS_BASE_DIR / self.local_server.world_name / "plugins" / "Geyser-Spigot" / "extensions" / "mcxboxbroadcast" / "cache.json"
-            papermc_log_path = MC_WORLDS_BASE_DIR / self.local_server.world_name / "logs" / "latest.log"
-
-            # Pass the explicit path if the method signature expects it
-            self.local_server.xbox_auth = self._get_auth_status(cache_path,papermc_log_path)
+            log_path = MC_WORLDS_BASE_DIR / self.local_server.world_name / "logs" / "latest.log" 
+            self.local_server.xbox_auth = self._get_auth_status(cache_path, log_path)
             
             if hasattr(self.local_server, 'xbox_auth') and 'Valid' in self.local_server.xbox_auth:
-                # papermc_log_path = MC_WORLDS_BASE_DIR / self.local_server.world_name / "logs" / "latest.log"
-                if papermc_log_path.exists():
-                    for log_line in reversed(papermc_log_path.read_text().splitlines()):
-                        xbox_tag = self._extract_and_cache_gamertag(log_line,cache_path.parent)
-                        if xbox_tag:
-                            break
+                mcxbox_dir = MC_WORLDS_BASE_DIR / self.local_server.world_name / "plugins" / "Geyser-Spigot" / "extensions" / "mcxboxbroadcast"
+                tag_file = mcxbox_dir / "gamertag.txt"
+
+                # 1. Try to read the persistently saved gamertag first
+                if tag_file.exists():
+                    xbox_tag = tag_file.read_text().strip()
+                
+                # 2. Fallback: scan the log if it hasn't been cached yet
+                else:
+                    if log_path.exists():
+                        for log_line in reversed(log_path.read_text().splitlines()):
+                            xbox_tag = self._extract_and_cache_gamertag(log_line, mcxbox_dir)
+                            if xbox_tag:
+                                break
             
             if xbox_tag:
                 hub_data["xbox_tag"] = xbox_tag
@@ -722,18 +732,105 @@ class MCShell(Magics):
             if vpn_ip and authkey:
                 hub_data["vpn_token"] = _generate_uri(vpn_ip, include_auth=True)
             elif vpn_ip:
-                # Tailscale manual mesh (No authkey)
                 hub_data["vpn_token"] = _generate_uri(vpn_ip)
 
         return hub_data
 
-    def _print_connection_hub(self):
-        """Cleanly prints the connection hub using the rich library and URI tokens."""
-        from urllib.parse import urlencode
-        from rich.console import Console
+    def _app_server_status_panel(self, ui_state: str, local_host: str, app_port: int, hub_data: dict = None):
+        """Builds the Editor status and URL routing panel."""
         from rich.panel import Panel
         from rich.table import Table
         from mcshell.mcserver import GUI_AUTH_TOKEN
+
+        if ui_state == 'STOPPED':
+            return Panel("🔴 [bold red]Editor App Server : STOPPED[/bold red]", expand=False)
+            
+        elif ui_state == 'UNJOINED':
+            grid = Table.grid(padding=(0, 2))
+            grid.add_column(style="cyan bold", justify="right")
+            grid.add_column(style="white")
+            grid.add_row("Lobby URL:", f"http://{local_host}:{app_port}/lobby?auth={GUI_AUTH_TOKEN}")
+            return Panel(grid, title="🟡 [bold yellow]MCED App Server : STANDBY[/bold yellow]", expand=False)
+            
+        elif ui_state in ['JOINED_LOCAL', 'JOINED_REMOTE']:
+            hub_data = hub_data or {}
+            mc_name = self.connection.player_name
+            target_world = hub_data.get("world_name", self.connection.world_name)
+            
+            app_grid = Table.grid(padding=(0, 2))
+            app_grid.add_column(style="cyan bold", justify="right")
+            app_grid.add_column(style="white")
+            app_grid.add_row("Active Player:", f"[green]{mc_name}[/green]")
+            app_grid.add_row("Connected World:", target_world)
+            app_grid.add_row("Editor URL:", f"http://{local_host}:{app_port}/?auth={GUI_AUTH_TOKEN}")
+            app_grid.add_row("Control URL:", f"http://{local_host}:{app_port}/control?auth={GUI_AUTH_TOKEN}")
+            return Panel(app_grid, title="🟢 [bold green]MCED App Server : RUNNING[/bold green]", expand=False)
+
+        return None
+
+    def _direct_player_connections_panel(self, hub_data: dict):
+        """Builds the raw IP/Port display for local client connections."""
+        from rich.panel import Panel
+        from rich.table import Table
+
+        if not hub_data:
+            return None
+
+        conn_grid = Table(show_header=False, box=None, padding=(0, 2))
+        conn_grid.add_column(style="magenta bold")
+        conn_grid.add_column(style="white")
+
+        if hub_data.get("bedrock_addr"):
+            conn_grid.add_row("🎮 Bedrock", hub_data["bedrock_addr"])
+        if hub_data.get("java_addr"):
+            conn_grid.add_row("💻 Java", hub_data["java_addr"])
+
+        return Panel(conn_grid, title="[bold blue]Direct Player Connections[/bold blue]", expand=False)
+
+    def _connection_hub_panel(self, hub_data: dict):
+        """Builds the shareable mcshell:// token and Xbox Gamertag hub panel."""
+        from rich.panel import Panel
+        from rich.table import Table
+        from rich.text import Text
+
+        if not hub_data:
+            return None
+
+        token_grid = Table.grid(padding=(1, 2))
+        token_grid.add_column(style="bold yellow", justify="right")
+        
+        authkey = self.creds.get('tailscale_authkey', None)
+        vpn_token = hub_data.get("vpn_token")
+        lan_token = hub_data.get("lan_token")
+        xbox_tag = hub_data.get("xbox_tag")
+
+        # VPN (Tailscale) Tokens
+        if authkey:
+            if vpn_token:
+                token_grid.add_row("🌐 VPN Mesh:", Text(vpn_token, style="bold cyan", overflow="fold"))
+            else:
+                token_grid.add_row("🌐 VPN Mesh:", "[red]Error: Tailscale failed to acquire a VPN IP.[/red]")
+        elif vpn_token:
+            token_grid.add_row("🌐 Tailscale:", Text(vpn_token, style="bold cyan", overflow="fold"))
+
+        # Local LAN Token
+        if lan_token:
+            token_grid.add_row("🏠 Local LAN:", Text(lan_token, style="bold cyan", overflow="fold"))
+
+        # Display Xbox Tag, or prompt for Auth, or show error
+        if xbox_tag:
+            token_grid.add_row("🎮 Xbox/PSX/Switch:", f"Send a friend request to: [bold yellow]{xbox_tag}[/bold yellow]")
+        elif hasattr(self.local_server, 'xbox_auth'):
+            if 'Sign in to' in self.local_server.xbox_auth:
+                token_grid.add_row("⚠️ Xbox Auth Needed:", f"[bold red]{self.local_server.xbox_auth}[/bold red]")
+            elif 'Valid' not in self.local_server.xbox_auth:
+                token_grid.add_row("⚠️ Xbox/Console:", f"[yellow]Broadcast offline: {self.local_server.xbox_auth}[/yellow]")
+
+        return Panel(token_grid, title="[bold green]🌍 CONNECTION HUB : Share Tokens[/bold green]", expand=False, border_style="green")
+
+    def _print_connection_hub(self):
+        """Cleanly prints the connection hub using the rich library and URI tokens."""
+        from rich.console import Console
 
         console = Console()
 
@@ -745,258 +842,27 @@ class MCShell(Magics):
         host_state, ui_state = self._get_fsm_state()
         app_port = self.server_data.get('app_port', 5001)
         
-        # --- 1. UI & Editor Routing ---
-        if ui_state == 'STOPPED':
-            console.print(Panel("🔴 [bold red]Editor App Server : STOPPED[/bold red]", expand=False))
-            
-        elif ui_state == 'UNJOINED':
-            grid = Table.grid(padding=(0, 2))
-            grid.add_column(style="cyan bold", justify="right")
-            grid.add_column(style="white")
-            grid.add_row("Lobby URL:", f"http://{local_host}:{app_port}/lobby?auth={GUI_AUTH_TOKEN}")
-            
-            console.print(Panel(grid, title="🟡 [bold yellow]MCED App Server : STANDBY[/bold yellow]", expand=False))
-            
-        elif ui_state in ['JOINED_LOCAL', 'JOINED_REMOTE']:
-            mc_name = self.connection.player_name
-            target_world = self.connection.world_name
-            
-            # App Server Grid
-            app_grid = Table.grid(padding=(0, 2))
-            app_grid.add_column(style="cyan bold", justify="right")
-            app_grid.add_column(style="white")
-            app_grid.add_row("Active Player:", f"[green]{mc_name}[/green]")
-            app_grid.add_row("Connected World:", target_world)
-            app_grid.add_row("Editor URL:", f"http://{local_host}:{app_port}/?auth={GUI_AUTH_TOKEN}")
-            app_grid.add_row("Control URL:", f"http://{local_host}:{app_port}/control?auth={GUI_AUTH_TOKEN}")
-            
-            console.print(Panel(app_grid, title="🟢 [bold green]MCED App Server : RUNNING[/bold green]", expand=False))
+        # Fetch hub data. It will now properly return data if we are HOSTING or JOINED.
+        hub_data = self._get_connection_hub_data()
 
-            # Player Connection Grid
-            conn_grid = Table(show_header=False, box=None, padding=(0, 2))
-            conn_grid.add_column(style="magenta bold")
-            conn_grid.add_column(style="white")
+        # 1. Print Server Status
+        status_panel = self._app_server_status_panel(ui_state, local_host, app_port, hub_data)
+        if status_panel:
+            console.print(status_panel)
 
-            if ui_state == 'JOINED_REMOTE':
-                conn_grid.add_row("🎮 Bedrock", f"{self.local_server.local_ip}:{self.connection.local_proxy_bedrock_port}")
-                conn_grid.add_row("💻 Java", f"{self.local_server.local_ip}:{self.connection.local_proxy_mc_port}")
-            elif ui_state == 'JOINED_LOCAL':
-                conn_grid.add_row("🎮 Bedrock", f"{self.local_server.local_ip}:19132")
-                conn_grid.add_row("💻 Java", f"{self.local_server.local_ip}:{self.local_server.mc_port}")
-                
+        # 2. Print Connection Methods
+        # If hosting locally, or if joined to a remote server, display the direct IPs
+        if host_state == 'HOSTING' or ui_state == 'JOINED_REMOTE':
+            conn_panel = self._direct_player_connections_panel(hub_data)
+            if conn_panel:
+                console.print(conn_panel)
 
-            console.print(Panel(conn_grid, title="[bold blue]Direct Player Connections[/bold blue]", expand=False))
-
-        # --- 2. Multiplayer Networking Tokens ---
+        # 3. Print Token Hub
+        # The shareable tokens should always print if we are the ones hosting the world.
         if host_state == 'HOSTING':
-            authkey = self.creds.get('tailscale_authkey', None)
-            rh_host = self.local_server.rh_host
-            local_ip = self.local_server.local_ip
-            vpn_ip = self.local_server.vpn_ip
-            mc_port = self.local_server.mc_port
-
-            # Extract Xbox Tag or Auth Status
-            xbox_tag = None
-            cache_path = MC_WORLDS_BASE_DIR / self.local_server.world_name / "plugins" / "Geyser-Spigot" / "extensions" / "mcxboxbroadcast" / "cache.json"
-            log_path = MC_WORLDS_BASE_DIR / self.local_server.world_name / "logs" / "latest.log" 
-            self.local_server.xbox_auth = self._get_auth_status(cache_path, log_path)
-            
-            if hasattr(self.local_server, 'xbox_auth'):
-                if 'Valid' in self.local_server.xbox_auth:
-                    mcxbox_dir = MC_WORLDS_BASE_DIR / self.local_server.world_name / "plugins" / "Geyser-Spigot" / "extensions" / "mcxboxbroadcast"
-                    tag_file = mcxbox_dir / "gamertag.txt"
-
-                    # 1. Try to read the persistently saved gamertag first
-                    if tag_file.exists():
-                        xbox_tag = tag_file.read_text().strip()
-                    
-                    # 2. Fallback: scan the log if it hasn't been cached yet
-                    else:
-                        papermc_log_path = MC_WORLDS_BASE_DIR / self.local_server.world_name / "logs" / "latest.log"
-                        if papermc_log_path.exists():
-                            for log_line in reversed(papermc_log_path.read_text().splitlines()):
-                                xbox_tag = self._extract_and_cache_gamertag(log_line, mcxbox_dir)
-                                if xbox_tag:
-                                    break
-                        
-            def _generate_uri(ip, include_auth=False):
-                params = {
-                    "rcon": self.local_server.rcon_port,
-                    "mj": self.local_server.mj_port,
-                    "ver": self.local_server.mc_version
-                }
-                if rh_host: params["rh"] = rh_host
-                if include_auth and authkey: params["ts"] = authkey
-                if xbox_tag: params["xbox"] = xbox_tag
-                
-                raw_uri = f"mcshell://{ip}:{mc_port}?{urlencode(params)}"
-                
-                # 'fold' ensures long tokens wrap cleanly at the terminal boundary 
-                # without hiding characters or inserting breaks at punctuation.
-                return Text(raw_uri, style="bold cyan", overflow="fold")
-
-            # Token Grid Display
-            token_grid = Table.grid(padding=(1, 2))
-            token_grid.add_column(style="bold yellow", justify="right")
-            # token_grid.add_column()
-
-            if authkey:
-                if vpn_ip:
-                    token_grid.add_row("🌐 VPN Mesh:", _generate_uri(vpn_ip, True))
-                else:
-                    token_grid.add_row("🌐 VPN Mesh:", "[red]Error: Tailscale failed to acquire a VPN IP.[/red]")
-            elif vpn_ip:
-                token_grid.add_row("🌐 Tailscale:", _generate_uri(vpn_ip))
-
-            token_grid.add_row("🏠 Local LAN:", _generate_uri(local_ip))
-
-            # Display Xbox Tag, or prompt for Auth, or show error
-            if xbox_tag:
-                token_grid.add_row("🎮 Xbox/PSX/Switch:", f"Send a friend request to: [bold yellow]{xbox_tag}[/bold yellow]")
-            elif hasattr(self.local_server, 'xbox_auth'):
-                if 'Sign in to' in self.local_server.xbox_auth:
-                    # Highlights the link and code in red to grab the host's attention
-                    token_grid.add_row("⚠️ Xbox Auth Needed:", f"[bold red]{self.local_server.xbox_auth}[/bold red]")
-                elif 'Valid' not in self.local_server.xbox_auth:
-                    # Catches "No Token Found" or missing cache errors
-                    token_grid.add_row("⚠️ Xbox/Console:", f"[yellow]Broadcast offline: {self.local_server.xbox_auth}[/yellow]")
-
-            console.print(Panel(token_grid, title="[bold green]🌍 CONNECTION HUB : Share Tokens[/bold green]", expand=False, border_style="green"))
-
-    def _print_connection_hub_legacy(self):
-        """Helper method to cleanly print the connection hub using FSM states."""
-        from mcshell.mcserver import GUI_AUTH_TOKEN
-
-        if self.appliance_mode:
-            local_host = self.local_server.local_ip     
-        else:
-            local_host = 'localhost'
-
-        host_state, ui_state = self._get_fsm_state()
-        app_port = self.server_data.get('app_port', 5001)
-
-        print(f"\n" + "="*55)
-        
-        # --- 1. UI & Editor Routing (Driven exclusively by ui_state) ---
-        if ui_state == 'STOPPED':
-            print("🔴 Editor App Server  : STOPPED")
-            
-        elif ui_state == 'UNJOINED':
-            print(f"🟡 MCED App Server  : STANDBY")
-            print(f"   Lobby URL        : http://{local_host}:{app_port}/lobby?auth={GUI_AUTH_TOKEN}")
-            
-        elif ui_state in ['JOINED_LOCAL', 'JOINED_REMOTE']:
-            mc_name = self.connection.player_name
-            target_world = self.connection.world_name
-            
-            print(f"🟢 MCED App Server  : RUNNING (Active Player: {mc_name})")
-            print(f"   Connected World  : {target_world}")
-            print(f"   Editor URL       : http://{local_host}:{app_port}/?auth={GUI_AUTH_TOKEN}")
-            print(f"   Control URL      : http://{local_host}:{app_port}/control?auth={GUI_AUTH_TOKEN}")
-
-        if ui_state == 'JOINED_REMOTE':
-            print("\n" + "="*60)
-            print("🎮 BEDROCK PLAYERS:")
-            print("="*60)
-            # if rh_host:
-            #     print(f"Please open Minecraft and connect to the public relay:\n{' '*4}{rh_host}:19132")
-            # else:
-            print(f"Please open Minecraft and connect to this computer's IP:\n{' '*4}{self.local_server.local_ip}:{self.connection.local_proxy_bedrock_port}")
-
-            print("\n" + "="*60)
-            print("💻 JAVA PLAYERS:")
-            print("="*60)
-            print(f"Please open Minecraft and connect to this computer's IP:\n{' '*4}{self.local_server.local_ip}:{self.connection.local_proxy_mc_port}")
-
-        elif ui_state == 'JOINED_LOCAL':
-            print("\n" + "="*60)
-            print("🎮 BEDROCK PLAYERS:")
-            print("="*60)
-            # if rh_host:
-            #     print(f"Please open Minecraft and connect to the public relay:\n{' '*4}{rh_host}:19132")
-            # else:
-            print(f"Please open Minecraft and connect to this computer's IP:\n{' '*4}{self.local_server.local_ip}:19132")
-
-            print("\n" + "="*60)
-            print("💻 JAVA PLAYERS:")
-            print("="*60)
-            print(f"Please open Minecraft and connect to this computer's IP:\n{' '*4}{self.local_server.local_ip}:{self.local_server.mc_port}")
-            
-        if ui_state in ['JOINED_LOCAL','JOINED_REMOTE']:
-            if getattr(self.connection, 'xbox_tag', None):
-                print("\n" + "="*60)
-                print("🎮 XBOX / SWITCH / PSX PLAYERS:")
-                print("="*60)
-                print(f"To join from a console, send a friend request to: {self.connection.xbox_tag}")
-                print("Then open Minecraft and connect via the 'Friends' tab.")
-                print("="*60)
-
-        # --- 2. Multiplayer Networking (Driven exclusively by host_state) ---
-        if host_state == 'HOSTING':
-            # Network routing variables are still read safely from the hardware state
-            authkey = self.creds.get('tailscale_authkey',None)
-            rh_host = self.local_server.rh_host
-            local_ip = self.local_server.local_ip
-            vpn_ip = self.local_server.vpn_ip
-            
-            # The exact ephemeral port currently occupied by Java
-            mc_port = self.local_server.mc_port
-
-            # Extract Xbox Tag
-            xbox_tag = None
-            # refresh the auth state
-            cache_path = MC_WORLDS_BASE_DIR / self.local_server.world_name / "plugins" / "Geyser-Spigot" / "extensions" / "mcxboxbroadcast" / "cache.json"
-            log_path = MC_WORLDS_BASE_DIR / self.local_server.world_name / "logs" / "latest.log" 
-            self.local_server.xbox_auth = self._get_auth_status(cache_path,log_path)
-
-            if hasattr(self.local_server, 'xbox_auth') and 'Valid' in self.local_server.xbox_auth:
-                # Assuming MC_WORLDS_BASE_DIR is in scope
-                papermc_log_path = MC_WORLDS_BASE_DIR / self.local_server.world_name / "logs" / "latest.log"
-                if papermc_log_path.exists():
-                    for log_line in reversed(papermc_log_path.read_text().splitlines()):
-                        xbox_tag = self._extract_gamertag_from_log(log_line)
-                        if xbox_tag:
-                            break
-            
-            def _make_token(ip):
-                """Inline helper to generate tokens dynamically based on active ports."""
-                base = f"{ip},{rh_host}" if rh_host else str(ip)
-                # If using standard ports, keep the token aesthetically clean
-                if mc_port == 25565 and self.local_server.rcon_port == 25575 and self.local_server.mj_port == 4721:
-                    return base
-                # Otherwise, append the custom ephemeral port routing block
-                return f"{base}@{mc_port}-{self.local_server.rcon_port}-{self.local_server.mj_port}-{self.local_server.mc_version}"
-
-            def _finalize_token(ip, use_auth=False):
-                """Appends Tailscale and Xbox extensions sequentially to maintain parse order."""
-                tok = _make_token(ip)
-                if use_auth and authkey:
-                    tok = f"{tok}^{authkey}"
-                if xbox_tag:
-                    tok = f"{tok}~{xbox_tag}"
-                return tok
-
-            print("🌍 CONNECTION HUB: Share these tokens with your friends!")
-            print("="*60)
-
-            # VPN (Tailscale) Tokens
-            if authkey:
-                if vpn_ip:
-                    print("\n[ VPN CONNECTION (Automated Tailscale Mesh) ]")
-                    print(f"Token :\n{' '*4}{_finalize_token(vpn_ip)}^{authkey}")
-                else:
-                    print("\n[ VPN CONNECTION ]")
-                    print("⚠️  ERROR: Tailscale failed to acquire a VPN IP.")
-                    print("⚠️  Cannot generate an automated remote token. Check your Tailscale installation.")
-            elif vpn_ip:
-                print("\n[ TAILSCALE CONNECTION (Manual Mesh) ]")
-                print(f"Token :\n{' '*4}{_finalize_token(vpn_ip)}")
-
-            # Standard Direct Tokens
-            print("\n[ DIRECT CONNECTION (Local LAN) ]")
-            print(f"Local LAN Token :\n{' '*4}{_finalize_token(local_ip)}")
-            
-            print(f"="*60)
+            hub_panel = self._connection_hub_panel(hub_data)
+            if hub_panel:
+                console.print(hub_panel)
 
     def _complete_world_command(self, ipyshell, event):
         ipyshell.user_ns.update(dict(rcon_event=event))
@@ -1719,6 +1585,9 @@ class MCShell(Magics):
         parser.add_argument("--authkey", default=None, help="Tailscale auth key")
         parser.add_argument("--login", action="store_true", help="Prompt for password authentication")
 
+        # PIN auth to code server:
+        parser.add_argument("--defer_auth", action="store_true", help="Defer PIN verification to Web UI")
+
         try:
             parsed_args = parser.parse_args(shlex.split(line))
         except SystemExit:
@@ -1805,18 +1674,6 @@ class MCShell(Magics):
             self.connection.clear()
             return
 
-        print(f"Assigning application server context to Minecraft player: {minecraft_name}")
-        power_repo = SQLiteRepository(minecraft_name)
-
-        self.app_server_thread = start_app_server(
-            mc_version,
-            minecraft_name,
-            self.ip,
-            power_repo,
-            5001,
-            connected_world_name
-        )
-
 
         # Manage Background Forwarders (socat)
         self._cleanup_socat_forwarders() # Helper to terminate existing Popen objects
@@ -1837,8 +1694,81 @@ class MCShell(Magics):
             self.connection.local_proxy_bedrock_port = proxy_udp
 
             self._start_socat_forwarders(target_host,mc_port,proxy_tcp,proxy_udp) 
-            print(f"  -> Local Java Proxy bound to TCP {proxy_tcp}")
-            print(f"  -> Local Bedrock Proxy bound to UDP {proxy_udp}")
+            # print(f"  -> Local Java Proxy bound to TCP {proxy_tcp}")
+            # print(f"  -> Local Bedrock Proxy bound to UDP {proxy_udp}")
+        
+
+        # --- 8. PIN AUTHENTICATION & UX CLEANUP ---
+        if not parsed_args.defer_auth and threading.current_thread() is threading.main_thread():
+            from rich.console import Console
+            from rich.panel import Panel
+            from rich.table import Table
+            from IPython.display import clear_output
+            console = Console()
+            
+            # Temporarily mute the server logs so they don't bury the prompt
+            original_log_state = False
+            has_local_process = getattr(self, 'local_server', None) and getattr(self.local_server, 'process', None)
+            
+            if has_local_process:
+                original_log_state = self.local_server.process.suspend_logs
+                self.local_server.process.suspend_logs = True
+                
+            try:
+                # Provide clear visual breathing room
+                console.print("\n[bold yellow]⏳ WAITING FOR PLAYER...[/bold yellow]")
+                
+                # Format the addresses using the active connection state
+                java_addr = f"{self.local_server.local_ip}:{self.connection.local_proxy_mc_port or self.local_server.mc_port}"
+                bedrock_addr = f"{self.local_server.local_ip}:{self.connection.local_proxy_bedrock_port or 19132}"
+                xbox_tag = getattr(self.connection, 'xbox_tag', None)
+
+                # Build a clean connection instructions table using rich
+                conn_grid = Table(show_header=False, box=None, padding=(0, 2))
+                conn_grid.add_column(style="magenta bold")
+                conn_grid.add_column(style="white")
+                conn_grid.add_row("💻 Java", java_addr)
+                conn_grid.add_row("🎮 Bedrock", bedrock_addr)
+                if xbox_tag:
+                    conn_grid.add_row("🎮 Xbox/PSX", f"Send a friend request to: [bold yellow]{xbox_tag}[/bold yellow]")
+
+                console.print(Panel(conn_grid, title="[bold blue]Connect Here for PIN[/bold blue]", expand=False))
+                console.print(f"Please log in as [bold cyan]{minecraft_name}[/bold cyan] to receive your secure PIN.")
+                
+                # Trigger the client creation (blocks, waits for login, and prompts for PIN)
+                self._get_client().mj_client(minecraft_name)
+                
+                # Success! Clear the messy terminal history to present a clean dashboard
+                clear_output(wait=True)
+                console.print("[bold green]✅ Authentication successful![/bold green]\n")
+                
+            except Exception as e:
+                console.print(f"\n[bold red][Auth Error] {e}[/bold red]")
+                self.connection.clear()
+                return
+            finally:
+                # Restore the server logs to their original state
+                if has_local_process:
+                    self.local_server.process.suspend_logs = original_log_state
+        # ---------------------------------------
+
+        print(f"Assigning application server context to Minecraft player: {minecraft_name}")
+        power_repo = SQLiteRepository(minecraft_name)
+
+
+        print(f"Assigning application server context to Minecraft player: {minecraft_name}")
+        power_repo = SQLiteRepository(minecraft_name)
+
+        self.app_server_thread = start_app_server(
+            mc_version,
+            minecraft_name,
+            self.ip,
+            power_repo,
+            5001,
+            connected_world_name,
+            defer_auth=parsed_args.defer_auth
+        )
+
 
         self._print_connection_hub()
 
@@ -2178,15 +2108,36 @@ class MCShell(Magics):
     @line_magic
     def mc_login(self, line=''):
         """Authenticates the user as an admin on the currently joined server."""
+        import os
+        import json
         from rich.prompt import Prompt
         from mcshell.mcserver import socketio
+        # Ensure MC_WORLDS_BASE_DIR is imported/available in your file
+        # from mcshell.constants import MC_WORLDS_BASE_DIR 
 
         if not self.connection.is_joined:
             print("[red bold]Error: You must be joined to a server before you can log in.[/red bold]")
             return
 
-        # Prompt for password without asking for ports or IP
-        password = Prompt.ask('Server Password', password=True)
+        password = None
+
+        # 1. Attempt to auto-login using the .mc_creds.json file
+        if getattr(self, 'local_server', None) and getattr(self.local_server, 'world_name', None):
+            creds_path = MC_WORLDS_BASE_DIR / self.connection.world_name / ".mc_creds.json"
+            
+            if creds_path.exists():
+                try:
+                    with open(creds_path, 'r') as f:
+                        creds = json.load(f)
+                        password = creds.get('password')
+                        if password:
+                            print("[cyan]Auto-authenticating using stored world credentials...[/cyan]")
+                except Exception as e:
+                    print(f"[yellow]Warning: Could not parse .mc_creds.json: {e}[/yellow]")
+
+        # 2. Fallback to manual prompt if no password was found
+        if not password:
+            password = Prompt.ask('Server Password', password=True)
 
         try:
             # Inject the targeted credentials directly into your client getter
@@ -2321,15 +2272,21 @@ class MCShell(Magics):
     @line_magic
     def mc_run(self, line):
         '''%mc_run COMMAND'''
+
+        host_state, ui_state = self._get_fsm_state()
+        if not ui_state in ['JOINED_LOCAL', 'JOINED_REMOTE']:
+            print("You must join a world before issuing commands!")
+            return
+
         _arg_list = line.split(' ')
         _arg_list[0] = _arg_list[0].replace('_', '-')
 
         if _arg_list[0] == 'help':
             console.print("Use %mc_help instead.", style="warning")
             return
+        
 
         response = self._run(*_arg_list)
-        
         if response is None or response == '':
             return
 
