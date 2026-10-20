@@ -650,6 +650,16 @@ namespaces:
           - {name: playerName, type: String}
           - {name: token, type: String}
         returns: int
+        
+      - name: authenticateHost
+        bukkit: |
+          {
+              session.send(session.authenticateHost({playerName}, {rconPassword}));
+          }
+        args:
+          - {name: playerName, type: String}
+          - {name: rconPassword, type: String}
+        returns: string
 
   select:
     target: Select
