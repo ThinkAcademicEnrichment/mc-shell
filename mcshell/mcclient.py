@@ -32,7 +32,7 @@ class MCClient:
         self.password = password
         self.mj_port  = mj_port
 
-    @lru_cache(maxsize=1)
+    @lru_cache(maxsize=4)
     def mj_client(self,player_name=None):
         player_name = '' if player_name is None else player_name
         return MCJuiceClient.create(address=self.host,port=self.mj_port,playerName=player_name)
