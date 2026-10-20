@@ -53,7 +53,7 @@
     <body x-data="EditorApp()">
 
             <!-- SUBSTAGE 2C: The Lobby Overlay -->
-            <div x-cloak x-show="[UI_STATES.LOBBY_CARD, UI_STATES.UNAUTHORIZED, UI_STATES.TERMINATED, UI_STATES.ERROR].includes(uiState)" class="lobby-overlay">
+            <div x-cloak x-show="[UI_STATES.LOBBY_CARD, UI_STATES.LOBBY_LINK, UI_STATES.UNAUTHORIZED, UI_STATES.TERMINATED, UI_STATES.ERROR].includes(uiState)" class="lobby-overlay">
                 <div class="lobby-card">
                     <!-- Standby / Join Form -->
                     <template x-if="uiState === UI_STATES.LOBBY_CARD">
@@ -96,6 +96,63 @@
                                     </button>
                                 </div>
                             </template>
+
+                            <div x-show="joinError" x-text="joinError" style="color: #ff453a; margin-top: 10px; font-size: 0.9rem;"></div>
+                        </div>
+                    </template>
+                    <!-- Step 2: In-Game PIN Link Modal (LOBBY_LINK) -->
+                    <template x-if="uiState === UI_STATES.LOBBY_LINK">
+                        <div>
+                            <h2 style="margin-top: 0;">🔐 Link Your Player</h2>
+                            <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 14px;">
+                                Connect to the world in Minecraft as <strong style="color: #64d2ff;" x-text="minecraftName"></strong> to receive your 4-digit PIN in chat.
+                            </p>
+
+                            <!-- Connection Instructions Box -->
+                            <div style="background: #1c1c1e; border: 1px solid #444; border-radius: 10px; padding: 12px; text-align: left; font-size: 0.9rem; margin-bottom: 16px;">
+                                <div style="color: #aaa; font-weight: bold; margin-bottom: 8px; text-align: center;">🎮 Point Your Minecraft Client Here</div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                                    <span>💻 Java Edition:</span>
+                                    <code style="color: #64d2ff; font-weight: bold;" x-text="lobbyData?.connection_hub?.java_addr || 'Connecting...'"></code>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>📱 Bedrock Edition:</span>
+                                    <code style="color: #64d2ff; font-weight: bold;" x-text="lobbyData?.connection_hub?.bedrock_addr || 'Connecting...'"></code>
+                                </div>
+                                <template x-if="lobbyData?.connection_hub?.xbox_tag">
+                                    <div style="display: flex; justify-content: space-between; margin-top: 6px; padding-top: 6px; border-top: 1px solid #333;">
+                                        <span>🎯 Console Friend:</span>
+                                        <strong style="color: #ffd60a;" x-text="lobbyData.connection_hub.xbox_tag"></strong>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <!-- Live Presence & PIN Status Banner -->
+                            <div style="margin-bottom: 12px; padding: 8px; border-radius: 8px; font-size: 0.85rem;"
+                                 :style="pinSent ? 'background: rgba(48, 209, 88, 0.15); color: #30d158; border: 1px solid #30d158;' : 'background: rgba(255, 214, 10, 0.12); color: #ffd60a; border: 1px solid #ffd60a;'">
+                                <span x-show="!pinSent">⏳ Waiting for <strong x-text="minecraftName"></strong> to join the server...</span>
+                                <span x-show="pinSent">✅ Player detected! Check your in-game chat for the 4-digit PIN.</span>
+                            </div>
+
+                            <!-- 4-Digit PIN Input -->
+                            <input 
+                                type="text" 
+                                maxlength="4"
+                                inputmode="numeric"
+                                x-model="pinCode" 
+                                placeholder="Enter 4-Digit PIN" 
+                                class="lobby-input" 
+                                style="text-align: center; font-size: 1.4rem; letter-spacing: 6px; font-weight: bold; margin: 10px 0;" 
+                                @keyup.enter="submitPin()"
+                            >
+
+                            <button @click="submitPin()" class="lobby-btn" style="background: #30d158; color: #000;">
+                                Verify PIN & Enter Editor
+                            </button>
+
+                            <button @click="cancelJoin()" class="lobby-btn" style="background: #3a3a3c; color: #ddd; margin-top: 4px;">
+                                ◀ Cancel & Return to Lobby
+                            </button>
 
                             <div x-show="joinError" x-text="joinError" style="color: #ff453a; margin-top: 10px; font-size: 0.9rem;"></div>
                         </div>
@@ -408,13 +465,14 @@
             document.addEventListener('alpine:init', () => {
             // Define strict presentation states
             const UI_STATES = {
-                BOOTING: 'BOOTING',
-                LOBBY_CARD: 'LOBBY_CARD',
-                LOBBY_TERM: 'LOBBY_TERM',
-                EDITOR: 'EDITOR',
-                UNAUTHORIZED: 'UNAUTHORIZED',
-                TERMINATED: 'TERMINATED',
-                ERROR: 'ERROR'
+             BOOTING: 'BOOTING',
+             LOBBY_CARD: 'LOBBY_CARD',
+             LOBBY_LINK: 'LOBBY_LINK',
+             LOBBY_TERM: 'LOBBY_TERM',
+             EDITOR: 'EDITOR',
+             UNAUTHORIZED: 'UNAUTHORIZED',
+             TERMINATED: 'TERMINATED',
+             ERROR: 'ERROR'
             };
 
             Alpine.data('EditorApp', () => ({
@@ -439,6 +497,11 @@
                 isCodeCollapsed: true,
                 keyboardVisible: false,
                 isTerminalCollapsed: true,
+                
+                // PIN Data
+                pinCode: '',
+                pinSent: false,
+                pinPollTimer: null,
 
                 toggleKeyboard() {
                     this.keyboardVisible = !this.keyboardVisible;
@@ -449,17 +512,27 @@
                     if (!this.isTerminalCollapsed) this.keyboardVisible = false;
                 },
 
-                // The Transition Engine
                 transitionTo(newState) {
                     console.log(`[UI Transition] ${this.uiState} ➔ ${newState}`);
                     this.uiState = newState;
-                    
-                    // Handle specific side-effects of entering a new state
+
+                    if (this.pinPollTimer) {
+                        clearInterval(this.pinPollTimer);
+                        this.pinPollTimer = null;
+                    }
+
+                    if (newState === UI_STATES.LOBBY_LINK) {
+                        this.pinCode = '';
+                        this.pinSent = false;
+                        this.pollPinStatus();
+                        this.pinPollTimer = setInterval(() => this.pollPinStatus(), 2000);
+                    }
+
                     if (newState === UI_STATES.EDITOR) {
-                        this.isTerminalCollapsed = !this.isAppliance; // Auto-open terminal if on appliance
+                        this.isTerminalCollapsed = !this.isAppliance;
                         this.keyboardVisible = false;
                     }
-                },
+                },                
 
                 init() {
                     // Drop into unauthorized state if the token is rejected globally
@@ -497,16 +570,11 @@
                             return;
                         }
 
-                        if (data.status === 'active') {
-                            // Trigger a clean reload immediately if we are waking up from standby
-                            if ([UI_STATES.LOBBY_CARD, UI_STATES.LOBBY_TERM].includes(this.uiState)) {
-                                window.location.href = '/';
-                                return;
-                            }
-
-                            this.transitionTo(UI_STATES.EDITOR);
-                            window.dispatchEvent(new Event('app-active'));
+                        if (data.status === 'active' || data.status === 'lobby_link') {
+                            this.checkLobbyState();
+                            return;
                         }
+
 
                         if (this.isJoining || this.isSwitchingPorts) return;
                         this.checkLobbyState();
@@ -574,6 +642,20 @@
                                 return;
                             }
 
+                            if (data.status === 'lobby_link') {
+                                this.transitionTo(UI_STATES.LOBBY_LINK);
+                                return;
+                            }
+
+                            if (data.status === 'active') {
+                                if ([UI_STATES.LOBBY_CARD, UI_STATES.LOBBY_LINK, UI_STATES.LOBBY_TERM].includes(previousState)) {
+                                    window.location.href = '/';
+                                    return;
+                                }
+                                this.transitionTo(UI_STATES.EDITOR);
+                                window.dispatchEvent(new Event('app-active'));
+                            }
+
                             if (data.status === 'active') {
                                 if ([UI_STATES.LOBBY_CARD, UI_STATES.LOBBY_TERM].includes(previousState)) {
                                     window.location.href = '/';
@@ -627,8 +709,14 @@
                             if (data.gui_token) {
                                 sessionStorage.setItem('GUI_AUTH_TOKEN', data.gui_token);
                             }
+                            if (data.connection_hub) {
+                                this.lobbyData = { ...(this.lobbyData || {}), connection_hub: data.connection_hub };
+                            }
+                            this.isJoining = false;
                             if (!this.isSwitchingPorts) {
-                                window.location.href = '/';
+                                // Refresh lobby data and enter LOBBY_LINK state
+                                await this.checkLobbyState();
+                                this.transitionTo(UI_STATES.LOBBY_LINK);
                             }
                         } else {
                             this.isJoining = false;
@@ -641,6 +729,62 @@
                         this.joinError = 'Network error while joining.';
                         console.error(e);
                     }
+                },
+                async pollPinStatus() {
+                    if (this.uiState !== UI_STATES.LOBBY_LINK) return;
+                    try {
+                        const res = await fetch('/api/pin_status', { method: 'POST' });
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (data.pin_status === 'PENDING') {
+                                this.pinSent = true;
+                                // Stop polling now that the player is online and received the PIN!
+                                if (this.pinPollTimer) {
+                                    clearInterval(this.pinPollTimer);
+                                    this.pinPollTimer = null;
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('PIN poll failed:', e);
+                    }
+                },
+                async submitPin() {
+                    this.joinError = '';
+                    const pin = this.pinCode ? this.pinCode.trim() : '';
+                    if (pin.length !== 4) {
+                        this.joinError = 'Please enter the 4-digit PIN shown in your Minecraft chat.';
+                        return;
+                    }
+
+                    try {
+                        const res = await fetch('/api/verify_pin', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ pin: pin })
+                        });
+
+                        if (res.ok) {
+                            // Reload cleanly into the active EDITOR state so Blockly & HTMX initialize
+                            window.location.href = '/';
+                        } else {
+                            const errData = await res.json().catch(() => ({}));
+                            this.joinError = errData.error || 'Incorrect PIN. Returning to Lobby...';
+                            // Return to LOBBY_CARD on failure after cleaning up backend state
+                            await fetch('/api/cancel_join', { method: 'POST' });
+                            this.transitionTo(UI_STATES.LOBBY_CARD);
+                        }
+                    } catch (e) {
+                        this.joinError = 'Network error while verifying PIN.';
+                    }
+                },
+
+                async cancelJoin() {
+                    this.joinError = '';
+                    try {
+                        await fetch('/api/cancel_join', { method: 'POST' });
+                    } catch (e) {}
+                    this.transitionTo(UI_STATES.LOBBY_CARD);
                 },
 
                 // Dedicated terminal launcher for appliance mode
