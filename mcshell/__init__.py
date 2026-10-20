@@ -2122,7 +2122,7 @@ class MCShell(Magics):
 
         # 1. Attempt to auto-login using the .mc_creds.json file
         if getattr(self, 'local_server', None) and getattr(self.local_server, 'world_name', None):
-            creds_path = MC_WORLDS_BASE_DIR / self.local_server.world_name / ".mc_creds.json"
+            creds_path = MC_WORLDS_BASE_DIR / self.connection.world_name / ".mc_creds.json"
             
             if creds_path.exists():
                 try:
