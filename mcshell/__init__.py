@@ -1585,6 +1585,9 @@ class MCShell(Magics):
         parser.add_argument("--authkey", default=None, help="Tailscale auth key")
         parser.add_argument("--login", action="store_true", help="Prompt for password authentication")
 
+        # PIN auth to code server:
+        parser.add_argument("--defer_auth", action="store_true", help="Defer PIN verification to Web UI")
+
         try:
             parsed_args = parser.parse_args(shlex.split(line))
         except SystemExit:
@@ -1671,18 +1674,6 @@ class MCShell(Magics):
             self.connection.clear()
             return
 
-        print(f"Assigning application server context to Minecraft player: {minecraft_name}")
-        power_repo = SQLiteRepository(minecraft_name)
-
-        self.app_server_thread = start_app_server(
-            mc_version,
-            minecraft_name,
-            self.ip,
-            power_repo,
-            5001,
-            connected_world_name
-        )
-
 
         # Manage Background Forwarders (socat)
         self._cleanup_socat_forwarders() # Helper to terminate existing Popen objects
@@ -1703,8 +1694,80 @@ class MCShell(Magics):
             self.connection.local_proxy_bedrock_port = proxy_udp
 
             self._start_socat_forwarders(target_host,mc_port,proxy_tcp,proxy_udp) 
-            print(f"  -> Local Java Proxy bound to TCP {proxy_tcp}")
-            print(f"  -> Local Bedrock Proxy bound to UDP {proxy_udp}")
+            # print(f"  -> Local Java Proxy bound to TCP {proxy_tcp}")
+            # print(f"  -> Local Bedrock Proxy bound to UDP {proxy_udp}")
+        
+
+        # --- 8. PIN AUTHENTICATION & UX CLEANUP ---
+        if not parsed_args.defer_auth and threading.current_thread() is threading.main_thread():
+            from rich.console import Console
+            from rich.panel import Panel
+            from rich.table import Table
+            from IPython.display import clear_output
+            console = Console()
+            
+            # Temporarily mute the server logs so they don't bury the prompt
+            original_log_state = False
+            has_local_process = getattr(self, 'local_server', None) and getattr(self.local_server, 'process', None)
+            
+            if has_local_process:
+                original_log_state = self.local_server.process.suspend_logs
+                self.local_server.process.suspend_logs = True
+                
+            try:
+                # Provide clear visual breathing room
+                console.print("\n[bold yellow]⏳ WAITING FOR PLAYER...[/bold yellow]")
+                
+                # Format the addresses using the active connection state
+                java_addr = f"{self.local_server.local_ip}:{self.connection.local_proxy_mc_port or self.local_server.mc_port}"
+                bedrock_addr = f"{self.local_server.local_ip}:{self.connection.local_proxy_bedrock_port or 19132}"
+                xbox_tag = getattr(self.connection, 'xbox_tag', None)
+
+                # Build a clean connection instructions table using rich
+                conn_grid = Table(show_header=False, box=None, padding=(0, 2))
+                conn_grid.add_column(style="magenta bold")
+                conn_grid.add_column(style="white")
+                conn_grid.add_row("💻 Java", java_addr)
+                conn_grid.add_row("🎮 Bedrock", bedrock_addr)
+                if xbox_tag:
+                    conn_grid.add_row("🎮 Xbox/PSX", f"Send a friend request to: [bold yellow]{xbox_tag}[/bold yellow]")
+
+                console.print(Panel(conn_grid, title="[bold blue]Connect Here for PIN[/bold blue]", expand=False))
+                console.print(f"Please log in as [bold cyan]{minecraft_name}[/bold cyan] to receive your secure PIN.")
+                
+                # Trigger the client creation (blocks, waits for login, and prompts for PIN)
+                self._get_client().mj_client(minecraft_name)
+                
+                # Success! Clear the messy terminal history to present a clean dashboard
+                clear_output(wait=True)
+                console.print("[bold green]✅ Authentication successful![/bold green]\n")
+                
+            except Exception as e:
+                console.print(f"\n[bold red][Auth Error] {e}[/bold red]")
+                self.connection.clear()
+                return
+            finally:
+                # Restore the server logs to their original state
+                if has_local_process:
+                    self.local_server.process.suspend_logs = original_log_state
+        # ---------------------------------------
+
+        print(f"Assigning application server context to Minecraft player: {minecraft_name}")
+        power_repo = SQLiteRepository(minecraft_name)
+
+
+        print(f"Assigning application server context to Minecraft player: {minecraft_name}")
+        power_repo = SQLiteRepository(minecraft_name)
+
+        self.app_server_thread = start_app_server(
+            mc_version,
+            minecraft_name,
+            self.ip,
+            power_repo,
+            5001,
+            connected_world_name
+        )
+
 
         self._print_connection_hub()
 
