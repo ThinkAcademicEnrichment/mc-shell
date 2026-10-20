@@ -2,6 +2,7 @@ import time
 import threading
 import sys
 from pathlib import Path
+from tests.config import MJ_PLUGIN_PORT
 
 # Ensure mcshell is in path
 BASE_DIR = Path(__file__).parent.parent.resolve()
@@ -16,11 +17,11 @@ def setup_player(player_name="TestPlayer"):
     """Initialize a direct connection to the server for testing."""
     print(f"Connecting to McJuice as {player_name}...")
     try:
-        player = MCPlayer(player_name, host="127.0.0.1", port=4721)
+        player = MCPlayer(player_name, host="127.0.0.1", port=MJ_PLUGIN_PORT)
         actions = MCActions(player)
         return player, actions
     except ConnectionRefusedError:
-        print("ERROR: Could not connect to Minecraft server on 127.0.0.1:4721")
+        print(f"ERROR: Could not connect to Minecraft server on 127.0.0.1:{MJ_PLUGIN_PORT}")
         print("Make sure the server is running and McJuice is loaded!")
         sys.exit(1)
 

@@ -9,6 +9,8 @@ import IPython.testing.globalipapp
 from mcshell.constants import MC_WORLDS_BASE_DIR
 from tests.config import *
 
+# Ensure Java starts in headless mode and bypasses 3D client checks
+os.environ["MCSHELL_TEST_MODE"] = "1"
 
 class MagicTest(unittest.TestCase):
     @classmethod
@@ -34,10 +36,19 @@ class MagicTest(unittest.TestCase):
 
     def test_pp_lifecycle(self):
         """Test full lifecycle: create -> start -> stop -> delete."""
-        # We patch 'input' globally for this test to satisfy _get_mc_name() in CI
+        
+        # Simulated console input handler
         def mock_ask(msg, default=None, **kwargs):
+            if "PIN" in msg:
+                print(f"[TEST] Bypassing PIN Prompt for headless execution")
+                return "1234" # Provide a mock 4-digit PIN
             return str(default) if default is not None else ""
 
+        # Pre-seed the cache so Java skips the verification step for tests
+        from mcshell.mcjuice import MCJuiceClient
+        key = ("127.0.0.1", self.mcshell.local_server.mj_port, TEST_PLAYER_NAME.lower())
+        MCJuiceClient._SESSION_TOKENS[key] = "mock-ci-token-bypass"
+        
         with patch('getpass.getpass', return_value='password'), \
              patch('rich.prompt.Prompt.ask', side_effect=mock_ask), \
              patch('builtins.input', return_value=TEST_PLAYER_NAME):
@@ -45,7 +56,7 @@ class MagicTest(unittest.TestCase):
             # 1. Create
             self.ip.run_line_magic('pp_create_world', self.test_world)
 
-            # 2. Start (Now protected by patches against stdin capture errors)
+            # 2. Start
             self.ip.run_line_magic('pp_start_world', self.test_world)
             self.assertTrue(self.mcshell.local_server.process.is_alive())
 
