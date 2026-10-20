@@ -2004,15 +2004,36 @@ class MCShell(Magics):
     @line_magic
     def mc_login(self, line=''):
         """Authenticates the user as an admin on the currently joined server."""
+        import os
+        import json
         from rich.prompt import Prompt
         from mcshell.mcserver import socketio
+        # Ensure MC_WORLDS_BASE_DIR is imported/available in your file
+        # from mcshell.constants import MC_WORLDS_BASE_DIR 
 
         if not self.connection.is_joined:
             print("[red bold]Error: You must be joined to a server before you can log in.[/red bold]")
             return
 
-        # Prompt for password without asking for ports or IP
-        password = Prompt.ask('Server Password', password=True)
+        password = None
+
+        # 1. Attempt to auto-login using the .mc_creds.json file
+        if getattr(self, 'local_server', None) and getattr(self.local_server, 'world_name', None):
+            creds_path = MC_WORLDS_BASE_DIR / self.local_server.world_name / ".mc_creds.json"
+            
+            if creds_path.exists():
+                try:
+                    with open(creds_path, 'r') as f:
+                        creds = json.load(f)
+                        password = creds.get('password')
+                        if password:
+                            print("[cyan]Auto-authenticating using stored world credentials...[/cyan]")
+                except Exception as e:
+                    print(f"[yellow]Warning: Could not parse .mc_creds.json: {e}[/yellow]")
+
+        # 2. Fallback to manual prompt if no password was found
+        if not password:
+            password = Prompt.ask('Server Password', password=True)
 
         try:
             # Inject the targeted credentials directly into your client getter
