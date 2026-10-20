@@ -49,6 +49,9 @@ class DigitalSetActions(MCActionsBase):
         Adds a single point to a set.
         Maintains immutability. Uses union to natively preserve MCStructure materials if applicable.
         """
+        if not target_set or not hasattr(target_set, 'voxels') or len(target_set.voxels) == 0:
+            target_set = DigitalSet() 
+ 
         return target_set.union(DigitalSet([(x, y, z)]))
 
     # -------------------------------------------------------------------------
@@ -63,6 +66,9 @@ class DigitalSetActions(MCActionsBase):
         """
         Checks if a Digital Set contains zero points.
         """
+        if not target_set or not hasattr(target_set, 'voxels') or len(target_set.voxels) == 0:
+            return True
+ 
         return len(target_set) == 0
 
     @mced_block(
@@ -73,6 +79,9 @@ class DigitalSetActions(MCActionsBase):
         """
         Returns the total number of blocks/points in the Digital Set.
         """
+        if not target_set or not hasattr(target_set, 'voxels') or len(target_set.voxels) == 0:
+            return 0
+ 
         return len(target_set)
 
     @mced_block(
@@ -83,6 +92,9 @@ class DigitalSetActions(MCActionsBase):
         """
         Returns the blocks/points in the Digital Set as a list of vectors.
         """
+        if not target_set or not hasattr(target_set, 'voxels') or len(target_set.voxels) == 0:
+            return list()
+ 
         return list(map(lambda x:Vec3(*x),target_set.voxels))
 
     # -------------------------------------------------------------------------
@@ -98,6 +110,11 @@ class DigitalSetActions(MCActionsBase):
         """
         Combines two Digital Sets, returning a new set containing all points from both.
         """
+        if not set_a or not hasattr(set_a, 'voxels') or len(set_a.voxels) == 0:
+            set_a = DigitalSet()
+        if not set_b or not hasattr(set_b, 'voxels') or len(set_b.voxels) == 0:
+            set_b = DigitalSet()
+ 
         return set_a.union(set_b)
 
     @mced_block(
@@ -109,6 +126,11 @@ class DigitalSetActions(MCActionsBase):
         """
         Returns a new Digital Set containing only points that exist in BOTH Set A and Set B.
         """
+        if not set_a or not hasattr(set_a, 'voxels') or len(set_a.voxels) == 0:
+            set_a = DigitalSet()
+        if not set_b or not hasattr(set_b, 'voxels') or len(set_b.voxels) == 0:
+            set_b = DigitalSet()
+ 
         return set_a.intersection(set_b)
 
     @mced_block(
@@ -120,6 +142,11 @@ class DigitalSetActions(MCActionsBase):
         """
         Returns a new Digital Set containing points from Set A that are NOT in Set B.
         """
+        if not set_a or not hasattr(set_a, 'voxels') or len(set_a.voxels) == 0:
+            set_a = DigitalSet()
+        if not set_b or not hasattr(set_b, 'voxels') or len(set_b.voxels) == 0:
+            set_b = DigitalSet()
+ 
         return set_a.difference(set_b)
 
     @mced_block(
@@ -131,6 +158,11 @@ class DigitalSetActions(MCActionsBase):
         """
         Returns a new Digital Set containing points in either Set A or Set B, but NOT both.
         """
+        if not set_a or not hasattr(set_a, 'voxels') or len(set_a.voxels) == 0:
+            set_a = DigitalSet()
+        if not set_b or not hasattr(set_b, 'voxels') or len(set_b.voxels) == 0:
+            set_b = DigitalSet()
+ 
         if hasattr(set_a, 'symmetric_difference'):
             return set_a.symmetric_difference(set_b)
         # Fallback implemented purely via other set operations if missing natively
@@ -149,11 +181,14 @@ class DigitalSetActions(MCActionsBase):
         Combines a list of Digital Sets into a single Set.
         Used for Blockly mutator blocks taking N inputs.
         """
+
         if not sets:
             return DigitalSet()
 
         result = sets[0]
         for s in sets[1:]:
+            if not s or not hasattr(s, 'voxels') or len(s.voxels) == 0:
+                continue
             result = result.union(s)
 
         return result
@@ -173,6 +208,9 @@ class DigitalSetActions(MCActionsBase):
         """
         Moves a Digital Set by a given (dx, dy, dz) offset.
         """
+        if not target_set or not hasattr(target_set, 'voxels') or len(target_set.voxels) == 0:
+            return DigitalSet()
+ 
         return target_set.translate(dx, dy, dz)
 
     @mced_block(
@@ -186,6 +224,9 @@ class DigitalSetActions(MCActionsBase):
         """
         Shear a Digital Set along given axes by a specific factor.
         """
+        if not target_set or not hasattr(target_set, 'voxels') or len(target_set.voxels) == 0:
+            return DigitalSet()
+ 
         return target_set.shear(axis_primary, axis_secondary, factor)
 
     @mced_block(
@@ -207,6 +248,9 @@ class DigitalSetActions(MCActionsBase):
         Scales the volume of the set by approximately the given integer factor.
         Uses nearest-neighbor interpolation to prevent gaps.
         """
+        if not target_set or not hasattr(target_set, 'voxels') or len(target_set.voxels) == 0:
+            return DigitalSet()
+ 
         if hasattr(target_set, 'scale_volume'):
             return target_set.scale_volume(factor)
         return target_set
@@ -222,6 +266,9 @@ class DigitalSetActions(MCActionsBase):
         """
         Rotates a Digital Set around a specific axis.
         """
+        if not target_set or not hasattr(target_set, 'voxels') or len(target_set.voxels) == 0:
+            return DigitalSet()
+ 
         if hasattr(target_set, 'rotate'):
             if hasattr(target_set,'world_offset') and rotation_point == 'selection_point':
                 return target_set.rotate(axis, angle, Vec3(0,0,0))
@@ -240,6 +287,9 @@ class DigitalSetActions(MCActionsBase):
         """
         Expands the Digital Set by adding a layer of voxels to its boundary.
         """
+        if not target_set or not hasattr(target_set, 'voxels') or len(target_set.voxels) == 0:
+            return DigitalSet()
+ 
         return target_set.dilate()
 
     @mced_block(
@@ -250,6 +300,9 @@ class DigitalSetActions(MCActionsBase):
         """
         Shrinks the Digital Set by removing the outermost layer of voxels.
         """
+        if not target_set or not hasattr(target_set, 'voxels') or len(target_set.voxels) == 0:
+            return DigitalSet()
+ 
         return target_set.erode()
 
     @mced_block(
@@ -259,7 +312,11 @@ class DigitalSetActions(MCActionsBase):
     def shell(self, target_set: Union[MCStructure, DigitalSet]) -> Union[MCStructure, DigitalSet]:
         """
         Returns the hollow boundary (shell) of the Digital Set.
+
+
         """
+        if not target_set or not hasattr(target_set, 'voxels') or len(target_set.voxels) == 0:
+            return DigitalSet()
         return target_set.shell()
 
     @mced_block(
@@ -273,6 +330,9 @@ class DigitalSetActions(MCActionsBase):
         """
         Extrudes (sweeps) the Digital Set along a directional vector.
         """
+        if not target_set or not hasattr(target_set, 'voxels') or len(target_set.voxels) == 0:
+            return DigitalSet()
+ 
         return target_set.extrude(Vec3(dx, dy, dz))
 
 
@@ -308,9 +368,9 @@ class DigitalSetActions(MCActionsBase):
         """
         Finds the corner vertices for each 2D level curve slice of the DigitalSet.
         """
-        if not target_set.voxels:
+        if not target_set or not hasattr(target_set, 'voxels') or len(target_set.voxels) == 0:
             return DigitalSet()
-            
+ 
         normal_vec = np.array(normal.to_tuple(), dtype=float)
         voxel_array = np.array(list(target_set.voxels))
         
@@ -362,9 +422,9 @@ class DigitalSetActions(MCActionsBase):
         Always returns a pure DigitalSet, as the min/max geometric bounds are not 
         guaranteed to be physical voxels (e.g., in a hollow shell structure).
         """
-        if not box_set or not box_set.voxels:
+        if not box_set or not hasattr(box_set, 'voxels') or len(box_set.voxels) == 0:
             return DigitalSet()
-
+ 
         # 1. Extract all x, y, and z coordinates into separate lists
         x_coords = [c[0] for c in box_set.voxels]
         y_coords = [c[1] for c in box_set.voxels]
