@@ -2321,15 +2321,21 @@ class MCShell(Magics):
     @line_magic
     def mc_run(self, line):
         '''%mc_run COMMAND'''
+
+        host_state, ui_state = self._get_fsm_state()
+        if not ui_state in ['JOINED_LOCAL', 'JOINED_REMOTE']:
+            print("You must join a world before issuing commands!")
+            return
+
         _arg_list = line.split(' ')
         _arg_list[0] = _arg_list[0].replace('_', '-')
 
         if _arg_list[0] == 'help':
             console.print("Use %mc_help instead.", style="warning")
             return
+        
 
         response = self._run(*_arg_list)
-        
         if response is None or response == '':
             return
 
