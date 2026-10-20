@@ -16,6 +16,7 @@ public class RemoteSession implements Runnable {
     // --- Shared Static Auth State Across Socket Connections ---
     private static final Map<String, String> ACTIVE_TOKENS = new ConcurrentHashMap<>(); // token -> playerName
     private static final Map<String, String> PENDING_PINS = new ConcurrentHashMap<>();  // playerName (lower) -> 4-digit PIN
+    private static final Map<String, Long> PIN_LAST_SENT = new ConcurrentHashMap<>();   // playerName (lower) -> timestamp ms
     private static final Random RANDOM = new Random();
 
     // --- Per-Socket Instance State ---
@@ -115,11 +116,17 @@ public class RemoteSession implements Runnable {
             return "OFFLINE";
         }
         String key = player.getName().toLowerCase();
-        // Reuse existing pending PIN if already requested, otherwise generate a new 4-digit PIN
         String pin = PENDING_PINS.computeIfAbsent(key, k -> String.format("%04d", RANDOM.nextInt(10000)));
-        player.sendMessage(ChatColor.translateAlternateColorCodes(
-            '&', "&a[MC-ED] &fYour 4-digit link code is: &e&l" + pin
-        ));
+
+        // Only send the chat message once (or every 30s if the user still hasn't entered it)
+        long now = System.currentTimeMillis();
+        Long lastSent = PIN_LAST_SENT.get(key);
+        if (lastSent == null || (now - lastSent) > 30_000L) {
+            PIN_LAST_SENT.put(key, now);
+            player.sendMessage(ChatColor.translateAlternateColorCodes(
+                '&', "&a[MC-ED] &fYour 4-digit link code is: &e&l" + pin
+            ));
+        }
         return "PENDING";
     }
 
@@ -129,6 +136,7 @@ public class RemoteSession implements Runnable {
         String expected = PENDING_PINS.get(key);
         if (expected != null && expected.equals(pin.trim())) {
             PENDING_PINS.remove(key);
+            PIN_LAST_SENT.remove(key);
             this.authenticatedPlayer = playerName.trim();
             String token = UUID.randomUUID().toString();
             ACTIVE_TOKENS.put(token, this.authenticatedPlayer);
