@@ -88,13 +88,19 @@ def get_lobby_data():
                 hub_data['lan_token'] = None
                 hub_data['vpn_token'] = None
 
+            # Check if the player has completed PIN verification
+            from mcshell.mcjuice import MCJuiceClient
+            conn_ctx = mcshell_instance.connection
+            auth_key = (conn_ctx.target_host, conn_ctx.mj_port, mc_name.lower())
+            is_pin_verified = auth_key in MCJuiceClient._SESSION_TOKENS
+
             return jsonify({
-                "status": "active",
+                "status": "active" if is_pin_verified else "lobby_link",
                 "player": mc_name,
                 "is_host": is_host,
                 "is_admin": is_admin,
-                "world_name": mcshell_instance.connection.world_name,
-                "connection_hub": hub_data,  # Matches Alpine UI binding
+                "world_name": conn_ctx.world_name,
+                "connection_hub": hub_data,
                 "appliance_mode": is_appliance,
             })
 
@@ -146,7 +152,6 @@ def join_world():
     if not re.match(r"^[a-zA-Z0-9_]{3,16}$", minecraft_name):
         return jsonify({"error": "Invalid Minecraft username format (3-16 alphanumeric characters)."}), 400
 
-    # 1. Strictly validate the token structure before calling IPython
     try:
         MCToken.parse(token)
     except ValueError as e:
@@ -155,24 +160,90 @@ def join_world():
     shell = current_app.config.get('IPYTHON_SHELL')
     if shell:
         try:
-            # Quote the token with shlex.quote to prevent flag injection
             import shlex
-            safe_cmd = f"{shlex.quote(token)} --mc_name {shlex.quote(minecraft_name)}"
-            # safe_cmd = f"{token} --mc_name {minecraft_name}"
+            # Pass --defer_auth so the Web UI handles PIN verification in LOBBY_LINK
+            safe_cmd = f"{shlex.quote(token)} --mc_name {shlex.quote(minecraft_name)} --defer_auth"
             shell.run_line_magic('pp_join_world', safe_cmd)
 
             mcshell_instance = shell.magics_manager.registry.get('MCShell')
-            
-            # 2. Verify the magic actually established a connection!
             if not mcshell_instance or not getattr(mcshell_instance.connection, 'target_host', None):
                 return jsonify({"error": "Failed to connect to the target Minecraft server. Is it online?"}), 502
 
             from mcshell.mcserver import GUI_AUTH_TOKEN
             target_port = mcshell_instance.server_data.get('app_port', 5001)
+            hub_data = mcshell_instance._get_connection_hub_data()
 
-            return jsonify({"success": True, "gui_token": GUI_AUTH_TOKEN, "app_port": target_port})
+            return jsonify({
+                "success": True,
+                "status": "lobby_link",
+                "gui_token": GUI_AUTH_TOKEN,
+                "app_port": target_port,
+                "connection_hub": hub_data
+            })
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
     return jsonify({"error": "Internal server error."}), 500
+
+@ipython_bp.route('/pin_status', methods=['POST'])
+def pin_status():
+    """Polls the Java server to see if the player is online and sends/resends the 4-digit PIN."""
+    shell = current_app.config.get('IPYTHON_SHELL')
+    mc_name = current_app.config.get('MINECRAFT_PLAYER_NAME')
+    if not shell or not mc_name:
+        return jsonify({"error": "No pending session."}), 400
+
+    mcshell_instance = shell.magics_manager.registry.get('MCShell')
+    if not mcshell_instance or not mcshell_instance.connection.target_host:
+        return jsonify({"error": "Not connected to a target host."}), 400
+
+    try:
+        # Use the unauthenticated admin client to trigger/check PIN status
+        mj_admin = mcshell_instance._get_client().mj_client()
+        status = mj_admin.admin.requestPin(mc_name)  # Returns "PENDING" or "OFFLINE"
+        return jsonify({"pin_status": status})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 502
+
+
+@ipython_bp.route('/verify_pin', methods=['POST'])
+def verify_pin():
+    """Verifies the 4-digit PIN entered by the user in the LOBBY_LINK modal."""
+    data = request.get_json() or {}
+    pin = (data.get('pin') or '').strip()
+    shell = current_app.config.get('IPYTHON_SHELL')
+    mc_name = current_app.config.get('MINECRAFT_PLAYER_NAME')
+
+    if not shell or not mc_name:
+        return jsonify({"error": "No active session to verify."}), 400
+    if not pin:
+        return jsonify({"error": "Please enter the 4-digit PIN."}), 400
+
+    mcshell_instance = shell.magics_manager.registry.get('MCShell')
+    conn_ctx = mcshell_instance.connection
+
+    try:
+        from mcshell.mcjuice import MCJuiceClient
+        # Verify PIN and cache the session token in MCJuiceClient._SESSION_TOKENS
+        MCJuiceClient.authenticate_pin(conn_ctx.target_host, conn_ctx.mj_port, mc_name, pin)
+        # Prime the cached player mj_client so it's ready for power executions
+        mcshell_instance._get_client().mj_client(mc_name)
+        return jsonify({"success": True, "status": "active"})
+    except PermissionError as e:
+        return jsonify({"error": str(e)}), 401
+    except Exception as e:
+        return jsonify({"error": f"Verification error: {e}"}), 500
+
+
+@ipython_bp.route('/cancel_join', methods=['POST'])
+def cancel_join():
+    """Aborts a pending LOBBY_LINK session and returns the server to LOBBY_CARD standby."""
+    shell = current_app.config.get('IPYTHON_SHELL')
+    if shell:
+        mcshell_instance = shell.magics_manager.registry.get('MCShell')
+        if mcshell_instance:
+            mcshell_instance._cleanup_socat_forwarders()
+            mcshell_instance.connection.clear()
+    current_app.config['MINECRAFT_PLAYER_NAME'] = None
+    return jsonify({"success": True, "status": "standby"})
 
