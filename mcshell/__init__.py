@@ -1765,7 +1765,8 @@ class MCShell(Magics):
             self.ip,
             power_repo,
             5001,
-            connected_world_name
+            connected_world_name,
+            defer_auth=parsed_args.defer_auth
         )
 
 
